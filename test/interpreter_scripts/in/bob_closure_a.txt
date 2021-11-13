@@ -1,0 +1,11 @@
+alg makeClosure(value) {
+  alg closure() {
+    print(value, "\n")
+  }
+  return closure
+}
+
+doughnut = makeClosure("doughnut")
+bagel = makeClosure("bagel")
+doughnut()
+bagel()

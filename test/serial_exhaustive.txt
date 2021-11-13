@@ -1,0 +1,14 @@
+//The purpose of this file is to exhaustively 
+"test constructs and formatting rules"
+//which are supported by the View and Parser
+
+//Some blank lines
+
+"an unterminated string error
+
+print(x12 = 0.5x) //Fraction
+x^2 = x2 //Superscript
+xx2 = x-1 //Nested constructs
+e-tτ + c //Third script level
+x222 //Subsequent superscripts and bottom nesting
+I = 1001 //Matrix

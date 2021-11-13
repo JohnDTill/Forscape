@@ -1,0 +1,49 @@
+//Mat column assignment
+J ← 03×3
+J:,i ← i00⊤
+print(J, "\n")
+
+//Mat row assignment
+Ji,: ← i00
+print(J, "\n")
+
+//Mat element assignment
+Ji,j ← i+j
+print(J, "\n")
+
+//Col vec element assignment
+J ← 03×1
+Ji ← i
+print(J, "\n")
+
+//Col vec row assignment
+Ji,: ← i
+print(J, "\n")
+
+//Col vec col assignment
+J:,i ← i00⊤
+print(J, "\n")
+
+//Row vec element assignment
+J ← 01×3
+Ji ← i
+print(J, "\n")
+
+//Row vec row assignment
+Ji,: ← i00
+print(J, "\n")
+
+//Row vec col assignment
+J:,i ← i
+print(J, "\n")
+
+//Scalar assignments
+J ← 0
+Ji,j ← i+j
+print(J, "\n")
+J:,i ← i
+print(J, "\n")
+Ji,: ← i
+print(J, "\n")
+Ji ← i
+print(J, "\n")

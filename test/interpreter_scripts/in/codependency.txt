@@ -1,0 +1,15 @@
+alg isOdd
+
+alg isEven(x){
+    if(x ≤ 1) return x = 0
+    else return isOdd(x-1)
+}
+
+alg isOdd(x){
+    if(x ≤ 1) return x = 1
+    else return isEven(x-1)
+}
+
+for(i ← 1; i ≤ 10; i ← i+1)
+    if(isEven(i)) print(i, " is even\n")
+    else print(i, " is odd\n")

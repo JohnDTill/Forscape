@@ -1,0 +1,54 @@
+name,quote,msg
+UNRECOGNIZED_SYMBOL,y,Scanner error – unrecognized symbol
+EXPECTED_PRIMARY,,Expected value
+UNTERMINATED_STRING,,Unterminated string
+ASSIGN_EXPRESSION,,Cannot assign to expression
+TRAILING_CONSTANT,,Constant must lead implicit mult
+CONSUME,y,Unexpected token
+TRAILING_DOT,,Decimal number must have trailing digits
+LEADING_ZEROES,,Number cannot have leading zeros
+REASSIGN_CONSTANT,y,Reassigning to constant
+MUTABLE_CONST_ASSIGN,y,Assigning constant to pre-existing mutable var
+BAD_READ,y,Undeclared variable
+BAD_READ_OR_SUBSCRIPT,,Undeclared variable (subscript not suitable for implicit loop assignment)
+UNRECOGNIZED_STMT,,Unrecognized statement
+UNRECOGNIZED_EXPR,,Unrecognized expression
+TYPE_NOT_ADDABLE,,Type is not addable
+SUBTRACT_NON_SCALAR,,Subtract non-scalar
+SUBTRACT_NON_MATRIX,,Subtract non-matrix
+DIMENSION_MISMATCH,,Dimension mismatch
+SUBTRACT_NON_NUMERIC,,Subtracting non-numeric type
+NON_NUMERIC_TYPE,,Numeric operation on non-numeric type
+NON_SCALAR_TYPE,,Scalar operation with non-scalar type
+STRING_CONVERSION,,Cannot convert to string
+IMAGINARY_RESULT,,Result is imaginary
+EIGEN_UNSUPPORTED,,Not compiled with Eigen unsupported features
+TYPE_ERROR,,Interpreter type error
+DIV_BY_ZERO,,Divided by zero
+INDEX_OUT_OF_RANGE,y,Index out of range
+UNUSED_VAR,,Variable is unused
+INFINITE_LOOP,,Loop does not terminate
+NONTERMINATING_SLICE,,Slice steps in wrong direction
+INVALID_PARAMETER,,Invalid parameter
+NOT_CALLABLE,,Expression is not callable
+INVALID_ARGS,,Arguments do not match parameters
+NO_RETURN,,Function did not give a return value
+UNUSED_EXPRESSION,,Expression unused
+NON_LVALUE,y,Expression cannot be used as lvalue
+EXPECT_DEFAULT_ARG,,Expected default arg
+CAPTURE_SEMANTICS,,Capture semantics are not supported
+RETURN_LAMBDA,,Returning a function is not supported yet
+BAD_BREAK,,Break statement not in loop
+BAD_CONTINUE,,Continue statement not in loop
+AMBIGIOUS_TRIG_POWER,,Negative trig power is ambiguous. Use explicit power (sin(x)^-1 or csc(x)) or explicit inverse function (arcsin(x))
+LOG_ARG,,Logarithm argument must be positive
+LOG_BASE,,Logarithm base must be positive
+USE_BEFORE_DEFINE,y,Algorithm is used before it is defined
+EMPTY_BIG_SYMBOL,,Big symbol must have 2 arguments
+BIG_SYMBOL_ARG,,Big symbol argument must be an integer
+BIG_SYMBOL_RANGE,,Big symbol range must increase
+EMPTY_CASES,,None of the cases evaluated to true
+ASSERT_FAIL,y,Assertion failed
+SCALAR_MATRIX,,1×1 matrix is ambiguous
+UNUSED_ELEM_AGN_INDEX,,Undeclared variable\n(an element assignment index must be used in rhs to prevent ambiguity)
+INTERRUPT,,Execution stopped by user

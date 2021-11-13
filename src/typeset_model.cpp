@@ -1,0 +1,510 @@
+#include "typeset_model.h"
+
+#include "hope_serial.h"
+#include "typeset_all_constructs.h"
+#include <typeset_command_list.h>
+#include "typeset_line.h"
+#include "typeset_subphrase.h"
+#include "typeset_text.h"
+
+#ifndef NDEBUG
+#include <iostream>
+#endif
+
+#include <hope_scanner.h>
+#include <hope_parser.h>
+#include <hope_symbol_table.h>
+#include <hope_interpreter.h>
+#include <unordered_set>
+
+namespace Hope {
+
+namespace Typeset {
+
+Model::Model(){
+    lines.push_back( new Line(this) );
+    lines[0]->id = 0;
+}
+
+Model::~Model(){
+    clearRedo();
+    for(Command* cmd : undo_stack) delete cmd;
+    for(Line* l : lines) delete l;
+}
+
+#define TypesetSetupNullary(name) \
+    text->getParent()->appendConstruct(new name); \
+    text = text->nextTextInPhrase(); \
+    break;
+
+#define TypesetSetupConstruct(name, arg) { \
+    name* construct = new name(arg); \
+    text->getParent()->appendConstruct(construct); \
+    text = construct->frontText(); \
+    break; }
+
+#define TypesetSetupMatrix(name) { \
+    uint16_t rows = static_cast<uint16_t>(src[index++]); \
+    uint16_t cols = static_cast<uint16_t>(src[index++]); \
+    name* construct = new name(rows, cols); \
+    text->getParent()->appendConstruct(construct); \
+    text = construct->frontText(); \
+    break; }
+
+Model* Model::fromSerial(const std::string& src){
+    return new Model(src);
+}
+
+#undef TypesetSetupNullary
+#undef TypesetSetupConstruct
+#undef TypesetSetupMatrix
+
+std::string Model::toSerial() const {
+    std::string out;
+    out.resize(serialChars());
+    writeString(out);
+
+    return out;
+}
+
+Model* Model::run(View* caller, View* console){
+    if(!errors.empty()){
+        Model* result = Code::Error::writeErrors(errors, caller);
+        result->calculateSizes();
+        result->updateLayout();
+        if(console) console->setModel(result);
+        return result;
+    }
+    interpreter = new Code::Interpreter(parser.parse_tree, this, caller, console);
+    Model* result = interpreter->interpret(root);
+    result->calculateSizes();
+    result->updateLayout();
+
+    delete interpreter;
+    interpreter = nullptr;
+
+    return result;
+}
+
+void Model::stop(){
+    assert(interpreter != nullptr);
+    interpreter->stop();
+}
+
+Model::Model(const std::string& src){
+    lines = linesFromSerial(src);
+    for(size_t i = 0; i < lines.size(); i++){
+        lines[i]->id = i;
+        lines[i]->parent = this;
+    }
+
+    #ifndef HOPE_TYPESET_HEADLESS
+    performSemanticFormatting();
+    calculateSizes();
+    updateLayout();
+    #endif
+}
+
+#define TypesetSetupNullary(name) \
+    text->getParent()->appendConstruct(new name); \
+    text = text->nextTextInPhrase(); \
+    break;
+
+#define TypesetSetupConstruct(name, arg) { \
+    name* construct = new name(arg); \
+    text->getParent()->appendConstruct(construct); \
+    text = construct->frontText(); \
+    break; }
+
+#define TypesetSetupMatrix(name) { \
+    uint16_t rows = static_cast<uint16_t>(src[index++]); \
+    uint16_t cols = static_cast<uint16_t>(src[index++]); \
+    name* construct = new name(rows, cols); \
+    text->getParent()->appendConstruct(construct); \
+    text = construct->frontText(); \
+    break; }
+
+std::vector<Line*> Model::linesFromSerial(const std::string& src){
+    assert(isValidSerial(src));
+
+    size_t index = 0;
+    size_t start = index;
+    std::vector<Line*> lines;
+    lines.push_back(new Line());
+    Text* text = lines.back()->front();
+
+    while(index < src.size()){
+        auto ch = src[index++];
+
+        if(ch == OPEN){
+            text->str = src.substr(start, index-start-1);
+
+            switch (src[index++]) {
+                HOPE_TYPESET_PARSER_CASES
+                default: assert(false);
+            }
+
+            start = index;
+        }else if(ch == CLOSE){
+            text->str = src.substr(start, index-start-1);
+            start = index;
+            Subphrase* closed_subphrase = static_cast<Subphrase*>(text->getParent());
+            text = closed_subphrase->textRightOfSubphrase();
+        }else if(ch == '\n' && text->isTopLevel()){
+            text->str = src.substr(start, index-start-1);
+            start = index;
+            lines.push_back(new Line());
+            text = lines.back()->front();
+        }
+    }
+
+    text->str = src.substr(start, index-start);
+
+    return lines;
+}
+
+#undef TypesetSetupNullary
+#undef TypesetSetupConstruct
+#undef TypesetSetupMatrix
+
+#ifdef HOPE_SEMANTIC_DEBUGGING
+std::string Model::toSerialWithSemanticTags() const{
+    std::string out = lines[0]->toStringWithSemanticTags();
+    for(size_t i = 1; i < lines.size(); i++){
+        out += '\n';
+        out += lines[i]->toStringWithSemanticTags();
+    }
+
+    return out;
+}
+#endif
+
+Line* Model::appendLine(){
+    Line* l = new Line(this);
+    l->id = lines.size();
+    lines.push_back(l);
+    return l;
+}
+
+Line* Model::lastLine() const noexcept{
+    return lines.back();
+}
+
+std::vector<Selection> Model::findCaseInsensitive(const std::string& str) const{
+    assert(!str.empty());
+
+    std::vector<Selection> hits;
+    for(Line* l : lines) l->findCaseInsensitive(str, hits);
+    return hits;
+}
+
+Text* Model::firstText() const noexcept{
+    return lines[0]->front();
+}
+
+Text* Model::lastText() const noexcept{
+    return lines.back()->back();
+}
+
+size_t Model::serialChars() const noexcept {
+    size_t serial_chars = lines.size() - 1;
+    for(Line* l : lines) serial_chars += l->serialChars();
+    return serial_chars;
+}
+
+void Model::writeString(std::string& out) const noexcept {
+    size_t curr = 0;
+    lines.front()->writeString(out, curr);
+    for(size_t i = 1; i < lines.size(); i++){
+        out[curr++] = '\n';
+        lines[i]->writeString(out, curr);
+    }
+
+    assert(isValidSerial(out));
+}
+
+Line* Model::nextLine(const Line* l) const noexcept{
+    return l->id+1 < lines.size() ? lines[l->id+1] : nullptr;
+}
+
+Line* Model::prevLine(const Line* l) const noexcept{
+    return l->id > 0 ? lines[l->id-1] : nullptr;
+}
+
+Line* Model::nextLineAsserted(const Line *l) const noexcept{
+    assert(l->id+1 < lines.size());
+    return lines[l->id+1];
+}
+
+Line* Model::nearestLine(double y) const noexcept{
+    auto search = std::lower_bound(
+                    lines.rbegin(),
+                    lines.rend(),
+                    y,
+                    [](Line* l, double y){return l->y - LINE_VERTICAL_PADDING/2 > y;}
+                );
+
+    return (search != lines.rend()) ? *search : lines[0];
+}
+
+Line* Model::nearestAbove(double y) const noexcept{
+    auto search = std::lower_bound(
+                    lines.rbegin(),
+                    lines.rend(),
+                    y,
+                    [](Line* l, double y){return l->y + l->height() > y;}
+                );
+
+    return (search != lines.rend()) ? *search : lines[0];
+}
+
+Construct* Model::constructAt(double x, double y) const noexcept{
+    return nearestLine(y)->constructAt(x, y);
+}
+
+double Model::width() const noexcept{
+    double w = 0;
+    for(Line* l : lines) w = std::max(w, l->width);
+    return w;
+}
+
+double Model::height() const noexcept{
+    return lines.back()->yBottom();
+}
+
+void Model::mutate(Command* cmd, Controller& controller){
+    premutate();
+    cmd->redo(controller);
+    undo_stack.push_back(cmd);
+    //DO THIS - assert integrity of model
+    postmutate();
+}
+
+void Model::clearRedo(){
+    for(Command* cmd : redo_stack) delete cmd;
+    redo_stack.clear();
+}
+
+void Model::undo(Controller& controller){
+    if(!undo_stack.empty()){
+        clearFormatting();
+        Command* cmd = undo_stack.back();
+        undo_stack.pop_back();
+        cmd->undo(controller);
+        redo_stack.push_back(cmd);
+        performSemanticFormatting();
+        calculateSizes();
+        updateLayout();
+    }
+}
+
+void Model::redo(Controller& controller){
+    if(!redo_stack.empty()){
+        clearFormatting();
+        Command* cmd = redo_stack.back();
+        redo_stack.pop_back();
+        cmd->redo(controller);
+        undo_stack.push_back(cmd);
+        performSemanticFormatting();
+        calculateSizes();
+        updateLayout();
+    }
+}
+
+bool Model::undoAvailable() const noexcept{
+    return !undo_stack.empty();
+}
+
+bool Model::redoAvailable() const noexcept{
+    return !redo_stack.empty();
+}
+
+void Model::remove(size_t start, size_t stop) noexcept{
+    lines.erase(lines.begin()+start, lines.begin()+stop);
+    for(size_t i = start; i < lines.size(); i++)
+        lines[i]->id = i;
+}
+
+void Model::insert(const std::vector<Line*>& l){
+    for(size_t i = l.front()->id; i < lines.size(); i++)
+        lines[i]->id += l.size();
+    lines.insert(lines.begin() + l.front()->id, l.begin(), l.end());
+}
+
+void Model::calculateSizes(){
+    for(Line* l : lines) l->updateSize();
+}
+
+void Model::updateLayout(){
+    double x = 0;
+    double y = 0;
+
+    for(Line* l : lines){
+        l->x = x;
+        l->y = y;
+        l->updateLayout();
+        y += l->height() + LINE_VERTICAL_PADDING;
+    }
+}
+
+void Model::paint(Painter& painter) const{
+    for(Line* l : lines){
+        l->paint(painter);
+
+        #ifdef HOPE_TYPESET_LAYOUT_DEBUG
+        painter.drawHorizontalConstructionLine(l->y - LINE_VERTICAL_PADDING/2);
+        #endif
+    }
+}
+
+void Model::paint(Painter& painter, double, double yT, double, double yB) const{
+    Line* start = nearestAbove(yT);
+    Line* end = nearestLine(yB);
+
+    for(size_t i = start->id; i <= end->id; i++){
+        Line* l = lines[i];
+        l->paint(painter);
+
+        #ifdef HOPE_TYPESET_LAYOUT_DEBUG
+        painter.drawHorizontalConstructionLine(l->y - LINE_VERTICAL_PADDING/2);
+        #endif
+    }
+}
+
+Selection Model::idAt(const Marker& marker) noexcept{
+    for(size_t i = marker.text->tags.size(); i-->0;){
+        const SemanticTag& tag = marker.text->tags[i];
+        if(tag.index == marker.index){
+            if(!isId(tag.type)) continue;
+            size_t start = marker.index;
+            size_t end = i+1==marker.text->tags.size() ? marker.text->size() : marker.text->tags[i+1].index;
+            return Selection(marker.text, start, end);
+        }else if(tag.index < marker.index){
+            if(!isId(tag.type)) return Selection();
+            size_t start = tag.index;
+            size_t end = i+1==marker.text->tags.size() ? marker.text->size() : marker.text->tags[i+1].index;
+            return Selection(marker.text, start, end);
+        }
+    }
+
+    return Selection();
+}
+
+Selection Model::idAt(double x, double y) noexcept{
+    Line* l = nearestLine(y);
+    if(!l->containsY(y)) return Selection();
+
+    Text* t = l->textLeftOf(x); //DO THIS: use recursive search
+    if(!t->containsX(x) || !t->containsY(y)) return Selection();
+
+    size_t index = t->indexLeft(x);
+
+    SemanticType type = t->getTypeLeftOf(index);
+    if(!isId(type)) return Selection();
+
+    size_t start = 0;
+    size_t end = t->size();
+    for(auto it = t->tags.rbegin(); it != t->tags.rend(); it++){
+        if(it->index <= index){
+            start = it->index;
+            break;
+        }
+        end = it->index;
+    }
+
+    return Selection(t, start, end);
+}
+
+Selection Model::find(const std::string& str) noexcept{
+    Text* t = firstText();
+    for(;;){
+        auto it = t->str.find(str);
+        if(it != std::string::npos){
+            size_t start = it;
+            size_t end = start + str.size();
+
+            return Selection(t, start, end);
+        }
+
+        if(Construct* c = t->nextConstructInPhrase()){
+            Text* candidate = c->frontText();
+            t = candidate ? candidate : t->nextTextAsserted();
+        }else if(t->isNested()){
+            t = t->getParent()->asSubphrase()->textRightOfSubphrase();
+        }else if(Line* l = t->getParent()->asLine()->next()){
+            t = l->front();
+        }else{
+            break;
+        }
+    }
+
+    return Selection();
+}
+
+void Model::clearFormatting() noexcept{
+    Text* t = firstText();
+    for(;;){
+        t->tags.clear();
+
+        if(Construct* c = t->nextConstructInPhrase()){
+            Text* candidate = c->frontText();
+            t = candidate ? candidate : t->nextTextAsserted();
+        }else if(t->isNested()){
+            t = t->getParent()->asSubphrase()->textRightOfSubphrase();
+        }else if(Line* l = t->getParent()->asLine()->next()){
+            t = l->front();
+        }else{
+            break;
+        }
+    }
+
+    errors.clear();
+
+    std::unordered_set<std::vector<Typeset::Selection>*> deleted;
+    for(const auto& entry : symbol_table){
+        std::vector<Typeset::Selection>* occurences = entry.second;
+        if(deleted.insert(occurences).second)
+            delete occurences;
+    }
+    symbol_table.clear();
+}
+
+void Model::performSemanticFormatting(){
+    clearFormatting();
+
+    scanner.scanAll();
+    if(!is_output){
+        parser.parseAll();
+        if(parser.parse_tree.empty()) return;
+        root = parser.parse_tree.back();
+        symbol_builder.resolveSymbols();
+        symbol_table = std::move(symbol_builder.doc_map);
+    }
+}
+
+void Model::premutate() noexcept{
+    clearRedo();
+    clearFormatting();
+}
+
+void Model::postmutate(){
+    performSemanticFormatting();
+
+    calculateSizes();
+    updateLayout();
+}
+
+void Model::rename(const std::vector<Selection>& targets, const std::string& name, Controller& c){
+    CommandList* lst = new CommandList();
+    for(auto it = targets.rbegin(); it != targets.rend(); it++){
+        Controller c(*it);
+        lst->cmds.push_back( c.deleteSelection() );
+        c.consolidateLeft();
+        lst->cmds.push_back( c.insertFirstChar(name) );
+    }
+    mutate(lst, c);
+}
+
+}
+
+}

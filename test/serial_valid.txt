@@ -1,0 +1,9 @@
+Hello world!
+Some unicode: π*α
+A sum: !x
+A superscript: x2
+A dualscript: x2*
+A case: δ(x) = 1x = 00x ≠ 0
+A mat: I = 1001
+A mat power: 21001
+Triple exponent: x222

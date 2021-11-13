@@ -1,0 +1,25 @@
+incr ← 0
+decr ← 0
+get ← 0
+alg initFuncs(){
+    x ← 0
+    alg incrX(){
+        x ← x + 1
+    }
+    alg decrX(){
+        x ← x - 1
+    }
+    alg getX(){
+        return x
+    }
+    incr ← incrX
+    decr ← decrX
+    get ← getX
+}
+
+initFuncs()
+print(get(), "\n")
+incr()
+print(get(), "\n")
+decr()
+print(get())

@@ -1,0 +1,7 @@
+print( 12 + 144 + 20 + 347 + 5×11  =  92 + 0 )
+
+//(A dozen, a gross, and a score
+//Plus three times the square root of four)
+//Divided by seven
+//Plus five times eleven
+//Is nine squared and not a bit more!

@@ -1,0 +1,14 @@
+x = 100⊤
+y = 010⊤
+print("Fancy cross product: z⊤ = ", (x × y)⊤)
+print("\nFancy dot product: ", x ⋅ y)
+print("\nFancy inner product: ", x⊤y)
+
+//Solve:
+// 2x + 3y = 7
+// 4x + y = -1
+//Solution: 2341xy = 7-1  ⇒  xy = 2341-17-1
+A = 2341
+b = 7-1
+sol ← A-1b
+print("\nFancy linear solving: ", sol)

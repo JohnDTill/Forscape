@@ -1,0 +1,37 @@
+alg refCap(){
+    x ← 2
+    
+    alg mid(){
+        alg inner(){
+            return x
+        }
+        return inner
+    }
+    
+    x ← 3
+    
+    return mid
+}
+
+f ← refCap()
+h ← f()
+print("Capture by reference: ", h(), "\n")
+
+alg valCap(){
+    x ← 2
+    
+    alg mid[x](){
+        alg inner(){
+            return x
+        }
+        return inner
+    }
+    
+    x ← 3
+    
+    return mid
+}
+
+f ← valCap()
+h ← f()
+print("Capture by value: ", h())

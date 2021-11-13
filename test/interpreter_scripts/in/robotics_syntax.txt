@@ -1,0 +1,7 @@
+//Implicit multiplication rules enable standard robotics syntax
+c = θ ↦ cos(θ)
+s = θ ↦ sin(θ)
+Rz = θ ↦ cθ-sθ0sθcθ0001
+print(Rz(0), "\n")
+print(Rz(π/2), "\n")
+print(Rz(π/4), "\n")

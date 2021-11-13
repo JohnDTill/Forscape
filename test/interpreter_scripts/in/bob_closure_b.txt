@@ -1,0 +1,18 @@
+alg outer() {
+  x = "value"
+  alg middle() {
+    alg inner() {
+      print(x)
+    }
+
+    print("create inner closure\n")
+    return inner
+  }
+
+  print("return from outer\n")
+  return middle
+}
+
+mid = outer()
+in = mid()
+in()

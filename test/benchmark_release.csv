@@ -1,0 +1,13 @@
+test,avg runtime (ns)
+Serial validation,632.728000
+Load / delete,6200669.000000
+Scanner,7112.260000
+Parser,8462.000000
+SymbolTable,13383.600000
+Interpreter,2569608.400000
+Interpret w/ view,3881601.800000
+Calculate size,3711336.666667
+Update layout,2123013.800000
+Paint,9098880.600000
+Print Loop,2018958300.000000
+Print Loop w/ view,3898069700.000000

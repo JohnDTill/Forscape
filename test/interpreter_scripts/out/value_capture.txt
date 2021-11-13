@@ -1,0 +1,2 @@
+Capture by reference: 3
+Capture by value: 2
