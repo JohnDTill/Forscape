@@ -1,0 +1,7 @@
+alg thing(n){
+    x = 2
+    if(n = 0) return a ↦ a*x
+    else return a ↦ a*x
+}
+f = thing(1)
+print(f(2))
