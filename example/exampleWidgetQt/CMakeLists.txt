@@ -17,6 +17,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/forscape.rc")
 
 set(BASE ../..)
+set(META ${BASE}/meta)
 set(INCLUDE ${BASE}/include)
 set(SRC ${BASE}/src)
 set(CONSTRUCT ${SRC}/typeset_constructs)
@@ -61,8 +62,8 @@ set(PROJECT_SOURCES
         ${INCLUDE}/hope_serial_unicode.h
         ${SRC}/hope_stack.cpp
         ${SRC}/hope_stack.h
-        ${SRC}/hope_symbol_table.cpp
-        ${SRC}/hope_symbol_table.h
+        ${SRC}/hope_symbol_build_pass.cpp
+        ${SRC}/hope_symbol_build_pass.h
         ${SRC}/hope_tokentype.h
         ${SRC}/hope_unicode.h
         ${SRC}/hope_value.h

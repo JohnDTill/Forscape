@@ -2,14 +2,13 @@
 #define TYPESET_MODEL_H
 
 #include "hope_error.h"
-#include <hope_symbol_table.h>
 #include "typeset_command.h"
 #include <string>
 #include <vector>
 
 #include "hope_scanner.h"
 #include "hope_parser.h"
-#include "hope_symbol_table.h"
+#include "hope_symbol_build_pass.h"
 #include "hope_interpreter.h"
 
 namespace Hope {

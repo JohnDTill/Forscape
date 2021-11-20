@@ -61,8 +61,8 @@ add_executable(HopeTests ${TEST}/test_driver.cpp
     ${INCLUDE}/hope_serial_unicode.h
     ${SRC}/hope_stack.cpp
     ${SRC}/hope_stack.h
-    ${SRC}/hope_symbol_table.cpp
-    ${SRC}/hope_symbol_table.h
+    ${SRC}/hope_symbol_build_pass.cpp
+    ${SRC}/hope_symbol_build_pass.h
     ${SRC}/hope_tokentype.h
     ${SRC}/hope_unicode.h
     ${INCLUDE}/typeset_command.h

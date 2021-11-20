@@ -1,4 +1,4 @@
-#include "hope_symbol_table.h"
+#include "hope_symbol_build_pass.h"
 
 #include "hope_parsenodetype.h"
 #include "typeset_model.h"
@@ -29,26 +29,124 @@ SymbolTableBuilder::SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* mo
     : errors(model->errors), parse_tree(parse_tree) {}
 
 void SymbolTableBuilder::resolveSymbols(){
-    ids.clear();
-    stack.clear();
-    map.clear();
-    stack_sizes.clear();
-    closures.clear();
-    doc_map.clear();
-    lexical_depth = GLOBAL_DEPTH;
+    reset();
 
     ParseNode n = parse_tree.back();
     for(size_t i = 0; i < parse_tree.numArgs(n); i++)
         resolveStmt(parse_tree.arg(n, i));
 
     decreaseLexicalDepth();
+
+    stack_frame.clear();
+    stack_size = 0;
+    link(); //This should be in a separate pass after optimisation
+}
+
+void SymbolTableBuilder::link(size_t scope_index){
+    if(scope_index == NONE) return;
+
+    const Scope& scope = scopes[scope_index];
+
+    if(scope.closing_function != NONE){
+        closures.push_back(std::unordered_map<size_t, size_t>());
+        closure_size.push_back(0);
+    }
+
+    stack_frame.push_back(stack_size);
+
+    for(const Scope::Subscope& subscope : scope.subscopes){
+        for(const Scope::Usage& usage : subscope.usages){
+            Symbol& sym = symbols[usage.var_id];
+            ParseNode pn = usage.pn;
+
+            if(usage.type == Scope::DECLARE){
+                if(sym.is_closure_nested && !sym.is_captured){
+                    assert(sym.declaration_closure_depth < closures.size());
+
+                    parse_tree.setUpvalue(pn, closure_size.back());
+                    closures.back()[usage.var_id] = closure_size.back()++;
+                    parse_tree.setEnum(pn, PN_READ_UPVALUE);
+                }else{
+                    sym.stack_index = stack_size++;
+                }
+            }else{
+                if(sym.is_closure_nested){
+                    assert(sym.declaration_closure_depth < closures.size());
+
+                    for(size_t i = sym.declaration_closure_depth; i < closures.size(); i++){
+                        std::unordered_map<size_t, size_t>& closure = closures[i];
+                        if(closure.find(usage.var_id) == closure.end())
+                            closure[usage.var_id] = closure_size[i]++;
+                    }
+                    parse_tree.setUpvalue(pn, closures.back()[usage.var_id]);
+                    parse_tree.setEnum(pn, PN_READ_UPVALUE);
+                }else if(sym.declaration_closure_depth == 0){
+                    parse_tree.setStackOffset(pn, sym.stack_index);
+                    parse_tree.setEnum(pn, PN_READ_GLOBAL);
+                }else{
+                    parse_tree.setStackOffset(pn, stack_size - 1 - sym.stack_index);
+                }
+            }
+        }
+
+        link(subscope.subscope_id);
+    }
+
+    if(scope.closing_function != NONE){
+        ParseNode fn = scope.closing_function;
+
+        ParseTree::NaryBuilder upvalue_builder = parse_tree.naryBuilder(PN_LIST);
+        for(const auto& entry : closures.back()){
+            size_t symbol_index = entry.first;
+            const Symbol& sym = symbols[symbol_index];
+            ParseNode n = parse_tree.addTerminal(PN_IDENTIFIER, sym.document_occurences->front());
+
+            parse_tree.setUpvalue(n, entry.second);
+
+            if(sym.declaration_closure_depth != closures.size()-1)
+                parse_tree.setEnum(n, PN_READ_UPVALUE);
+
+            upvalue_builder.addNaryChild(n);
+        }
+
+        ParseNode upvalue_list = upvalue_builder.finalize(parse_tree.getSelection(fn));
+
+        switch (parse_tree.getEnum(fn)) {
+            case PN_ALGORITHM:
+                parse_tree.setArg(fn, 2, upvalue_list);
+                break;
+            case PN_LAMBDA:
+                parse_tree.setArg(fn, 0, upvalue_list);
+                break;
+        }
+
+        closures.pop_back();
+        closure_size.pop_back();
+    }
+
+    stack_size = stack_frame.back();
+    stack_frame.pop_back();
+}
+
+void SymbolTableBuilder::reset() noexcept{
+    ids.clear();
+    map.clear();
+    doc_map.clear();
+    scopes.clear();
+    symbols.clear();
+    symbol_id_index.clear();
+    lexical_depth = GLOBAL_DEPTH;
+    closure_depth = 0;
+    scopes.push_back(Scope(false, NONE));
+    active_scope_id = 0;
+    stack_size = 0;
+    stack_frame.clear();
 }
 
 void SymbolTableBuilder::resolveStmt(ParseNode pn){
     switch (parse_tree.getEnum(pn)) {
         case PN_EQUAL: resolveEquality(pn); break;
         case PN_ASSIGN: resolveAssignment(pn); break;
-        case PN_IDENTIFIER: resolveReference(pn); break;
         case PN_BLOCK: resolveBlock(pn); break;
         case PN_ALGORITHM: resolveAlgorithm(pn); break;
         case PN_PROTOTYPE_ALG: resolvePrototype(pn); break;
@@ -68,7 +166,6 @@ void SymbolTableBuilder::resolveExpr(ParseNode pn){
     switch (parse_tree.getEnum(pn)) {
         case PN_IDENTIFIER: resolveReference(pn); break;
         case PN_LAMBDA: resolveLambda(pn); break;
-        case PN_CALL: resolveCall(pn); break;
         case PN_SUBSCRIPT_ACCESS: resolveSubscript(pn); break;
 
         case PN_SUMMATION:
@@ -81,10 +178,12 @@ void SymbolTableBuilder::resolveExpr(ParseNode pn){
 }
 
 void SymbolTableBuilder::resolveEquality(ParseNode pn){
-    if(parse_tree.numArgs(pn) > 2) return;
-
-    resolveExpr(parse_tree.rhs(pn));
-    defineLocalScope(parse_tree.lhs(pn));
+    if(parse_tree.numArgs(pn) > 2){
+        errors.push_back(Error(parse_tree.getSelection(pn), ErrorCode::TYPE_ERROR));
+    }else{
+        resolveExpr(parse_tree.rhs(pn));
+        defineLocalScope(parse_tree.lhs(pn));
+    }
 }
 
 void SymbolTableBuilder::resolveAssignment(ParseNode pn){
@@ -125,13 +224,13 @@ void SymbolTableBuilder::resolveAssignmentId(ParseNode pn){
 
     auto lookup = map.find(c);
     if(lookup == map.end()){
-        makeEntry(c, false);
+        makeEntry(c, id, false);
     }else{
-        size_t index = lookup->second;
-        Symbol& sym_info = ids[index].back();
-        sym_info.is_reassigned = true;
+        size_t sym_index = lastSymbolIndexOfId(lookup->second);
+        Symbol& sym = symbols[sym_index];
+        sym.is_reassigned = true;
         parse_tree.setEnum(pn, PN_REASSIGN);
-        resolveReference(id, c, index);
+        resolveReference(id, c, sym_index);
     }
 }
 
@@ -144,14 +243,12 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
         return;
     }
 
-    auto lookup = map.find(c);
-    if(lookup == map.end()){
-        errors.push_back(Error(c, BAD_READ));
+    size_t symbol_index = symbolIndexFromSelection(c);
+    if(symbol_index != NONE){
+        symbols[symbol_index].is_reassigned = true;
+        resolveReference(id, c, symbol_index);
     }else{
-        size_t index = lookup->second;
-        Symbol& sym_info = ids[index].back();
-        sym_info.is_reassigned = true;
-        resolveReference(id, c, index);
+        errors.push_back(Error(c, BAD_READ));
     }
 
     bool only_trivial_slice = true;
@@ -178,6 +275,7 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
 
         parse_tree.setEnum(pn, PN_ELEMENTWISE_ASSIGNMENT);
         increaseLexicalDepth();
+        size_t vars_start = symbols.size();
         for(ParseNode pn : undefined_vars){
             bool success = defineLocalScope(pn, false);
             assert(success);
@@ -185,12 +283,12 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
         resolveExpr(rhs);
 
         for(size_t i = 0; i < undefined_vars.size(); i++){
-            IdIndex index = stack[stack.size()-1-i];
+            Symbol& sym = symbols[vars_start + i];
             ParseNode var = undefined_vars[undefined_vars.size()-1];
-            ids[index].back().is_ewise_index = true;
-            if(!ids[index].back().is_used){
+            sym.is_ewise_index = true;
+            if(!sym.is_used){
                 errors.push_back(Error(parse_tree.getSelection(var), UNUSED_ELEM_AGN_INDEX));
-                ids[index].back().is_used = true;
+                sym.is_used = true;
             }
         }
 
@@ -221,7 +319,6 @@ bool SymbolTableBuilder::resolvePotentialIdSub(ParseNode pn){
     if(lookup_id != map.end() && lookup_sub != map.end()) return false;
 
     parse_tree.setEnum(pn, PN_IDENTIFIER);
-    parse_tree.setStackOffset(pn, 0);
 
     return true;
 }
@@ -233,55 +330,27 @@ void SymbolTableBuilder::resolveReference(ParseNode pn){
     if(lookup == map.end()){
         auto lookup = predef.find(c.isTextSelection() ? c.strView() : c.str());
         if(lookup != predef.end()){
-            parse_tree.setEnum(pn, lookup->second);
+            ParseNodeType read_type = lookup->second;
+            parse_tree.setEnum(pn, read_type);
             c.format(SEM_PREDEF);
             return;
         }
         errors.push_back(Error(c, BAD_READ));
     }else{
-        size_t index = lookup->second;
-        Symbol& sym_info = ids[index].back();
-        sym_info.is_used = true;
-        resolveReference(pn, c, index);
+        size_t id_index = lookup->second;
+        resolveReference(pn, c, ids[id_index].back());
     }
 }
 
-void SymbolTableBuilder::resolveReference(ParseNode pn, const Typeset::Selection& c, IdIndex id_index){
+void SymbolTableBuilder::resolveReference(ParseNode pn, const Typeset::Selection& c, size_t sym_id){
     assert(parse_tree.getEnum(pn) == PN_IDENTIFIER);
+    Symbol& sym = symbols[sym_id];
+    sym.is_used = true;
 
-    Symbol& sym = ids[id_index].back();
-    sym.occurences->push_back(c);
+    sym.document_occurences->push_back(c);
+    sym.is_closure_nested |= sym.declaration_closure_depth && (closure_depth != sym.declaration_closure_depth);
 
-    if(sym.closure_depth == GLOBAL_DEPTH){
-        parse_tree.setStackOffset(pn, sym.stack_index);
-        parse_tree.setEnum(pn, PN_READ_GLOBAL);
-    }else if(sym.closure_depth == closureDepth()){
-        if(sym.is_enclosed){
-            auto& closure = closures.back();
-            assert(closure.upvalue_indices.find(id_index) != closure.upvalue_indices.end());
-            size_t upvalue_index = closure.upvalue_indices[id_index];
-            parse_tree.setUpvalue(pn, upvalue_index);
-            parse_tree.setEnum(pn, PN_READ_UPVALUE);
-        }else{
-            parse_tree.setStackOffset(pn, stack.size()-1-sym.stack_index);
-        }
-    }else if(!sym.is_enclosed){
-        Closure& closure = closures[sym.closureIndex()];
-        closure.upvalue_indices[id_index] = closure.num_upvalues++;
-        for(size_t i = sym.closureIndex()+1; i <= closureIndex(); i++){
-            Closure& closure = closures[i];
-            closure.upvalue_indices[id_index] = closure.num_upvalues++;
-            closure.upvalues.push_back({id_index, i == sym.closureIndex()+1});
-        }
-
-        size_t upvalue_index = closures.back().num_upvalues - 1;
-        parse_tree.setUpvalue(pn, upvalue_index);
-        parse_tree.setEnum(pn, PN_READ_UPVALUE);
-        sym.is_enclosed = true;
-    }else{
-        parse_tree.setUpvalue(pn, getUpvalueIndex(id_index, closureIndex()));
-        parse_tree.setEnum(pn, PN_READ_UPVALUE);
-    }
+    activeScope().subscopes.back().usages.push_back(Scope::Usage(sym_id, pn, Scope::READ));
 }
 
 void SymbolTableBuilder::resolveConditional1(ParseNode pn){
@@ -352,24 +421,23 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
     const Typeset::Selection sel = parse_tree.getSelection(name);
     auto lookup = map.find(sel);
     if(lookup == map.end()){
-        makeEntry(sel, true);
-        parse_tree.setStackOffset(name, std::numeric_limits<size_t>::max());
+        makeEntry(sel, name, true);
+        parse_tree.setStackOffset(name, NONE); //This is a kludge to tell the interpreter it's not a prototype
     }else{
         size_t index = lookup->second;
-        Id& id_info = ids[index];
-        Symbol& sym_info = id_info.back();
-        if(sym_info.lexical_depth == lexical_depth){
-            if(sym_info.is_prototype){
-                parse_tree.setStackOffset(name, stack.size()-1-sym_info.stack_index);
-                sym_info.occurences->push_back(sel);
+        Id& id = ids[index];
+        Symbol& sym = lastSymbolOfId(id);
+        if(sym.declaration_lexical_depth == lexical_depth){
+            if(sym.is_prototype){
+                resolveReference(name, sel, id.back());
             }else{
                 errors.push_back(Error(sel, TYPE_ERROR));
             }
-        }else if(sym_info.lexical_depth == lexical_depth){
-            appendEntry(index, sel, true);
+        }else if(sym.declaration_lexical_depth == lexical_depth){
+            appendEntry(index, sel, name, true);
         }
 
-        sym_info.is_prototype = false;
+        sym.is_prototype = false;
     }
 
     if(captured != ParseTree::EMPTY){
@@ -384,41 +452,15 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
     if(captured != ParseTree::EMPTY){
         size_t N = parse_tree.numArgs(captured);
 
-        Closure& closure = closures.back();
-        std::vector<IdIndex>& id_capped = closure.captured;
-
         for(size_t i = 0; i < N; i++){
             ParseNode capture = parse_tree.arg(captured, i);
-            Typeset::Selection c = parse_tree.getSelection(capture);
-
-            Symbol* sym;
-            auto lookup = map.find(c);
-            if(lookup == map.end()){
-                size_t index = ids.size();
-                ids.push_back(Id({Symbol(c, lexical_depth, closureDepth(), stack.size(), false)}));
-                map[c] = index;
-                sym = &ids.back().back();
-                id_capped.push_back(index);
-            }else{
-                size_t index = lookup->second;
-                Symbol& sym_info = ids[index].back();
-                if(sym_info.lexical_depth == lexical_depth){
-                    //Capture listed twice
-                    errors.push_back(Error(c, MUTABLE_CONST_ASSIGN));
-                    break;
-                }else{
-                    Id& id_info = ids[index];
-                    id_info.push_back(Symbol(c, lexical_depth, closureDepth(), stack.size(), false));
-                    sym = &id_info.back();
-                    id_capped.push_back(index);
-                }
-            }
-            sym->is_enclosed = true;
-            sym->is_captured = true;
-            closure.upvalue_indices[id_capped.back()] = closure.num_upvalues++;
+            defineLocalScope(capture, false);
+            symbols.back().is_captured = true;
+            symbols.back().is_closure_nested = true;
         }
     }
 
+    size_t params_start = symbols.size();
     for(size_t i = 0; i < parse_tree.numArgs(params); i++){
         ParseNode param = parse_tree.arg(params, i);
         if(parse_tree.getEnum(param) == PN_EQUAL){
@@ -439,9 +481,8 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
             errors.push_back(Error(parse_tree.getSelection(n), EXPECT_DEFAULT_ARG));
         }
 
-        size_t index = stack[stack.size()-1-i];
-        Symbol& sym_info = ids[index].back();
-        sym_info.is_const = !sym_info.is_reassigned;
+        Symbol& sym = symbols[params_start + i];
+        sym.is_const = !sym.is_reassigned;
     }
 
     decreaseClosureDepth();
@@ -449,20 +490,7 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
 
 void SymbolTableBuilder::resolvePrototype(ParseNode pn){
     if(defineLocalScope(parse_tree.child(pn)))
-        ids[stack.back()].back().is_prototype = true;
-}
-
-void SymbolTableBuilder::resolveCall(ParseNode pn){
-    resolveExpr( parse_tree.arg(pn, 0) );
-
-    size_t nargs = parse_tree.numArgs(pn)-1;
-    for(size_t i = 0; i < nargs; i++){
-        resolveExpr(parse_tree.arg(pn, i+1));
-        static constexpr size_t DUMMY_ARG = 0;
-        stack.push_back(DUMMY_ARG);
-    }
-
-    stack.resize(stack.size() - nargs);
+        lastDefinedSymbol().is_prototype = true;
 }
 
 void SymbolTableBuilder::resolveSubscript(ParseNode pn){
@@ -479,10 +507,8 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn){
     const Typeset::Selection& id_sel = parse_tree.getSelection(id);
     const Typeset::Selection& rhs_sel = parse_tree.getSelection(rhs);
 
-
     if(map.find(id_sel) == map.end() || map.find(rhs_sel) == map.end()){
         parse_tree.setEnum(pn, PN_IDENTIFIER);
-        parse_tree.setStackOffset(pn, 0);
         resolveReference(pn);
     }else{
         resolveDefault(pn);
@@ -498,7 +524,7 @@ void SymbolTableBuilder::resolveBig(ParseNode pn){
     ParseNode body = parse_tree.arg(pn, 2);
 
     defineLocalScope(id, false);
-    ids[stack.back()].back().is_used = true;
+    lastDefinedSymbol().is_used = true;
     resolveExpr( parse_tree.rhs(assign) );
     resolveExpr( stop );
     resolveExpr( body );
@@ -521,16 +547,16 @@ bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable){
 
     auto lookup = map.find(c);
     if(lookup == map.end()){
-        makeEntry(c, immutable);
+        makeEntry(c, pn, immutable);
     }else{
         size_t index = lookup->second;
-        Symbol& sym_info = ids[index].back();
-        if(sym_info.lexical_depth == lexical_depth){
-            bool CONST = sym_info.is_const;
+        Symbol& sym = lastSymbolOfId(index);
+        if(sym.declaration_lexical_depth == lexical_depth){
+            bool CONST = sym.is_const;
             errors.push_back(Error(c, CONST ? REASSIGN_CONSTANT : MUTABLE_CONST_ASSIGN));
             return false;
         }else{
-            appendEntry(index, c, immutable);
+            appendEntry(index, c, pn, immutable);
         }
     }
 
@@ -539,138 +565,61 @@ bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable){
 
 void SymbolTableBuilder::increaseLexicalDepth(){
     lexical_depth++;
+    addScope();
 }
 
 void SymbolTableBuilder::decreaseLexicalDepth(){
-    size_t i = stack.size();
-    while(i-->0){
-        size_t index = stack[i];
-        Id& id_info = ids[index];
-        Symbol& sym_info = id_info.back();
-        if(sym_info.lexical_depth < lexical_depth) break;
+    for(const Scope::Subscope& subscope : activeScope().subscopes){
+        for(const Scope::Usage& usage : subscope.usages){
+            if(usage.type != Scope::DECLARE) continue;
+            size_t sym_id = usage.var_id;
 
-        finalize(sym_info);
+            Id& id = ids[symbol_id_index[sym_id]];
+            Symbol& sym = symbols[sym_id];
+            assert(sym.declaration_lexical_depth == lexical_depth);
 
-        if(id_info.size() == 1){
-            map.erase(sym_info.occurences->front());
-            Id().swap(id_info); //Frees memory allocated to id_info
-            //The entry in id_infos is left stranded, but that's
-            //preferable to re-indexing.
-        }else{
-            id_info.pop_back();
+            finalize(sym);
+
+            if(id.size() == 1){
+                map.erase(sym.document_occurences->front()); //Much better to erase empty entries than check for them
+                Id().swap(id); //Frees memory allocated to id_info
+                //The entry in id_infos is left stranded, but that's
+                //preferable to re-indexing.
+            }else{
+                id.pop_back();
+            }
         }
     }
 
-    stack.resize(i+1);
-
+    closeScope();
     lexical_depth--;
 }
 
 void SymbolTableBuilder::increaseClosureDepth(ParseNode pn){
-    closures.push_back(Closure(pn));
-    stack_sizes.push_back(stack.size());
-    increaseLexicalDepth();
+    closure_depth++;
+    lexical_depth++;
+    addScope(pn);
 }
 
 void SymbolTableBuilder::decreaseClosureDepth(){
-    stack_sizes.pop_back();
-
-    for(size_t index : closures.back().captured){
-        Id& id = ids[index];
-        Symbol& sym = id.back();
-        finalize(sym);
-
-        if(id.size() == 1){
-            map.erase(id.front().occurences->front());
-            Id().swap(id); //Frees memory allocated to id_info
-            //The entry in id_infos is left stranded, but that's
-            //preferable to re-indexing.
-        }else{
-            id.pop_back();
-        }
-    }
-
+    closure_depth--;
     decreaseLexicalDepth();
-
-    ParseNode fn = closures.back().fn;
-
-    ParseTree::NaryBuilder upvalue_builder = parse_tree.naryBuilder(PN_LIST);
-    for(const auto& entry : closures.back().upvalues){
-        IdIndex id_index = entry.first;
-        const Symbol& sym = ids[id_index].back();
-        ParseNode n = parse_tree.addTerminal(PN_IDENTIFIER, sym.occurences->front());
-
-        size_t prev_closure_index = closureIndex()-1;
-        if(entry.second){
-            parse_tree.setStackOffset(n, stack.size()-1-sym.stack_index);
-        }else{
-            auto& map = closures[prev_closure_index].upvalue_indices;
-            assert(map.find(id_index) != map.end());
-            parse_tree.setUpvalue(n, map[id_index]);
-            parse_tree.setEnum(n, PN_READ_UPVALUE);
-        }
-
-        upvalue_builder.addNaryChild(n);
-    }
-
-    ParseNode upvalue_list = upvalue_builder.finalize(parse_tree.getSelection(fn));
-
-    switch (parse_tree.getEnum(fn)) {
-        case PN_ALGORITHM:
-            parse_tree.setArg(fn, 2, upvalue_list);
-            break;
-        case PN_LAMBDA:
-            parse_tree.setArg(fn, 0, upvalue_list);
-            break;
-    }
-
-    closures.pop_back();
 }
 
-size_t SymbolTableBuilder::getUpvalueIndex(IdIndex id_index, size_t closure_index){
-    Closure& closure = closures[closure_index];
-    Symbol& sym = ids[id_index].back();
-    std::unordered_map<IdIndex, size_t>& upvalue_indices = closure.upvalue_indices;
-    auto lookup = upvalue_indices.find(id_index);
-    if(lookup != upvalue_indices.end()){
-        return lookup->second;
-    }else if(sym.closureIndex() == closureIndex()){
-        assert(sym.is_captured);
-        assert(upvalue_indices.find(id_index) != upvalue_indices.end());
-        return upvalue_indices[id_index];
-    }else{
-        upvalue_indices[id_index] = closure.num_upvalues;
-        closure.upvalues.push_back({id_index, false});
-
-        for(size_t i = closure_index-1; i > sym.closureIndex(); i--){
-            Closure& closure = closures[closure_index];
-            std::unordered_map<IdIndex, size_t>& upvalue_indices = closure.upvalue_indices;
-            if(upvalue_indices.find(id_index) == upvalue_indices.end()){
-                upvalue_indices[id_index] = closure.num_upvalues++;
-                closures[i+1].upvalues.push_back({id_index, false});
-            }else{
-                break;
-            }
-        }
-
-        return closure.num_upvalues++;
-    }
-}
-
-void SymbolTableBuilder::finalize(const Symbol& sym_info){
-    assert(sym_info.lexical_depth == lexical_depth);
+void SymbolTableBuilder::finalize(const Symbol& sym){
+    assert(sym.declaration_lexical_depth == lexical_depth);
 
     SemanticType fmt = SEM_ID;
-    if(sym_info.is_ewise_index){
+    if(sym.is_ewise_index){
         fmt = SEM_ID_EWISE_INDEX;
-    }else if(sym_info.is_enclosed){
+    }else if(sym.is_closure_nested | sym.is_captured){
         fmt = SEM_LINK;
-    }else if(!sym_info.is_const){
+    }else if(!sym.is_const){
         fmt = SEM_ID_FUN_IMPURE;
     }
 
-    for(const Typeset::Selection& c : *sym_info.occurences){
-        doc_map[c.left] = sym_info.occurences;
+    for(const Typeset::Selection& c : *sym.document_occurences){
+        doc_map[c.left] = sym.document_occurences;
         c.format(fmt);
     }
 
@@ -679,18 +628,22 @@ void SymbolTableBuilder::finalize(const Symbol& sym_info){
     //    errors.push_back(Error(sym_info.occurences->back(), UNUSED_VAR));
 }
 
-void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, bool immutable){
+void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable){
     assert(map.find(c) == map.end());
     size_t index = ids.size();
-    ids.push_back(Id({Symbol(c, lexical_depth, closureDepth(), stack.size(), immutable)}));
-    stack.push_back(index);
+    symbol_id_index.push_back(ids.size());
+    ids.push_back(Id({symbols.size()}));
+    activeScope().subscopes.back().usages.push_back(Scope::Usage(symbols.size(), pn, Scope::DECLARE));
+    symbols.push_back(Symbol(c, lexical_depth, closure_depth, immutable));
     map[c] = index;
 }
 
-void SymbolTableBuilder::appendEntry(size_t index, const Typeset::Selection& c, bool immutable){
+void SymbolTableBuilder::appendEntry(size_t index, const Typeset::Selection& c, ParseNode pn, bool immutable){
+    symbol_id_index.push_back(index);
     Id& id_info = ids[index];
-    id_info.push_back(Symbol(c, lexical_depth, closureDepth(), stack.size(), immutable));
-    stack.push_back(index);
+    id_info.push_back(symbols.size());
+    activeScope().subscopes.back().usages.push_back(Scope::Usage(symbols.size(), pn, Scope::DECLARE));
+    symbols.push_back(Symbol(c, lexical_depth, closure_depth, immutable));
 }
 
 }

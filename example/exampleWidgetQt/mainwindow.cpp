@@ -7,7 +7,7 @@
 #include <hope_serial.h>
 #include <hope_serial_unicode.h>
 #include <hope_parser.h>
-#include <hope_symbol_table.h>
+#include <hope_symbol_build_pass.h>
 #include <QBuffer>
 #include <QClipboard>
 #include <QFileDialog>

@@ -5,6 +5,7 @@ build*
 *moc_*.h
 *resource.cpp
 *.qmake.stash
+*.user
 
 #C++
 *.lib

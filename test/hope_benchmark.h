@@ -2,7 +2,7 @@
 #include "typeset.h"
 #include "hope_scanner.h"
 #include "hope_parser.h"
-#include "hope_symbol_table.h"
+#include "hope_symbol_build_pass.h"
 #include "hope_interpreter.h"
 
 using namespace Hope;
