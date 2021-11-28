@@ -1,6 +1,4 @@
-import csv
-import os
-from collections import namedtuple
+from utils import table_reader
 
 
 def unicode_to_num(uni):
@@ -13,16 +11,10 @@ def unicode_to_num(uni):
 
 def main():
     for script in ["subscripts", "superscripts"]:
-        scripts = []
-        with open(f'unicode_{script}.csv', encoding="utf-8") as csvfile:
-            reader = csv.reader(csvfile)
-            headers = next(reader, None)  # skip the headers
-            fields = headers[0]
-            for i in range(1, len(headers)):
-                fields += ' ' + headers[i]
-            Script = namedtuple('Script', fields)
-            for row in reader:
-                scripts.append(Script(*row))
+        scripts = table_reader.csv_to_list_of_tuples(
+            csv_filepath=f"unicode_{script}.csv",
+            tuple_name="Script",
+        )
 
         with open(f"../src/generated/unicode_{script}.h", "w", encoding="utf-8") as codegen_file:
             script = script.upper()

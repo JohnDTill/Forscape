@@ -17,6 +17,13 @@ build*
 *.pdb
 *.o
 
+#Python
+*.pyc
+*/.idea/*
+
+#LibreOffice
+*.csv#
+
 #LaTeX
 *.aux
 *.bbl
