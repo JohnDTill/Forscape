@@ -21,10 +21,12 @@ set(META ${BASE}/meta)
 set(INCLUDE ${BASE}/include)
 set(SRC ${BASE}/src)
 set(CONSTRUCT ${SRC}/typeset_constructs)
+set(GEN ${SRC}/generated)
 set(COMMAND ${SRC}/typeset_commands)
 include_directories(${INCLUDE})
 include_directories(${SRC})
 include_directories(${CONSTRUCT})
+include_directories(${GEN})
 include_directories(${COMMAND})
 
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
@@ -44,16 +46,16 @@ set(PROJECT_SOURCES
         searchdialog.h
         searchdialog.cpp
         searchdialog.ui
-        ${INCLUDE}/hope_construct_codes.h
+        ${GEN}/hope_construct_codes.h
         ${SRC}/hope_error.cpp
         ${INCLUDE}/hope_error.h
-        ${SRC}/hope_error_types.h
+        ${GEN}/hope_error_types.h
         ${SRC}/hope_interpreter.cpp
         ${SRC}/hope_interpreter.h
-        ${SRC}/hope_interpreter_gen.cpp
+        ${GEN}/hope_interpreter_gen.cpp
         ${SRC}/hope_parse_tree.cpp
         ${SRC}/hope_parse_tree.h
-        ${SRC}/hope_parsenodetype.h
+        ${GEN}/hope_parsenodetype.h
         ${SRC}/hope_parser.cpp
         ${SRC}/hope_parser.h
         ${SRC}/hope_scanner.cpp
@@ -64,17 +66,17 @@ set(PROJECT_SOURCES
         ${SRC}/hope_stack.h
         ${SRC}/hope_symbol_build_pass.cpp
         ${SRC}/hope_symbol_build_pass.h
-        ${SRC}/hope_tokentype.h
+        ${GEN}/hope_tokentype.h
         ${SRC}/hope_unicode.h
         ${SRC}/hope_value.h
-        ${SRC}/typeset_closesymbol.h
+        ${GEN}/typeset_closesymbol.h
         ${INCLUDE}/typeset_command.h
         ${SRC}/typeset_construct.cpp
         ${SRC}/typeset_construct.h
         ${SRC}/typeset_controller.cpp
         ${INCLUDE}/typeset_controller.h
-        ${SRC}/typeset_keywords.cpp
-        ${SRC}/typeset_keywords.h
+        ${GEN}/typeset_keywords.cpp
+        ${GEN}/typeset_keywords.h
         ${SRC}/typeset_line.cpp
         ${SRC}/typeset_line.h
         ${SRC}/typeset_marker.cpp
@@ -87,16 +89,16 @@ set(PROJECT_SOURCES
         ${SRC}/typeset_phrase.h
         ${SRC}/typeset_selection.cpp
         ${SRC}/typeset_selection.h
-        ${INCLUDE}/typeset_semantic_tags.h
-        ${SRC}/typeset_shorthand.h
+        ${GEN}/typeset_semantic_tags.h
+        ${GEN}/typeset_shorthand.h
         ${SRC}/typeset_subphrase.cpp
         ${SRC}/typeset_subphrase.h
         ${SRC}/typeset_text.cpp
         ${SRC}/typeset_text.h
         ${SRC}/typeset_view.cpp
         ${INCLUDE}/typeset_view.h
-        ${SRC}/unicode_subscripts.h
-        ${SRC}/unicode_superscripts.h
+        ${GEN}/unicode_subscripts.h
+        ${GEN}/unicode_superscripts.h
         ${COMMAND}/typeset_command_indent.cpp
         ${COMMAND}/typeset_command_indent.h
         ${COMMAND}/typeset_command_line.cpp

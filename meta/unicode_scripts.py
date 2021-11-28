@@ -24,7 +24,7 @@ def main():
             for row in reader:
                 scripts.append(Script(*row))
 
-        with open(f"../src/unicode_{script}.h", "w", encoding="utf-8") as codegen_file:
+        with open(f"../src/generated/unicode_{script}.h", "w", encoding="utf-8") as codegen_file:
             script = script.upper()
             codegen_file.write("//CODEGEN FILE\n\n"
                                f"#ifndef HOPE_UNICODE_{script}_H\n"

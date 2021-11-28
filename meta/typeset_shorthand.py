@@ -23,9 +23,8 @@ def main():
         for row in reader:
             entries.append(Entry(*row))
 
-        with open("../src/typeset_shorthand.h", "w", encoding="utf-8") as codegen_file:
-            codegen_file.write("//CODEGEN FILE\n\n"
-                               "#ifndef TYPESET_SHORTHAND_H\n"
+        with open("../src/generated/typeset_shorthand.h", "w", encoding="utf-8") as codegen_file:
+            codegen_file.write("#ifndef TYPESET_SHORTHAND_H\n"
                                "#define TYPESET_SHORTHAND_H\n\n")
 
             codegen_file.write("#include <cassert>\n"

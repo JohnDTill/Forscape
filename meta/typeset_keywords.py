@@ -23,7 +23,7 @@ def main():
         for row in reader:
             keywords.append(Shortcut(row[0], row[1]))
 
-        with open("../src/typeset_keywords.h", "w", encoding="utf-8") as codegen_file:
+        with open("../src/generated/typeset_keywords.h", "w", encoding="utf-8") as codegen_file:
             codegen_file.write("//CODEGEN FILE\n\n"
                                "#ifndef TYPESET_KEYWORDS_H\n"
                                "#define TYPESET_KEYWORDS_H\n\n")
@@ -68,7 +68,7 @@ def main():
 
             codegen_file.write("}\n\n}\n\n#endif // TYPESET_KEYWORDS_H\n")
 
-        with open("../src/typeset_keywords.cpp", "w", encoding="utf-8") as codegen_file:
+        with open("../src/generated/typeset_keywords.cpp", "w", encoding="utf-8") as codegen_file:
             codegen_file.write("#include \"typeset_keywords.h\"\n\n")
 
             codegen_file.write("namespace Hope {\n\n")

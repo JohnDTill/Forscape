@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <unordered_map>
 
@@ -92,10 +93,12 @@ inline void report(const std::string& test_name, size_t N){
 }
 
 inline void recordResults(){
+    std::filesystem::create_directory("../test/out");
+
     #ifdef NDEBUG
-    std::ofstream out("../test/benchmark_release.csv");
+    std::ofstream out("../test/out/benchmark_release.csv");
     #else
-    std::ofstream out("../test/benchmark_debug.csv");
+    std::ofstream out("../test/out/benchmark_debug.csv");
     #endif
 
     out << "test,avg runtime (ns)\n";

@@ -12,7 +12,7 @@ def main():
         for row in reader:
             entries.append(Entry("SEM_"+row[0].upper(), row[1], row[2], row[3], row[4], row[5]))
 
-        with open("../include/typeset_semantic_tags.h", "w") as codegen_file:
+        with open("../src/generated/typeset_semantic_tags.h", "w") as codegen_file:
             codegen_file.write("//CODEGEN FILE\n\n"
                                "#ifndef TYPESET_SEMANTIC_TAGS_H\n"
                                "#define TYPESET_SEMANTIC_TAGS_H\n\n")

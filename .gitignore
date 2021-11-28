@@ -1,3 +1,7 @@
+#Generated files
+src/generated/*
+*/out/*
+
 #Qt
 *.pro.user*
 build*

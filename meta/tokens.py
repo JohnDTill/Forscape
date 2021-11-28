@@ -41,7 +41,7 @@ def main():
         for row in reader:
             tokens.append(Token(*row))
 
-        with open("../src/hope_tokentype.h", "w") as codegen_file:
+        with open("../src/generated/hope_tokentype.h", "w") as codegen_file:
             codegen_file.write("//CODEGEN FILE\n\n"
                                "#ifndef HOPE_TOKENTYPE_H\n"
                                "#define HOPE_TOKENTYPE_H\n\n")
@@ -106,7 +106,7 @@ def main():
 
             codegen_file.write("}\n\n}\n\n#endif // TOKENTYPE_H\n")
 
-        with open("../src/typeset_closesymbol.h", "w", encoding='utf-8') as codegen_file:
+        with open("../src/generated/typeset_closesymbol.h", "w", encoding='utf-8') as codegen_file:
             codegen_file.write("//CODEGEN FILE\n\n"
                                "#ifndef TYPESET_CLOSESYMBOL_H\n"
                                "#define TYPESET_CLOSESYMBOL_H\n\n")

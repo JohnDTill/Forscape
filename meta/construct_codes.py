@@ -17,7 +17,7 @@ def main():
         for row in reader:
             constructs.append(Construct(*row))
 
-        with open("../include/hope_construct_codes.h", "w") as codegen_file:
+        with open("../src/generated/hope_construct_codes.h", "w") as codegen_file:
             codegen_file.write("//CODEGEN FILE\n\n"
                                "#ifndef HOPE_CONSTRUCT_CODES_H\n"
                                "#define HOPE_CONSTRUCT_CODES_H\n\n")
@@ -68,9 +68,8 @@ def main():
 
             codegen_file.write("}\n\n#endif // HOPE_CONSTRUCT_CODES_H\n")
 
-        with open("../src/typeset_constructs/typeset_all_constructs.h", "w") as codegen_file:
-            codegen_file.write("//CODEGEN FILE\n\n"
-                               "#ifndef TYPESET_ALL_CONSTRUCTS_H\n"
+        with open("../src/generated/typeset_all_constructs.h", "w") as codegen_file:
+            codegen_file.write("#ifndef TYPESET_ALL_CONSTRUCTS_H\n"
                                "#define TYPESET_ALL_CONSTRUCTS_H\n\n")
 
             for name in [entry.name.lower() for entry in constructs]:

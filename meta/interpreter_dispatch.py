@@ -43,8 +43,7 @@ def main():
         all_types.remove("ANY")
         all_types.remove("NOT_a")
 
-        with open("../src/hope_interpreter_gen.cpp", "w", encoding="utf-8") as codegen_file:
-            codegen_file.write("//CODEGEN FILE\n\n")
+        with open("../src/generated/hope_interpreter_gen.cpp", "w", encoding="utf-8") as codegen_file:
             codegen_file.write("#include \"hope_interpreter.h\"\n\n")
             codegen_file.write("#include \"hope_error.h\" //DO THIS: REMOVE\n\n")
             codegen_file.write("#include <math.h>\n\n")

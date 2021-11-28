@@ -22,9 +22,8 @@ def main():
                 first_quote = i
                 break
 
-        with open("../src/hope_error_types.h", "w", encoding="utf-8") as codegen_file:
-            codegen_file.write("//CODEGEN FILE\n\n"
-                               "#ifndef HOPE_ERROR_TYPES_H\n"
+        with open("../src/generated/hope_error_types.h", "w", encoding="utf-8") as codegen_file:
+            codegen_file.write("#ifndef HOPE_ERROR_TYPES_H\n"
                                "#define HOPE_ERROR_TYPES_H\n\n")
             codegen_file.write("#include <cassert>\n#include <string>\n\n")
             codegen_file.write("namespace Hope {\n\n")

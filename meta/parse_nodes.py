@@ -16,7 +16,7 @@ def main():
             row[0] = "PN_" + row[0]
             nodes.append(Node(*row))
 
-        with open("../src/hope_parsenodetype.h", "w") as codegen_file:
+        with open("../src/generated/hope_parsenodetype.h", "w") as codegen_file:
             codegen_file.write("//CODEGEN FILE\n\n"
                                "#ifndef HOPE_PARSENODETYPE_H\n"
                                "#define HOPE_PARSENODETYPE_H\n\n")
