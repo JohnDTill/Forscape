@@ -1,19 +1,4 @@
-from utils import table_reader
-
-
-def is_ascii(s):
-    for ch in s:
-        if ord(ch) >= 128:
-            return False
-    return True
-
-
-def unicode_to_num(uni):
-    b = bytes(uni, 'utf-8')
-    num = 0
-    for i in range(0, len(b)):
-        num |= b[i] << 8*i
-    return num
+from utils import table_reader, unicode
 
 
 def main():
@@ -44,15 +29,15 @@ def main():
 
         codegen_file.write("#define HOPE_SCANNER_CASES \\\n")
         codegen_file.write("    case '\"': return scanString();\\\n")
-        for token in [token for token in tokens if token.simple == 'y' and is_ascii(token.label)]:
+        for token in [token for token in tokens if token.simple == 'y' and unicode.is_ascii(token.label)]:
             codegen_file.write(f"    case '{token.label}':")
             if token.group == "open":
                 codegen_file.write(" incrementScope();")
             elif token.group == "close":
                 codegen_file.write(" decrementScope();")
             codegen_file.write(f" return createToken({token.enum.upper()});\\\n")
-        for token in [token for token in tokens if token.simple == 'y' and not is_ascii(token.label)]:
-            codegen_file.write(f"    case {unicode_to_num(token.label)}:")
+        for token in [token for token in tokens if token.simple == 'y' and not unicode.is_ascii(token.label)]:
+            codegen_file.write(f"    case {unicode.to_num(token.label)}:")
             if token.group == "open":
                 codegen_file.write(" incrementScope();")
             elif token.group == "close":
@@ -67,10 +52,10 @@ def main():
         codegen_file.write(f"    case '_': return scanIdentifier();\\\n")
         for i in range(945, 970):  # α-ω
             ch = chr(i)
-            codegen_file.write(f"    case {unicode_to_num(ch)}: controller->formatBasicIdentifier(); return createToken(IDENTIFIER);\\\n")
+            codegen_file.write(f"    case {unicode.to_num(ch)}: controller->formatBasicIdentifier(); return createToken(IDENTIFIER);\\\n")
         for i in range(913, 938):  # Α-Ω
             ch = chr(i)
-            codegen_file.write(f"    case {unicode_to_num(ch)}: controller->formatBasicIdentifier(); return createToken(IDENTIFIER);\\\n")
+            codegen_file.write(f"    case {unicode.to_num(ch)}: controller->formatBasicIdentifier(); return createToken(IDENTIFIER);\\\n")
         for con in constructs:
             codegen_file.write(f"    case (1 << 7) | {con.name.upper()}: return scanConstruct(TOKEN_{con.name.upper()});\\\n")
         codegen_file.write("    case '/': return forwardSlash();\n")
@@ -115,7 +100,7 @@ def main():
 
             codegen_file.write("const std::unordered_set<char> CloseSymbol::close_symbols{\n")
             for token in tokens:
-                if token.simple == "y" and token.group == "close" and is_ascii(token.label):
+                if token.simple == "y" and token.group == "close" and unicode.is_ascii(token.label):
                     codegen_file.write(f"    '{token.label}',\n")
             codegen_file.write("};\n\n")
 

@@ -1,12 +1,4 @@
-from utils import table_reader
-
-
-def unicode_to_num(uni):
-    b = bytes(uni, 'utf-8')
-    num = 0
-    for i in range(0, len(b)):
-        num |= b[i] << 8*i
-    return num
+from utils import table_reader, unicode
 
 
 def main():
@@ -43,8 +35,8 @@ def main():
 
         codegen_file.write("const std::unordered_map<uint32_t, std::string> Shorthand::map{\n")
         for e in entries:
-            first = unicode_to_num(e.first)
-            second = unicode_to_num(e.second)
+            first = unicode.to_num(e.first)
+            second = unicode.to_num(e.second)
             assert first < 2**24
             assert second < 2**8
             key = (first << 8) | second

@@ -1,12 +1,4 @@
-from utils import table_reader
-
-
-def unicode_to_num(uni):
-    b = bytes(uni, 'utf-8')
-    num = 0
-    for i in range(0, len(b)):
-        num |= b[i] << 8*i
-    return num
+from utils import table_reader, unicode
 
 
 def main():
@@ -24,13 +16,13 @@ def main():
 
             codegen_file.write(f"#define HOPE_{script}_CASES")
             for s in scripts:
-                code = unicode_to_num(s.normal)
+                code = unicode.to_num(s.normal)
                 codegen_file.write(f"\\\n    case {code}:")
             codegen_file.write("\n\n")
 
             codegen_file.write(f"#define HOPE_{script}_CONVERSION")
             for s in scripts:
-                code = unicode_to_num(s.normal)
+                code = unicode.to_num(s.normal)
                 codegen_file.write(f"\\\n    case {code}: out += \"{s.scripted}\"; break;")
             codegen_file.write("\n\n")
 
