@@ -1,6 +1,6 @@
 #include "hope_symbol_build_pass.h"
 
-#include "hope_parsenodetype.h"
+#include <code_parsenodetype.h>
 #include "typeset_model.h"
 #include <algorithm>
 #include <cassert>

@@ -2,7 +2,7 @@
 #define TYPESET_PAINTER_H
 
 #include <hope_error.h>
-#include "typeset_semantic_tags.h"
+#include <semantic_tags.h>
 #include <utility>
 #include <vector>
 #include <QFontDatabase>

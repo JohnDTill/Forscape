@@ -6,7 +6,7 @@
 
 #include "typeset_marker.h"
 #include "typeset_selection.h"
-#include "typeset_semantic_tags.h"
+#include <semantic_tags.h>
 
 namespace Hope {
 

@@ -2,7 +2,7 @@
 #define HOPE_ERROR_H
 
 #include <typeset_selection.h>
-#include <hope_error_types.h>
+#include <code_error_types.h>
 #include <vector>
 
 namespace Hope {

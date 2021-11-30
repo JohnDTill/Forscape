@@ -46,16 +46,17 @@ set(PROJECT_SOURCES
         searchdialog.h
         searchdialog.cpp
         searchdialog.ui
+        ${GEN}/code_error_types.h
+        ${GEN}/code_parsenodetype.h
+        ${GEN}/code_tokentype.h
         ${GEN}/hope_construct_codes.h
         ${SRC}/hope_error.cpp
         ${INCLUDE}/hope_error.h
-        ${GEN}/hope_error_types.h
         ${SRC}/hope_interpreter.cpp
         ${SRC}/hope_interpreter.h
         ${GEN}/hope_interpreter_gen.cpp
         ${SRC}/hope_parse_tree.cpp
         ${SRC}/hope_parse_tree.h
-        ${GEN}/hope_parsenodetype.h
         ${SRC}/hope_parser.cpp
         ${SRC}/hope_parser.h
         ${SRC}/hope_scanner.cpp
@@ -66,9 +67,9 @@ set(PROJECT_SOURCES
         ${SRC}/hope_stack.h
         ${SRC}/hope_symbol_build_pass.cpp
         ${SRC}/hope_symbol_build_pass.h
-        ${GEN}/hope_tokentype.h
         ${SRC}/hope_unicode.h
         ${SRC}/hope_value.h
+        ${GEN}/semantic_tags.h
         ${GEN}/typeset_closesymbol.h
         ${INCLUDE}/typeset_command.h
         ${SRC}/typeset_construct.cpp
@@ -89,7 +90,6 @@ set(PROJECT_SOURCES
         ${SRC}/typeset_phrase.h
         ${SRC}/typeset_selection.cpp
         ${SRC}/typeset_selection.h
-        ${GEN}/typeset_semantic_tags.h
         ${GEN}/typeset_shorthand.h
         ${SRC}/typeset_subphrase.cpp
         ${SRC}/typeset_subphrase.h
@@ -168,3 +168,13 @@ add_compile_options(
 )
 
 set_target_properties(exampleWidgetQt PROPERTIES OUTPUT_NAME ${EXE_NAME})
+
+add_custom_target(
+    codegen ALL
+    COMMAND python all.py
+    WORKING_DIRECTORY ${META}
+    BYPRODUCTS ${GEN}/code_error_types.h
+    COMMENT "Performing codegen"
+)
+
+add_dependencies(exampleWidgetQt codegen)

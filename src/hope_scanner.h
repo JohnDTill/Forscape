@@ -2,7 +2,7 @@
 #define HOPE_SCANNER_H
 
 #include "hope_error.h"
-#include "hope_tokentype.h"
+#include <code_tokentype.h>
 #include <unordered_map>
 #include <vector>
 

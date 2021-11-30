@@ -1,7 +1,7 @@
 #ifndef HOPE_PARSE_TREE_H
 #define HOPE_PARSE_TREE_H
 
-#include "hope_parsenodetype.h"
+#include <code_parsenodetype.h>
 #include <cassert>
 #include <limits>
 #include <string>

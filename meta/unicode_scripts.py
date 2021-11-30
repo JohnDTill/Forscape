@@ -1,4 +1,4 @@
-from utils import table_reader, unicode
+from utils import cpp, table_reader, unicode
 
 
 def main():
@@ -8,29 +8,27 @@ def main():
             tuple_name="Script",
         )
 
-        with open(f"../src/generated/unicode_{script}.h", "w", encoding="utf-8") as codegen_file:
-            script = script.upper()
-            codegen_file.write("//CODEGEN FILE\n\n"
-                               f"#ifndef HOPE_UNICODE_{script}_H\n"
-                               f"#define HOPE_UNICODE_{script}_H\n\n")
+        header_writer = cpp.HeaderWriter(
+            name=f"unicode_{script}"
+        )
 
-            codegen_file.write(f"#define HOPE_{script}_CASES")
-            for s in scripts:
-                code = unicode.to_num(s.normal)
-                codegen_file.write(f"\\\n    case {code}:")
-            codegen_file.write("\n\n")
+        header_writer.write(f"#define HOPE_{script.upper()}_CASES")
+        for s in scripts:
+            code = unicode.to_num(s.normal)
+            header_writer.write(f"\\\n    case {code}:")
+        header_writer.write("\n\n")
 
-            codegen_file.write(f"#define HOPE_{script}_CONVERSION")
-            for s in scripts:
-                code = unicode.to_num(s.normal)
-                codegen_file.write(f"\\\n    case {code}: out += \"{s.scripted}\"; break;")
-            codegen_file.write("\n\n")
+        header_writer.write(f"#define HOPE_{script.upper()}_CONVERSION")
+        for s in scripts:
+            code = unicode.to_num(s.normal)
+            header_writer.write(f"\\\n    case {code}: out += \"{s.scripted}\"; break;")
+        header_writer.write("\n\n")
 
-            num_bytes = len(bytes(scripts[0].normal, 'utf-8'))
-            if all(len(bytes(s.normal, 'utf-8')) == num_bytes for s in scripts):
-                codegen_file.write(f"#define HOPE_{script}_NUM_BYTES {num_bytes}\n\n")
+        num_bytes = len(bytes(scripts[0].normal, 'utf-8'))
+        if all(len(bytes(s.normal, 'utf-8')) == num_bytes for s in scripts):
+            header_writer.write(f"#define HOPE_{script.upper()}_NUM_BYTES {num_bytes}\n\n")
 
-            codegen_file.write(f"#endif // HOPE_UNICODE_{script}_H\n")
+        header_writer.finalize()
 
 
 if __name__ == "__main__":

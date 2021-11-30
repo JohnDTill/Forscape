@@ -1,6 +1,6 @@
 #include "hope_parse_tree.h"
 
-#include "hope_parsenodetype.h"
+#include <code_parsenodetype.h>
 #include "typeset_selection.h"
 
 #ifndef NDEBUG

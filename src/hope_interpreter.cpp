@@ -1,6 +1,6 @@
 #include "hope_interpreter.h"
 
-#include <hope_parsenodetype.h>
+#include <code_parsenodetype.h>
 #include <typeset_line.h>
 #include <typeset_model.h>
 #include <typeset_text.h>

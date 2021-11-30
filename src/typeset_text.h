@@ -1,7 +1,7 @@
 #ifndef TYPESET_TEXT_H
 #define TYPESET_TEXT_H
 
-#include "typeset_semantic_tags.h"
+#include <semantic_tags.h>
 #include <string>
 #include <vector>
 

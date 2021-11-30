@@ -2,7 +2,7 @@
 #define TYPESET_SELECTION_H
 
 #include "typeset_marker.h"
-#include "typeset_semantic_tags.h"
+#include <semantic_tags.h>
 #include <string_view>
 #include <vector>
 

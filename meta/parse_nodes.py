@@ -1,4 +1,4 @@
-from utils import table_reader
+from utils import cpp, table_reader
 
 
 def main():
@@ -7,22 +7,18 @@ def main():
         tuple_name="Node",
     )
 
-    with open("../src/generated/hope_parsenodetype.h", "w") as codegen_file:
-        codegen_file.write("//CODEGEN FILE\n\n"
-                           "#ifndef HOPE_PARSENODETYPE_H\n"
-                           "#define HOPE_PARSENODETYPE_H\n\n")
-        codegen_file.write("#include <inttypes.h>\n\n")
-        codegen_file.write("namespace Hope {\n\n")
-        codegen_file.write("namespace Code {\n\n")
+    header_writer = cpp.HeaderWriter(
+        name="parsenodetype",
+        inner_namespace="Code",
+        includes=["inttypes.h"],
+    )
 
-        codegen_file.write("typedef size_t ParseNodeType;\n\n")
+    header_writer.write("typedef size_t ParseNodeType;\n\n")
+    for i in range(0, len(nodes)):
+        header_writer.write(f"constexpr size_t PN_{nodes[i].enum} = {i};\n")
+    header_writer.write("\n\n")
 
-        for i in range(0, len(nodes)):
-            codegen_file.write(f"constexpr size_t PN_{nodes[i].enum} = {i};\n")
-
-        codegen_file.write("\n\n")
-
-        codegen_file.write("\n}\n\n}\n\n#endif // HOPE_PARSENODETYPE_H\n")
+    header_writer.finalize()
 
 
 if __name__ == "__main__":

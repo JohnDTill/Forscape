@@ -1,6 +1,6 @@
 #include "hope_parser.h"
 
-#include "hope_parsenodetype.h"
+#include <code_parsenodetype.h>
 #include "typeset_model.h"
 
 namespace Hope {
