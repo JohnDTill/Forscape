@@ -15,7 +15,7 @@ def main():
     header_writer = cpp.HeaderWriter(
         name="keywords",
         inner_namespace="Typeset",
-        includes=("hope_construct_codes.h", "string_view", "unordered_map", "vector"),
+        includes=("construct_codes.h", "string_view", "unordered_map", "vector"),
     )
 
     header_writer.write("class Keywords{\n"

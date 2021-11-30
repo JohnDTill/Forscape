@@ -1,6 +1,6 @@
 #include <cassert>
 #include <fstream>
-#include <hope_construct_codes.h>
+#include <construct_codes.h>
 #include "typeset.h"
 #include <sstream>
 #include "report.h"

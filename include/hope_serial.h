@@ -1,7 +1,7 @@
 #ifndef HOPE_SERIAL_H
 #define HOPE_SERIAL_H
 
-#include "hope_construct_codes.h"
+#include "construct_codes.h"
 #include <cassert>
 #include <inttypes.h>
 #include <limits>

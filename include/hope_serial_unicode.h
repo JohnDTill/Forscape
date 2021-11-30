@@ -1,7 +1,7 @@
 #ifndef HOPE_SERIAL_UNICODE_H
 #define HOPE_SERIAL_UNICODE_H
 
-#include "hope_construct_codes.h"
+#include "construct_codes.h"
 #include "hope_unicode.h"
 #include "unicode_subscripts.h"
 #include "unicode_superscripts.h"

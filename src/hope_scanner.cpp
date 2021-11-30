@@ -1,6 +1,6 @@
 #include "hope_scanner.h"
 
-#include <hope_construct_codes.h>
+#include <construct_codes.h>
 #include <typeset_controller.h>
 #include <typeset_model.h>
 #include <typeset_line.h>

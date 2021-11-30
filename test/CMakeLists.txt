@@ -11,6 +11,7 @@ set(CMAKE_AUTORCC ON)
 
 set(TEST .)
 set(BASE ..)
+set(META ${BASE}/meta)
 set(INCLUDE ${BASE}/include)
 set(SRC ${BASE}/src)
 set(CONSTRUCT ${SRC}/typeset_constructs)
@@ -48,7 +49,7 @@ add_executable(HopeTests ${TEST}/test_driver.cpp
     ${GEN}/code_error_types.h
     ${GEN}/code_parsenodetype.h
     ${GEN}/code_tokentype.h
-    ${GEN}/hope_construct_codes.h
+    ${GEN}/construct_codes.h
     ${SRC}/hope_error.cpp
     ${INCLUDE}/hope_error.h
     ${SRC}/hope_interpreter.cpp
@@ -114,6 +115,8 @@ add_executable(HopeTests ${TEST}/test_driver.cpp
 
 target_link_libraries(HopeTests PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt5::Svg)
 
+add_test(NAME IntegrationTest COMMAND HopeTests.exe)
+
 target_compile_options(HopeTests PRIVATE
   $<$<CXX_COMPILER_ID:MSVC>:/W3 /WX>
   $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic -Werror>
@@ -133,4 +136,4 @@ add_custom_target(
     COMMENT "Performing codegen"
 )
 
-add_dependencies(exampleWidgetQt codegen)
+add_dependencies(HopeTests codegen)

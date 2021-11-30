@@ -49,7 +49,7 @@ set(PROJECT_SOURCES
         ${GEN}/code_error_types.h
         ${GEN}/code_parsenodetype.h
         ${GEN}/code_tokentype.h
-        ${GEN}/hope_construct_codes.h
+        ${GEN}/construct_codes.h
         ${SRC}/hope_error.cpp
         ${INCLUDE}/hope_error.h
         ${SRC}/hope_interpreter.cpp

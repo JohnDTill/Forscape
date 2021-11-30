@@ -1,7 +1,7 @@
 #ifndef TYPESET_CONSTRUCT_H
 #define TYPESET_CONSTRUCT_H
 
-#include <hope_construct_codes.h>
+#include <construct_codes.h>
 #include "typeset_painter.h"
 #include <vector>
 
