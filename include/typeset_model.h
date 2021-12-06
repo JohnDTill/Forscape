@@ -43,6 +43,10 @@ public:
     void paint(Painter& painter, double xL, double yT, double xR, double yB) const;
     #endif
 
+    #ifndef NDEBUG
+    std::string parseTreeDot() const;
+    #endif
+
 public:
     void undo(Controller& controller);
     void redo(Controller& controller);

@@ -4,6 +4,7 @@
 #include "typeset_selection.h"
 
 #ifndef NDEBUG
+#include <code_parsenodegraphviz.h>
 #include <iostream>
 #endif
 
@@ -33,11 +34,11 @@ size_t ParseTree::numArgs(ParseNode node) const noexcept{
 
 void ParseTree::setStackOffset(ParseNode node, size_t val) noexcept{
     assert(getEnum(node) == PN_IDENTIFIER);
-    (*this)[node-SIZE_OFFSET] = val;
+    (*this)[node-FLAG_OFFSET] = val;
 }
 
 size_t ParseTree::stackOffset(ParseNode node) const noexcept{
-    return (*this)[node-SIZE_OFFSET];
+    return (*this)[node-FLAG_OFFSET];
 }
 
 void ParseTree::setUpvalue(ParseNode node, size_t offset) noexcept{
@@ -45,7 +46,7 @@ void ParseTree::setUpvalue(ParseNode node, size_t offset) noexcept{
 }
 
 size_t ParseTree::upvalueOffset(ParseNode node) const noexcept{
-    return (*this)[node-SIZE_OFFSET];
+    return (*this)[node-FLAG_OFFSET];
 }
 
 const Typeset::Selection& ParseTree::getSelection(size_t index) const noexcept{
@@ -107,14 +108,16 @@ void ParseTree::setRightMarker(size_t index, const Typeset::Marker& m) noexcept{
     *reinterpret_cast<Typeset::Marker*>(data()+index-RIGHT_MARKER_OFFSET) = m;
 }
 
-void ParseTree::addIdentifier(const Typeset::Selection& c){
-    push_back(PN_IDENTIFIER);
+void ParseTree::addIdentifier(const Typeset::Selection& c){   
     pushSelection(c);
-    push_back(UNITIALIZED);
+    push_back(0);
+    push_back(0);
+    push_back(PN_IDENTIFIER);
 }
 
 size_t ParseTree::addTerminal(size_t type, const Typeset::Selection& c){
     pushSelection(c);
+    push_back(0);
     push_back(0);
     push_back(type);
 
@@ -124,6 +127,7 @@ size_t ParseTree::addTerminal(size_t type, const Typeset::Selection& c){
 size_t ParseTree::addUnary(size_t type, const Typeset::Selection& c, size_t child){
     push_back(child);
     pushSelection(c);
+    push_back(0);
     push_back(1);
     push_back(type);
 
@@ -133,6 +137,7 @@ size_t ParseTree::addUnary(size_t type, const Typeset::Selection& c, size_t chil
 size_t ParseTree::addUnary(size_t type, size_t child){
     push_back(child);
     pushSelection(child);
+    push_back(0);
     push_back(1);
     push_back(type);
 
@@ -143,6 +148,7 @@ size_t ParseTree::addLeftUnary(size_t type, const Typeset::Marker& left, size_t 
     push_back(child);
     pushRightMarker(child);
     pushMarker(left);
+    push_back(0);
     push_back(1);
     push_back(type);
 
@@ -153,6 +159,7 @@ size_t ParseTree::addRightUnary(size_t type, const Typeset::Marker& right, size_
     push_back(child);
     pushMarker(right);
     pushLeftMarker(child);
+    push_back(0);
     push_back(1);
     push_back(type);
 
@@ -164,6 +171,7 @@ size_t ParseTree::addBinary(size_t type, const Typeset::Selection& c, size_t lhs
     push_back(rhs);
     push_back(lhs);
     pushSelection(c);
+    push_back(0);
     push_back(2);
     push_back(type);
 
@@ -175,6 +183,7 @@ size_t ParseTree::addBinary(size_t type, size_t lhs, size_t rhs){
     push_back(lhs);
     pushRightMarker(rhs);
     pushLeftMarker(lhs);
+    push_back(0);
     push_back(2);
     push_back(type);
 
@@ -186,6 +195,7 @@ size_t ParseTree::addTernary(size_t type, const Typeset::Selection& c, size_t A,
     push_back(B);
     push_back(A);
     pushSelection(c);
+    push_back(0);
     push_back(3);
     push_back(type);
 
@@ -198,6 +208,7 @@ ParseNode ParseTree::addTernary(ParseNodeType type, ParseNode A, ParseNode B, Pa
     push_back(A);
     pushRightMarker(C);
     pushLeftMarker(A);
+    push_back(0);
     push_back(3);
     push_back(type);
 
@@ -211,6 +222,7 @@ ParseNode ParseTree::addQuadary(ParseNodeType type, ParseNode A, ParseNode B, Pa
     push_back(A);
     pushRightMarker(D);
     pushLeftMarker(A);
+    push_back(0);
     push_back(4);
     push_back(type);
 
@@ -223,6 +235,7 @@ ParseNode ParseTree::addQuadary(ParseNodeType type, const Typeset::Selection &c,
     push_back(B);
     push_back(A);
     pushSelection(c);
+    push_back(0);
     push_back(4);
     push_back(type);
 
@@ -237,6 +250,7 @@ ParseNode ParseTree::addPentary(ParseNodeType type, ParseNode A, ParseNode B, Pa
     push_back(A);
     pushRightMarker(E);
     pushLeftMarker(A);
+    push_back(0);
     push_back(5);
     push_back(type);
 
@@ -269,6 +283,32 @@ void ParseTree::pushRightMarker(size_t src){
     insert(end(), begin()+src-RIGHT_MARKER_OFFSET, begin()+src-RIGHT_MARKER_OFFSET+2);
 }
 
+#ifndef NDEBUG
+std::string ParseTree::toGraphviz(ParseNode root) const{
+    std::string src = "digraph {\n\trankdir=TB\n\n";
+    size_t sze = 0;
+    graphvizHelper(src, root, sze);
+    src += "}\n";
+
+    return src;
+}
+
+void ParseTree::graphvizHelper(std::string& src, ParseNode n, size_t& size) const{
+    std::string id = std::to_string(size++);
+    src += "\tn" + id + " [label=";
+    writeEnum(src, n);
+    src += "]\n";
+    for(size_t i = 0; i < numArgs(n); i++){
+        size_t child = arg(n, i);
+        if(child != EMPTY){
+            std::string child_id = std::to_string(size);
+            graphvizHelper(src, child, size);
+            src += "\tn" + id + "->n" + child_id + "\n";
+        }
+    }
+}
+#endif
+
 ParseTree::NaryBuilder::NaryBuilder(ParseTree& tree, size_t type)
     : tree(tree), type(type) {}
 
@@ -285,6 +325,7 @@ size_t ParseTree::NaryBuilder::finalize(){
     tree.insert(tree.end(), children.rbegin(), children.rend());
     tree.pushLeftMarker( children.front() );
     tree.pushRightMarker( children.back() );
+    tree.push_back(0);
     tree.push_back( children.size() );
     tree.push_back(type);
 
@@ -300,6 +341,7 @@ size_t ParseTree::NaryBuilder::finalize(const Typeset::Marker& right){
     tree.insert(tree.end(), children.rbegin(), children.rend());
     tree.pushMarker( right );
     tree.pushLeftMarker( children.front() );
+    tree.push_back(0);
     tree.push_back( children.size() );
     tree.push_back(type);
 
@@ -314,6 +356,7 @@ size_t ParseTree::NaryBuilder::finalize(const Typeset::Selection& c){
 
     tree.insert(tree.end(), children.rbegin(), children.rend());
     tree.pushSelection(c);
+    tree.push_back(0);
     tree.push_back( children.size() );
     tree.push_back(type);
 

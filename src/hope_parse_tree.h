@@ -57,6 +57,10 @@ public:
     ParseNode addQuadary(ParseNodeType type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C, ParseNode D);
     ParseNode addPentary(ParseNodeType type, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E);
 
+    #ifndef NDEBUG
+    std::string toGraphviz(ParseNode root) const;
+    #endif
+
     static constexpr ParseNode EMPTY = std::numeric_limits<size_t>::max();
 
     class NaryBuilder{
@@ -82,9 +86,10 @@ public:
 
 private:
     static constexpr size_t UNITIALIZED = std::numeric_limits<size_t>::max();
-    static constexpr size_t FIXED_FIELDS = 6;
-    static constexpr size_t RIGHT_MARKER_OFFSET = 5;
-    static constexpr size_t LEFT_MARKER_OFFSET = 3;
+    static constexpr size_t FIXED_FIELDS = 7;
+    static constexpr size_t RIGHT_MARKER_OFFSET = 6;
+    static constexpr size_t LEFT_MARKER_OFFSET = 4;
+    static constexpr size_t FLAG_OFFSET = 2;
     static constexpr size_t SIZE_OFFSET = 1;
     static constexpr size_t ENUM_OFFSET = 0;
     size_t fields(size_t node) const noexcept{ return numArgs(node)+FIXED_FIELDS; }
@@ -93,6 +98,11 @@ private:
     void pushSelection(ParseNode src);
     void pushLeftMarker(ParseNode src);
     void pushRightMarker(ParseNode src);
+
+    #ifndef NDEBUG
+    void graphvizHelper(std::string& src, ParseNode n, size_t& size) const;
+    void writeEnum(std::string& src, ParseNode n) const;
+    #endif
 };
 
 }

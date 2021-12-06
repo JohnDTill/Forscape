@@ -71,9 +71,12 @@ class Writer:
             self.str += f"}} // namespace {self.inner_namespace}\n\n"
 
     def _inclusion_list(self, includes):
-        includes = sorted(includes)
-        for include in includes:
-            self.str += f"#include <{include}>\n"
+        if type(includes) == list or type(includes) == tuple:
+            includes = sorted(includes)
+            for include in includes:
+                self.str += f"#include <{include}>\n"
+        else:
+            self.str += f"#include <{includes}>\n"
         if len(includes) > 0:
             self.str += '\n'
 

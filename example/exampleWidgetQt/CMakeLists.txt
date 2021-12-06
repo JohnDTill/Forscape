@@ -43,6 +43,7 @@ set(PROJECT_SOURCES
         mainwindow.ui
         mathtoolbar.h
         mathtoolbar.cpp
+        qgraphvizcall.h
         searchdialog.h
         searchdialog.cpp
         searchdialog.ui
