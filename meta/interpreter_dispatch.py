@@ -50,7 +50,7 @@ def main():
         codegen_file.write("Value Interpreter::interpretExpr(ParseNode pn) {\n"
                            "    if(exit_mode != KEEP_GOING) return &errors.back(); //DO THIS - very wasteful to allows check for errors\n"
                            "\n"
-                           "    switch( parse_tree.getEnum(pn) ){\n")
+                           "    switch( parse_tree.getType(pn) ){\n")
         for rule in nullary_rules:
             ops = rule.op.split('|')
             if len(ops) == 1:
@@ -78,7 +78,7 @@ def main():
 
         codegen_file.write("Value Interpreter::unaryDispatch(ParseNode pn) {\n"
                            "    Value child = interpretExpr( parse_tree.child(pn) );\n\n"
-                           "    switch( unaryCode(parse_tree.getEnum(pn), child.index()) ){\n")
+                           "    switch( unaryCode(parse_tree.getType(pn), child.index()) ){\n")
 
         for rule in unary_rules:
             ops = rule.op.split('|')
@@ -132,7 +132,7 @@ def main():
                            "    Value vL = interpretExpr(lhs);\n"
                            "    Value vR = interpretExpr(rhs);\n"
                            "\n"
-                           "    return binaryDispatch(parse_tree.getEnum(pn), vL, vR, pn);\n"
+                           "    return binaryDispatch(parse_tree.getType(pn), vL, vR, pn);\n"
                            "}\n"
                            "\n"
                            "Value Interpreter::binaryDispatch(ParseNodeType type, const Value& lhs, const Value& rhs, ParseNode pn){\n"

@@ -47,6 +47,8 @@ set(PROJECT_SOURCES
         searchdialog.h
         searchdialog.cpp
         searchdialog.ui
+        ${GEN}/code_ast_fields.cpp
+        ${GEN}/code_ast_fields.h
         ${GEN}/code_error_types.h
         ${GEN}/code_parsenodetype.h
         ${GEN}/code_tokentype.h

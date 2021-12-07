@@ -26,8 +26,8 @@ def main():
         includes="hope_parse_tree.h"
     )
 
-    header_writer.write("void ParseTree::writeEnum(std::string& src, ParseNode n) const{\n"
-                        "    switch(getEnum(n)){\n")
+    header_writer.write("void ParseTree::writeType(std::string& src, ParseNode n) const{\n"
+                        "    switch(getType(n)){\n")
     for node in nodes:
         header_writer.write(f"        case PN_{node.enum}: ")
         if node.label:

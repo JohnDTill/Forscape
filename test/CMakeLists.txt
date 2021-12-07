@@ -46,6 +46,8 @@ add_executable(HopeTests ${TEST}/test_driver.cpp
     ${TEST}/typeset_loadsave.h
     ${TEST}/typeset_mutability.h
     ${TEST}/typeset_qpainter.h
+    ${GEN}/code_ast_fields.cpp
+    ${GEN}/code_ast_fields.h
     ${GEN}/code_error_types.h
     ${GEN}/code_parsenodetype.h
     ${GEN}/code_tokentype.h
