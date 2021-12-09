@@ -58,7 +58,7 @@ void runBenchmark(){
     for(size_t i = 0; i < ITER_SYMBOL_TABLE; i++){
         Code::ParseTree parse_tree = parser.parse_tree;
         Code::SymbolTableBuilder sym_table(parse_tree, m);
-        sym_table.resolveSymbols();
+        sym_table.resolveSymbols(); //Linking in release causes a crash
     }
     report("SymbolTable", ITER_SYMBOL_TABLE);
 

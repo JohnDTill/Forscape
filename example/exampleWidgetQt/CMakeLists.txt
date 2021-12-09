@@ -31,7 +31,7 @@ include_directories(${COMMAND})
 
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
-find_package(Qt5Svg REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR}Svg REQUIRED)
 
 configure_file(lambda.ico ${CMAKE_BINARY_DIR} COPYONLY)
 configure_file(toolbar_glyphs.otf ${CMAKE_BINARY_DIR} COPYONLY)
@@ -138,7 +138,7 @@ else()
     endif()
 endif()
 
-target_link_libraries(exampleWidgetQt PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt5::Svg)
+target_link_libraries(exampleWidgetQt PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Svg)
 
 set_target_properties(exampleWidgetQt PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com

@@ -80,7 +80,7 @@ static constexpr size_t Lambda_index = 5;
 static constexpr size_t Algorithm_index = 6;
 static constexpr size_t Unitialized_index = 7;
 
-static bool isFunction(size_t index) noexcept{
+inline bool isFunction(size_t index) noexcept{
     return index >= Lambda_index;
 }
 

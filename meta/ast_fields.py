@@ -50,11 +50,15 @@ def main():
             header_writer.write(f"    void {setter}(ParseNode pn, {T} {field.property}) noexcept;  \\\n")
             source_file.write(
                 f"{T} ParseTree::{getter}(ParseNode pn) const noexcept{{\n"
+                "    assert(pn < size());\n"
+                "    assert(pn+1 >= FIXED_FIELDS);\n"
                 f"    return {const_ref};\n"
                 "}\n\n"
             )
             source_file.write(
                 f"void ParseTree::{setter}(ParseNode pn, {T} {field.property}) noexcept{{\n"
+                "    assert(pn < size());\n"
+                "    assert(pn+1 >= FIXED_FIELDS);\n"
                 f"    {ref} = {field.property};\n"
                 "}\n\n"
             )

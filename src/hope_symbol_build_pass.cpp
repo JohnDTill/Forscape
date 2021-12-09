@@ -61,7 +61,7 @@ void SymbolTableBuilder::link(size_t scope_index){
 
             if(usage.type == Scope::DECLARE){
                 if(sym.is_closure_nested && !sym.is_captured){
-                    assert(sym.declaration_closure_depth < closures.size());
+                    assert(sym.declaration_closure_depth <= closures.size());
 
                     parse_tree.setType(pn, PN_READ_UPVALUE);
                     parse_tree.setClosureIndex(pn, closure_size.back());
@@ -71,7 +71,7 @@ void SymbolTableBuilder::link(size_t scope_index){
                 }
             }else{
                 if(sym.is_closure_nested){
-                    assert(sym.declaration_closure_depth < closures.size());
+                    assert(sym.declaration_closure_depth <= closures.size());
 
                     for(size_t i = sym.declaration_closure_depth; i < closures.size(); i++){
                         std::unordered_map<size_t, size_t>& closure = closures[i];
@@ -103,7 +103,7 @@ void SymbolTableBuilder::link(size_t scope_index){
 
             parse_tree.setFlag(n, entry.second);
 
-            if(sym.declaration_closure_depth != closures.size()-1)
+            if(sym.declaration_closure_depth != closures.size())
                 parse_tree.setType(n, PN_READ_UPVALUE);
 
             upvalue_builder.addNaryChild(n);
@@ -137,7 +137,8 @@ void SymbolTableBuilder::reset() noexcept{
     symbol_id_index.clear();
     lexical_depth = GLOBAL_DEPTH;
     closure_depth = 0;
-    scopes.push_back(Scope(false, NONE));
+    assert(closures.size() == 0);
+    scopes.push_back(Scope(NONE, NONE));
     active_scope_id = 0;
     stack_size = 0;
     stack_frame.clear();
