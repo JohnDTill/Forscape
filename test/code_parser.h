@@ -23,13 +23,13 @@ static bool testExpressionType(const std::string& src, ParseNodeType type){
     bool passing = true;
     ParseTree parse_tree = eval(src);
     ParseNode root = parse_tree.back();
-    assert(parse_tree.getEnum(root) == PN_BLOCK);
+    assert(parse_tree.getType(root) == PN_BLOCK);
     ParseNode stmt = parse_tree.arg(root, 0);
-    assert(parse_tree.getEnum(stmt) == PN_EXPR_STMT);
+    assert(parse_tree.getType(stmt) == PN_EXPR_STMT);
     ParseNode expr = parse_tree.child(stmt);
-    if(parse_tree.getEnum(expr) != type){
+    if(parse_tree.getType(expr) != type){
         std::cout << "Expected type " << type << ", got "
-                  << parse_tree.getEnum(expr) << std::endl;
+                  << parse_tree.getType(expr) << std::endl;
         passing = false;
     }
 
@@ -60,11 +60,11 @@ static bool testStatementType(const std::string& src, ParseNodeType type){
     bool passing = true;
     ParseTree parse_tree = eval(src);
     ParseNode root = parse_tree.back();
-    assert(parse_tree.getEnum(root) == PN_BLOCK);
+    assert(parse_tree.getType(root) == PN_BLOCK);
     ParseNode stmt = parse_tree.arg(root, 0);
-    if(parse_tree.getEnum(stmt) != type){
+    if(parse_tree.getType(stmt) != type){
         std::cout << "Expected type " << type << ", got "
-                  << parse_tree.getEnum(stmt) << std::endl;
+                  << parse_tree.getType(stmt) << std::endl;
         passing = false;
     }
 

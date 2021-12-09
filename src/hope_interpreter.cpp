@@ -36,7 +36,7 @@ Typeset::Model* Interpreter::interpret(ParseNode root){
     active_closure = nullptr;
     if(console) console->setModel(output);
 
-    assert(parse_tree.getEnum(root) == PN_BLOCK);
+    assert(parse_tree.getType(root) == PN_BLOCK);
     blockStmt(root);
 
     if(!errors.empty()){
@@ -59,7 +59,7 @@ void Interpreter::stop(){
 void Interpreter::interpretStmt(ParseNode pn){
     QCoreApplication::processEvents(); //DO THIS - this is a daft until threading
 
-    switch (parse_tree.getEnum(pn)) {
+    switch (parse_tree.getType(pn)) {
         case PN_EQUAL: assignStmt(pn); break;
         case PN_ASSIGN: assignStmt(pn); break;
         case PN_REASSIGN: reassign(parse_tree.lhs(pn), parse_tree.rhs(pn)); break;
@@ -84,7 +84,7 @@ void Interpreter::interpretStmt(ParseNode pn){
 void Interpreter::printStmt(ParseNode pn){
     bool at_bottom = console && console->scrolledToBottom();
 
-    for(size_t i = 0; i < parse_tree.numArgs(pn) && exit_mode == KEEP_GOING; i++)
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn) && exit_mode == KEEP_GOING; i++)
         printNode(parse_tree.arg(pn, i));
 
     if(console){
@@ -108,7 +108,7 @@ void Interpreter::assignStmt(ParseNode pn){
 
     Value v = interpretExpr(rhs);
 
-    if(parse_tree.getEnum(lhs) == PN_READ_UPVALUE) readUpvalue(lhs) = v;
+    if(parse_tree.getType(lhs) == PN_READ_UPVALUE) readUpvalue(lhs) = v;
     else stack.push(v, parse_tree.str(lhs));
 }
 
@@ -159,7 +159,7 @@ void Interpreter::ifElseStmt(ParseNode pn){
 }
 
 void Interpreter::blockStmt(ParseNode pn){
-    for(size_t i = 0; i < parse_tree.numArgs(pn) && exit_mode == KEEP_GOING; i++)
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn) && exit_mode == KEEP_GOING; i++)
         interpretStmt(parse_tree.arg(pn, i));
 }
 
@@ -171,7 +171,7 @@ void Interpreter::algorithmStmt(ParseNode pn){
     ParseNode captured = alg.captured(parse_tree);
     ParseNode upvalues = alg.upvalues(parse_tree);
 
-    if(parse_tree.stackOffset(name) == std::numeric_limits<size_t>::max()){
+    if(parse_tree.getFlag(name) == std::numeric_limits<size_t>::max()){
         stack.push(alg, parse_tree.str(name));
         list = &std::get<Algorithm>(stack.back()).closure;
     }else{
@@ -187,7 +187,7 @@ void Interpreter::initClosure(Closure& closure, ParseNode captured, ParseNode up
     closure.clear();
 
     if(captured != ParseTree::EMPTY){
-        size_t N = parse_tree.numArgs(captured);
+        size_t N = parse_tree.getNumArgs(captured);
 
         for(size_t i = 0; i < N; i++){
             ParseNode capture = parse_tree.arg(captured, i);
@@ -197,9 +197,9 @@ void Interpreter::initClosure(Closure& closure, ParseNode captured, ParseNode up
         }
     }
 
-    for(size_t i = 0; i < parse_tree.numArgs(upvalues); i++){
+    for(size_t i = 0; i < parse_tree.getNumArgs(upvalues); i++){
         ParseNode up = parse_tree.arg(upvalues, i);
-        switch (parse_tree.getEnum(up)) {
+        switch (parse_tree.getType(up)) {
             case PN_IDENTIFIER:{ //Place on heap
                 Value* v = new Value();
                 std::shared_ptr<void> ptr(v);
@@ -208,7 +208,7 @@ void Interpreter::initClosure(Closure& closure, ParseNode captured, ParseNode up
             }
             case PN_READ_UPVALUE:{ //Get existing
                 assert(active_closure);
-                size_t index = parse_tree.upvalueOffset(up);
+                size_t index = parse_tree.getClosureIndex(up);
                 closure.push_back( active_closure->at(index) );
                 break;
             }
@@ -219,7 +219,7 @@ void Interpreter::initClosure(Closure& closure, ParseNode captured, ParseNode up
 }
 
 void Interpreter::breakLocalClosureLinks(Closure& closure, ParseNode captured, ParseNode upvalues){
-    size_t cap_size = (captured == ParseTree::EMPTY) ? 0 : parse_tree.numArgs(captured);
+    size_t cap_size = (captured == ParseTree::EMPTY) ? 0 : parse_tree.getNumArgs(captured);
 
     for(size_t i = 0; i < cap_size; i++){
         Value& val = conv(closure[i]);
@@ -227,8 +227,8 @@ void Interpreter::breakLocalClosureLinks(Closure& closure, ParseNode captured, P
         closure[i] = ptr;
     }
 
-    for(size_t i = 0; i < parse_tree.numArgs(upvalues); i++){
-        if(parse_tree.getEnum(parse_tree.arg(upvalues, i)) == PN_IDENTIFIER){
+    for(size_t i = 0; i < parse_tree.getNumArgs(upvalues); i++){
+        if(parse_tree.getType(parse_tree.arg(upvalues, i)) == PN_IDENTIFIER){
             size_t j = cap_size + i;
             Value& val = conv(closure[j]);
             std::shared_ptr<void> ptr(new Value(val));
@@ -246,7 +246,7 @@ void Interpreter::returnStmt(ParseNode pn){
 Value Interpreter::implicitMult(ParseNode pn, size_t start){
     ParseNode lhs = parse_tree.arg(pn, start);
     Value vl = interpretExpr(lhs);
-    size_t N = parse_tree.numArgs(pn);
+    size_t N = parse_tree.getNumArgs(pn);
     if(start == N-1) return vl;
     Value vr = implicitMult(pn, start+1);
     if(!isFunction(vl.index())) return binaryDispatch(PN_CALL, vl, vr, pn);
@@ -258,7 +258,7 @@ Value Interpreter::implicitMult(ParseNode pn, size_t start){
         case Lambda_index:{
             const Lambda& l = std::get<Lambda>(vl);
             ParseNode params = l.params(parse_tree);
-            if(parse_tree.numArgs(params) != 1){
+            if(parse_tree.getNumArgs(params) != 1){
                 return error(INVALID_ARGS, lhs);
             }else{
                 stack.push(vr, parse_tree.str(parse_tree.child(params)));
@@ -315,7 +315,7 @@ Value Interpreter::big(ParseNode pn, ParseNodeType type){
 }
 
 Value Interpreter::cases(ParseNode pn){
-    for(size_t i = 0; i < parse_tree.numArgs(pn) && exit_mode < ERROR; i+=2){
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn) && exit_mode < ERROR; i+=2){
         ParseNode condition = parse_tree.arg(pn, i+1);
         Value v = interpretExpr(condition);
         if(v.index() != bool_index) return error(TYPE_ERROR, condition);
@@ -336,7 +336,7 @@ bool Interpreter::evaluateCondition(ParseNode pn){
 }
 
 void Interpreter::reassign(ParseNode lhs, ParseNode rhs){
-    switch (parse_tree.getEnum(lhs)) {
+    switch (parse_tree.getType(lhs)) {
         case PN_IDENTIFIER:{
             Value v = interpretExpr(rhs);
             readLocal(lhs) = v;
@@ -364,7 +364,7 @@ void Interpreter::reassign(ParseNode lhs, ParseNode rhs){
 }
 
 void Interpreter::reassignSubscript(ParseNode lhs, ParseNode rhs){
-    size_t num_indices = parse_tree.numArgs(lhs)-1;
+    size_t num_indices = parse_tree.getNumArgs(lhs)-1;
     Value rvalue = interpretExpr(rhs);
     ParseNode lvalue_node = parse_tree.arg(lhs, 0);
     Value& lvalue = read(lvalue_node);
@@ -440,14 +440,14 @@ void Interpreter::elementWiseAssignment(ParseNode pn){
     ParseNode lhs = parse_tree.lhs(pn);
     ParseNode rhs = parse_tree.rhs(pn);
 
-    size_t num_subscripts = parse_tree.numArgs(lhs)-1;
+    size_t num_subscripts = parse_tree.getNumArgs(lhs)-1;
     ParseNode lvalue_node = parse_tree.arg(lhs, 0);
     Value& lvalue = read(lvalue_node);
 
     if(lvalue.index() == double_index){
-        bool use_first = parse_tree.getEnum( parse_tree.arg(lhs, 1) ) != PN_SLICE;
+        bool use_first = parse_tree.getType( parse_tree.arg(lhs, 1) ) != PN_SLICE;
         bool use_second = num_subscripts>1 &&
-                          parse_tree.getEnum( parse_tree.arg(lhs, 2) ) != PN_SLICE;
+                          parse_tree.getType( parse_tree.arg(lhs, 2) ) != PN_SLICE;
 
         if(use_first) stack.push(0.0, parse_tree.str(parse_tree.arg(lhs, 1)));
         if(use_second) stack.push(0.0, parse_tree.str(parse_tree.arg(lhs, 2)));
@@ -485,8 +485,8 @@ void Interpreter::elementWiseAssignment(ParseNode pn){
         return;
     }
 
-    ParseNodeType type_row = parse_tree.getEnum( parse_tree.arg(lhs, 1) );
-    ParseNodeType type_col = parse_tree.getEnum( parse_tree.arg(lhs, 2) );
+    ParseNodeType type_row = parse_tree.getType( parse_tree.arg(lhs, 1) );
+    ParseNodeType type_col = parse_tree.getType( parse_tree.arg(lhs, 2) );
 
     if(type_row == PN_SLICE){
         stack.push(0.0, parse_tree.str(parse_tree.arg(lhs, 2)));
@@ -570,7 +570,7 @@ void Interpreter::elementWiseAssignment(ParseNode pn){
 }
 
 Value& Interpreter::read(ParseNode pn){
-    switch (parse_tree.getEnum(pn)) {
+    switch (parse_tree.getType(pn)) {
         case PN_IDENTIFIER: return readLocal(pn);
         case PN_READ_GLOBAL: return readGlobal(pn);
         case PN_READ_UPVALUE: return readUpvalue(pn);
@@ -581,21 +581,21 @@ Value& Interpreter::read(ParseNode pn){
 }
 
 Value& Interpreter::readLocal(ParseNode pn) {
-    assert(parse_tree.getEnum(pn) == PN_IDENTIFIER);
-    size_t stack_offset = parse_tree.stackOffset(pn);
+    assert(parse_tree.getType(pn) == PN_IDENTIFIER);
+    size_t stack_offset = parse_tree.getStackOffset(pn);
 
     return stack.read(stack.size()-1-stack_offset, parse_tree.str(pn));
 }
 
 Value& Interpreter::readGlobal(ParseNode pn){
-    assert(parse_tree.getEnum(pn) == PN_READ_GLOBAL);
-    size_t stack_offset = parse_tree.stackOffset(pn);
+    assert(parse_tree.getType(pn) == PN_READ_GLOBAL);
+    size_t stack_offset = parse_tree.getGlobalIndex(pn);
 
     return stack.read(stack_offset, parse_tree.str(pn));
 }
 
 Value& Interpreter::readUpvalue(ParseNode pn){
-    size_t upvalue_offset = parse_tree.upvalueOffset(pn);
+    size_t upvalue_offset = parse_tree.getClosureIndex(pn);
     return conv(active_closure->at(upvalue_offset));
 }
 
@@ -610,7 +610,7 @@ Value Interpreter::error(ErrorCode code, ParseNode pn) {
 }
 
 Value Interpreter::matrix(ParseNode pn){
-    if(parse_tree.numArgs(pn) == 1) return interpretExpr(parse_tree.arg(pn, 0));
+    if(parse_tree.getNumArgs(pn) == 1) return interpretExpr(parse_tree.arg(pn, 0));
 
     Typeset::Matrix* tm = static_cast<Typeset::Matrix*>(
                 parse_tree.getLeft(pn).text->nextConstructAsserted()
@@ -652,14 +652,14 @@ Value Interpreter::anonFun(ParseNode pn){
 
 Value Interpreter::call(ParseNode call) {
     Value v = interpretExpr( parse_tree.arg(call, 0) );
-    size_t nargs = parse_tree.numArgs(call)-1;
+    size_t nargs = parse_tree.getNumArgs(call)-1;
 
     switch (v.index()) {
         case Lambda_index:{
             Lambda& f = std::get<Lambda>(v);
             ParseNode params = f.params(parse_tree);
             breakLocalClosureLinks(f.captured, ParseTree::EMPTY, f.upvalues(parse_tree));
-            size_t nparams = parse_tree.numArgs(params);
+            size_t nparams = parse_tree.getNumArgs(params);
             if(nparams != nargs) return error(INVALID_ARGS, call);
             size_t stack_size = stack.size();
             Closure* old = active_closure;
@@ -667,9 +667,9 @@ Value Interpreter::call(ParseNode call) {
             std::vector<std::pair<Value, std::string>> stack_vals;
             for(size_t i = 0; i < nargs && exit_mode == KEEP_GOING; i++){
                 ParseNode param = parse_tree.arg(params, i);
-                if(parse_tree.getEnum(param) == PN_EQUAL) param = parse_tree.lhs(param);
+                if(parse_tree.getType(param) == PN_EQUAL) param = parse_tree.lhs(param);
                 Value v = interpretExpr(parse_tree.arg(call, i+1));
-                if(parse_tree.getEnum(param) == PN_READ_UPVALUE){
+                if(parse_tree.getType(param) == PN_READ_UPVALUE){
                     readUpvalue(param) = v;
                 }else{
                     stack_vals.push_back({v, parse_tree.str(param)});
@@ -688,9 +688,9 @@ Value Interpreter::call(ParseNode call) {
             Algorithm& alg = std::get<Algorithm>(v);
             breakLocalClosureLinks(alg.closure, alg.captured(parse_tree), alg.upvalues(parse_tree));
             frames.push_back(stack.size());
-            size_t nargs = parse_tree.numArgs(call)-1;
+            size_t nargs = parse_tree.getNumArgs(call)-1;
             ParseNode params = alg.params(parse_tree);
-            size_t nparams = parse_tree.numArgs(params);
+            size_t nparams = parse_tree.getNumArgs(params);
             if(nargs > nparams){
                 frames.pop_back();
                 return error(INVALID_ARGS, call);
@@ -700,9 +700,9 @@ Value Interpreter::call(ParseNode call) {
             std::vector<std::pair<Value, std::string>> stack_vals;
             for(size_t i = 0; (i < nargs) & (exit_mode == KEEP_GOING); i++){
                 ParseNode param = parse_tree.arg(params, i);
-                if(parse_tree.getEnum(param) == PN_EQUAL) param = parse_tree.lhs(param);
+                if(parse_tree.getType(param) == PN_EQUAL) param = parse_tree.lhs(param);
                 Value v = interpretExpr(parse_tree.arg(call, i+1));
-                if(parse_tree.getEnum(param) == PN_READ_UPVALUE){
+                if(parse_tree.getType(param) == PN_READ_UPVALUE){
                     readUpvalue(param) = v;
                 }else{
                     stack_vals.push_back({v, parse_tree.str(param)});
@@ -710,16 +710,16 @@ Value Interpreter::call(ParseNode call) {
             }
             for(size_t i = nargs; (i < nparams)  & (exit_mode == KEEP_GOING); i++){
                 ParseNode defnode = parse_tree.arg(params, i);
-                if(parse_tree.getEnum(defnode) != PN_EQUAL){
+                if(parse_tree.getType(defnode) != PN_EQUAL){
                     stack.trim(frames.back());
                     frames.pop_back();
 
                     return error(INVALID_ARGS, call);
                 }
                 ParseNode param = parse_tree.arg(params, i);
-                if(parse_tree.getEnum(param) == PN_EQUAL) param = parse_tree.lhs(param);
+                if(parse_tree.getType(param) == PN_EQUAL) param = parse_tree.lhs(param);
                 Value v = interpretExpr(parse_tree.rhs(defnode));
-                if(parse_tree.getEnum(param) == PN_READ_UPVALUE){
+                if(parse_tree.getType(param) == PN_READ_UPVALUE){
                     readUpvalue(param) = v;
                 }else{
                     stack_vals.push_back({v, parse_tree.str(param)});
@@ -756,13 +756,13 @@ Value Interpreter::call(ParseNode call) {
 }
 
 void Interpreter::callStmt(ParseNode pn){
-    if(parse_tree.getEnum(pn) != PN_CALL){
+    if(parse_tree.getType(pn) != PN_CALL){
         error(UNUSED_EXPRESSION, pn);
         return;
     }
 
     Value v = interpretExpr( parse_tree.arg(pn, 0) );
-    size_t nargs = parse_tree.numArgs(pn)-1;
+    size_t nargs = parse_tree.getNumArgs(pn)-1;
 
     switch (v.index()) {
         case Lambda_index:
@@ -793,9 +793,9 @@ void Interpreter::callStmt(ParseNode pn){
 
 void Interpreter::callAlg(Algorithm& alg, ParseNode call){
     frames.push_back(stack.size());
-    size_t nargs = parse_tree.numArgs(call)-1;
+    size_t nargs = parse_tree.getNumArgs(call)-1;
     ParseNode params = alg.params(parse_tree);
-    size_t nparams = parse_tree.numArgs(params);
+    size_t nparams = parse_tree.getNumArgs(params);
     if(nargs > nparams){
         error(INVALID_ARGS, call);
         return;
@@ -805,9 +805,9 @@ void Interpreter::callAlg(Algorithm& alg, ParseNode call){
     std::vector<std::pair<Value, std::string>> stack_vals;
     for(size_t i = 0; (i < nargs) & (exit_mode == KEEP_GOING); i++){
         ParseNode param = parse_tree.arg(params, i);
-        if(parse_tree.getEnum(param) == PN_EQUAL) param = parse_tree.lhs(param);
+        if(parse_tree.getType(param) == PN_EQUAL) param = parse_tree.lhs(param);
         Value v = interpretExpr(parse_tree.arg(call, i+1));
-        if(parse_tree.getEnum(param) == PN_READ_UPVALUE){
+        if(parse_tree.getType(param) == PN_READ_UPVALUE){
             readUpvalue(param) = v;
         }else{
             stack_vals.push_back({v, parse_tree.str(param)});
@@ -815,14 +815,14 @@ void Interpreter::callAlg(Algorithm& alg, ParseNode call){
     }
     for(size_t i = nargs; (i < nparams)  & (exit_mode == KEEP_GOING); i++){
         ParseNode defnode = parse_tree.arg(params, i);
-        if(parse_tree.getEnum(defnode) != PN_EQUAL){
+        if(parse_tree.getType(defnode) != PN_EQUAL){
             error(INVALID_ARGS, call);
             break;
         }
         ParseNode param = parse_tree.arg(params, i);
-        if(parse_tree.getEnum(param) == PN_EQUAL) param = parse_tree.lhs(param);
+        if(parse_tree.getType(param) == PN_EQUAL) param = parse_tree.lhs(param);
         Value v = interpretExpr(parse_tree.rhs(defnode));
-        if(parse_tree.getEnum(param) == PN_READ_UPVALUE){
+        if(parse_tree.getType(param) == PN_READ_UPVALUE){
             readUpvalue(param) = v;
         }else{
             stack_vals.push_back({v, parse_tree.str(param)});
@@ -839,7 +839,7 @@ void Interpreter::callAlg(Algorithm& alg, ParseNode call){
 
 Value Interpreter::elementAccess(ParseNode pn){
     Value lhs = interpretExpr( parse_tree.arg(pn, 0) );
-    size_t num_indices = parse_tree.numArgs(pn)-1;
+    size_t num_indices = parse_tree.getNumArgs(pn)-1;
 
     switch (lhs.index()) {
         case double_index:
@@ -877,9 +877,9 @@ Value Interpreter::elementAccess(ParseNode pn){
 }
 
 Interpreter::Slice Interpreter::readSubscript(ParseNode pn, Eigen::Index sze){
-    size_t nargs = parse_tree.numArgs(pn);
+    size_t nargs = parse_tree.getNumArgs(pn);
 
-    if(parse_tree.getEnum(pn) != PN_SLICE){
+    if(parse_tree.getType(pn) != PN_SLICE){
         Eigen::Index index = readIndex(pn, sze);
         return Slice(index, 1, Eigen::fix<1>);
     }else if(nargs == 1){
@@ -894,8 +894,8 @@ Interpreter::Slice Interpreter::readSubscript(ParseNode pn, Eigen::Index sze){
         error(INDEX_OUT_OF_RANGE, pn);
         return Slice(INVALID, INVALID, INVALID);
     }else if(s > 0){
-        Eigen::Index f = parse_tree.getEnum(first) != PN_SLICE_ALL ? readIndex(first, sze) : 0;
-        Eigen::Index l = parse_tree.getEnum(last) != PN_SLICE_ALL ? readIndex(last, sze) : sze-1;
+        Eigen::Index f = parse_tree.getType(first) != PN_SLICE_ALL ? readIndex(first, sze) : 0;
+        Eigen::Index l = parse_tree.getType(last) != PN_SLICE_ALL ? readIndex(last, sze) : sze-1;
         Eigen::Index diff = l-f;
         if(diff < 0){
             error(NONTERMINATING_SLICE, pn);
@@ -905,8 +905,8 @@ Interpreter::Slice Interpreter::readSubscript(ParseNode pn, Eigen::Index sze){
             return Slice(f, slice_sze, s);
         }
     }else{
-        Eigen::Index f = parse_tree.getEnum(first) != PN_SLICE_ALL ? readIndex(first, sze) : sze-1;
-        Eigen::Index l = parse_tree.getEnum(last) != PN_SLICE_ALL ? readIndex(last, sze) : 0;
+        Eigen::Index f = parse_tree.getType(first) != PN_SLICE_ALL ? readIndex(first, sze) : sze-1;
+        Eigen::Index l = parse_tree.getType(last) != PN_SLICE_ALL ? readIndex(last, sze) : 0;
         Eigen::Index diff = l-f;
         if(diff > 0){
             error(NONTERMINATING_SLICE, pn);

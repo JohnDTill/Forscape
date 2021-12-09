@@ -31,7 +31,7 @@ add_compile_definitions(TYPESET_MEMORY_DEBUG HOPE_SEMANTIC_DEBUGGING)
 
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
-find_package(Qt5Svg REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR}Svg REQUIRED)
 
 add_executable(HopeTests ${TEST}/test_driver.cpp
     ${TEST}/code_interpreter.h
@@ -46,6 +46,8 @@ add_executable(HopeTests ${TEST}/test_driver.cpp
     ${TEST}/typeset_loadsave.h
     ${TEST}/typeset_mutability.h
     ${TEST}/typeset_qpainter.h
+    ${GEN}/code_ast_fields.cpp
+    ${GEN}/code_ast_fields.h
     ${GEN}/code_error_types.h
     ${GEN}/code_parsenodetype.h
     ${GEN}/code_tokentype.h
@@ -113,14 +115,14 @@ add_executable(HopeTests ${TEST}/test_driver.cpp
     ${COMMAND}/typeset_remove_chars.h
     )
 
-target_link_libraries(HopeTests PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt5::Svg)
+target_link_libraries(HopeTests PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Svg)
 
 add_test(NAME IntegrationTest COMMAND HopeTests.exe)
 
-target_compile_options(HopeTests PRIVATE
-  $<$<CXX_COMPILER_ID:MSVC>:/W3 /WX>
-  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic -Werror>
-)
+#target_compile_options(HopeTests PRIVATE
+#  $<$<CXX_COMPILER_ID:MSVC>:/W3 /WX>
+#  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic -Werror>
+#)
 
 #Added because Eigen unsupported resulted in compiles with too many sections
 target_compile_options(HopeTests PRIVATE

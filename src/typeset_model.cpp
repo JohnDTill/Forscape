@@ -371,6 +371,12 @@ void Model::paint(Painter& painter, double, double yT, double, double yB) const{
     }
 }
 
+#ifndef NDEBUG
+std::string Model::parseTreeDot() const{
+    return parser.parse_tree.toGraphviz(root);
+}
+#endif
+
 Selection Model::idAt(const Marker& marker) noexcept{
     for(size_t i = marker.text->tags.size(); i-->0;){
         const SemanticTag& tag = marker.text->tags[i];

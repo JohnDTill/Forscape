@@ -17,6 +17,9 @@ using namespace Code;
 
 inline bool testExpression(const std::string& in, const std::string& expect){
     Typeset::Model* input = Typeset::Model::fromSerial("print(" + in + ")");
+    #ifndef NDEBUG
+    input->parseTreeDot(); //Make sure dot generation doesn't crash
+    #endif
     Typeset::Model* output = input->run(nullptr);
     std::string str = output->toSerial();
 
@@ -42,6 +45,9 @@ inline bool testCase(const std::string& name){
     std::string out = readFile(base_test_path + "/out/" + name + ".txt");
 
     Typeset::Model* input = Typeset::Model::fromSerial(in);
+    #ifndef NDEBUG
+    input->parseTreeDot(); //Make sure dot generation doesn't crash
+    #endif
     Typeset::Model* output = input->run(nullptr);
     std::string str = output->toSerial();
 

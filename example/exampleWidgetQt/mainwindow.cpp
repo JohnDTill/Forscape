@@ -24,6 +24,10 @@
 
 #include <iostream>
 
+#ifndef NDEBUG
+#include "qgraphvizcall.h"
+#endif
+
 using namespace Hope;
 
 MainWindow::MainWindow(QWidget* parent)
@@ -128,7 +132,9 @@ void MainWindow::stop(){
 
 void MainWindow::parseTree(){
     #ifndef NDEBUG
-    std::cout << "Implement this (MainWindow, Line " << __LINE__ << ")" << std::endl;
+    QString dot_src = QString::fromStdString(editor->getModel()->parseTreeDot());
+    dot_src.replace("\\n", "\\\\n");
+    QGraphvizCall::show(dot_src);
     #endif
 }
 

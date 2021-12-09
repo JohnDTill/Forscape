@@ -744,7 +744,7 @@ ParseNode Parser::superscript(const ParseNode& lhs) noexcept{
             break;
         }
         case MULTIPLY:{
-            parse_tree.setRightMarker(lhs, right);
+            parse_tree.setRight(lhs, right);
             advance();
             n = lhs;
             break;
@@ -800,7 +800,7 @@ Parser::ParseNode Parser::dualscript(const ParseNode& lhs) noexcept{
             return parse_tree.addUnary(PN_DAGGER, c, subscript(lhs, right));
         }
         case MULTIPLY:{
-            parse_tree.setRightMarker(lhs, right);
+            parse_tree.setRight(lhs, right);
             advance();
             require(ARGCLOSE);
             return subscript(lhs, right);
@@ -930,7 +930,7 @@ Parser::ParseNode Parser::trig(ParseNodeType type) noexcept{
         ParseNode fn = parse_tree.addLeftUnary(type, left, leftUnary());
         const Typeset::Marker& right = parse_tree.getRight(fn);
         Typeset::Selection c(left, right);
-        if(parse_tree.getEnum(power) == PN_UNARY_MINUS)
+        if(parse_tree.getType(power) == PN_UNARY_MINUS)
             return error(AMBIGIOUS_TRIG_POWER, c);
         return parse_tree.addBinary(PN_POWER, c, fn, power);
     }

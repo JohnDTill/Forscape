@@ -1,3 +1,4 @@
+import os
 import shutil
 
 
@@ -13,6 +14,9 @@ def execfile(filepath, globals=None, locals=None):
 
 
 def main():
+    assert os.path.basename(os.getcwd()) == "meta", "Must run codegen from meta directory"
+    os.makedirs("../src/generated", exist_ok=True)
+    execfile('ast_fields.py')
     execfile('construct_codes.py')
     execfile('tokens.py')
     execfile('parse_nodes.py')

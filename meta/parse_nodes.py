@@ -20,6 +20,29 @@ def main():
 
     header_writer.finalize()
 
+    header_writer = cpp.HeaderWriter(
+        name="parsenodegraphviz",
+        inner_namespace="Code",
+        includes="hope_parse_tree.h"
+    )
+
+    header_writer.write("void ParseTree::writeType(std::string& src, ParseNode n) const{\n"
+                        "    switch(getType(n)){\n")
+    for node in nodes:
+        header_writer.write(f"        case PN_{node.enum}: ")
+        if node.label:
+            header_writer.write(f"src += \"\\\"{node.label}\\\"\"; ")
+        elif node.enum == "IDENTIFIER":
+            header_writer.write("src += '\"'; src += str(n); src += \"\\\", fillcolor=cyan, style=filled\"; ")
+        elif node.enum == "STRING":
+            header_writer.write("src += \"\\\"\\\\\\\"\"; src += str(n).substr(1, str(n).size()-2); src += \"\\\\\\\"\\\", fillcolor=green, style=filled\"; ")
+        else:
+            header_writer.write("src += '\"'; src += str(n); src += \"\\\", fillcolor=orange, style=filled\"; ")
+        header_writer.write("break;\n")
+    header_writer.write("    }\n}\n\n")
+
+    header_writer.finalize()
+
 
 if __name__ == "__main__":
     main()

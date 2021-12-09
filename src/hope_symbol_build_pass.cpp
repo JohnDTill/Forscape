@@ -32,7 +32,7 @@ void SymbolTableBuilder::resolveSymbols(){
     reset();
 
     ParseNode n = parse_tree.back();
-    for(size_t i = 0; i < parse_tree.numArgs(n); i++)
+    for(size_t i = 0; i < parse_tree.getNumArgs(n); i++)
         resolveStmt(parse_tree.arg(n, i));
 
     decreaseLexicalDepth();
@@ -61,28 +61,28 @@ void SymbolTableBuilder::link(size_t scope_index){
 
             if(usage.type == Scope::DECLARE){
                 if(sym.is_closure_nested && !sym.is_captured){
-                    assert(sym.declaration_closure_depth < closures.size());
+                    assert(sym.declaration_closure_depth <= closures.size());
 
-                    parse_tree.setUpvalue(pn, closure_size.back());
+                    parse_tree.setType(pn, PN_READ_UPVALUE);
+                    parse_tree.setClosureIndex(pn, closure_size.back());
                     closures.back()[usage.var_id] = closure_size.back()++;
-                    parse_tree.setEnum(pn, PN_READ_UPVALUE);
                 }else{
                     sym.stack_index = stack_size++;
                 }
             }else{
                 if(sym.is_closure_nested){
-                    assert(sym.declaration_closure_depth < closures.size());
+                    assert(sym.declaration_closure_depth <= closures.size());
 
                     for(size_t i = sym.declaration_closure_depth; i < closures.size(); i++){
                         std::unordered_map<size_t, size_t>& closure = closures[i];
                         if(closure.find(usage.var_id) == closure.end())
                             closure[usage.var_id] = closure_size[i]++;
                     }
-                    parse_tree.setUpvalue(pn, closures.back()[usage.var_id]);
-                    parse_tree.setEnum(pn, PN_READ_UPVALUE);
+                    parse_tree.setType(pn, PN_READ_UPVALUE);
+                    parse_tree.setClosureIndex(pn, closures.back()[usage.var_id]);
                 }else if(sym.declaration_closure_depth == 0){
-                    parse_tree.setStackOffset(pn, sym.stack_index);
-                    parse_tree.setEnum(pn, PN_READ_GLOBAL);
+                    parse_tree.setType(pn, PN_READ_GLOBAL);
+                    parse_tree.setGlobalIndex(pn, sym.stack_index);
                 }else{
                     parse_tree.setStackOffset(pn, stack_size - 1 - sym.stack_index);
                 }
@@ -101,17 +101,17 @@ void SymbolTableBuilder::link(size_t scope_index){
             const Symbol& sym = symbols[symbol_index];
             ParseNode n = parse_tree.addTerminal(PN_IDENTIFIER, sym.document_occurences->front());
 
-            parse_tree.setUpvalue(n, entry.second);
+            parse_tree.setFlag(n, entry.second);
 
-            if(sym.declaration_closure_depth != closures.size()-1)
-                parse_tree.setEnum(n, PN_READ_UPVALUE);
+            if(sym.declaration_closure_depth != closures.size())
+                parse_tree.setType(n, PN_READ_UPVALUE);
 
             upvalue_builder.addNaryChild(n);
         }
 
         ParseNode upvalue_list = upvalue_builder.finalize(parse_tree.getSelection(fn));
 
-        switch (parse_tree.getEnum(fn)) {
+        switch (parse_tree.getType(fn)) {
             case PN_ALGORITHM:
                 parse_tree.setArg(fn, 2, upvalue_list);
                 break;
@@ -137,14 +137,15 @@ void SymbolTableBuilder::reset() noexcept{
     symbol_id_index.clear();
     lexical_depth = GLOBAL_DEPTH;
     closure_depth = 0;
-    scopes.push_back(Scope(false, NONE));
+    assert(closures.size() == 0);
+    scopes.push_back(Scope(NONE, NONE));
     active_scope_id = 0;
     stack_size = 0;
     stack_frame.clear();
 }
 
 void SymbolTableBuilder::resolveStmt(ParseNode pn){
-    switch (parse_tree.getEnum(pn)) {
+    switch (parse_tree.getType(pn)) {
         case PN_EQUAL: resolveEquality(pn); break;
         case PN_ASSIGN: resolveAssignment(pn); break;
         case PN_BLOCK: resolveBlock(pn); break;
@@ -163,7 +164,7 @@ void SymbolTableBuilder::resolveStmt(ParseNode pn){
 }
 
 void SymbolTableBuilder::resolveExpr(ParseNode pn){
-    switch (parse_tree.getEnum(pn)) {
+    switch (parse_tree.getType(pn)) {
         case PN_IDENTIFIER: resolveReference(pn); break;
         case PN_LAMBDA: resolveLambda(pn); break;
         case PN_SUBSCRIPT_ACCESS: resolveSubscript(pn); break;
@@ -178,7 +179,7 @@ void SymbolTableBuilder::resolveExpr(ParseNode pn){
 }
 
 void SymbolTableBuilder::resolveEquality(ParseNode pn){
-    if(parse_tree.numArgs(pn) > 2){
+    if(parse_tree.getNumArgs(pn) > 2){
         errors.push_back(Error(parse_tree.getSelection(pn), ErrorCode::TYPE_ERROR));
     }else{
         resolveExpr(parse_tree.rhs(pn));
@@ -187,12 +188,12 @@ void SymbolTableBuilder::resolveEquality(ParseNode pn){
 }
 
 void SymbolTableBuilder::resolveAssignment(ParseNode pn){
-    assert(parse_tree.numArgs(pn) == 2);
+    assert(parse_tree.getNumArgs(pn) == 2);
 
     ParseNode lhs = parse_tree.lhs(pn);
     ParseNode rhs = parse_tree.rhs(pn);
 
-    switch(parse_tree.getEnum( lhs )){
+    switch(parse_tree.getType( lhs )){
         case PN_IDENTIFIER:
             resolveExpr(rhs);
             resolveAssignmentId(pn);
@@ -204,7 +205,7 @@ void SymbolTableBuilder::resolveAssignment(ParseNode pn){
                 resolveExpr(rhs);
                 resolveAssignmentId(pn);
             }else{
-                parse_tree.setEnum(pn, PN_REASSIGN);
+                parse_tree.setType(pn, PN_REASSIGN);
                 resolveAssignmentSubscript(pn, lhs, rhs);
             }
             break;
@@ -217,7 +218,7 @@ void SymbolTableBuilder::resolveAssignment(ParseNode pn){
 void SymbolTableBuilder::resolveAssignmentId(ParseNode pn){
     ParseNode id = parse_tree.lhs(pn);
     Typeset::Selection c = parse_tree.getSelection(id);
-    if(parse_tree.getEnum(id) != PN_IDENTIFIER){
+    if(parse_tree.getType(id) != PN_IDENTIFIER){
         errors.push_back(Error(c, NON_LVALUE));
         return;
     }
@@ -229,7 +230,7 @@ void SymbolTableBuilder::resolveAssignmentId(ParseNode pn){
         size_t sym_index = lastSymbolIndexOfId(lookup->second);
         Symbol& sym = symbols[sym_index];
         sym.is_reassigned = true;
-        parse_tree.setEnum(pn, PN_REASSIGN);
+        parse_tree.setType(pn, PN_REASSIGN);
         resolveReference(id, c, sym_index);
     }
 }
@@ -238,7 +239,7 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
     ParseNode id = parse_tree.arg(lhs, 0);
 
     Typeset::Selection c = parse_tree.getSelection(id);
-    if(parse_tree.getEnum(id) != PN_IDENTIFIER){
+    if(parse_tree.getType(id) != PN_IDENTIFIER){
         errors.push_back(Error(c, NON_LVALUE));
         return;
     }
@@ -253,15 +254,15 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
 
     bool only_trivial_slice = true;
     std::vector<ParseNode> undefined_vars;
-    size_t num_subscripts = parse_tree.numArgs(lhs) - 1;
+    size_t num_subscripts = parse_tree.getNumArgs(lhs) - 1;
     for(size_t i = 0; i < num_subscripts; i++){
         ParseNode sub = parse_tree.arg(lhs, i+1);
-        ParseNodeType type = parse_tree.getEnum(sub);
+        ParseNodeType type = parse_tree.getType(sub);
         const Typeset::Selection& sel = parse_tree.getSelection(sub);
         if(type == PN_IDENTIFIER && map.find(sel) == map.end()){
             undefined_vars.push_back(sub);
         }else{
-            only_trivial_slice &= (type == PN_SLICE) && parse_tree.numArgs(sub) == 1;
+            only_trivial_slice &= (type == PN_SLICE) && parse_tree.getNumArgs(sub) == 1;
             resolveExpr(sub);
         }
     }
@@ -273,7 +274,7 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
             return;
         }
 
-        parse_tree.setEnum(pn, PN_ELEMENTWISE_ASSIGNMENT);
+        parse_tree.setType(pn, PN_ELEMENTWISE_ASSIGNMENT);
         increaseLexicalDepth();
         size_t vars_start = symbols.size();
         for(ParseNode pn : undefined_vars){
@@ -302,12 +303,12 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
 }
 
 bool SymbolTableBuilder::resolvePotentialIdSub(ParseNode pn){
-    if(parse_tree.numArgs(pn) != 2) return false;
+    if(parse_tree.getNumArgs(pn) != 2) return false;
 
     ParseNode id = parse_tree.lhs(pn);
     ParseNode sub = parse_tree.rhs(pn);
 
-    if(parse_tree.getEnum(id) != PN_IDENTIFIER || parse_tree.getEnum(sub) != PN_IDENTIFIER)
+    if(parse_tree.getType(id) != PN_IDENTIFIER || parse_tree.getType(sub) != PN_IDENTIFIER)
         return false;
 
     const Typeset::Selection& id_sel = parse_tree.getSelection(id);
@@ -318,7 +319,7 @@ bool SymbolTableBuilder::resolvePotentialIdSub(ParseNode pn){
 
     if(lookup_id != map.end() && lookup_sub != map.end()) return false;
 
-    parse_tree.setEnum(pn, PN_IDENTIFIER);
+    parse_tree.setType(pn, PN_IDENTIFIER);
 
     return true;
 }
@@ -331,7 +332,7 @@ void SymbolTableBuilder::resolveReference(ParseNode pn){
         auto lookup = predef.find(c.isTextSelection() ? c.strView() : c.str());
         if(lookup != predef.end()){
             ParseNodeType read_type = lookup->second;
-            parse_tree.setEnum(pn, read_type);
+            parse_tree.setType(pn, read_type);
             c.format(SEM_PREDEF);
             return;
         }
@@ -343,7 +344,7 @@ void SymbolTableBuilder::resolveReference(ParseNode pn){
 }
 
 void SymbolTableBuilder::resolveReference(ParseNode pn, const Typeset::Selection& c, size_t sym_id){
-    assert(parse_tree.getEnum(pn) == PN_IDENTIFIER);
+    assert(parse_tree.getType(pn) == PN_IDENTIFIER);
     Symbol& sym = symbols[sym_id];
     sym.is_used = true;
 
@@ -378,7 +379,7 @@ void SymbolTableBuilder::resolveBody(ParseNode pn){
     resolveStmt(pn);
     decreaseLexicalDepth();
 
-    switch (parse_tree.getEnum(pn)) {
+    switch (parse_tree.getType(pn)) {
         case PN_EQUAL:
         case PN_ASSIGN:{
             Typeset::Selection c = parse_tree.getSelection(pn);
@@ -388,12 +389,12 @@ void SymbolTableBuilder::resolveBody(ParseNode pn){
 }
 
 void SymbolTableBuilder::resolveBlock(ParseNode pn){
-    for(size_t i = 0; i < parse_tree.numArgs(pn); i++)
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
         resolveStmt( parse_tree.arg(pn, i) );
 }
 
 void SymbolTableBuilder::resolveDefault(ParseNode pn){
-    for(size_t i = 0; i < parse_tree.numArgs(pn); i++)
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
         resolveExpr(parse_tree.arg(pn, i));
 }
 
@@ -401,9 +402,9 @@ void SymbolTableBuilder::resolveLambda(ParseNode pn){
     increaseClosureDepth(pn);
 
     ParseNode params = parse_tree.arg(pn, 1);
-    assert(parse_tree.getEnum(params) == PN_LIST);
+    assert(parse_tree.getType(params) == PN_LIST);
 
-    for(size_t i = 0; i < parse_tree.numArgs(params); i++)
+    for(size_t i = 0; i < parse_tree.getNumArgs(params); i++)
         defineLocalScope( parse_tree.arg(params, i) );
 
     ParseNode rhs = parse_tree.arg(pn, 2);
@@ -441,7 +442,7 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
     }
 
     if(captured != ParseTree::EMPTY){
-        for(size_t i = 0; i < parse_tree.numArgs(captured); i++){
+        for(size_t i = 0; i < parse_tree.getNumArgs(captured); i++){
             ParseNode capture = parse_tree.arg(captured, i);
             resolveReference(capture);
         }
@@ -450,7 +451,7 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
     increaseClosureDepth(pn);
 
     if(captured != ParseTree::EMPTY){
-        size_t N = parse_tree.numArgs(captured);
+        size_t N = parse_tree.getNumArgs(captured);
 
         for(size_t i = 0; i < N; i++){
             ParseNode capture = parse_tree.arg(captured, i);
@@ -461,9 +462,9 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
     }
 
     size_t params_start = symbols.size();
-    for(size_t i = 0; i < parse_tree.numArgs(params); i++){
+    for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
         ParseNode param = parse_tree.arg(params, i);
-        if(parse_tree.getEnum(param) == PN_EQUAL){
+        if(parse_tree.getType(param) == PN_EQUAL){
             resolveExpr(parse_tree.rhs(param));
             param = parse_tree.lhs(param);
         }
@@ -473,9 +474,9 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
     resolveStmt(body);
 
     bool expect_default = false;
-    for(size_t i = 0; i < parse_tree.numArgs(params); i++){
+    for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
         ParseNode n = parse_tree.arg(params, i);
-        if(parse_tree.getEnum(n) == PN_EQUAL){
+        if(parse_tree.getType(n) == PN_EQUAL){
             expect_default = true;
         }else if(expect_default){
             errors.push_back(Error(parse_tree.getSelection(n), EXPECT_DEFAULT_ARG));
@@ -494,12 +495,12 @@ void SymbolTableBuilder::resolvePrototype(ParseNode pn){
 }
 
 void SymbolTableBuilder::resolveSubscript(ParseNode pn){
-    if(parse_tree.numArgs(pn) != 2){ resolveDefault(pn); return; }
+    if(parse_tree.getNumArgs(pn) != 2){ resolveDefault(pn); return; }
 
     ParseNode id = parse_tree.lhs(pn);
     ParseNode rhs = parse_tree.rhs(pn);
 
-    if(parse_tree.getEnum(id) != PN_IDENTIFIER || parse_tree.getEnum(rhs) != PN_IDENTIFIER){
+    if(parse_tree.getType(id) != PN_IDENTIFIER || parse_tree.getType(rhs) != PN_IDENTIFIER){
         resolveDefault(pn);
         return;
     }
@@ -508,7 +509,7 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn){
     const Typeset::Selection& rhs_sel = parse_tree.getSelection(rhs);
 
     if(map.find(id_sel) == map.end() || map.find(rhs_sel) == map.end()){
-        parse_tree.setEnum(pn, PN_IDENTIFIER);
+        parse_tree.setType(pn, PN_IDENTIFIER);
         resolveReference(pn);
     }else{
         resolveDefault(pn);
@@ -518,7 +519,7 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn){
 void SymbolTableBuilder::resolveBig(ParseNode pn){
     increaseLexicalDepth();
     ParseNode assign = parse_tree.arg(pn, 0);
-    if( parse_tree.getEnum(assign) != PN_ASSIGN ) return;
+    if( parse_tree.getType(assign) != PN_ASSIGN ) return;
     ParseNode id = parse_tree.lhs(assign);
     ParseNode stop = parse_tree.arg(pn, 1);
     ParseNode body = parse_tree.arg(pn, 2);
@@ -535,12 +536,12 @@ void SymbolTableBuilder::resolveBig(ParseNode pn){
 bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable){
     Typeset::Selection c = parse_tree.getSelection(pn);
 
-    if(parse_tree.getEnum(pn) == PN_SUBSCRIPT_ACCESS && !resolvePotentialIdSub(pn)){
+    if(parse_tree.getType(pn) == PN_SUBSCRIPT_ACCESS && !resolvePotentialIdSub(pn)){
         errors.push_back(Error(c, ASSIGN_EXPRESSION));
         return false;
     }
 
-    if(parse_tree.getEnum(pn) != PN_IDENTIFIER){
+    if(parse_tree.getType(pn) != PN_IDENTIFIER){
         errors.push_back(Error(c, ASSIGN_EXPRESSION));
         return false;
     }
