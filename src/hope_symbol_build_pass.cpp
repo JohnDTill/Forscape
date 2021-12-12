@@ -51,13 +51,56 @@ void SymbolTableBuilder::reset() noexcept{
     active_scope_id = 0;
 }
 
+Scope& SymbolTableBuilder::activeScope() noexcept{
+    return symbol_table.scopes[active_scope_id];
+}
+
+void SymbolTableBuilder::addScope(ParseNode closing_function){
+    activeScope().subscopes.back().subscope_id = symbol_table.scopes.size();
+    symbol_table.scopes.push_back(Scope(closing_function, active_scope_id));
+    active_scope_id = symbol_table.scopes.size()-1;
+    activeScope().subscopes.push_back(Scope::Subscope());
+}
+
+void SymbolTableBuilder::closeScope() noexcept{
+    active_scope_id = activeScope().parent_id;
+    if(active_scope_id != NONE)
+        activeScope().subscopes.push_back(Scope::Subscope());
+}
+
+Symbol& SymbolTableBuilder::lastSymbolOfId(const Id& identifier) noexcept{
+    return symbol_table.symbols[identifier.back()];
+}
+
+Symbol& SymbolTableBuilder::lastSymbolOfId(IdIndex index) noexcept{
+    return lastSymbolOfId(ids[index]);
+}
+
+size_t SymbolTableBuilder::lastSymbolIndexOfId(IdIndex index) const noexcept{
+    return ids[index].back();
+}
+
+Symbol& SymbolTableBuilder::lastDefinedSymbol() noexcept{
+    return symbol_table.symbols.back();
+}
+
+Symbol* SymbolTableBuilder::symbolFromSelection(const Typeset::Selection& sel) noexcept{
+    auto lookup = map.find(sel);
+    return lookup == map.end() ? nullptr : &lastSymbolOfId(lookup->second);
+}
+
+size_t SymbolTableBuilder::symbolIndexFromSelection(const Typeset::Selection& sel) const noexcept{
+    auto lookup = map.find(sel);
+    return lookup == map.end() ? NONE : lastSymbolIndexOfId(lookup->second);
+}
+
 void SymbolTableBuilder::resolveStmt(ParseNode pn){
     switch (parse_tree.getType(pn)) {
-        case PN_EQUAL: resolveEquality(pn); break;
-        case PN_ASSIGN: resolveAssignment(pn); break;
-        case PN_BLOCK: resolveBlock(pn); break;
-        case PN_ALGORITHM: resolveAlgorithm(pn); break;
-        case PN_PROTOTYPE_ALG: resolvePrototype(pn); break;
+    case PN_EQUAL: resolveEquality(pn); break;
+    case PN_ASSIGN: resolveAssignment(pn); break;
+    case PN_BLOCK: resolveBlock(pn); break;
+    case PN_ALGORITHM: resolveAlgorithm(pn); break;
+    case PN_PROTOTYPE_ALG: resolvePrototype(pn); break;
 
         case PN_WHILE:
         case PN_IF:
@@ -308,13 +351,13 @@ void SymbolTableBuilder::resolveDefault(ParseNode pn){
 void SymbolTableBuilder::resolveLambda(ParseNode pn){
     increaseClosureDepth(pn);
 
-    ParseNode params = parse_tree.arg(pn, 1);
+    ParseNode params = parse_tree.arg(pn, 2);
     assert(parse_tree.getType(params) == PN_LIST);
 
     for(size_t i = 0; i < parse_tree.getNumArgs(params); i++)
         defineLocalScope( parse_tree.arg(params, i) );
 
-    ParseNode rhs = parse_tree.arg(pn, 2);
+    ParseNode rhs = parse_tree.arg(pn, 3);
     resolveExpr(rhs);
 
     decreaseClosureDepth();
@@ -531,9 +574,9 @@ void SymbolTableBuilder::finalize(const Symbol& sym){
         c.format(fmt);
     }
 
-    //DO THIS - you need warnings...
-    //if(!sym_info.is_used)
-    //    errors.push_back(Error(sym_info.occurences->back(), UNUSED_VAR));
+    //DO THIS - you need warnings, some errors are pedantic
+    if(!sym.is_used)
+        errors.push_back(Error(sym.document_occurences->back(), UNUSED_VAR));
 }
 
 void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable){

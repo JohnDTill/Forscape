@@ -9,7 +9,7 @@ Hope::Code::SymbolTableLinker::SymbolTableLinker(SymbolTable& symbol_table, Hope
 
 void SymbolTableLinker::link(){
     reset();
-    link(0); //This should be in a separate pass after optimisation
+    link(0);
 }
 
 void SymbolTableLinker::reset() noexcept{
@@ -92,7 +92,7 @@ void SymbolTableLinker::link(size_t scope_index){
                 parse_tree.setArg(fn, 2, upvalue_list);
                 break;
             case PN_LAMBDA:
-                parse_tree.setArg(fn, 0, upvalue_list);
+                parse_tree.setArg(fn, 1, upvalue_list);
                 break;
         }
 

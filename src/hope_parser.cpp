@@ -685,15 +685,17 @@ Parser::ParseNode Parser::lambda(const ParseNode& id) noexcept{
 
     Typeset::Marker left = parse_tree.getLeft(id);
 
+    ParseNode capture_list = ParseTree::EMPTY;
     ParseNode referenced_upvalues = ParseTree::EMPTY;
     ParseNode e = expression();
     if(!noErrors()) return e;
 
     Typeset::Selection sel(left, rMarkPrev());
 
-    return parse_tree.addTernary(
+    return parse_tree.addQuadary(
                 PN_LAMBDA,
                 sel,
+                capture_list,
                 referenced_upvalues,
                 parse_tree.addUnary(PN_LIST, id),
                 e

@@ -1,8 +1,3 @@
-//This pass is responsible to group related identifiers into symbols,
-//and gather any data the GUI needs for usages, rename symbol, context-aware autocomplete, etc.
-//This pass should NOT handle any details of how variables will be resolved at runtime.
-//   The AST is subject to a great deal of transformation, so gathering data now would be premature.
-
 #ifndef HOPE_SYMBOL_BUILD_PASS_H
 #define HOPE_SYMBOL_BUILD_PASS_H
 
@@ -11,10 +6,6 @@
 #include "typeset_selection.h"
 #include <unordered_map>
 #include <vector>
-
-#ifndef NDEBUG
-#include <iostream>
-#endif
 
 namespace Hope {
 
@@ -113,98 +104,37 @@ public:
     SymbolTable symbol_table;
 
 private:
-    void reset() noexcept;
-
     static const std::unordered_map<std::string_view, ParseNodeType> predef;
-
     std::vector<size_t> symbol_id_index;
-
     size_t active_scope_id;
-
-    Scope& activeScope() noexcept{
-        return symbol_table.scopes[active_scope_id];
-    }
-
-    void addScope(ParseNode closing_function = NONE){
-        activeScope().subscopes.back().subscope_id = symbol_table.scopes.size();
-        symbol_table.scopes.push_back(Scope(closing_function, active_scope_id));
-        active_scope_id = symbol_table.scopes.size()-1;
-        activeScope().subscopes.push_back(Scope::Subscope());
-    }
-
-    void closeScope() noexcept{
-        active_scope_id = activeScope().parent_id;
-        if(active_scope_id != NONE)
-            activeScope().subscopes.push_back(Scope::Subscope());
-    }
-
     typedef std::vector<size_t> Id;
     typedef size_t IdIndex;
     std::vector<Id> ids;
     std::unordered_map<Typeset::Selection, IdIndex> map;
     std::vector<Error>& errors;
+    static constexpr size_t GLOBAL_DEPTH = 0;
+    size_t lexical_depth = GLOBAL_DEPTH;
+    size_t closure_depth = 0;
+    ParseTree& parse_tree;
 
-    #ifndef NDEBUG
-    void invariants(){
-        //A map result always has an active symbol
-        for(const auto& entry : map) assert(!ids[entry.second].empty());
-    }
-    #endif
-
-    Symbol& lastSymbolOfId(const Id& identifier) noexcept{
-        return symbol_table.symbols[identifier.back()];
-    }
-
-    Symbol& lastSymbolOfId(IdIndex index) noexcept{
-        return lastSymbolOfId(ids[index]);
-    }
-
-    size_t lastSymbolIndexOfId(IdIndex index) const noexcept{
-        return ids[index].back();
-    }
-
-    Symbol& lastDefinedSymbol() noexcept{
-        return symbol_table.symbols.back();
-    }
-
-    Symbol* symbolFromSelection(const Typeset::Selection& sel) noexcept{
-        auto lookup = map.find(sel);
-        return lookup == map.end() ? nullptr : &lastSymbolOfId(lookup->second);
-    }
-
-    size_t symbolIndexFromSelection(const Typeset::Selection& sel) const noexcept{
-        auto lookup = map.find(sel);
-        return lookup == map.end() ? NONE : lastSymbolIndexOfId(lookup->second);
-    }
-
+    void reset() noexcept;
+    Scope& activeScope() noexcept;
+    void addScope(ParseNode closing_function = NONE);
+    void closeScope() noexcept;
+    Symbol& lastSymbolOfId(const Id& identifier) noexcept;
+    Symbol& lastSymbolOfId(IdIndex index) noexcept;
+    size_t lastSymbolIndexOfId(IdIndex index) const noexcept;
+    Symbol& lastDefinedSymbol() noexcept;
+    Symbol* symbolFromSelection(const Typeset::Selection& sel) noexcept;
+    size_t symbolIndexFromSelection(const Typeset::Selection& sel) const noexcept;
     void increaseLexicalDepth();
     void decreaseLexicalDepth();
     void increaseClosureDepth(ParseNode pn);
     void decreaseClosureDepth();
-
-    static constexpr size_t GLOBAL_DEPTH = 0;
-    size_t lexical_depth = GLOBAL_DEPTH;
-
-    struct Closure {
-        ParseNode fn;
-        std::unordered_map<IdIndex, size_t> upvalue_indices;
-        size_t num_upvalues = 0;
-        std::vector<std::pair<IdIndex, bool> > upvalues;
-        std::vector<size_t> captured;
-
-        Closure(){}
-        Closure(ParseNode fn) : fn(fn) {}
-    };
-
     size_t getUpvalueIndex(IdIndex value, size_t closure_index);
-
-    size_t closure_depth = 0;
-
     void finalize(const Symbol& sym_info);
-
     void makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable);
     void appendEntry(size_t index, const Typeset::Selection& c, ParseNode pn, bool immutable);
-
     void resolveStmt(ParseNode pn);
     void resolveExpr(ParseNode pn);
     void resolveEquality(ParseNode pn);
@@ -227,7 +157,16 @@ private:
     void resolveBig(ParseNode pn);
     bool defineLocalScope(ParseNode pn, bool immutable = true);
 
-    ParseTree& parse_tree;
+    struct Closure {
+        ParseNode fn;
+        std::unordered_map<IdIndex, size_t> upvalue_indices;
+        size_t num_upvalues = 0;
+        std::vector<std::pair<IdIndex, bool> > upvalues;
+        std::vector<size_t> captured;
+
+        Closure(){}
+        Closure(ParseNode fn) : fn(fn) {}
+    };
 };
 
 }
