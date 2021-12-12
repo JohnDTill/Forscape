@@ -14,6 +14,7 @@
 #include <hope_scanner.h>
 #include <hope_parser.h>
 #include <hope_symbol_build_pass.h>
+#include <hope_symbol_link_pass.h>
 #include <hope_interpreter.h>
 #include <unordered_set>
 
@@ -75,8 +76,9 @@ Model* Model::run(View* caller, View* console){
         if(console) console->setModel(result);
         return result;
     }
+
     interpreter = new Code::Interpreter(parser.parse_tree, this, caller, console);
-    Model* result = interpreter->interpret(root);
+    Model* result = interpreter->interpret(symbol_builder.symbol_table, root);
     result->calculateSizes();
     result->updateLayout();
 

@@ -1,6 +1,7 @@
 #include "hope_interpreter.h"
 
 #include <code_parsenodetype.h>
+#include "hope_symbol_link_pass.h"
 #include <typeset_line.h>
 #include <typeset_model.h>
 #include <typeset_text.h>
@@ -23,11 +24,14 @@ namespace Hope {
 
 namespace Code {
 
-Interpreter::Interpreter(const ParseTree& parse_tree, Typeset::Model* model, Typeset::View* view, Typeset::View* console)
+Interpreter::Interpreter(ParseTree& parse_tree, Typeset::Model* model, Typeset::View* view, Typeset::View* console)
     : parse_tree(parse_tree), errors(model->errors), view(view), console(console) {
 }
 
-Typeset::Model* Interpreter::interpret(ParseNode root){
+Typeset::Model* Interpreter::interpret(SymbolTable& symbol_table, ParseNode root){
+    SymbolTableLinker linker(symbol_table, parse_tree);
+    linker.link();
+
     stack.clear();
 
     output = Typeset::Model::fromSerial("");
@@ -643,7 +647,7 @@ Value Interpreter::anonFun(ParseNode pn){
 
     ParseNode upvalues = l.upvalues(parse_tree);
 
-    Closure* list = &l.captured;
+    Closure* list = &l.closure;
 
     initClosure(*list, ParseTree::EMPTY, upvalues);
 
@@ -658,12 +662,12 @@ Value Interpreter::call(ParseNode call) {
         case Lambda_index:{
             Lambda& f = std::get<Lambda>(v);
             ParseNode params = f.params(parse_tree);
-            breakLocalClosureLinks(f.captured, ParseTree::EMPTY, f.upvalues(parse_tree));
+            breakLocalClosureLinks(f.closure, ParseTree::EMPTY, f.upvalues(parse_tree));
             size_t nparams = parse_tree.getNumArgs(params);
             if(nparams != nargs) return error(INVALID_ARGS, call);
             size_t stack_size = stack.size();
             Closure* old = active_closure;
-            active_closure = &f.captured;
+            active_closure = &f.closure;
             std::vector<std::pair<Value, std::string>> stack_vals;
             for(size_t i = 0; i < nargs && exit_mode == KEEP_GOING; i++){
                 ParseNode param = parse_tree.arg(params, i);

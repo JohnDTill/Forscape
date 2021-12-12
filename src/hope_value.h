@@ -16,16 +16,19 @@ namespace Code {
 typedef std::vector<std::shared_ptr<void>> Closure;
 
 struct Lambda{
-    Closure captured;
+    Closure closure;
     ParseNode def;
-    ParseNode upvalues(const ParseTree& parse_tree) const noexcept{
+    ParseNode captured(const ParseTree& parse_tree) const noexcept{
         return parse_tree.arg(def, 0);
     }
-    ParseNode params(const ParseTree& parse_tree) const noexcept{
+    ParseNode upvalues(const ParseTree& parse_tree) const noexcept{
         return parse_tree.arg(def, 1);
     }
-    ParseNode expr(const ParseTree& parse_tree) const noexcept{
+    ParseNode params(const ParseTree& parse_tree) const noexcept{
         return parse_tree.arg(def, 2);
+    }
+    ParseNode expr(const ParseTree& parse_tree) const noexcept{
+        return parse_tree.arg(def, 3);
     }
 
     Lambda(ParseNode def)
