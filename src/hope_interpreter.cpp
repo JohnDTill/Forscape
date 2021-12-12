@@ -1,6 +1,7 @@
 #include "hope_interpreter.h"
 
 #include <code_parsenodetype.h>
+#include "hope_symbol_link_pass.h"
 #include <typeset_line.h>
 #include <typeset_model.h>
 #include <typeset_text.h>
@@ -23,11 +24,14 @@ namespace Hope {
 
 namespace Code {
 
-Interpreter::Interpreter(const ParseTree& parse_tree, Typeset::Model* model, Typeset::View* view, Typeset::View* console)
+Interpreter::Interpreter(ParseTree& parse_tree, Typeset::Model* model, Typeset::View* view, Typeset::View* console)
     : parse_tree(parse_tree), errors(model->errors), view(view), console(console) {
 }
 
-Typeset::Model* Interpreter::interpret(ParseNode root){
+Typeset::Model* Interpreter::interpret(SymbolTable& symbol_table, ParseNode root){
+    SymbolTableLinker linker(symbol_table, parse_tree);
+    linker.link();
+
     stack.clear();
 
     output = Typeset::Model::fromSerial("");

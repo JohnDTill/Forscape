@@ -70,6 +70,8 @@ set(PROJECT_SOURCES
         ${SRC}/hope_stack.h
         ${SRC}/hope_symbol_build_pass.cpp
         ${SRC}/hope_symbol_build_pass.h
+        ${SRC}/hope_symbol_link_pass.cpp
+        ${SRC}/hope_symbol_link_pass.h
         ${SRC}/hope_unicode.h
         ${SRC}/hope_value.h
         ${GEN}/semantic_tags.h

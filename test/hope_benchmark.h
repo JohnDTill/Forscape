@@ -69,7 +69,7 @@ void runBenchmark(){
 
     startClock();
     for(size_t i = 0; i < ITER_INTERPRETER; i++){
-        interpreter.interpret(root);
+        interpreter.interpret(sym_table.symbol_table, root);
     }
     report("Interpreter", ITER_INTERPRETER);
 
@@ -79,7 +79,7 @@ void runBenchmark(){
 
     startClock();
     for(size_t i = 0; i < ITER_INTERPRETER; i++){
-        interpreter2.interpret(root);
+        interpreter2.interpret(sym_table.symbol_table, root);
         view.setModel(new Typeset::Model);
     }
     report("Interpret w/ view", ITER_INTERPRETER);

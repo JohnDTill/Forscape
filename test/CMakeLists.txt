@@ -69,6 +69,8 @@ add_executable(HopeTests ${TEST}/test_driver.cpp
     ${SRC}/hope_stack.h
     ${SRC}/hope_symbol_build_pass.cpp
     ${SRC}/hope_symbol_build_pass.h
+    ${SRC}/hope_symbol_link_pass.cpp
+    ${SRC}/hope_symbol_link_pass.h
     ${SRC}/hope_unicode.h
     ${GEN}/semantic_tags.h
     ${INCLUDE}/typeset_command.h

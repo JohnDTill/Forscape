@@ -20,6 +20,88 @@ namespace Hope {
 
 namespace Code {
 
+static constexpr size_t NONE = std::numeric_limits<size_t>::max();
+
+struct Symbol{
+    struct Access{
+        ParseNode pn;
+        size_t closure_depth;
+
+        Access(ParseNode pn, size_t closure_depth) :
+            pn(pn), closure_depth(closure_depth) {}
+    };
+
+    std::vector<Typeset::Selection>* document_occurences;
+    size_t declaration_lexical_depth;
+    size_t declaration_closure_depth;
+    size_t stack_index;
+    bool is_const;
+    bool is_used = false;
+    bool is_reassigned = false; //Used to determine if parameters are constant
+    bool is_closure_nested = false;
+    bool is_prototype = false;
+    bool is_ewise_index = false;
+    bool is_captured = false;
+
+    Symbol()
+        : declaration_lexical_depth(0) {}
+
+    Symbol(Typeset::Selection first_occurence,
+               size_t lexical_depth,
+               size_t closure_depth,
+               bool is_const)
+        : declaration_lexical_depth(lexical_depth),
+          declaration_closure_depth(closure_depth),
+          is_const(is_const) {
+        document_occurences = new std::vector<Typeset::Selection>();
+        document_occurences->push_back(first_occurence);
+    }
+
+    size_t closureIndex() const noexcept{
+        assert(declaration_closure_depth != 0);
+        return declaration_closure_depth - 1;
+    }
+};
+
+struct Scope{
+    enum UsageType{
+        DECLARE,
+        REASSIGN,
+        READ,
+    };
+
+    struct Usage{
+        size_t var_id;
+        ParseNode pn;
+        UsageType type;
+
+        Usage()
+            : var_id(NONE), type(DECLARE) {}
+
+        Usage(size_t var_id, ParseNode pn, UsageType type)
+            : var_id(var_id), pn(pn), type(type) {}
+    };
+
+    struct Subscope{
+        std::vector<Usage> usages;
+        size_t subscope_id = NONE;
+    };
+
+    ParseNode closing_function;
+    size_t parent_id;
+    std::vector<Subscope> subscopes;
+
+    Scope(ParseNode closing_function, size_t parent_id)
+        : closing_function(closing_function), parent_id(parent_id) {
+        subscopes.push_back(Subscope());
+    }
+};
+
+struct SymbolTable{
+    std::vector<Symbol> symbols;
+    std::vector<Scope> scopes;
+};
+
 class ParseTree;
 typedef std::unordered_map<Typeset::Marker, std::vector<Typeset::Selection>*> IdMap;
 
@@ -28,110 +110,25 @@ public:
     SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model);
     void resolveSymbols();
     IdMap doc_map; //Click a variable and see all references, accounting for scoping
+    SymbolTable symbol_table;
 
 private:
-    void link(size_t scope_index = 0);
-    std::vector<std::unordered_map<size_t, size_t>> closures;
-    std::vector<size_t> closure_size;
-    std::vector<size_t> stack_frame;
-    size_t stack_size;
-
-    struct Symbol{
-        struct Access{
-            ParseNode pn;
-            size_t closure_depth;
-
-            Access(ParseNode pn, size_t closure_depth) :
-                pn(pn), closure_depth(closure_depth) {}
-        };
-
-        std::vector<Typeset::Selection>* document_occurences;
-        size_t declaration_lexical_depth;
-        size_t declaration_closure_depth;
-        size_t stack_index;
-        bool is_const;
-        bool is_used = false;
-        bool is_reassigned = false; //Used to determine if parameters are constant
-        bool is_closure_nested = false;
-        bool is_prototype = false;
-        bool is_ewise_index = false;
-        bool is_captured = false;
-
-        Symbol()
-            : declaration_lexical_depth(0) {}
-
-        Symbol(Typeset::Selection first_occurence,
-                   size_t lexical_depth,
-                   size_t closure_depth,
-                   bool is_const)
-            : declaration_lexical_depth(lexical_depth),
-              declaration_closure_depth(closure_depth),
-              is_const(is_const) {
-            document_occurences = new std::vector<Typeset::Selection>();
-            document_occurences->push_back(first_occurence);
-        }
-
-        size_t closureIndex() const noexcept{
-            assert(declaration_closure_depth != 0);
-            return declaration_closure_depth - 1;
-        }
-    };
-
     void reset() noexcept;
 
     static const std::unordered_map<std::string_view, ParseNodeType> predef;
 
-    std::vector<Symbol> symbols;
     std::vector<size_t> symbol_id_index;
-
-    static constexpr size_t NONE = std::numeric_limits<size_t>::max();
-
-    struct Scope{
-        enum UsageType{
-            DECLARE,
-            REASSIGN,
-            READ,
-        };
-
-        struct Usage{
-            size_t var_id;
-            ParseNode pn;
-            UsageType type;
-
-            Usage()
-                : var_id(NONE), type(DECLARE) {}
-
-            Usage(size_t var_id, ParseNode pn, UsageType type)
-                : var_id(var_id), pn(pn), type(type) {}
-        };
-
-        struct Subscope{
-            std::vector<Usage> usages;
-            size_t subscope_id = NONE;
-        };
-
-        ParseNode closing_function;
-        size_t parent_id;
-        std::vector<Subscope> subscopes;
-
-        Scope(ParseNode closing_function, size_t parent_id)
-            : closing_function(closing_function), parent_id(parent_id) {
-            subscopes.push_back(Subscope());
-        }
-    };
-
-    std::vector<Scope> scopes;
 
     size_t active_scope_id;
 
     Scope& activeScope() noexcept{
-        return scopes[active_scope_id];
+        return symbol_table.scopes[active_scope_id];
     }
 
     void addScope(ParseNode closing_function = NONE){
-        activeScope().subscopes.back().subscope_id = scopes.size();
-        scopes.push_back(Scope(closing_function, active_scope_id));
-        active_scope_id = scopes.size()-1;
+        activeScope().subscopes.back().subscope_id = symbol_table.scopes.size();
+        symbol_table.scopes.push_back(Scope(closing_function, active_scope_id));
+        active_scope_id = symbol_table.scopes.size()-1;
         activeScope().subscopes.push_back(Scope::Subscope());
     }
 
@@ -155,7 +152,7 @@ private:
     #endif
 
     Symbol& lastSymbolOfId(const Id& identifier) noexcept{
-        return symbols[identifier.back()];
+        return symbol_table.symbols[identifier.back()];
     }
 
     Symbol& lastSymbolOfId(IdIndex index) noexcept{
@@ -167,7 +164,7 @@ private:
     }
 
     Symbol& lastDefinedSymbol() noexcept{
-        return symbols.back();
+        return symbol_table.symbols.back();
     }
 
     Symbol* symbolFromSelection(const Typeset::Selection& sel) noexcept{

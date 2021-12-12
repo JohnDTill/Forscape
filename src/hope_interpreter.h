@@ -23,18 +23,19 @@ namespace Code {
 
 struct Error;
 class ParseTree;
+struct SymbolTable;
 
 class Interpreter{
 public:
-    Interpreter(const ParseTree& parse_tree,
+    Interpreter(ParseTree& parse_tree,
                 Typeset::Model* model,
                 Typeset::View* view,
                 Typeset::View* console);
-    Typeset::Model* interpret(ParseNode root);
+    Typeset::Model* interpret(SymbolTable& symbol_table, ParseNode root);
     void stop();
 
 private:
-    const ParseTree& parse_tree;
+    ParseTree& parse_tree;
     std::vector<Error>& errors;
 
     enum ExitMode{
