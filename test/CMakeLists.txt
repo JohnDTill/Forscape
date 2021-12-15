@@ -33,6 +33,23 @@ find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR}Svg REQUIRED)
 
+set(GEN_FILES
+    ${GEN}/code_ast_fields.cpp
+    ${GEN}/code_ast_fields.h
+    ${GEN}/code_error_types.h
+    ${GEN}/code_parsenodetype.h
+    ${GEN}/code_tokentype.h
+    ${GEN}/construct_codes.h
+    ${GEN}/hope_interpreter_gen.cpp
+    ${GEN}/semantic_tags.h
+    ${GEN}/typeset_closesymbol.h
+    ${GEN}/typeset_keywords.cpp
+    ${GEN}/typeset_keywords.h
+    ${GEN}/typeset_shorthand.h
+    ${GEN}/unicode_subscripts.h
+    ${GEN}/unicode_superscripts.h
+)
+
 add_executable(HopeTests ${TEST}/test_driver.cpp
     ${TEST}/code_interpreter.h
     ${TEST}/code_parser.h
@@ -46,17 +63,11 @@ add_executable(HopeTests ${TEST}/test_driver.cpp
     ${TEST}/typeset_loadsave.h
     ${TEST}/typeset_mutability.h
     ${TEST}/typeset_qpainter.h
-    ${GEN}/code_ast_fields.cpp
-    ${GEN}/code_ast_fields.h
-    ${GEN}/code_error_types.h
-    ${GEN}/code_parsenodetype.h
-    ${GEN}/code_tokentype.h
-    ${GEN}/construct_codes.h
+    ${GEN_FILES}
     ${SRC}/hope_error.cpp
     ${INCLUDE}/hope_error.h
     ${SRC}/hope_interpreter.cpp
     ${SRC}/hope_interpreter.h
-    ${GEN}/hope_interpreter_gen.cpp
     ${SRC}/hope_parse_tree.cpp
     ${SRC}/hope_parse_tree.h
     ${SRC}/hope_parser.cpp
@@ -72,14 +83,11 @@ add_executable(HopeTests ${TEST}/test_driver.cpp
     ${SRC}/hope_symbol_link_pass.cpp
     ${SRC}/hope_symbol_link_pass.h
     ${SRC}/hope_unicode.h
-    ${GEN}/semantic_tags.h
     ${INCLUDE}/typeset_command.h
     ${SRC}/typeset_construct.cpp
     ${SRC}/typeset_construct.h
     ${SRC}/typeset_controller.cpp
     ${INCLUDE}/typeset_controller.h
-    ${GEN}/typeset_keywords.cpp
-    ${GEN}/typeset_keywords.h
     ${SRC}/typeset_line.cpp
     ${SRC}/typeset_line.h
     ${SRC}/typeset_marker.cpp
@@ -92,7 +100,6 @@ add_executable(HopeTests ${TEST}/test_driver.cpp
     ${SRC}/typeset_phrase.h
     ${SRC}/typeset_selection.cpp
     ${SRC}/typeset_selection.h
-    ${GEN}/typeset_shorthand.h
     ${SRC}/typeset_subphrase.cpp
     ${SRC}/typeset_subphrase.h
     ${SRC}/typeset_text.cpp
@@ -136,7 +143,7 @@ add_custom_target(
     codegen ALL
     COMMAND python all.py
     WORKING_DIRECTORY ${META}
-    BYPRODUCTS ${GEN}/code_error_types.h
+    BYPRODUCTS ${GEN_FILES}
     COMMENT "Performing codegen"
 )
 

@@ -36,6 +36,23 @@ find_package(Qt${QT_VERSION_MAJOR}Svg REQUIRED)
 configure_file(lambda.ico ${CMAKE_BINARY_DIR} COPYONLY)
 configure_file(toolbar_glyphs.otf ${CMAKE_BINARY_DIR} COPYONLY)
 
+set(GEN_FILES
+    ${GEN}/code_ast_fields.cpp
+    ${GEN}/code_ast_fields.h
+    ${GEN}/code_error_types.h
+    ${GEN}/code_parsenodetype.h
+    ${GEN}/code_tokentype.h
+    ${GEN}/construct_codes.h
+    ${GEN}/hope_interpreter_gen.cpp
+    ${GEN}/semantic_tags.h
+    ${GEN}/typeset_closesymbol.h
+    ${GEN}/typeset_keywords.cpp
+    ${GEN}/typeset_keywords.h
+    ${GEN}/typeset_shorthand.h
+    ${GEN}/unicode_subscripts.h
+    ${GEN}/unicode_superscripts.h
+)
+
 set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
@@ -47,17 +64,11 @@ set(PROJECT_SOURCES
         searchdialog.h
         searchdialog.cpp
         searchdialog.ui
-        ${GEN}/code_ast_fields.cpp
-        ${GEN}/code_ast_fields.h
-        ${GEN}/code_error_types.h
-        ${GEN}/code_parsenodetype.h
-        ${GEN}/code_tokentype.h
-        ${GEN}/construct_codes.h
+        ${GEN_FILES}
         ${SRC}/hope_error.cpp
         ${INCLUDE}/hope_error.h
         ${SRC}/hope_interpreter.cpp
         ${SRC}/hope_interpreter.h
-        ${GEN}/hope_interpreter_gen.cpp
         ${SRC}/hope_parse_tree.cpp
         ${SRC}/hope_parse_tree.h
         ${SRC}/hope_parser.cpp
@@ -74,15 +85,11 @@ set(PROJECT_SOURCES
         ${SRC}/hope_symbol_link_pass.h
         ${SRC}/hope_unicode.h
         ${SRC}/hope_value.h
-        ${GEN}/semantic_tags.h
-        ${GEN}/typeset_closesymbol.h
         ${INCLUDE}/typeset_command.h
         ${SRC}/typeset_construct.cpp
         ${SRC}/typeset_construct.h
         ${SRC}/typeset_controller.cpp
         ${INCLUDE}/typeset_controller.h
-        ${GEN}/typeset_keywords.cpp
-        ${GEN}/typeset_keywords.h
         ${SRC}/typeset_line.cpp
         ${SRC}/typeset_line.h
         ${SRC}/typeset_marker.cpp
@@ -95,15 +102,12 @@ set(PROJECT_SOURCES
         ${SRC}/typeset_phrase.h
         ${SRC}/typeset_selection.cpp
         ${SRC}/typeset_selection.h
-        ${GEN}/typeset_shorthand.h
         ${SRC}/typeset_subphrase.cpp
         ${SRC}/typeset_subphrase.h
         ${SRC}/typeset_text.cpp
         ${SRC}/typeset_text.h
         ${SRC}/typeset_view.cpp
         ${INCLUDE}/typeset_view.h
-        ${GEN}/unicode_subscripts.h
-        ${GEN}/unicode_superscripts.h
         ${COMMAND}/typeset_command_indent.cpp
         ${COMMAND}/typeset_command_indent.h
         ${COMMAND}/typeset_command_line.cpp
@@ -178,7 +182,7 @@ add_custom_target(
     codegen ALL
     COMMAND python all.py
     WORKING_DIRECTORY ${META}
-    BYPRODUCTS ${GEN}/code_error_types.h
+    BYPRODUCTS ${GEN_FILES}
     COMMENT "Performing codegen"
 )
 
