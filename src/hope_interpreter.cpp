@@ -9,6 +9,7 @@
 #include <typeset_all_constructs.h>
 
 #include <Eigen/Eigen>
+#include <thread>
 
 #ifdef HOPE_EIGEN_UNSUPPORTED
 #include <unsupported/Eigen/MatrixFunctions>
@@ -18,50 +19,47 @@
 #include <iostream>
 #endif
 
-#include <QCoreApplication> //DO THIS - this is a daft until threading
-
 namespace Hope {
 
 namespace Code {
 
-Interpreter::Interpreter(ParseTree& parse_tree, Typeset::Model* model, Typeset::View* view, Typeset::View* console)
-    : parse_tree(parse_tree), errors(model->errors), view(view), console(console) {
-}
+Interpreter::Interpreter(const ParseTree& parse_tree)
+    : parse_tree(parse_tree) {}
 
-Typeset::Model* Interpreter::interpret(SymbolTable& symbol_table, ParseNode root){
+void Interpreter::run(SymbolTable symbol_table, ParseNode root){
     SymbolTableLinker linker(symbol_table, parse_tree);
     linker.link();
 
     stack.clear();
-
-    output = Typeset::Model::fromSerial("");
-    output->is_output = true;
-    exit_mode = KEEP_GOING;
+    status = NORMAL;
     active_closure = nullptr;
-    if(console) console->setModel(output);
 
     assert(parse_tree.getType(root) == PN_BLOCK);
     blockStmt(root);
+    status = FINISHED;
+}
 
-    if(!errors.empty()){
-        output->appendLine();
-        Error::writeErrors(errors, output, view);
-    }
-    output->calculateSizes();
-    output->updateLayout();
-    if(console) console->updateModel();
-
-    return output;
+void Interpreter::runThread(SymbolTable symbol_table, ParseNode root){
+    status = NORMAL;
+    std::thread(&Interpreter::run, this, symbol_table, root).detach();
 }
 
 void Interpreter::stop(){
-    exit_mode = ERROR;
-    output->appendLine();
-    output->lastText()->str = "Stopped by user";
+    directive = STOP;
+}
+
+Value Interpreter::error(ErrorCode code, ParseNode pn){
+    if(status < ERROR){
+        error_code = code;
+        error_node = pn;
+    }
+    status = ERROR;
+
+    return NIL;
 }
 
 void Interpreter::interpretStmt(ParseNode pn){
-    QCoreApplication::processEvents(); //DO THIS - this is a daft until threading
+    if(directive == STOP) status = ERROR;
 
     switch (parse_tree.getType(pn)) {
         case PN_EQUAL: assignStmt(pn); break;
@@ -79,24 +77,15 @@ void Interpreter::interpretStmt(ParseNode pn){
         case PN_PROTOTYPE_ALG: stack.push(static_cast<void*>(nullptr), parse_tree.str(parse_tree.child(pn))); break;
         case PN_EXPR_STMT: callStmt(parse_tree.child(pn)); break;
         case PN_RETURN: returnStmt(pn); break;
-        case PN_BREAK: exit_mode = static_cast<ExitMode>(exit_mode | BREAK); break;
-        case PN_CONTINUE: exit_mode = static_cast<ExitMode>(exit_mode | CONTINUE); break;
+        case PN_BREAK: status = static_cast<Status>(status | BREAK); break;
+        case PN_CONTINUE: status = static_cast<Status>(status | CONTINUE); break;
         default: error(UNRECOGNIZED_STMT, pn);
     }
 }
 
 void Interpreter::printStmt(ParseNode pn){
-    bool at_bottom = console && console->scrolledToBottom();
-
-    for(size_t i = 0; i < parse_tree.getNumArgs(pn) && exit_mode == KEEP_GOING; i++)
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn) && status == NORMAL; i++)
         printNode(parse_tree.arg(pn, i));
-
-    if(console){
-        console->updateHighlighting();
-        console->updateModel();
-
-        if(at_bottom) console->scrollToBottom();
-    }
 }
 
 void Interpreter::assertStmt(ParseNode pn){
@@ -117,11 +106,11 @@ void Interpreter::assignStmt(ParseNode pn){
 }
 
 void Interpreter::whileStmt(ParseNode pn){
-    while(exit_mode <= CONTINUE && evaluateCondition( parse_tree.arg(pn, 0) )){
-        exit_mode = KEEP_GOING;
+    while(status <= CONTINUE && evaluateCondition( parse_tree.arg(pn, 0) )){
+        status = NORMAL;
         size_t stack_size = stack.size();
         interpretStmt( parse_tree.arg(pn, 1) );
-        if(exit_mode < RETURN) stack.trim(stack_size);
+        if(status < RETURN) stack.trim(stack_size);
     }
 }
 
@@ -129,41 +118,41 @@ void Interpreter::forStmt(ParseNode pn){
     size_t stack_size = stack.size();
     interpretStmt(parse_tree.arg(pn, 0));
 
-    while(exit_mode <= CONTINUE && evaluateCondition( parse_tree.arg(pn, 1) )){
-        exit_mode = KEEP_GOING;
+    while(status <= CONTINUE && evaluateCondition( parse_tree.arg(pn, 1) )){
+        status = NORMAL;
         size_t stack_size = stack.size();
         interpretStmt( parse_tree.arg(pn, 3) );
-        if(exit_mode < RETURN){
+        if(status < RETURN){
             stack.trim(stack_size);
             interpretStmt(parse_tree.arg(pn, 2));
         }
     }
 
-    if(exit_mode < RETURN) stack.trim(stack_size);
+    if(status < RETURN) stack.trim(stack_size);
 }
 
 void Interpreter::ifStmt(ParseNode pn){
-    if(exit_mode == KEEP_GOING && evaluateCondition( parse_tree.arg(pn, 0) )){
+    if(status == NORMAL && evaluateCondition( parse_tree.arg(pn, 0) )){
         size_t stack_size = stack.size();
         interpretStmt( parse_tree.arg(pn, 1) );
-        if(exit_mode < RETURN) stack.trim(stack_size);
+        if(status < RETURN) stack.trim(stack_size);
     }
 }
 
 void Interpreter::ifElseStmt(ParseNode pn){
-    if(exit_mode == KEEP_GOING && evaluateCondition( parse_tree.arg(pn, 0) )){
+    if(status == NORMAL && evaluateCondition( parse_tree.arg(pn, 0) )){
         size_t stack_size = stack.size();
         interpretStmt( parse_tree.arg(pn, 1) );
-        if(exit_mode < RETURN) stack.trim(stack_size);
-    }else if(exit_mode == KEEP_GOING){
+        if(status < RETURN) stack.trim(stack_size);
+    }else if(status == NORMAL){
         size_t stack_size = stack.size();
         interpretStmt( parse_tree.arg(pn, 2) );
-        if(exit_mode < RETURN) stack.trim(stack_size);
+        if(status < RETURN) stack.trim(stack_size);
     }
 }
 
 void Interpreter::blockStmt(ParseNode pn){
-    for(size_t i = 0; i < parse_tree.getNumArgs(pn) && exit_mode == KEEP_GOING; i++)
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn) && status == NORMAL; i++)
         interpretStmt(parse_tree.arg(pn, i));
 }
 
@@ -243,7 +232,7 @@ void Interpreter::breakLocalClosureLinks(Closure& closure, ParseNode captured, P
 
 void Interpreter::returnStmt(ParseNode pn){
     Value v = interpretExpr(parse_tree.child(pn));
-    exit_mode = static_cast<ExitMode>(exit_mode | RETURN);
+    status = static_cast<Status>(status | RETURN);
     stack.push(v, "%RETURN");
 }
 
@@ -263,7 +252,8 @@ Value Interpreter::implicitMult(ParseNode pn, size_t start){
             const Lambda& l = std::get<Lambda>(vl);
             ParseNode params = l.params(parse_tree);
             if(parse_tree.getNumArgs(params) != 1){
-                return error(INVALID_ARGS, lhs);
+                error(INVALID_ARGS, lhs);
+                return NIL;
             }else{
                 stack.push(vr, parse_tree.str(parse_tree.child(params)));
             }
@@ -300,15 +290,24 @@ Value Interpreter::big(ParseNode pn, ParseNodeType type){
 
     interpretStmt(assign);
     Value val_start = stack.back();
-    if(val_start.index() != double_index) return error(BIG_SYMBOL_ARG, assign);
+    if(val_start.index() != double_index){
+        error(BIG_SYMBOL_ARG, assign);
+        return NIL;
+    }
     size_t start = std::get<double>(val_start);
     Value val_final = interpretExpr(stop);
-    if(val_final.index() != double_index) return error(BIG_SYMBOL_ARG, stop);
+    if(val_final.index() != double_index){
+        error(BIG_SYMBOL_ARG, stop);
+        return NIL;
+    }
     size_t final = std::get<double>(val_final);
-    if(final <= start) return error(BIG_SYMBOL_RANGE, pn);
+    if(final <= start){
+        error(BIG_SYMBOL_RANGE, pn);
+        return NIL;
+    }
 
     Value v = interpretExpr(body);
-    while(++start < final && exit_mode < ERROR){
+    while(++start < final && status < ERROR){
         std::get<double>(stack.back()) += 1;
         v = binaryDispatch(type, v, interpretExpr(body), pn);
     }
@@ -319,14 +318,18 @@ Value Interpreter::big(ParseNode pn, ParseNodeType type){
 }
 
 Value Interpreter::cases(ParseNode pn){
-    for(size_t i = 0; i < parse_tree.getNumArgs(pn) && exit_mode < ERROR; i+=2){
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn) && status < ERROR; i+=2){
         ParseNode condition = parse_tree.arg(pn, i+1);
         Value v = interpretExpr(condition);
-        if(v.index() != bool_index) return error(TYPE_ERROR, condition);
+        if(v.index() != bool_index){
+            error(TYPE_ERROR, condition);
+            return NIL;
+        }
         else if(std::get<bool>(v)) return interpretExpr(parse_tree.arg(pn, i));
     }
 
-    return error(EMPTY_CASES, pn);
+    error(EMPTY_CASES, pn);
+    return NIL;
 }
 
 bool Interpreter::evaluateCondition(ParseNode pn){
@@ -383,7 +386,7 @@ void Interpreter::reassignSubscript(ParseNode lhs, ParseNode rhs){
                 error(TYPE_ERROR, rhs);
                 return;
             }
-            for(size_t i = 1; i <= num_indices && errors.empty(); i++)
+            for(size_t i = 1; i <= num_indices && status == NORMAL; i++)
                 readSubscript(parse_tree.arg(lhs, i), 1);
             read(lvalue_node) = rvalue;
             return;
@@ -411,7 +414,7 @@ void Interpreter::reassignSubscript(ParseNode lhs, ParseNode rhs){
                 Eigen::Map<Eigen::VectorXd> vec(lmat.data(), lmat.size());
                 ParseNode index_node = parse_tree.arg(lhs, 1);
                 Slice s = readSubscript(index_node, lmat.size());
-                if(!errors.empty()) return;
+                if(status != NORMAL) return;
                 auto v = vec(s);
 
                 if(rmat.cols() == v.cols() && rmat.rows() == v.rows())
@@ -423,7 +426,7 @@ void Interpreter::reassignSubscript(ParseNode lhs, ParseNode rhs){
                 Slice rows = readSubscript(row_node, lmat.rows());
                 ParseNode col_node = parse_tree.arg(lhs, 2);
                 Slice cols = readSubscript(col_node, lmat.cols());
-                if(!errors.empty()) return;
+                if(status != NORMAL) return;
                 auto m = lmat(rows, cols);
                 if(rmat.cols() == m.cols() && rmat.rows() == m.rows())
                     m = rmat;
@@ -579,7 +582,8 @@ Value& Interpreter::read(ParseNode pn){
         case PN_READ_GLOBAL: return readGlobal(pn);
         case PN_READ_UPVALUE: return readUpvalue(pn);
         default:
-            stack.push(error(NON_LVALUE, pn), "%ERROR");
+            error(NON_LVALUE, pn);
+            stack.push(NIL, "%ERROR");
             return stack.back();
     }
 }
@@ -603,16 +607,6 @@ Value& Interpreter::readUpvalue(ParseNode pn){
     return conv(active_closure->at(upvalue_offset));
 }
 
-Value Interpreter::error(ErrorCode code, ParseNode pn) {
-    if(errors.empty()){
-        exit_mode = ERROR;
-        Typeset::Selection c = parse_tree.getSelection(pn);
-        errors.push_back(Error(c, code));
-    }
-
-    return &errors.back();
-}
-
 Value Interpreter::matrix(ParseNode pn){
     if(parse_tree.getNumArgs(pn) == 1) return interpretExpr(parse_tree.arg(pn, 0));
 
@@ -628,7 +622,8 @@ Value Interpreter::matrix(ParseNode pn){
             const ParseNode& arg = parse_tree.arg(pn, curr++);
             Value e = interpretExpr(arg);
             if(e.index() != double_index){
-                return error(NON_NUMERIC_TYPE, arg);
+                error(NON_NUMERIC_TYPE, arg);
+                return NIL;
             }
             mat(i,j) = std::get<double>(e);
         }
@@ -664,12 +659,15 @@ Value Interpreter::call(ParseNode call) {
             ParseNode params = f.params(parse_tree);
             breakLocalClosureLinks(f.closure, ParseTree::EMPTY, f.upvalues(parse_tree));
             size_t nparams = parse_tree.getNumArgs(params);
-            if(nparams != nargs) return error(INVALID_ARGS, call);
+            if(nparams != nargs){
+                error(INVALID_ARGS, call);
+                return NIL;
+            }
             size_t stack_size = stack.size();
             Closure* old = active_closure;
             active_closure = &f.closure;
             std::vector<std::pair<Value, std::string>> stack_vals;
-            for(size_t i = 0; i < nargs && exit_mode == KEEP_GOING; i++){
+            for(size_t i = 0; i < nargs && status == NORMAL; i++){
                 ParseNode param = parse_tree.arg(params, i);
                 if(parse_tree.getType(param) == PN_EQUAL) param = parse_tree.lhs(param);
                 Value v = interpretExpr(parse_tree.arg(call, i+1));
@@ -697,12 +695,13 @@ Value Interpreter::call(ParseNode call) {
             size_t nparams = parse_tree.getNumArgs(params);
             if(nargs > nparams){
                 frames.pop_back();
-                return error(INVALID_ARGS, call);
+                error(INVALID_ARGS, call);
+                return NIL;
             }
             Closure* old = active_closure;
             active_closure = &alg.closure;
             std::vector<std::pair<Value, std::string>> stack_vals;
-            for(size_t i = 0; (i < nargs) & (exit_mode == KEEP_GOING); i++){
+            for(size_t i = 0; (i < nargs) & (status == NORMAL); i++){
                 ParseNode param = parse_tree.arg(params, i);
                 if(parse_tree.getType(param) == PN_EQUAL) param = parse_tree.lhs(param);
                 Value v = interpretExpr(parse_tree.arg(call, i+1));
@@ -712,13 +711,14 @@ Value Interpreter::call(ParseNode call) {
                     stack_vals.push_back({v, parse_tree.str(param)});
                 }
             }
-            for(size_t i = nargs; (i < nparams)  & (exit_mode == KEEP_GOING); i++){
+            for(size_t i = nargs; (i < nparams)  & (status == NORMAL); i++){
                 ParseNode defnode = parse_tree.arg(params, i);
                 if(parse_tree.getType(defnode) != PN_EQUAL){
                     stack.trim(frames.back());
                     frames.pop_back();
 
-                    return error(INVALID_ARGS, call);
+                    error(INVALID_ARGS, call);
+                    return NIL;
                 }
                 ParseNode param = parse_tree.arg(params, i);
                 if(parse_tree.getType(param) == PN_EQUAL) param = parse_tree.lhs(param);
@@ -734,12 +734,13 @@ Value Interpreter::call(ParseNode call) {
             interpretStmt(alg.body(parse_tree));
             active_closure = old;
 
-            if(exit_mode != RETURN){
+            if(status != RETURN){
                 stack.trim(frames.back());
                 frames.pop_back();
-                return error(NO_RETURN, call);
+                error(NO_RETURN, call);
+                return NIL;
             }else{
-                exit_mode = KEEP_GOING;
+                status = NORMAL;
                 Value ans = stack.readReturn();
                 stack.trim(frames.back());
                 frames.pop_back();
@@ -748,14 +749,20 @@ Value Interpreter::call(ParseNode call) {
         }
 
         case Unitialized_index:
-            return error(USE_BEFORE_DEFINE, parse_tree.arg(call, 0));
+            error(USE_BEFORE_DEFINE, parse_tree.arg(call, 0));
+            return NIL;
 
         case double_index:
         case MatrixXd_index:
-            if(nargs != 1) return error(NOT_CALLABLE, call);
+            if(nargs != 1){
+                error(NOT_CALLABLE, call);
+                return NIL;
+            }
             else return binaryDispatch(call);
 
-        default: return error(NOT_CALLABLE, call);
+        default:
+            error(NOT_CALLABLE, call);
+            return NIL;
     }
 }
 
@@ -786,7 +793,7 @@ void Interpreter::callStmt(ParseNode pn){
             breakLocalClosureLinks(alg.closure, alg.captured(parse_tree), alg.upvalues(parse_tree));
             size_t stack_size = stack.size();
             callAlg(alg, pn);
-            if(exit_mode == RETURN) exit_mode = KEEP_GOING;
+            if(status == RETURN) status = NORMAL;
             stack.trim(stack_size);
             break;
         }
@@ -807,7 +814,7 @@ void Interpreter::callAlg(Algorithm& alg, ParseNode call){
     Closure* old = active_closure;
     active_closure = &alg.closure;
     std::vector<std::pair<Value, std::string>> stack_vals;
-    for(size_t i = 0; (i < nargs) & (exit_mode == KEEP_GOING); i++){
+    for(size_t i = 0; (i < nargs) & (status == NORMAL); i++){
         ParseNode param = parse_tree.arg(params, i);
         if(parse_tree.getType(param) == PN_EQUAL) param = parse_tree.lhs(param);
         Value v = interpretExpr(parse_tree.arg(call, i+1));
@@ -817,7 +824,7 @@ void Interpreter::callAlg(Algorithm& alg, ParseNode call){
             stack_vals.push_back({v, parse_tree.str(param)});
         }
     }
-    for(size_t i = nargs; (i < nparams)  & (exit_mode == KEEP_GOING); i++){
+    for(size_t i = nargs; (i < nparams)  & (status == NORMAL); i++){
         ParseNode defnode = parse_tree.arg(params, i);
         if(parse_tree.getType(defnode) != PN_EQUAL){
             error(INVALID_ARGS, call);
@@ -847,18 +854,21 @@ Value Interpreter::elementAccess(ParseNode pn){
 
     switch (lhs.index()) {
         case double_index:
-            for(size_t i = 1; i <= num_indices && errors.empty(); i++)
+            for(size_t i = 1; i <= num_indices && status == NORMAL; i++)
                 readSubscript(parse_tree.arg(pn, i), 1);
             return lhs;
 
         case MatrixXd_index:{
             const Eigen::MatrixXd& mat = std::get<Eigen::MatrixXd>(lhs);
             if(num_indices == 1){
-                if(mat.rows() > 1 && mat.cols() > 1) return error(INDEX_OUT_OF_RANGE, pn);
+                if(mat.rows() > 1 && mat.cols() > 1){
+                    error(INDEX_OUT_OF_RANGE, pn);
+                    return NIL;
+                }
                 Eigen::Map<const Eigen::VectorXd> vec(mat.data(), mat.size());
                 ParseNode index_node = parse_tree.arg(pn, 1);
                 Slice s = readSubscript(index_node, mat.size());
-                if(!errors.empty()) return &errors[0];
+                if(status != NORMAL) return NIL;
                 const auto& v = vec(s);
                 if(v.size() == 1) return v(0);
                 else if(mat.rows() == 1) return v.eval().transpose();
@@ -868,15 +878,18 @@ Value Interpreter::elementAccess(ParseNode pn){
                 Slice rows = readSubscript(row_node, mat.rows());
                 ParseNode col_node = parse_tree.arg(pn, 2);
                 Slice cols = readSubscript(col_node, mat.cols());
-                if(!errors.empty()) return &errors[0];
+                if(status != NORMAL) return NIL;
                 const auto& m = mat(rows, cols);
                 return m.size() > 1 ? Value(m) : m(0,0);
             }else{
-                return error(INDEX_OUT_OF_RANGE, pn);
+                error(INDEX_OUT_OF_RANGE, pn);
+                return NIL;
             }
         }
 
-        default: return error(TYPE_ERROR, pn);
+        default:
+            error(TYPE_ERROR, pn);
+            return NIL;
     }
 }
 
@@ -943,25 +956,20 @@ double Interpreter::readDouble(ParseNode pn){
 }
 
 void Interpreter::printNode(const ParseNode& pn){
-    Value v = interpretExpr(pn);
-    if(exit_mode == KEEP_GOING) appendTo(output, v);
-}
+    Value val = interpretExpr(pn);
+    if(status != NORMAL) return;
 
-void Interpreter::appendTo(Typeset::Model* m, const Value& val){
+    std::string str;
+
     switch (val.index()) {
-        case RuntimeError:
-            break;
-        case double_index:
-            m->lastText()->str += formatted( std::get<double>(val) );
-            break;
-        case string_index:{
+        case double_index: str = formatted( std::get<double>(val) ); break;
+        case bool_index: str = std::get<bool>(val) ? "true" : "false"; break;
 
-            std::string str = std::get<std::string>(val);
+        case string_index:
+            str = std::get<std::string>(val);
             removeEscapes(str);
-            Typeset::Controller(m).insertSerial(str);
-
             break;
-        }
+
         case MatrixXd_index:{
             const Eigen::MatrixXd& mat = std::get<Eigen::MatrixXd>(val);
             Typeset::Construct* c = new Typeset::Matrix(mat.rows(), mat.cols());
@@ -971,26 +979,22 @@ void Interpreter::appendTo(Typeset::Model* m, const Value& val){
                     c->arg(i*mat.cols()+j)->front()->str = formatted(mat(i,j));
                 }
             }
-            m->lastLine()->appendConstruct(c);
 
+            str = c->toString();
+            delete c;
             break;
         }
-
-        case bool_index:
-            m->lastText()->str += std::get<bool>(val) ? "true" : "false";
-            break;
 
         case Lambda_index:{
             const Lambda& lambda = std::get<Lambda>(val);
-            m->lastText()->str += parse_tree.str(lambda.params(parse_tree));
-            m->lastText()->str += " ↦ ";
-            m->lastText()->str += parse_tree.str(lambda.expr(parse_tree));
+            str = parse_tree.str(lambda.params(parse_tree)) + " ↦ " + parse_tree.str(lambda.expr(parse_tree));
             break;
         }
 
-        default:
-            assert(false);
+        default: assert(false);
     }
+
+    for(const char& ch : str) message_queue.enqueue(ch);
 }
 
 double Interpreter::dot(const Eigen::MatrixXd& a, const Eigen::MatrixXd& b) noexcept{
@@ -1028,24 +1032,48 @@ Value Interpreter::pow(const Eigen::MatrixXd& a, double b, ParseNode pn){
 
 Value Interpreter::unitVector(ParseNode pn){
     Value elem = interpretExpr(parse_tree.arg(pn, 0));
-    if(elem.index() != double_index) return error(TYPE_ERROR, parse_tree.arg(pn, 0));
+    if(elem.index() != double_index){
+        error(TYPE_ERROR, parse_tree.arg(pn, 0));
+        return NIL;
+    }
 
     Value rows = interpretExpr(parse_tree.arg(pn, 1));
-    if(rows.index() != double_index) return error(TYPE_ERROR, parse_tree.arg(pn, 1));
+    if(rows.index() != double_index){
+        error(TYPE_ERROR, parse_tree.arg(pn, 1));
+        return NIL;
+    }
 
     Value cols = interpretExpr(parse_tree.arg(pn, 2));
-    if(cols.index() != double_index) return error(TYPE_ERROR, parse_tree.arg(pn, 2));
+    if(cols.index() != double_index){
+        error(TYPE_ERROR, parse_tree.arg(pn, 2));
+        return NIL;
+    }
 
     Eigen::Index r = std::get<double>(rows);
     Eigen::Index c = std::get<double>(cols);
 
-    if(r < 0) return error(TYPE_ERROR, parse_tree.arg(pn, 1));
-    if(c < 0) return error(TYPE_ERROR, parse_tree.arg(pn, 2));
-    if(r > 1 && c > 1) return error(DIMENSION_MISMATCH, pn);
+    if(r < 0){
+        error(TYPE_ERROR, parse_tree.arg(pn, 1));
+        return NIL;
+    }
+    if(c < 0){
+        error(TYPE_ERROR, parse_tree.arg(pn, 2));
+        return NIL;
+    }
+    if(r > 1 && c > 1){
+        error(DIMENSION_MISMATCH, pn);
+        return NIL;
+    }
 
     Eigen::Index e = std::get<double>(elem);
-    if(e < 0) return error(TYPE_ERROR, parse_tree.arg(pn, 0));
-    if(e >= r*c) return error(DIMENSION_MISMATCH, pn);
+    if(e < 0){
+        error(TYPE_ERROR, parse_tree.arg(pn, 0));
+        return NIL;
+    }
+    if(e >= r*c){
+        error(DIMENSION_MISMATCH, pn);
+        return NIL;
+    }
 
     if(r > 1) return Eigen::VectorXd::Unit(r, e);
     else if(c > 1) return Eigen::RowVectorXd::Unit(c, e);
@@ -1077,6 +1105,24 @@ void Interpreter::removeEscapes(std::string& str) noexcept{
     }
     if(i < str.size()) str[i-offset] = str[i];
     str.resize(str.size()-offset);
+}
+
+std::string Interpreter::formatted(double num){
+    std::string str = std::to_string(num);
+
+    auto dec = str.find('.');
+    if(dec != std::string::npos){
+        // Remove trailing zeroes
+        str = str.substr(0, str.find_last_not_of('0')+1);
+        // If the decimal point is now the last character, remove that as well
+        if(str.find('.') == str.size()-1)
+            str = str.substr(0, str.size()-1);
+    }
+
+    bool is_negative_zero = (str.front() == '-' && str.size() == 2 && str[1] == '0');
+    if(is_negative_zero) return "0";
+
+    return str;
 }
 
 }

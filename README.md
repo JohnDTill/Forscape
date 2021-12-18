@@ -13,10 +13,15 @@
 
 * Qt (https://www.qt.io/download)
 
+## Bundled software
+
+* [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) (Header-only linear algebra)
+* [readerwriterqueue](https://github.com/cameron314/readerwriterqueue) (Lock-free queue for single-producer/single-consumer messages)
+
 ## License
 
 This project aims to be financially maintainable while ultimately resulting in an entirely open source codebase. The core is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. Additional modules will be sold commercially for a six-year period starting at release, after which they will be added to the open source core.
 
 ## Contributing
 
-Feel free to submit pull requests and use the issue tracker to start a discussion.
+Feel free to report any bugs in the issue tracker and message me about feature requests or general design discussion. Please run the tests and make sure they pass before submitting a pull request (eventually this will be automated).

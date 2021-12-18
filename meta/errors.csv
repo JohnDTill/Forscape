@@ -1,4 +1,5 @@
 name,quote,msg
+NO_ERROR,,
 UNRECOGNIZED_SYMBOL,y,Scanner error – unrecognized symbol
 EXPECTED_PRIMARY,,Expected value
 UNTERMINATED_STRING,,Unterminated string

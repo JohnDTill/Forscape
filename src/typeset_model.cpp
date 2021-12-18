@@ -11,6 +11,7 @@
 #include <iostream>
 #endif
 
+#include <hope_error.h>
 #include <hope_scanner.h>
 #include <hope_parser.h>
 #include <hope_symbol_build_pass.h>
@@ -52,8 +53,8 @@ Model::~Model(){
     text = construct->frontText(); \
     break; }
 
-Model* Model::fromSerial(const std::string& src){
-    return new Model(src);
+Model* Model::fromSerial(const std::string& src, bool is_output){
+    return new Model(src, is_output);
 }
 
 #undef TypesetSetupNullary
@@ -77,10 +78,27 @@ Model* Model::run(View* caller, View* console){
         return result;
     }
 
-    interpreter = new Code::Interpreter(parser.parse_tree, this, caller, console);
-    Model* result = interpreter->interpret(symbol_builder.symbol_table, root);
+    interpreter = new Code::Interpreter(parser.parse_tree);
+    interpreter->run(symbol_builder.symbol_table, root);
+
+    std::string str;
+    str.reserve(interpreter->message_queue.size_approx());
+    char ch;
+    while(interpreter->message_queue.try_dequeue(ch))
+        str += ch;
+
+    Model* result = Model::fromSerial(str, true);
+
+    if(interpreter->status != Code::Interpreter::NORMAL){
+        if(!errors.empty()){
+            result->appendLine();
+            Code::Error::writeErrors(errors, result, console);
+        }
+    }
+
     result->calculateSizes();
     result->updateLayout();
+    if(console) console->setModel(result);
 
     delete interpreter;
     interpreter = nullptr;
@@ -93,7 +111,8 @@ void Model::stop(){
     interpreter->stop();
 }
 
-Model::Model(const std::string& src){
+Model::Model(const std::string& src, bool is_output)
+    : is_output(is_output) {
     lines = linesFromSerial(src);
     for(size_t i = 0; i < lines.size(); i++){
         lines[i]->id = i;

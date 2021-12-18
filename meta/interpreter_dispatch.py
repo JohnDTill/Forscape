@@ -48,7 +48,7 @@ def main():
         codegen_file.write("namespace Code {\n\n")
 
         codegen_file.write("Value Interpreter::interpretExpr(ParseNode pn) {\n"
-                           "    if(exit_mode != KEEP_GOING) return &errors.back(); //DO THIS - very wasteful to allows check for errors\n"
+                           "    if(status != NORMAL) return NIL; //DO THIS - very wasteful to allows check for errors\n"
                            "\n"
                            "    switch( parse_tree.getType(pn) ){\n")
         for rule in nullary_rules:

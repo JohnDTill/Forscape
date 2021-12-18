@@ -27,7 +27,7 @@ class Model {
 public:
     Model();
     ~Model();
-    static Model* fromSerial(const std::string& src);
+    static Model* fromSerial(const std::string& src, bool is_output = false);
     std::string toSerial() const;
     Model* run(View* caller, View* console = nullptr);
     void stop();
@@ -65,7 +65,7 @@ public:
     static constexpr double LINE_VERTICAL_PADDING = 5;
 
 private:
-    Model(const std::string& src);
+    Model(const std::string& src, bool is_output = false);
     static std::vector<Line*> linesFromSerial(const std::string& src);
     size_t serialChars() const noexcept;
     void writeString(std::string& out) const noexcept;
