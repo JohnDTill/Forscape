@@ -11,10 +11,13 @@ namespace Code {
 
 void Error::writeTo(Typeset::Text* t, Typeset::View* caller) const {
     Typeset::Line* l = selection.getStartLine();
-    t->getParent()->appendConstruct(new Typeset::MarkerLink(l, caller));
-    t = t->nextTextAsserted();
-
-    t->str = " - " + message();
+    if(caller){
+        t->getParent()->appendConstruct(new Typeset::MarkerLink(l, caller));
+        t = t->nextTextAsserted();
+        t->str = " - " + message();
+    }else{
+        t->str = "Line " + std::to_string(l->id+1) + " - " + message();
+    }
     t->tags.push_back( SemanticTag(0, SEM_ERROR) );
 }
 

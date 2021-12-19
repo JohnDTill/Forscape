@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QTimer>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -21,10 +22,15 @@ private:
     Hope::Typeset::View* editor;
     Hope::Typeset::View* console;
     QString path;
+    QTimer interpreter_poll_timer;
+    static constexpr std::chrono::milliseconds INTERPETER_POLL_PERIOD = std::chrono::milliseconds(15);
+    std::string print_buffer; //Need an extra layer of buffering so we don't try to parse incomplete constructs
+    bool editor_had_focus;
 
 private slots:
     void run();
     void stop();
+    void pollInterpreterThread();
     void parseTree();
     void symbolTable();
     void on_actionNew_triggered();

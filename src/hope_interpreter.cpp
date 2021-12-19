@@ -23,33 +23,38 @@ namespace Hope {
 
 namespace Code {
 
-Interpreter::Interpreter(const ParseTree& parse_tree)
-    : parse_tree(parse_tree) {}
+void Interpreter::run(const ParseTree& parse_tree, SymbolTable symbol_table, ParseNode root){
+    assert(parse_tree.getType(root) == PN_BLOCK);
+    reset();
 
-void Interpreter::run(SymbolTable symbol_table, ParseNode root){
-    SymbolTableLinker linker(symbol_table, parse_tree);
+    this->parse_tree = parse_tree;
+    SymbolTableLinker linker(symbol_table, this->parse_tree);
     linker.link();
 
-    stack.clear();
-    status = NORMAL;
-    active_closure = nullptr;
-
-    assert(parse_tree.getType(root) == PN_BLOCK);
     blockStmt(root);
     status = FINISHED;
 }
 
-void Interpreter::runThread(SymbolTable symbol_table, ParseNode root){
+void Interpreter::runThread(const ParseTree& parse_tree, SymbolTable symbol_table, ParseNode root){
     status = NORMAL;
-    std::thread(&Interpreter::run, this, symbol_table, root).detach();
+    this->root = root;
+    std::thread(&Interpreter::run, this, parse_tree, symbol_table, root).detach();
 }
 
 void Interpreter::stop(){
-    directive = STOP;
+    error(USER_STOP, root);
 }
 
-Value Interpreter::error(ErrorCode code, ParseNode pn){
+void Interpreter::reset() noexcept {
+    directive = RUN;
+    status = NORMAL;
+    stack.clear();
+    active_closure = nullptr;
+}
+
+Value Interpreter::error(ErrorCode code, ParseNode pn) noexcept {
     if(status < ERROR){
+        directive = STOP;
         error_code = code;
         error_node = pn;
     }
@@ -995,6 +1000,7 @@ void Interpreter::printNode(const ParseNode& pn){
     }
 
     for(const char& ch : str) message_queue.enqueue(ch);
+    message_queue.enqueue('\0');
 }
 
 double Interpreter::dot(const Eigen::MatrixXd& a, const Eigen::MatrixXd& b) noexcept{

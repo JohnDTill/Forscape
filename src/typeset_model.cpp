@@ -69,46 +69,51 @@ std::string Model::toSerial() const {
     return out;
 }
 
-Model* Model::run(View* caller, View* console){
+Model* Model::run(View* caller){
     if(!errors.empty()){
         Model* result = Code::Error::writeErrors(errors, caller);
         result->calculateSizes();
         result->updateLayout();
-        if(console) console->setModel(result);
+
         return result;
     }
 
-    interpreter = new Code::Interpreter(parser.parse_tree);
-    interpreter->run(symbol_builder.symbol_table, root);
+    interpreter.run(parser.parse_tree, symbol_builder.symbol_table, root);
 
     std::string str;
-    str.reserve(interpreter->message_queue.size_approx());
+    str.reserve(interpreter.message_queue.size_approx());
     char ch;
-    while(interpreter->message_queue.try_dequeue(ch))
+    while(interpreter.message_queue.try_dequeue(ch))
         str += ch;
 
     Model* result = Model::fromSerial(str, true);
 
-    if(interpreter->status != Code::Interpreter::NORMAL){
+    if(interpreter.status != Code::Interpreter::NORMAL){
         if(!errors.empty()){
             result->appendLine();
-            Code::Error::writeErrors(errors, result, console);
+            Code::Error::writeErrors(errors, caller);
         }
     }
 
     result->calculateSizes();
     result->updateLayout();
-    if(console) console->setModel(result);
-
-    delete interpreter;
-    interpreter = nullptr;
 
     return result;
 }
 
+void Model::runThread(View* caller, View* console){
+    if(!errors.empty()){
+        Model* result = Code::Error::writeErrors(errors, caller);
+        result->calculateSizes();
+        result->updateLayout();
+        console->setModel(result);
+    }else{
+        interpreter.runThread(parser.parse_tree, symbol_builder.symbol_table, root);
+    }
+}
+
 void Model::stop(){
-    assert(interpreter != nullptr);
-    interpreter->stop();
+    interpreter.stop();
 }
 
 Model::Model(const std::string& src, bool is_output)

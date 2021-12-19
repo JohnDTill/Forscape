@@ -61,20 +61,19 @@ void runBenchmark(){
     Code::ParseNode root = parser.parse_tree.back();
     Code::SymbolTableBuilder sym_table(parser.parse_tree, m);
     sym_table.resolveSymbols();
-    Code::Interpreter interpreter(parser.parse_tree);
+    Code::Interpreter interpreter;
 
     startClock();
     for(size_t i = 0; i < ITER_INTERPRETER; i++)
-        interpreter.run(sym_table.symbol_table, root);
+        interpreter.run(parser.parse_tree, sym_table.symbol_table, root);
     report("Interpreter", ITER_INTERPRETER);
 
     Typeset::View view;
     //view.show();
-    Code::Interpreter interpreter2(parser.parse_tree);
 
     startClock();
     for(size_t i = 0; i < ITER_INTERPRETER; i++)
-        m->run(nullptr, &view);
+        m->run(&view);
     report("Interpret w/ view", ITER_INTERPRETER);
 
     m = Typeset::Model::fromSerial(src);
@@ -103,12 +102,12 @@ void runBenchmark(){
 
     startClock();
     for(size_t i = 0; i < ITER_LOOP; i++)
-        m->run(nullptr, nullptr);
+        m->run(nullptr);
     report("Print Loop", ITER_LOOP);
 
     startClock();
     for(size_t i = 0; i < ITER_LOOP; i++)
-        m->run(nullptr, &view);
+        m->run(&view);
     report("Print Loop w/ view", ITER_LOOP);
 
     recordResults();
