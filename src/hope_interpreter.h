@@ -3,57 +3,60 @@
 
 #include "hope_stack.h"
 #include <memory>
+#include <readerwriterqueue/readerwriterqueue.h>
 #include <unordered_map>
 #include <variant>
 #include <vector>
 
-#ifndef NDEBUG
-#include <iostream>
-#endif
-
 namespace Hope {
-
-namespace Typeset {
-    class Controller;
-    class Model;
-    class View;
-}
 
 namespace Code {
 
-struct Error;
 class ParseTree;
 struct SymbolTable;
 
 class Interpreter{
 public:
-    Interpreter(ParseTree& parse_tree,
-                Typeset::Model* model,
-                Typeset::View* view,
-                Typeset::View* console);
-    Typeset::Model* interpret(SymbolTable& symbol_table, ParseNode root);
-    void stop();
+    //This is for lock-free, single producer / single consumer message passing of print statements
+    static constexpr size_t QUEUE_BLOCK_SIZE = 1024;
+    moodycamel::ReaderWriterQueue<char, QUEUE_BLOCK_SIZE> message_queue;
 
-private:
-    ParseTree& parse_tree;
-    std::vector<Error>& errors;
+    enum Instruction{
+        RUN,
+        PAUSE,
+        STOP,
+        REQUIRE_WORD_SIZE_FOR_ATOMIC_OPERATION = std::numeric_limits<size_t>::max(),
+    };
 
-    enum ExitMode{
-        KEEP_GOING = 0,
+    Instruction directive = RUN; //This can be set from a thread outside the interpreter
+
+    enum Status {
+        NORMAL = 0,
         CONTINUE = 1,
         BREAK = 3,
         RETURN = 7,
         ERROR = 15,
+        FINISHED = std::numeric_limits<size_t>::max(),
     };
-    ExitMode exit_mode = KEEP_GOING;
 
+    //These can be read from outside the interpreter
+    Status status = NORMAL;
+    ErrorCode error_code = NO_ERROR;
+    ParseNode error_node = ParseTree::EMPTY;
+
+    void run(const ParseTree& parse_tree, SymbolTable symbol_table, ParseNode root);
+    void runThread(const ParseTree& parse_tree, SymbolTable symbol_table, ParseNode root);
+    void stop();
+
+private:
+    std::vector<size_t> frames;
+    ParseTree parse_tree;
     Closure* active_closure = nullptr;
     Stack stack;
+    ParseNode root;
 
-    Typeset::Model* output;
-    Typeset::View* view;
-    Typeset::View* console;
-
+    void reset() noexcept;
+    Value error(ErrorCode code, ParseNode pn) noexcept;
     void interpretStmt(ParseNode pn);
     void printStmt(ParseNode pn);
     void assertStmt(ParseNode pn);
@@ -84,7 +87,6 @@ private:
     Value& readLocal(ParseNode pn);
     Value& readGlobal(ParseNode pn);
     Value& readUpvalue(ParseNode pn);
-    Value error(ErrorCode code, ParseNode pn);
     Value matrix(ParseNode pn);
     Value str(ParseNode pn) const;
     Value anonFun(ParseNode pn);
@@ -98,33 +100,13 @@ private:
     Eigen::Index readIndex(ParseNode pn, Eigen::Index max);
     double readDouble(ParseNode pn);
     void printNode(const ParseNode& pn);
-    void appendTo(Typeset::Model* m, const Value& val);
     static double dot(const Eigen::MatrixXd& a, const Eigen::MatrixXd& b) noexcept;
     static Eigen::MatrixXd hat(const Eigen::MatrixXd& a);
     Value pow(const Eigen::MatrixXd& a, double b, ParseNode pn);
     Value unitVector(ParseNode pn);
     static double pNorm(const Eigen::MatrixXd& a, double b) noexcept;
     static void removeEscapes(std::string& str) noexcept;
-
-    static std::string formatted(double num){
-        std::string str = std::to_string(num);
-
-        auto dec = str.find('.');
-        if(dec != std::string::npos){
-            // Remove trailing zeroes
-            str = str.substr(0, str.find_last_not_of('0')+1);
-            // If the decimal point is now the last character, remove that as well
-            if(str.find('.') == str.size()-1)
-                str = str.substr(0, str.size()-1);
-        }
-
-        bool is_negative_zero = (str.front() == '-' && str.size() == 2 && str[1] == '0');
-        if(is_negative_zero) return "0";
-
-        return str;
-    }
-
-    std::vector<size_t> frames;
+    static std::string formatted(double num);
 };
 
 }

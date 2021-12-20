@@ -96,6 +96,8 @@ MainWindow::MainWindow(QWidget* parent)
     ui->actionCut->setShortcutContext(Qt::WidgetShortcut);
     ui->actionPaste->setShortcutContext(Qt::WidgetShortcut);
     ui->actionDelete->setShortcutContext(Qt::WidgetShortcut);
+
+    connect(&interpreter_poll_timer, SIGNAL(timeout()), this, SLOT(pollInterpreterThread()));
 }
 
 MainWindow::~MainWindow(){
@@ -105,7 +107,9 @@ MainWindow::~MainWindow(){
 void MainWindow::run(){
     if(!editor->isEnabled()) return;
 
-    bool editor_had_focus = false;
+    console->setModel(Typeset::Model::fromSerial("", true));
+
+    editor_had_focus = false;
     if(editor->hasFocus()){
         editor_had_focus = true;
 
@@ -115,19 +119,62 @@ void MainWindow::run(){
 
     editor->setEnabled(false);
     editor->setReadOnly(true);
-    editor->getModel()->run(editor, console);
-    editor->setReadOnly(false);
-    console->setEnabled(true);
-    editor->setEnabled(true);
-
-    editor->repaint();
-
-    if(editor_had_focus) editor->setFocus();
+    editor->runThread(console);
+    if(editor->getModel()->errors.empty()) interpreter_poll_timer.start(INTERPETER_POLL_PERIOD);
 }
 
 void MainWindow::stop(){
     if(editor->isEnabled()) return;
     editor->getModel()->stop();
+    if(editor_had_focus) editor->setFocus();
+}
+
+void MainWindow::pollInterpreterThread(){
+    auto& interpreter = editor->getModel()->interpreter;
+    auto& message_queue = interpreter.message_queue;
+    std::string out;
+    char ch;
+    while(message_queue.try_dequeue(ch))
+        if(ch == '\0'){
+            print_buffer += out;
+            out.clear();
+        }else{
+            out += ch;
+        }
+
+    if(!print_buffer.empty()){
+        bool at_bottom = console->scrolledToBottom();
+        console->getController().insertSerial(print_buffer);
+        console->updateModel();
+        if(at_bottom) console->scrollToBottom();
+        print_buffer.clear();
+    }
+
+    if(interpreter.status == Hope::Code::Interpreter::FINISHED){
+        auto output = console->getModel();
+        switch(interpreter.error_code){
+            case Hope::Code::NO_ERROR: break;
+            case Hope::Code::USER_STOP:
+                console->getController().insertSerial("\nScript terminated by user");
+                console->updateModel();
+                console->scrollToBottom();
+                break;
+            default:
+                auto model = editor->getModel();
+                Typeset::Selection c = model->parser.parse_tree.getSelection(interpreter.error_node);
+                model->errors.push_back(Code::Error(c, interpreter.error_code));
+                output->appendLine();
+                Code::Error::writeErrors(model->errors, output, editor);
+                output->calculateSizes();
+                output->updateLayout();
+                console->updateModel();
+                console->scrollToBottom();
+        }
+
+        editor->setEnabled(true);
+        editor->setReadOnly(false);
+        interpreter_poll_timer.stop();
+    }
 }
 
 void MainWindow::parseTree(){

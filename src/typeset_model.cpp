@@ -11,6 +11,7 @@
 #include <iostream>
 #endif
 
+#include <hope_error.h>
 #include <hope_scanner.h>
 #include <hope_parser.h>
 #include <hope_symbol_build_pass.h>
@@ -52,8 +53,8 @@ Model::~Model(){
     text = construct->frontText(); \
     break; }
 
-Model* Model::fromSerial(const std::string& src){
-    return new Model(src);
+Model* Model::fromSerial(const std::string& src, bool is_output){
+    return new Model(src, is_output);
 }
 
 #undef TypesetSetupNullary
@@ -68,32 +69,36 @@ std::string Model::toSerial() const {
     return out;
 }
 
-Model* Model::run(View* caller, View* console){
-    if(!errors.empty()){
-        Model* result = Code::Error::writeErrors(errors, caller);
-        result->calculateSizes();
-        result->updateLayout();
-        if(console) console->setModel(result);
-        return result;
+std::string Model::run(){
+    assert(errors.empty());
+
+    interpreter.run(parser.parse_tree, symbol_builder.symbol_table, root);
+
+    std::string str;
+    str.reserve(interpreter.message_queue.size_approx());
+    char ch;
+    while(interpreter.message_queue.try_dequeue(ch))
+        if(ch != '\0') str += ch;
+
+    if(interpreter.error_code != Code::ErrorCode::NO_ERROR){
+        Code::Error error(parser.parse_tree.getSelection(interpreter.error_node), interpreter.error_code);
+        str += "\nLine " + error.line() + " - " + error.message();
     }
 
-    interpreter = new Code::Interpreter(parser.parse_tree, this, caller, console);
-    Model* result = interpreter->interpret(symbol_builder.symbol_table, root);
-    result->calculateSizes();
-    result->updateLayout();
+    return str;
+}
 
-    delete interpreter;
-    interpreter = nullptr;
-
-    return result;
+void Model::runThread(){
+    assert(errors.empty());
+    interpreter.runThread(parser.parse_tree, symbol_builder.symbol_table, root);
 }
 
 void Model::stop(){
-    assert(interpreter != nullptr);
-    interpreter->stop();
+    interpreter.stop();
 }
 
-Model::Model(const std::string& src){
+Model::Model(const std::string& src, bool is_output)
+    : is_output(is_output) {
     lines = linesFromSerial(src);
     for(size_t i = 0; i < lines.size(); i++){
         lines[i]->id = i;

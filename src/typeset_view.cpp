@@ -118,6 +118,17 @@ void View::setModel(Model* m, bool owned){
     handleResize();
 }
 
+void View::runThread(View* console){
+    if(!model->errors.empty()){
+        Model* result = Code::Error::writeErrors(model->errors, this);
+        result->calculateSizes();
+        result->updateLayout();
+        console->setModel(result);
+    }else{
+        model->runThread();
+    }
+}
+
 void View::setLineNumbersVisible(bool show){
     if(show_line_nums == show) return;
     show_line_nums = show;

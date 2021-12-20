@@ -24,6 +24,7 @@ struct Error {
     static void writeErrors(const std::vector<Error>& errors, Typeset::Model* m, Typeset::View* caller);
     static Typeset::Model* writeErrors(const std::vector<Error>& errors, Typeset::View* caller);
     std::string message() const;
+    std::string line() const;
 };
 
 }

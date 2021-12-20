@@ -70,6 +70,8 @@ typedef std::variant<
     void*
 > Value;
 
+static const Value NIL = static_cast<void*>(nullptr);
+
 inline Value& conv(const std::shared_ptr<void>& ptr){
     return *static_cast<Value*>(ptr.get());
 }

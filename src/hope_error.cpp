@@ -11,10 +11,13 @@ namespace Code {
 
 void Error::writeTo(Typeset::Text* t, Typeset::View* caller) const {
     Typeset::Line* l = selection.getStartLine();
-    t->getParent()->appendConstruct(new Typeset::MarkerLink(l, caller));
-    t = t->nextTextAsserted();
-
-    t->str = " - " + message();
+    if(caller){
+        t->getParent()->appendConstruct(new Typeset::MarkerLink(l, caller));
+        t = t->nextTextAsserted();
+        t->str = " - " + message();
+    }else{
+        t->str = "Line " + line() + " - " + message();
+    }
     t->tags.push_back( SemanticTag(0, SEM_ERROR) );
 }
 
@@ -42,6 +45,10 @@ std::string Error::message() const{
     if(shouldQuote(code)) msg += selection.str();
 
     return msg;
+}
+
+std::string Error::line() const{
+    return std::to_string(selection.getStartLine()->id+1);
 }
 
 }

@@ -25,11 +25,17 @@ class View;
 
 class Model {   
 public:
+    Code::Scanner scanner = Code::Scanner(this);
+    Code::Parser parser = Code::Parser(scanner, this);
+    Code::Interpreter interpreter;
+    std::vector<Code::Error> errors;
+
     Model();
     ~Model();
-    static Model* fromSerial(const std::string& src);
+    static Model* fromSerial(const std::string& src, bool is_output = false);
     std::string toSerial() const;
-    Model* run(View* caller, View* console = nullptr);
+    std::string run();
+    void runThread();
     void stop();
 
     #ifdef HOPE_SEMANTIC_DEBUGGING
@@ -65,7 +71,7 @@ public:
     static constexpr double LINE_VERTICAL_PADDING = 5;
 
 private:
-    Model(const std::string& src);
+    Model(const std::string& src, bool is_output = false);
     static std::vector<Line*> linesFromSerial(const std::string& src);
     size_t serialChars() const noexcept;
     void writeString(std::string& out) const noexcept;
@@ -91,14 +97,9 @@ private:
     friend Code::SymbolTableBuilder;
     friend Code::Interpreter;
 
-    std::vector<Code::Error> errors;
     Code::IdMap symbol_table;
-
-    Code::Scanner scanner = Code::Scanner(this);
-    Code::Parser parser = Code::Parser(scanner, this);
     Code::SymbolTableBuilder symbol_builder = Code::SymbolTableBuilder(parser.parse_tree, this);
     Code::ParseNode root;
-    Code::Interpreter* interpreter = nullptr;
 
     std::vector<Command*> undo_stack;
     std::vector<Command*> redo_stack;

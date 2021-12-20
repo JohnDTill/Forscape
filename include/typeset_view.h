@@ -22,6 +22,7 @@ public:
     void setFromSerial(const std::string& src);
     Model* getModel() const noexcept;
     void setModel(Model* m, bool owned = true);
+    void runThread(View* output);
     void setLineNumbersVisible(bool show);
     Controller& getController() noexcept;
     void setReadOnly(bool read_only) noexcept;
