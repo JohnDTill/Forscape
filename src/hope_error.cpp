@@ -16,7 +16,7 @@ void Error::writeTo(Typeset::Text* t, Typeset::View* caller) const {
         t = t->nextTextAsserted();
         t->str = " - " + message();
     }else{
-        t->str = "Line " + std::to_string(l->id+1) + " - " + message();
+        t->str = "Line " + line() + " - " + message();
     }
     t->tags.push_back( SemanticTag(0, SEM_ERROR) );
 }
@@ -45,6 +45,10 @@ std::string Error::message() const{
     if(shouldQuote(code)) msg += selection.str();
 
     return msg;
+}
+
+std::string Error::line() const{
+    return std::to_string(selection.getStartLine()->id+1);
 }
 
 }

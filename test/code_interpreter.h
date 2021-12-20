@@ -20,11 +20,9 @@ inline bool testExpression(const std::string& in, const std::string& expect){
     #ifndef NDEBUG
     input->parseTreeDot(); //Make sure dot generation doesn't crash
     #endif
-    Typeset::Model* output = input->run(nullptr);
-    std::string str = output->toSerial();
+    std::string str = input->run();
 
     delete input;
-    delete output;
 
     if(str != expect){
         std::cout << "Interpretation case failed.\n"
@@ -48,11 +46,9 @@ inline bool testCase(const std::string& name){
     #ifndef NDEBUG
     input->parseTreeDot(); //Make sure dot generation doesn't crash
     #endif
-    Typeset::Model* output = input->run(nullptr);
-    std::string str = output->toSerial();
+    std::string str = input->run();
 
     delete input;
-    delete output;
 
     if(str != out){
         std::cout << "Interpretation case \"" << name << "\" failed.\n"

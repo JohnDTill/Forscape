@@ -34,8 +34,8 @@ public:
     ~Model();
     static Model* fromSerial(const std::string& src, bool is_output = false);
     std::string toSerial() const;
-    Model* run(View* caller);
-    void runThread(View* caller, View *console);
+    std::string run();
+    void runThread();
     void stop();
 
     #ifdef HOPE_SEMANTIC_DEBUGGING

@@ -119,7 +119,7 @@ void MainWindow::run(){
 
     editor->setEnabled(false);
     editor->setReadOnly(true);
-    editor->getModel()->runThread(editor, console);
+    editor->runThread(console);
     if(editor->getModel()->errors.empty()) interpreter_poll_timer.start(INTERPETER_POLL_PERIOD);
 }
 

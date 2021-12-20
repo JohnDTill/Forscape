@@ -68,14 +68,6 @@ void runBenchmark(){
         interpreter.run(parser.parse_tree, sym_table.symbol_table, root);
     report("Interpreter", ITER_INTERPRETER);
 
-    Typeset::View view;
-    //view.show();
-
-    startClock();
-    for(size_t i = 0; i < ITER_INTERPRETER; i++)
-        m->run(&view);
-    report("Interpret w/ view", ITER_INTERPRETER);
-
     m = Typeset::Model::fromSerial(src);
 
     startClock();
@@ -87,6 +79,9 @@ void runBenchmark(){
     for(size_t i = 0; i < ITER_LAYOUT; i++)
         m->updateLayout();
     report("Update layout", ITER_LAYOUT);
+
+    Typeset::View view;
+    //view.show();
 
     view.resize(QSize(1920, 1080));
     QImage img(view.size(), QImage::Format_RGB32);
@@ -102,13 +97,8 @@ void runBenchmark(){
 
     startClock();
     for(size_t i = 0; i < ITER_LOOP; i++)
-        m->run(nullptr);
+        m->run();
     report("Print Loop", ITER_LOOP);
-
-    startClock();
-    for(size_t i = 0; i < ITER_LOOP; i++)
-        m->run(&view);
-    report("Print Loop w/ view", ITER_LOOP);
 
     recordResults();
 }
