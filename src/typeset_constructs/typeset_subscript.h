@@ -15,6 +15,8 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return SUBSCRIPT; }
+
+    #ifndef HOPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }
 
     void updateSizeFromTextLeft(const Text* t) noexcept {
@@ -49,6 +51,7 @@ public:
         child()->x = x;
         child()->y = y + height()-child()->height();
     }
+    #endif
 };
 
 }

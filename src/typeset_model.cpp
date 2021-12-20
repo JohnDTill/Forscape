@@ -105,8 +105,9 @@ Model::Model(const std::string& src, bool is_output)
         lines[i]->parent = this;
     }
 
-    #ifndef HOPE_TYPESET_HEADLESS
     performSemanticFormatting();
+
+    #ifndef HOPE_TYPESET_HEADLESS
     calculateSizes();
     updateLayout();
     #endif
@@ -243,6 +244,7 @@ Line* Model::nextLineAsserted(const Line *l) const noexcept{
     return lines[l->id+1];
 }
 
+#ifndef HOPE_TYPESET_HEADLESS
 Line* Model::nearestLine(double y) const noexcept{
     auto search = std::lower_bound(
                     lines.rbegin(),
@@ -278,6 +280,7 @@ double Model::width() const noexcept{
 double Model::height() const noexcept{
     return lines.back()->yBottom();
 }
+#endif
 
 void Model::mutate(Command* cmd, Controller& controller){
     premutate();
@@ -300,8 +303,11 @@ void Model::undo(Controller& controller){
         cmd->undo(controller);
         redo_stack.push_back(cmd);
         performSemanticFormatting();
+
+        #ifndef HOPE_TYPESET_HEADLESS
         calculateSizes();
         updateLayout();
+        #endif
     }
 }
 
@@ -313,8 +319,11 @@ void Model::redo(Controller& controller){
         cmd->redo(controller);
         undo_stack.push_back(cmd);
         performSemanticFormatting();
+
+        #ifndef HOPE_TYPESET_HEADLESS
         calculateSizes();
         updateLayout();
+        #endif
     }
 }
 
@@ -338,6 +347,7 @@ void Model::insert(const std::vector<Line*>& l){
     lines.insert(lines.begin() + l.front()->id, l.begin(), l.end());
 }
 
+#ifndef HOPE_TYPESET_HEADLESS
 void Model::calculateSizes(){
     for(Line* l : lines) l->updateSize();
 }
@@ -378,31 +388,6 @@ void Model::paint(Painter& painter, double, double yT, double, double yB) const{
     }
 }
 
-#ifndef NDEBUG
-std::string Model::parseTreeDot() const{
-    return parser.parse_tree.toGraphviz(root);
-}
-#endif
-
-Selection Model::idAt(const Marker& marker) noexcept{
-    for(size_t i = marker.text->tags.size(); i-->0;){
-        const SemanticTag& tag = marker.text->tags[i];
-        if(tag.index == marker.index){
-            if(!isId(tag.type)) continue;
-            size_t start = marker.index;
-            size_t end = i+1==marker.text->tags.size() ? marker.text->size() : marker.text->tags[i+1].index;
-            return Selection(marker.text, start, end);
-        }else if(tag.index < marker.index){
-            if(!isId(tag.type)) return Selection();
-            size_t start = tag.index;
-            size_t end = i+1==marker.text->tags.size() ? marker.text->size() : marker.text->tags[i+1].index;
-            return Selection(marker.text, start, end);
-        }
-    }
-
-    return Selection();
-}
-
 Selection Model::idAt(double x, double y) noexcept{
     Line* l = nearestLine(y);
     if(!l->containsY(y)) return Selection();
@@ -426,6 +411,32 @@ Selection Model::idAt(double x, double y) noexcept{
     }
 
     return Selection(t, start, end);
+}
+#endif
+
+#ifndef NDEBUG
+std::string Model::parseTreeDot() const{
+    return parser.parse_tree.toGraphviz(root);
+}
+#endif
+
+Selection Model::idAt(const Marker& marker) noexcept{
+    for(size_t i = marker.text->tags.size(); i-->0;){
+        const SemanticTag& tag = marker.text->tags[i];
+        if(tag.index == marker.index){
+            if(!isId(tag.type)) continue;
+            size_t start = marker.index;
+            size_t end = i+1==marker.text->tags.size() ? marker.text->size() : marker.text->tags[i+1].index;
+            return Selection(marker.text, start, end);
+        }else if(tag.index < marker.index){
+            if(!isId(tag.type)) return Selection();
+            size_t start = tag.index;
+            size_t end = i+1==marker.text->tags.size() ? marker.text->size() : marker.text->tags[i+1].index;
+            return Selection(marker.text, start, end);
+        }
+    }
+
+    return Selection();
 }
 
 Selection Model::find(const std::string& str) noexcept{
@@ -503,8 +514,10 @@ void Model::premutate() noexcept{
 void Model::postmutate(){
     performSemanticFormatting();
 
+    #ifndef HOPE_TYPESET_HEADLESS
     calculateSizes();
     updateLayout();
+    #endif
 }
 
 void Model::rename(const std::vector<Selection>& targets, const std::string& name, Controller& c){

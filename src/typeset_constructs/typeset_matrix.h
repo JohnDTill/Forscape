@@ -42,6 +42,7 @@ public:
     virtual size_t dims() const noexcept override { return 2; }
     virtual char constructCode() const noexcept override { return MATRIX; }
 
+    #ifndef HOPE_TYPESET_HEADLESS
     virtual Text* textUp(const Subphrase* caller, double x) const noexcept override {
         return caller->id >= cols ? arg(caller->id - cols)->textLeftOf(x) : prev();
     }
@@ -336,8 +337,10 @@ public:
         Command* cmd = new CmdCol<insert>(*m, clicked_col+offset);
         c.getModel()->mutate(cmd, c);
     }
+    #endif
 };
 
+#ifndef HOPE_TYPESET_HEADLESS
 inline std::vector<Construct::ContextAction> Matrix::actions {
     ContextAction("Create row below", rowCmd<true, true>),
     ContextAction("Create row above", rowCmd<true, false>),
@@ -346,6 +349,7 @@ inline std::vector<Construct::ContextAction> Matrix::actions {
     ContextAction("Delete row", rowCmd<false, false>),
     ContextAction("Delete col", colCmd<false, false>),
 };
+#endif
 
 }
 

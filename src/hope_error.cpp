@@ -9,6 +9,7 @@ namespace Hope {
 
 namespace Code {
 
+#ifndef HOPE_TYPESET_HEADLESS
 void Error::writeTo(Typeset::Text* t, Typeset::View* caller) const {
     Typeset::Line* l = selection.getStartLine();
     if(caller){
@@ -39,6 +40,7 @@ Typeset::Model* Error::writeErrors(const std::vector<Error>& errors, Typeset::Vi
 
     return m;
 }
+#endif
 
 std::string Error::message() const{
     std::string msg = getMessage(code);

@@ -40,16 +40,6 @@ void Marker::setToBackOf(const Phrase* p) noexcept{
     setToBackOf(p->back());
 }
 
-void Marker::setToPointOf(Text* t, double setpoint) {
-    text = t;
-    index = text->indexNearest(setpoint);
-}
-
-void Marker::setToLeftOf(Text* t, double setpoint) {
-    text = t;
-    index = text->indexLeft(setpoint);
-}
-
 bool Marker::isTopLevel() const noexcept{
     return text->isTopLevel();
 }
@@ -159,10 +149,6 @@ bool Marker::operator!=(const Marker& other) const noexcept{
     return (text != other.text) | (index != other.index);
 }
 
-double Marker::x() const{
-    return text->xGlobal(index);
-}
-
 size_t Marker::countSpacesLeft() const noexcept{
     size_t i = index;
     for(;;){
@@ -210,6 +196,22 @@ bool Marker::compareRight(const Marker& other) const noexcept{
 bool Marker::compareLeft(const Marker& other) const noexcept{
     return strLeft() == other.strLeft();
 }
+
+#ifndef HOPE_TYPESET_HEADLESS
+double Marker::x() const{
+    return text->xGlobal(index);
+}
+
+void Marker::setToPointOf(Text* t, double setpoint) {
+    text = t;
+    index = text->indexNearest(setpoint);
+}
+
+void Marker::setToLeftOf(Text* t, double setpoint) {
+    text = t;
+    index = text->indexLeft(setpoint);
+}
+#endif
 
 uint32_t Marker::advance() noexcept{
     assert(notAtTextEnd());

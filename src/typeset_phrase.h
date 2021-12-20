@@ -42,8 +42,6 @@ public:
     Text* prevTextAsserted(const Text* t) const noexcept;
     Construct* nextConstructAsserted(const Text* t) const noexcept;
     Construct* prevConstructAsserted(const Text* t) const noexcept;
-    Text* textLeftOf(double x) const noexcept;
-    Construct* constructAt(double x, double y) const noexcept;
     size_t numTexts() const noexcept;
     size_t numConstructs() const noexcept;
     void remove(size_t start) noexcept;
@@ -63,6 +61,8 @@ public:
 
     #ifndef HOPE_TYPESET_HEADLESS
     static constexpr double EMPTY_PHRASE_WIDTH_RATIO = 0.6;
+    Text* textLeftOf(double x) const noexcept;
+    Construct* constructAt(double x, double y) const noexcept;
     double height() const noexcept {return above_center + under_center;}
     double yBottom() const noexcept {return y + height();}
     void updateSize() noexcept;

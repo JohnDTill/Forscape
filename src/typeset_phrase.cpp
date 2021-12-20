@@ -141,29 +141,6 @@ Construct* Phrase::prevConstructAsserted(const Text* t) const noexcept{
     return construct(t->id-1);
 }
 
-Text* Phrase::textLeftOf(double x) const noexcept{
-    auto search = std::lower_bound(
-                texts.rbegin(),
-                texts.rend(),
-                x,
-                [](Text* t, double x){return t->x > x;}
-            );
-
-    return search != texts.rend() ? *search : texts.front();
-}
-
-Construct* Phrase::constructAt(double x, double y) const noexcept{
-    auto search = std::lower_bound(
-                constructs.rbegin(),
-                constructs.rend(),
-                x,
-                [](Construct* c, double x){return c->x > x;}
-            );
-
-    if(search == constructs.rend() || !(*search)->contains(x,y)) return nullptr;
-    else return *search;
-}
-
 size_t Phrase::numTexts() const noexcept{
     return texts.size();
 }
@@ -248,6 +225,29 @@ std::string Phrase::toStringWithSemanticTags() const{
 #endif
 
 #ifndef HOPE_TYPESET_HEADLESS
+Text* Phrase::textLeftOf(double x) const noexcept{
+    auto search = std::lower_bound(
+                texts.rbegin(),
+                texts.rend(),
+                x,
+                [](Text* t, double x){return t->x > x;}
+            );
+
+    return search != texts.rend() ? *search : texts.front();
+}
+
+Construct* Phrase::constructAt(double x, double y) const noexcept{
+    auto search = std::lower_bound(
+                constructs.rbegin(),
+                constructs.rend(),
+                x,
+                [](Construct* c, double x){return c->x > x;}
+            );
+
+    if(search == constructs.rend() || !(*search)->contains(x,y)) return nullptr;
+    else return *search;
+}
+
 void Phrase::updateSize() noexcept{
     texts[0]->updateWidth();
     width = texts[0]->getWidth();

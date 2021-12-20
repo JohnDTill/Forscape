@@ -68,6 +68,7 @@ void runBenchmark(){
         interpreter.run(parser.parse_tree, sym_table.symbol_table, root);
     report("Interpreter", ITER_INTERPRETER);
 
+    #ifndef HOPE_TYPESET_HEADLESS
     m = Typeset::Model::fromSerial(src);
 
     startClock();
@@ -92,6 +93,7 @@ void runBenchmark(){
     for(size_t i = 0; i < ITER_PAINT; i++)
         view.render(&painter);
     report("Paint", ITER_PAINT);
+    #endif
 
     m = Typeset::Model::fromSerial("for(i ← 0; i ≤ 200; i ← i + 1)\n    print(i, \"\\n\")");
 

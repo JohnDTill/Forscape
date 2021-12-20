@@ -23,6 +23,7 @@ public:
 
     virtual char constructCode() const noexcept override { return NRT; }
 
+    #ifndef HOPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t id) const noexcept override{
         return id == 0;
     }
@@ -77,6 +78,7 @@ public:
         pts.push_back( std::make_pair(a,b) );
         painter.drawPath(pts);
     }
+    #endif
 };
 
 }

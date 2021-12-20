@@ -3,7 +3,10 @@
 
 #include "typeset_construct.h"
 #include "typeset_line.h"
+
+#ifndef HOPE_TYPESET_HEADLESS
 #include "typeset_view.h"
+#endif
 
 namespace Hope {
 
@@ -16,7 +19,6 @@ private:
 
 public:
     MarkerLink() : line_id(0), view(nullptr) {}
-    MarkerLink(Line* line, View* view) : line_id(line->id), view(view) {}
     virtual char constructCode() const noexcept override { return MARKERLINK; }
 
     size_t serialChars() const noexcept override {
@@ -36,6 +38,12 @@ public:
     }
 
     #ifndef HOPE_TYPESET_HEADLESS
+    MarkerLink(Line* line, View* view) : line_id(line->id), view(view) {}
+
+    void clickThrough() const {
+        view->followLink(line_id);
+    }
+
     virtual void updateSizeSpecific() noexcept override {
         assert(scriptDepth() == 0);
         width = getWidth(SEM_DEFAULT, 0, "Line " + std::to_string(line_id+1) + ':');
@@ -49,10 +57,6 @@ public:
         painter.drawLine(x, y+height(), width, 0);
     }
     #endif
-
-    void clickThrough() const {
-        view->followLink(line_id);
-    }
 };
 
 }

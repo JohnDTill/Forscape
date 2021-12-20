@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
+set(TEST_QT FALSE)
+
 project(HopeTests LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -29,10 +31,6 @@ configure_file(${TEST}/serial_exhaustive.txt ${CMAKE_BINARY_DIR} COPYONLY)
 
 add_compile_definitions(TYPESET_MEMORY_DEBUG HOPE_SEMANTIC_DEBUGGING)
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR}Svg REQUIRED)
-
 set(GEN_FILES
     ${GEN}/code_ast_fields.cpp
     ${GEN}/code_ast_fields.h
@@ -50,7 +48,8 @@ set(GEN_FILES
     ${GEN}/unicode_superscripts.h
 )
 
-add_executable(HopeTests ${TEST}/test_driver.cpp
+set(SOURCES
+    ${TEST}/test_driver.cpp
     ${TEST}/code_interpreter.h
     ${TEST}/code_parser.h
     ${TEST}/code_scanner.h
@@ -59,10 +58,8 @@ add_executable(HopeTests ${TEST}/test_driver.cpp
     ${TEST}/serial.h
     ${TEST}/typeset.h
     ${TEST}/typeset_control.h
-    ${TEST}/typeset_graphics.h
     ${TEST}/typeset_loadsave.h
     ${TEST}/typeset_mutability.h
-    ${TEST}/typeset_qpainter.h
     ${GEN_FILES}
     ${SRC}/hope_error.cpp
     ${INCLUDE}/hope_error.h
@@ -94,8 +91,6 @@ add_executable(HopeTests ${TEST}/test_driver.cpp
     ${SRC}/typeset_marker.h
     ${SRC}/typeset_model.cpp
     ${INCLUDE}/typeset_model.h
-    ${SRC}/typeset_painter.h
-    ${SRC}/typeset_painter_qt.cpp
     ${SRC}/typeset_phrase.cpp
     ${SRC}/typeset_phrase.h
     ${SRC}/typeset_selection.cpp
@@ -104,8 +99,6 @@ add_executable(HopeTests ${TEST}/test_driver.cpp
     ${SRC}/typeset_subphrase.h
     ${SRC}/typeset_text.cpp
     ${SRC}/typeset_text.h
-    ${SRC}/typeset_view.cpp
-    ${INCLUDE}/typeset_view.h
     ${COMMAND}/typeset_command_indent.cpp
     ${COMMAND}/typeset_command_indent.h
     ${COMMAND}/typeset_command_line.cpp
@@ -122,9 +115,30 @@ add_executable(HopeTests ${TEST}/test_driver.cpp
     ${COMMAND}/typeset_insert_chars.h
     ${COMMAND}/typeset_remove_chars.cpp
     ${COMMAND}/typeset_remove_chars.h
-    )
+)
 
+if (${TEST_QT})
+    find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
+    find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
+    find_package(Qt${QT_VERSION_MAJOR}Svg REQUIRED)
+    add_compile_definitions(TEST_QT)
+    list(APPEND SOURCES
+        ${TEST}/typeset_graphics.h
+        ${TEST}/typeset_qpainter.h
+        ${SRC}/typeset_painter.h
+        ${SRC}/typeset_painter_qt.cpp
+        ${SRC}/typeset_view.cpp
+        ${INCLUDE}/typeset_view.h
+    )
+else()
+    add_compile_definitions(HOPE_TYPESET_HEADLESS)
+endif ()
+
+add_executable(HopeTests ${SOURCES})
+
+if (${TEST_QT})
 target_link_libraries(HopeTests PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Svg)
+endif ()
 
 add_test(NAME IntegrationTest COMMAND HopeTests.exe)
 

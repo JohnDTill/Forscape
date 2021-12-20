@@ -78,11 +78,14 @@ private:
     Line* nextLine(const Line* l) const noexcept;
     Line* prevLine(const Line* l) const noexcept;
     Line* nextLineAsserted(const Line* l) const noexcept;
+    #ifndef HOPE_TYPESET_HEADLESS
     Line* nearestLine(double y) const noexcept;
     Line* nearestAbove(double y) const noexcept;
     Construct* constructAt(double x, double y) const noexcept;
     double width() const noexcept;
     double height() const noexcept;
+    Selection idAt(double x, double y) noexcept;
+    #endif
     void clearRedo();
     void remove(size_t start, size_t stop) noexcept;
     void insert(const std::vector<Line*>& l);
@@ -105,7 +108,6 @@ private:
     std::vector<Command*> redo_stack;
 
     Selection idAt(const Marker& marker) noexcept;
-    Selection idAt(double x, double y) noexcept;
     Selection find(const std::string& str) noexcept;
     void performSemanticFormatting();
     void premutate() noexcept;

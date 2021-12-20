@@ -8,12 +8,16 @@ namespace Typeset {
 
 Line::Line()
     : Phrase() {
+    #ifndef HOPE_TYPESET_HEADLESS
     script_level = 0;
+    #endif
 }
 
 Line::Line(Model* model){
     parent = model;
+    #ifndef HOPE_TYPESET_HEADLESS
     script_level = 0;
+    #endif
 }
 
 bool Line::isLine() const noexcept {
@@ -40,11 +44,11 @@ const std::vector<Line*>& Line::lines() const noexcept{
     return parent->lines;
 }
 
+#ifndef HOPE_TYPESET_HEADLESS
 Line* Line::nearestLine(double y) const noexcept{
     return parent->nearestLine(y);
 }
 
-#ifndef HOPE_TYPESET_HEADLESS
 void Line::resize() noexcept{
     updateSize();
     parent->updateLayout();

@@ -6,7 +6,10 @@
 #include <typeset_line.h>
 #include <typeset_model.h>
 #include <typeset_text.h>
+
+#ifndef HOPE_TYPESET_HEADLESS
 #include <typeset_view.h>
+#endif
 
 #include <fstream>
 #include <iostream>
