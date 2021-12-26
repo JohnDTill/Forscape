@@ -2,10 +2,7 @@ name: C++ Integration Tests
 on: push
 jobs:
   build-and-test:
-    runs-on:
-      ubuntu-latest
-      windows-latest
-      macos-latest
+    runs-on: ubuntu-latest
     steps:
     - name: test
       run: echo "Hello world!"
