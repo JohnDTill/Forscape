@@ -8,7 +8,7 @@ jobs:
       macos-latest
     steps:
     - name: test
-    run: echo "Hello world!"
+      run: echo "Hello world!"
     # steps:
     #  - id: build
     #    run:
