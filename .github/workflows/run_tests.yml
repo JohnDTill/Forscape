@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: cmake
-        run: cd test && cmake -B../build_test -S.
+        run: cd ${GITHUB_WORKSPACE}/test && cmake -B../build_test -S.
       - id: make
         run: cd ../build_test && make
       - id: run
