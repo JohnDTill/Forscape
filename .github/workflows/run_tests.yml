@@ -6,6 +6,8 @@ jobs:
       ubuntu-latest
       windows-latest
       macos-latest
+    steps:
+    - name: test
     run: echo "Hello world!"
     # steps:
     #  - id: build
