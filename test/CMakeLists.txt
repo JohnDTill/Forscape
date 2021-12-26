@@ -135,6 +135,9 @@ endif ()
 
 add_executable(HopeTests ${SOURCES})
 
+FIND_PACKAGE ( Threads REQUIRED )
+target_link_libraries(HopeTests PRIVATE Threads::Threads)
+
 if (${TEST_QT})
 target_link_libraries(HopeTests PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Svg)
 endif ()
@@ -146,15 +149,16 @@ add_test(NAME IntegrationTest COMMAND HopeTests.exe)
 #  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic -Werror>
 #)
 
+add_compile_definitions(HOPE_EIGEN_UNSUPPORTED)
+
 #Added because Eigen unsupported resulted in compiles with too many sections
 target_compile_options(HopeTests PRIVATE
   $<$<CXX_COMPILER_ID:MSVC>:/bigobj /DHOPE_EIGEN_UNSUPPORTED>
-  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-m64 -Wa,-mbig-obj>
 )
 
 add_custom_target(
     codegen ALL
-    COMMAND python all.py
+    COMMAND python3 all.py
     WORKING_DIRECTORY ${META}
     BYPRODUCTS ${GEN_FILES}
     COMMENT "Performing codegen"

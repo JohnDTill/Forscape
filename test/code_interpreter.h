@@ -4,13 +4,7 @@
 #include "report.h"
 #include "typeset.h"
 
-#ifndef __MINGW32__
 #include <filesystem>
-#else
-#include <QDirIterator>
-//std::filesystem isn't working with mingw
-//It is the preferred solution
-#endif
 
 using namespace Hope;
 using namespace Code;
@@ -80,22 +74,12 @@ inline bool testInterpreter(){
     passing &= testExpression("2^2", "4");
     passing &= testExpression("4^0.5", "2");
 
-    #ifndef __MINGW32__
     for(std::filesystem::directory_iterator end, dir(base_test_path + "/in");
          dir != end;
          dir++) {
         const std::filesystem::path& path = dir->path();
         passing &= testCase(path.stem().string());
     }
-    #else
-    QString path = QString::fromStdString(base_test_path + "/in");
-    QDirIterator it(path);
-    while (it.hasNext()) {
-         QFileInfo info(it.next());
-         if(!info.isFile()) continue;
-         passing &= testCase(info.baseName().toStdString());
-    }
-    #endif
 
     if(!allTypesetElementsFreed()){
         printf("Unfreed typeset elements\n");
