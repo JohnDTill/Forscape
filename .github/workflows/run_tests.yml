@@ -1,0 +1,17 @@
+name: C++ Integration Tests
+on: push
+jobs:
+  build-and-test:
+    runs-on:
+      ubuntu-latest
+      windows-latest
+      macos-latest
+    run: echo "Hello world!"
+    # steps:
+    #  - id: build
+    #    run:
+    #      cd test
+    #      cmake -B./build -S.
+    #      cd build
+    #  - id: run
+    #    run: HopeTests.exe

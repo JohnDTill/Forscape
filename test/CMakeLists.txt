@@ -1,15 +1,11 @@
 cmake_minimum_required(VERSION 3.5)
 
-set(TEST_QT FALSE)
+#set(TEST_QT TRUE)
 
 project(HopeTests LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
 
 set(TEST .)
 set(BASE ..)
@@ -118,6 +114,9 @@ set(SOURCES
 )
 
 if (${TEST_QT})
+    set(CMAKE_AUTOUIC ON)
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTORCC ON)
     find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
     find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
     find_package(Qt${QT_VERSION_MAJOR}Svg REQUIRED)

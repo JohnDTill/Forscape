@@ -1,6 +1,7 @@
 #Generated files
 src/generated/*
 */out/*
+*/CMakeCache.txt
 
 #Qt
 *.pro.user*
