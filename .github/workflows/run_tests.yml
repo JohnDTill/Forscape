@@ -4,11 +4,9 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - id: build
-        run:
-          cd test
-          cmake -B../build_test -S.
-          cd ../build_test
-          make
+      - id: cmake
+        run: cd test && cmake -B../build_test -S.
+      - id: make
+        run: cd ../build_test && make
       - id: run
         run: ./HopeTests
