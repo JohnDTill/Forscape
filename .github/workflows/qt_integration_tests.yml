@@ -4,10 +4,8 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - id: extras
-        run: sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
-      - id: Qt
         uses: jurplel/install-qt-action@v2
+        version: 5.14.2 #Havin' an issue with Qt working
         with:
           modules: qtsvg
       - uses: actions/checkout@v2
