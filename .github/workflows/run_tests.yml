@@ -8,6 +8,6 @@ jobs:
       - id: cmake
         run: cd ${GITHUB_WORKSPACE}/test && cmake -B../build_test -S.
       - id: make
-        run: cd ../build_test && make
+        run: cd ${GITHUB_WORKSPACE}/build_test && make
       - id: run
-        run: ./HopeTests
+        run: cd ${GITHUB_WORKSPACE}/build_test && ./HopeTests
