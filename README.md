@@ -24,4 +24,6 @@ This project aims to be financially maintainable while ultimately resulting in a
 
 ## Contributing
 
-Feel free to report any bugs in the issue tracker and message me about feature requests or general design discussion. Please run the tests and make sure they pass before submitting a pull request (eventually this will be automated).
+Feel free to report any bugs in the issue tracker and message me about feature requests or general design discussion. Pure C++ tests are run automatically and required to pass before merging to main, but please run Qt tests if GUI code is modified (eventually this will be automated too).
+
+[![C++ Integration Tests](https://github.com/JohnDTill/Forscape/actions/workflows/run_tests.yml/badge.svg?event=push)](https://github.com/JohnDTill/Forscape/actions/workflows/run_tests.yml)
