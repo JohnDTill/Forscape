@@ -8,7 +8,7 @@ jobs:
         uses: jurplel/install-qt-action@v2
         with:
           modules: qtsvg
-          extra: libqt5x11extras5
+          extra: --external libqt5x11extras5
       - uses: actions/checkout@v2
       - id: cmake
         run: cd ${GITHUB_WORKSPACE}/test && cmake -DTEST_QT=ON -B../build_test -S.
