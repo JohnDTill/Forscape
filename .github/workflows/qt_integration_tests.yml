@@ -21,4 +21,4 @@ jobs:
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build_test && make
       - id: run
-        run: cd ${GITHUB_WORKSPACE}/build_test && QT_DEBUG_PLUGINS=1 ./HopeTests
+        run: cd ${GITHUB_WORKSPACE}/build_test && QT_DEBUG_PLUGINS=1 ./HopeTests -platform offscreen
