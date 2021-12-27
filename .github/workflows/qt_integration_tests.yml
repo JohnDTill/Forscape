@@ -15,6 +15,6 @@ jobs:
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build_test && make
       - id: patch
-        run: sudo apt-get install libx11-xcb1
+        run: sudo apt-get install --reinstall libxcb-xinerama0
       - id: run
         run: cd ${GITHUB_WORKSPACE}/build_test && ./HopeTests
