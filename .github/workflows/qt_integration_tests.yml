@@ -8,10 +8,14 @@ jobs:
         uses: jurplel/install-qt-action@v2
         with:
           modules: qtsvg
-      - run: sudo apt install libqt5x11extras5
+      - run: sudo apt install libqt5x11extras5 xcb-util libxcb xcb-util-image xcb-util-renderutil xcb-util-wm xcb-util-keysyms
       - uses: actions/checkout@v2
       - id: debug
         run: export QT_DEBUG_PLUGINS=1
+      - id: thing
+        run: export QT_QPA_PLATFORM=offscreen
+      - id: another
+        run: export DISPLAY=:0
       - id: cmake
         run: cd ${GITHUB_WORKSPACE}/test && cmake -DTEST_QT=ON -B../build_test -S.
       - id: make
