@@ -14,7 +14,7 @@ jobs:
         run: cd ${GITHUB_WORKSPACE}/test && cmake -DTEST_QT=ON -B../build_test -S.
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build_test && make
-      - id: patch
-        run: sudo apt-get install --reinstall libxcb-xinerama0
+      - id: debug
+        run: export QT_DEBUG_PLUGINS=1
       - id: run
         run: cd ${GITHUB_WORKSPACE}/build_test && ./HopeTests
