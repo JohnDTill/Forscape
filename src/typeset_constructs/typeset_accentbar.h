@@ -22,6 +22,7 @@ public:
 
     virtual char constructCode() const noexcept override { return ACCENTBAR; }
 
+    #ifndef HOPE_TYPESET_HEADLESS
     virtual void updateSizeSpecific() noexcept override {
         width = child()->width;
         under_center = child()->under_center;
@@ -37,6 +38,7 @@ public:
     virtual void paintSpecific(Painter& painter) const override {
         painter.drawLine(x+hoffset, y+should_drop*drop, width, 0);
     }
+    #endif
 };
 
 }

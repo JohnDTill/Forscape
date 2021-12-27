@@ -15,10 +15,12 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return BIGCOPROD2; }
+
+    #ifndef HOPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }
     double symbol_width;
 
-virtual void updateSizeSpecific() noexcept override {
+    virtual void updateSizeSpecific() noexcept override {
         symbol_width = 1*getWidth(SEM_DEFAULT, parent->script_level, "∐");
         width = std::max(symbol_width, std::max(first()->width, second()->width));
         above_center = getAboveCenter(SEM_DEFAULT, parent->script_level) + first()->height();
@@ -36,6 +38,7 @@ virtual void updateSizeSpecific() noexcept override {
         double symbol_x = x + (width - symbol_width) / 2;
         painter.drawSymbol(symbol_x, y + second()->height(), "∐");
     }
+    #endif
 };
 
 }

@@ -15,6 +15,8 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return TRIPLEINTEGRAL1; }
+
+    #ifndef HOPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }
     double symbol_width;
 
@@ -34,6 +36,7 @@ public:
         double symbol_x = x + (width - symbol_width) / 2;
         painter.drawSymbol(symbol_x, y, "∭");
     }
+    #endif
 };
 
 }

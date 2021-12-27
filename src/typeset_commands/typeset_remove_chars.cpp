@@ -21,7 +21,9 @@ void RemoveChars::removeAdditionalChar(){
     size_t glyph_size = glyphSize(t->at(index));
     removed += t->str.substr(index, glyph_size);
     t->str.erase(index, glyph_size);
+    #ifndef HOPE_TYPESET_HEADLESS
     t->resize();
+    #endif
 }
 
 void RemoveChars::removeCharLeft(){
@@ -30,19 +32,25 @@ void RemoveChars::removeCharLeft(){
     size_t glyph_size = old_index - index;
     removed.insert(0, t->str.substr(index, glyph_size));
     t->str.erase(index, glyph_size);
+    #ifndef HOPE_TYPESET_HEADLESS
     t->resize();
+    #endif
 }
 
 void RemoveChars::undo(Controller& controller){
     t->str.insert(index, removed);
+    #ifndef HOPE_TYPESET_HEADLESS
     t->resize();
+    #endif
     controller.active.text = controller.anchor.text = t;
     controller.active.index = controller.anchor.index = index + removed.size();
 }
 
 void RemoveChars::redo(Controller& controller){
     t->str.erase(index, removed.size());
+    #ifndef HOPE_TYPESET_HEADLESS
     t->resize();
+    #endif
     controller.active.text = controller.anchor.text = t;
     controller.active.index = controller.anchor.index = index;
 }

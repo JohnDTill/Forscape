@@ -20,6 +20,8 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return MAX; }
+
+    #ifndef HOPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }
 
     virtual void updateSizeSpecific() noexcept override {
@@ -45,6 +47,7 @@ public:
     virtual void paintSpecific(Painter& painter) const override {
         painter.drawText(x + word_offset, y, std::string(word.data(), word.size()));
     }
+    #endif
 };
 
 }

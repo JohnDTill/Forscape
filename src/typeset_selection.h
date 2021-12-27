@@ -35,11 +35,6 @@ public:
     bool isTextSelection() const noexcept;
     bool isPhraseSelection() const noexcept;
     Line* getStartLine() const noexcept;
-    bool contains(double x, double y) const noexcept;
-    bool containsText(double x, double y) const noexcept;
-    bool containsPhrase(double x, double y) const noexcept;
-    bool containsLine(double x, double y) const noexcept;
-    bool containsLine(double x, double y, Text* tL, size_t iL, Text* tR, size_t iR) const noexcept;
     std::vector<Selection> findCaseInsensitive(const std::string& str) const;
 
     Marker right;
@@ -56,6 +51,11 @@ public:
     void formatSimple(SemanticType type) const noexcept;
 
     #ifndef HOPE_TYPESET_HEADLESS
+    bool contains(double x, double y) const noexcept;
+    bool containsText(double x, double y) const noexcept;
+    bool containsPhrase(double x, double y) const noexcept;
+    bool containsLine(double x, double y) const noexcept;
+    bool containsLine(double x, double y, Text* tL, size_t iL, Text* tR, size_t iR) const noexcept;
     void paint(Painter& painter) const;
     void paintSelectionText(Painter& painter) const;
     void paintSelectionPhrase(Painter& painter) const;
@@ -89,10 +89,12 @@ private:
     std::vector<Selection> findCaseInsensitiveText(const std::string& target) const;
     std::vector<Selection> findCaseInsensitivePhrase(const std::string& target) const;
     std::vector<Selection> findCaseInsensitiveLines(const std::string& target) const;
+    #ifndef HOPE_TYPESET_HEADLESS
     std::array<double, 4> getDimensions() const noexcept;
     std::array<double, 4> getDimensionsText() const noexcept;
     std::array<double, 4> getDimensionsPhrase() const noexcept;
     std::array<double, 4> getDimensionsLines() const noexcept;
+    #endif
 
     static constexpr double NEWLINE_EXTRA = 5;
 };

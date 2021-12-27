@@ -23,6 +23,7 @@ public:
 
     virtual char constructCode() const noexcept override { return ACCENTHAT; }
 
+    #ifndef HOPE_TYPESET_HEADLESS
     virtual void updateSizeSpecific() noexcept override {
         width = child()->width;
         should_drop = hasSmallChild();
@@ -38,6 +39,7 @@ public:
     virtual void paintSpecific(Painter& painter) const override {
         painter.drawSymbol("∧", x+hoffset, y+should_drop*drop, width, voffset + extra);
     }
+    #endif
 };
 
 }

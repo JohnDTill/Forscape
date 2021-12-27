@@ -26,8 +26,6 @@ struct Marker{
     void setToBackOf(Text* t) noexcept;
     void setToFrontOf(const Phrase* p) noexcept;
     void setToBackOf(const Phrase* p) noexcept;
-    void setToPointOf(Text* t, double setpoint);
-    void setToLeftOf(Text* t, double setpoint);
     bool isTopLevel() const noexcept;
     bool isNested() const noexcept;
     char charRight() const noexcept;
@@ -48,7 +46,6 @@ struct Marker{
     void decrementToPrevWord() noexcept;
     bool operator==(const Marker& other) const noexcept;
     bool operator!=(const Marker& other) const noexcept;
-    double x() const;
     size_t countSpacesLeft() const noexcept;
     std::string_view checkKeyword() const noexcept;
     uint32_t codepointLeft() const noexcept;
@@ -57,6 +54,12 @@ struct Marker{
     std::string_view strLeft() const noexcept;
     bool compareRight(const Marker& other) const noexcept;
     bool compareLeft(const Marker& other) const noexcept;
+
+    #ifndef HOPE_TYPESET_HEADLESS
+    double x() const;
+    void setToPointOf(Text* t, double setpoint);
+    void setToLeftOf(Text* t, double setpoint);
+    #endif
 
     //Scanner / Parser
     uint32_t advance() noexcept;

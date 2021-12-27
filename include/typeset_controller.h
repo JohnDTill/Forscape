@@ -49,10 +49,6 @@ public:
     void deselect() noexcept;
     void moveToNextChar() noexcept;
     void moveToPrevChar() noexcept;
-    void moveToNextLine(double setpoint) noexcept;
-    void moveToPrevLine(double setpoint) noexcept;
-    void moveToNextPage(double setpoint, double page_height) noexcept;
-    void moveToPrevPage(double setpoint, double page_height) noexcept;
     void moveToNextWord() noexcept;
     void moveToPrevWord() noexcept;
     void moveToStartOfLine() noexcept;
@@ -61,10 +57,6 @@ public:
     void moveToEndOfDocument() noexcept;
     void selectNextChar() noexcept;
     void selectPrevChar() noexcept;
-    void selectNextLine(double setpoint) noexcept;
-    void selectPrevLine(double setpoint) noexcept;
-    void selectNextPage(double setpoint, double page_height) noexcept;
-    void selectPrevPage(double setpoint, double page_height) noexcept;
     void selectNextWord() noexcept;
     void selectPrevWord() noexcept;
     void selectStartOfLine() noexcept;
@@ -89,12 +81,20 @@ public:
     void setBothToFrontOf(Text* t) noexcept;
     void setBothToBackOf(Text* t) noexcept;
     std::string selectedText() const;
-    bool contains(double x, double y) const;
     std::vector<Selection> findCaseInsensitive(const std::string& str) const;
     Selection selection() const noexcept;
     bool isTextSelection() const noexcept;
 
     #ifndef HOPE_TYPESET_HEADLESS
+    void moveToNextLine(double setpoint) noexcept;
+    void moveToPrevLine(double setpoint) noexcept;
+    void moveToNextPage(double setpoint, double page_height) noexcept;
+    void moveToPrevPage(double setpoint, double page_height) noexcept;
+    void selectNextLine(double setpoint) noexcept;
+    void selectPrevLine(double setpoint) noexcept;
+    void selectNextPage(double setpoint, double page_height) noexcept;
+    void selectPrevPage(double setpoint, double page_height) noexcept;
+    bool contains(double x, double y) const;
     void paintSelection(Painter& painter) const;
     void paintCursor(Painter& painter) const;
     void paintInsertCursor(Painter& painter) const;
@@ -129,11 +129,6 @@ private:
     void decrementToPrevWord() noexcept;
     void selectLine(const Line* l) noexcept;
     void selectConstruct(const Construct* c) noexcept;
-    void clickTo(const Phrase* p, double x, double y) noexcept;
-    void clickTo(const Construct* c, double x, double y) noexcept;
-    void shiftClick(const Phrase* p, double x) noexcept;
-    double xActive() const;
-    double xAnchor() const;
     void deleteChar();
     void deleteAdditionalChar(Command* cmd);
     void deleteFirstChar();
@@ -147,6 +142,14 @@ private:
     Command* insertFirstChar(const std::string& str);
     Command* getInsertSerial(const std::string& str);
     Command* insertSerialNoSelection(const std::string& str);
+
+    #ifndef HOPE_TYPESET_HEADLESS
+    void clickTo(const Phrase* p, double x, double y) noexcept;
+    void clickTo(const Construct* c, double x, double y) noexcept;
+    void shiftClick(const Phrase* p, double x) noexcept;
+    double xActive() const;
+    double xAnchor() const;
+    #endif
 
     Marker active;
     Marker anchor;

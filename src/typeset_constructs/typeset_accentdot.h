@@ -21,6 +21,7 @@ public:
 
     virtual char constructCode() const noexcept override { return ACCENTDOT; }
 
+    #ifndef HOPE_TYPESET_HEADLESS
     virtual void updateSizeSpecific() noexcept override {
         width = child()->width;
         should_drop = hasSmallChild();
@@ -36,6 +37,7 @@ public:
     virtual void paintSpecific(Painter& painter) const override {
         painter.drawDot(x + width/2, y+should_drop*drop);
     }
+    #endif
 };
 
 }

@@ -26,6 +26,7 @@ public:
 
     virtual char constructCode() const noexcept override { return SQRT; }
 
+    #ifndef HOPE_TYPESET_HEADLESS
     static constexpr double vgap = 1;
     static constexpr double SLOPE = 5;
     static constexpr double vfudge = 2;
@@ -64,6 +65,7 @@ public:
         pts.push_back( std::make_pair(a,b) );
         painter.drawPath(pts);
     }
+    #endif
 };
 
 }

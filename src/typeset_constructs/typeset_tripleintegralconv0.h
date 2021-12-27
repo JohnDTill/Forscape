@@ -12,6 +12,7 @@ class TripleIntegralConv0 final : public Construct {
 public:
     virtual char constructCode() const noexcept override { return TRIPLEINTEGRALCONV0; }
 
+    #ifndef HOPE_TYPESET_HEADLESS
     virtual void updateSizeSpecific() noexcept override {
         width = getWidth(SEM_DEFAULT, parent->script_level, "∰");
         above_center = getAboveCenter(SEM_DEFAULT, parent->script_level);
@@ -21,6 +22,7 @@ public:
     virtual void paintSpecific(Painter& painter) const override {
         painter.drawSymbol(x, y, "∰");
     }
+    #endif
 };
 
 }

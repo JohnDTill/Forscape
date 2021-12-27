@@ -146,6 +146,9 @@ endif()
 
 target_link_libraries(exampleWidgetQt PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Svg)
 
+FIND_PACKAGE ( Threads REQUIRED )
+target_link_libraries(exampleWidgetQt PRIVATE Threads::Threads)
+
 set_target_properties(exampleWidgetQt PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
@@ -167,9 +170,10 @@ target_compile_options(exampleWidgetQt PRIVATE
 
 #Added because Eigen unsupported resulted in compiles with too many sections
 target_compile_options(exampleWidgetQt PRIVATE
-  $<$<CXX_COMPILER_ID:MSVC>:/bigobj /DHOPE_EIGEN_UNSUPPORTED>
-  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-m64 -Wa,-mbig-obj>
+  $<$<CXX_COMPILER_ID:MSVC>:/bigobj>
 )
+
+add_compile_definitions(HOPE_EIGEN_UNSUPPORTED)
 
 #Errors should be rendered impossible in Eigen
 add_compile_options(
@@ -180,7 +184,7 @@ set_target_properties(exampleWidgetQt PROPERTIES OUTPUT_NAME ${EXE_NAME})
 
 add_custom_target(
     codegen ALL
-    COMMAND python all.py
+    COMMAND python3 all.py
     WORKING_DIRECTORY ${META}
     BYPRODUCTS ${GEN_FILES}
     COMMENT "Performing codegen"

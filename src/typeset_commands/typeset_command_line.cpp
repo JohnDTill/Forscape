@@ -24,7 +24,9 @@ CommandLine* CommandLine::insert(Text* tL, size_t iL, std::vector<Line*> lines){
     for(size_t i = 0; i < lines.size(); i++){
         lines[i]->parent = lL->parent;
         lines[i]->id = lL->id + 1 + i;
+        #ifndef HOPE_TYPESET_HEADLESS
         lines[i]->updateSize();
+        #endif
     }
 
     Text* tR = lines.back()->back();

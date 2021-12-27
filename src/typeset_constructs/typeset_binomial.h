@@ -20,6 +20,7 @@ public:
     static constexpr double hgap = 1;
     static constexpr double vgap = 1;
 
+    #ifndef HOPE_TYPESET_HEADLESS
     virtual Text* textUp(const Subphrase* caller, double x) const noexcept override {
         return caller->id==1 ? first()->textLeftOf(x) : prev();
     }
@@ -49,6 +50,7 @@ public:
     virtual bool increasesScriptDepth(uint8_t) const noexcept override{
         return !parent->isLine();
     }
+    #endif
 };
 
 }

@@ -21,6 +21,8 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return LIMIT; }
+
+    #ifndef HOPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }
 
     virtual void updateSizeSpecific() noexcept override {
@@ -56,6 +58,7 @@ public:
         painter.setScriptLevel(first()->script_level);
         painter.drawText(first()->x + first()->width, first()->y, "→");
     }
+    #endif
 };
 
 }

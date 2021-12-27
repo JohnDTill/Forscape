@@ -20,9 +20,9 @@ public:
     Line* nextAsserted() const noexcept;
     size_t leadingSpaces() const noexcept;
     const std::vector<Line*>& lines() const noexcept;
-    Line* nearestLine(double y) const noexcept;
 
     #ifndef HOPE_TYPESET_HEADLESS
+    Line* nearestLine(double y) const noexcept;
     virtual void resize() noexcept override;
     #endif
 

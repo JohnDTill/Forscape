@@ -513,7 +513,7 @@ double View::getLineboxWidth() const noexcept{
 void View::keyPressEvent(QKeyEvent* e){
     constexpr int Ctrl = Qt::ControlModifier;
     constexpr int Shift = Qt::ShiftModifier;
-    constexpr int CtrlShift = Qt::ControlModifier + Qt::ShiftModifier;
+    constexpr int CtrlShift = Qt::ControlModifier | Qt::ShiftModifier;
 
     switch (e->key() | e->modifiers()) {
         case Qt::Key_Z|Ctrl: if(allow_write) model->undo(controller); updateXSetpoint(); restartCursorBlink(); break;
@@ -540,8 +540,8 @@ void View::keyPressEvent(QKeyEvent* e){
         case Qt::Key_End|Shift: controller.selectEndOfLine(); updateXSetpoint(); restartCursorBlink(); update(); break;
         case Qt::Key_Home|CtrlShift: controller.selectStartOfDocument(); updateXSetpoint(); restartCursorBlink(); update(); break;
         case Qt::Key_End|CtrlShift: controller.selectEndOfDocument(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_PageDown+Qt::ShiftModifier: controller.selectNextPage(x_setpoint, height()/zoom); restartCursorBlink(); break;
-        case Qt::Key_PageUp+Qt::ShiftModifier: controller.selectPrevPage(x_setpoint, height()/zoom); restartCursorBlink(); break;
+        case Qt::Key_PageDown|Qt::ShiftModifier: controller.selectNextPage(x_setpoint, height()/zoom); restartCursorBlink(); break;
+        case Qt::Key_PageUp|Qt::ShiftModifier: controller.selectPrevPage(x_setpoint, height()/zoom); restartCursorBlink(); break;
         case Qt::Key_A|Ctrl: controller.selectAll(); update(); break;
         case 61|Qt::ControlModifier: zoomIn(); restartCursorBlink(); break;
         case Qt::Key_Minus|Qt::ControlModifier: zoomOut(); restartCursorBlink(); break;

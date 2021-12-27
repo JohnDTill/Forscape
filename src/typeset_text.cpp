@@ -3,8 +3,12 @@
 #include "hope_unicode.h"
 #include "typeset_construct.h"
 #include "typeset_line.h"
-#include "typeset_painter.h"
+#include "typeset_selection.h"
 #include "typeset_subphrase.h"
+
+#ifndef HOPE_TYPESET_HEADLESS
+#include "typeset_painter.h"
+#endif
 
 #include <algorithm>
 #include <cassert>

@@ -15,6 +15,8 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return BIGSUM2; }
+
+    #ifndef HOPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }
     double symbol_width;
 
@@ -36,6 +38,7 @@ virtual void updateSizeSpecific() noexcept override {
         double symbol_x = x + (width - symbol_width) / 2;
         painter.drawSymbol(symbol_x, y + second()->height(), "∑");
     }
+    #endif
 };
 
 }

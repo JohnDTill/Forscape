@@ -10,7 +10,7 @@ def main():
     header_writer = cpp.HeaderWriter(
         name="parsenodetype",
         inner_namespace="Code",
-        includes=["inttypes.h"],
+        includes=["inttypes.h", "stddef.h"],
     )
 
     header_writer.write("typedef size_t ParseNodeType;\n\n")

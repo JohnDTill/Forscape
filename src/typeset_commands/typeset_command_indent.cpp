@@ -19,7 +19,7 @@ CommandIndent* CommandIndent::indent(Line* first, Line* last){
     return new CommandIndent(true, first, last, spaces);
 }
 
-CommandIndent *CommandIndent::deindent(Line* first, Line* last){
+CommandIndent* CommandIndent::deindent(Line* first, Line* last){
     std::vector<uint8_t> spaces;
     bool no_change = true;
 
@@ -56,7 +56,9 @@ void CommandIndent::insert(Controller& c){
     for(Line* l = first; l != last->next(); l = l->next()){
         std::string& str = l->front()->str;
         str.insert(0, std::string(spaces[i++], ' '));
+        #ifndef HOPE_TYPESET_HEADLESS
         l->front()->resize();
+        #endif
     }
 
     c.setBothToFrontOf(last->front());
@@ -69,7 +71,9 @@ void CommandIndent::remove(Controller& c){
         uint8_t n = spaces[i++];
         assert(str.substr(0,n) == std::string(n, ' '));
         str.erase(0, n);
+        #ifndef HOPE_TYPESET_HEADLESS
         l->front()->resize();
+        #endif
     }
 
     c.setBothToFrontOf(last->front());

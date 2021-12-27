@@ -147,30 +147,6 @@ Line* Selection::getStartLine() const noexcept{
     return tL->getLine();
 }
 
-bool Selection::contains(double x, double y) const noexcept{
-    if(isTextSelection()) return containsText(x, y);
-    else if(isPhraseSelection()) return containsPhrase(x, y);
-    else return containsLine(x, y);
-}
-
-bool Selection::containsText(double x, double y) const noexcept{
-    return tR->containsY(y) && tR->containsXInBounds(x, iL, iR);
-}
-
-bool Selection::containsPhrase(double x, double y) const noexcept{
-    return phrase()->containsY(y) && x >= xL && x <= xR;
-}
-
-bool Selection::containsLine(double x, double y) const noexcept{
-    if((y < lL->y) | (y > lR->yBottom())) return false;
-
-    Line* l = lL->nearestLine(y);
-
-    if(l == lL) return x <= l->x + l->width + NEWLINE_EXTRA && x >= tL->xGlobal(iL);
-    else if(l == lR) return x >= l->x && x <= tR->xGlobal(iR);
-    else return (x >= l->x) & (x <= l->x + l->width + NEWLINE_EXTRA);
-}
-
 std::vector<Selection> Selection::findCaseInsensitive(const std::string& str) const{
     assert(!str.empty());
 
@@ -411,6 +387,7 @@ std::vector<Selection> Selection::findCaseInsensitiveLines(const std::string& ta
     return hits;
 }
 
+#ifndef HOPE_TYPESET_HEADLESS
 std::array<double, 4> Selection::getDimensions() const noexcept{
     if(isTextSelection()) return getDimensionsText();
     else if(isPhraseSelection()) return getDimensionsPhrase();
@@ -470,6 +447,7 @@ std::array<double, 4> Selection::getDimensionsLines() const noexcept{
 
     return {x, y, w, h};
 }
+#endif
 
 #ifndef NDEBUG
 bool Selection::inValidState() const{
@@ -494,6 +472,30 @@ bool Selection::inValidState() const{
 #endif
 
 #ifndef HOPE_TYPESET_HEADLESS
+bool Selection::contains(double x, double y) const noexcept{
+    if(isTextSelection()) return containsText(x, y);
+    else if(isPhraseSelection()) return containsPhrase(x, y);
+    else return containsLine(x, y);
+}
+
+bool Selection::containsText(double x, double y) const noexcept{
+    return tR->containsY(y) && tR->containsXInBounds(x, iL, iR);
+}
+
+bool Selection::containsPhrase(double x, double y) const noexcept{
+    return phrase()->containsY(y) && x >= xL && x <= xR;
+}
+
+bool Selection::containsLine(double x, double y) const noexcept{
+    if((y < lL->y) | (y > lR->yBottom())) return false;
+
+    Line* l = lL->nearestLine(y);
+
+    if(l == lL) return x <= l->x + l->width + NEWLINE_EXTRA && x >= tL->xGlobal(iL);
+    else if(l == lR) return x >= l->x && x <= tR->xGlobal(iR);
+    else return (x >= l->x) & (x <= l->x + l->width + NEWLINE_EXTRA);
+}
+
 void Selection::paint(Painter& painter) const{
     if(isTextSelection()){
         tR->paintMid(painter, iL, iR);

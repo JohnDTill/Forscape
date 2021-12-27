@@ -30,12 +30,12 @@ void Subphrase::setParent(Construct* c) noexcept{
     parent = c;
 }
 
+#ifndef HOPE_TYPESET_HEADLESS
 void Subphrase::paint(Painter& painter) const{
     if(numTexts() > 1 || !text(0)->empty()) Phrase::paint(painter);
     else painter.drawEmptySubphrase(x, y, width, height());
 }
 
-#ifndef HOPE_TYPESET_HEADLESS
 void Subphrase::resize() noexcept{
     updateSize();
     parent->resize();

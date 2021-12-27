@@ -1,5 +1,6 @@
 #include "typeset_construct.h"
 
+#include "typeset_selection.h"
 #include "typeset_subphrase.h"
 #include <algorithm>
 #include <cassert>
@@ -112,11 +113,6 @@ std::string Construct::toString() const{
     return str;
 }
 
-Subphrase* Construct::argAt(double x, double y) const noexcept{
-    for(Subphrase* s : args) if(s->contains(x,y)) return s;
-    return nullptr;
-}
-
 #ifdef HOPE_SEMANTIC_DEBUGGING
 std::string Construct::toStringWithSemanticTags() const{
     std::string out;
@@ -135,6 +131,23 @@ std::string Construct::toStringWithSemanticTags() const{
 #endif
 
 #ifndef HOPE_TYPESET_HEADLESS
+bool Construct::contains(double x, double y) const noexcept{
+    return (x >= this->x) & (x <= this->x + width) & (y >= this->y) & (y <= this->y + height());
+}
+
+Construct* Construct::constructAt(double x, double y) noexcept{
+    if(Subphrase* s = argAt(x, y))
+        if(Construct* c = s->constructAt(x, y))
+            return c;
+
+    return this;
+}
+
+Subphrase* Construct::argAt(double x, double y) const noexcept{
+    for(Subphrase* s : args) if(s->contains(x,y)) return s;
+    return nullptr;
+}
+
 uint8_t Construct::scriptDepth() const noexcept{
     return parent->script_level;
 }
@@ -204,18 +217,6 @@ void Construct::setupNAargs(uint16_t n){
 
 size_t Construct::numArgs() const noexcept{
     return args.size();
-}
-
-bool Construct::contains(double x, double y) const noexcept{
-    return (x >= this->x) & (x <= this->x + width) & (y >= this->y) & (y <= this->y + height());
-}
-
-Construct* Construct::constructAt(double x, double y) noexcept{
-    if(Subphrase* s = argAt(x, y))
-        if(Construct* c = s->constructAt(x, y))
-            return c;
-
-    return this;
 }
 
 bool Construct::sameContent(const Construct* other) const noexcept{

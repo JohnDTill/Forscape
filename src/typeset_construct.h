@@ -2,8 +2,11 @@
 #define TYPESET_CONSTRUCT_H
 
 #include <construct_codes.h>
-#include "typeset_painter.h"
 #include <vector>
+
+#ifndef HOPE_TYPESET_HEADLESS
+#include "typeset_painter.h"
+#endif
 
 #ifdef TYPESET_MEMORY_DEBUG
 #include <unordered_set>
@@ -21,6 +24,7 @@ namespace Typeset {
 
 class Controller;
 class Phrase;
+class Selection;
 class Subphrase;
 class Text;
 
@@ -51,10 +55,7 @@ public:
     virtual void writeArgs(std::string& out, size_t& curr) const noexcept;
     virtual char constructCode() const noexcept = 0;
     std::string toString() const;
-    Subphrase* argAt(double x, double y) const noexcept;
     size_t numArgs() const noexcept;
-    bool contains(double x, double y) const noexcept;
-    Construct* constructAt(double x, double y) noexcept;
     bool sameContent(const Construct* other) const noexcept;
     void findCaseInsensitive(const std::string& target, std::vector<Selection>& hits) const;
 
@@ -66,6 +67,9 @@ public:
     #endif
 
     #ifndef HOPE_TYPESET_HEADLESS
+    bool contains(double x, double y) const noexcept;
+    Construct* constructAt(double x, double y) noexcept;
+    Subphrase* argAt(double x, double y) const noexcept;
     uint8_t scriptDepth() const noexcept;
     virtual bool increasesScriptDepth(uint8_t id) const noexcept;
     void updateSize() noexcept;

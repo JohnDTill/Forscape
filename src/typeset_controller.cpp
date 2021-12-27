@@ -9,7 +9,6 @@
 #include "typeset_shorthand.h"
 #include "typeset_subphrase.h"
 #include "typeset_text.h"
-#include "typeset_view.h"
 #include <typeset_command_indent.h>
 #include <typeset_command_line.h>
 #include <typeset_command_pair.h>
@@ -90,28 +89,6 @@ void Controller::moveToPrevChar() noexcept{
     }
 }
 
-void Controller::moveToNextLine(double setpoint) noexcept{
-    if(isNested()) active.setToLeftOf(subphrase()->textDown(setpoint), setpoint);
-    else selectNextLine(setpoint);
-    consolidateToActive();
-}
-
-void Controller::moveToPrevLine(double setpoint) noexcept{
-    if(isNested()) active.setToLeftOf(subphrase()->textUp(setpoint), setpoint);
-    else selectPrevLine(setpoint);
-    consolidateToActive();
-}
-
-void Controller::moveToNextPage(double setpoint, double page_height) noexcept{
-    selectNextPage(setpoint, page_height);
-    consolidateToActive();
-}
-
-void Controller::moveToPrevPage(double setpoint, double page_height) noexcept{
-    selectPrevPage(setpoint, page_height);
-    consolidateToActive();
-}
-
 void Controller::moveToNextWord() noexcept{
     if(hasSelection()){
         consolidateRight();
@@ -172,36 +149,6 @@ void Controller::selectPrevChar() noexcept{
     }
 }
 
-void Controller::selectNextLine(double setpoint) noexcept{
-    if(isTopLevel())
-        if(Line* l = nextLine())
-            active.setToLeftOf(l->textLeftOf(setpoint), setpoint);
-}
-
-void Controller::selectPrevLine(double setpoint) noexcept{
-    if(isTopLevel())
-        if(Line* l = prevLine())
-            active.setToLeftOf(l->textLeftOf(setpoint), setpoint);
-}
-
-void Controller::selectNextPage(double setpoint, double page_height) noexcept{
-    if(isNested()) return;
-
-    Line* l = activeLine();
-    double target = l->y + l->above_center + page_height;
-    l = l->parent->nearestLine(target);
-    active.setToLeftOf(l->textLeftOf(setpoint), setpoint);
-}
-
-void Controller::selectPrevPage(double setpoint, double page_height) noexcept{
-    if(isNested()) return;
-
-    Line* l = activeLine();
-    double target = l->y + l->above_center - page_height;
-    l = l->parent->nearestLine(target);
-    active.setToLeftOf(l->textLeftOf(setpoint), setpoint);
-}
-
 void Controller::selectNextWord() noexcept{
     if(notAtTextEnd()){
         incrementToNextWord();
@@ -250,15 +197,67 @@ std::string Controller::selectedText() const{
     return selection().str();
 }
 
-bool Controller::contains(double x, double y) const{
-    return selection().contains(x, y);
-}
-
 std::vector<Selection> Controller::findCaseInsensitive(const std::string& str) const{
     return selection().findCaseInsensitive(str);
 }
 
 #ifndef HOPE_TYPESET_HEADLESS
+void Controller::moveToNextLine(double setpoint) noexcept{
+    if(isNested()) active.setToLeftOf(subphrase()->textDown(setpoint), setpoint);
+    else selectNextLine(setpoint);
+    consolidateToActive();
+}
+
+void Controller::moveToPrevLine(double setpoint) noexcept{
+    if(isNested()) active.setToLeftOf(subphrase()->textUp(setpoint), setpoint);
+    else selectPrevLine(setpoint);
+    consolidateToActive();
+}
+
+void Controller::moveToNextPage(double setpoint, double page_height) noexcept{
+    selectNextPage(setpoint, page_height);
+    consolidateToActive();
+}
+
+void Controller::moveToPrevPage(double setpoint, double page_height) noexcept{
+    selectPrevPage(setpoint, page_height);
+    consolidateToActive();
+}
+
+void Controller::selectNextLine(double setpoint) noexcept{
+    if(isTopLevel())
+        if(Line* l = nextLine())
+            active.setToLeftOf(l->textLeftOf(setpoint), setpoint);
+}
+
+void Controller::selectPrevLine(double setpoint) noexcept{
+    if(isTopLevel())
+        if(Line* l = prevLine())
+            active.setToLeftOf(l->textLeftOf(setpoint), setpoint);
+}
+
+void Controller::selectNextPage(double setpoint, double page_height) noexcept{
+    if(isNested()) return;
+
+    Line* l = activeLine();
+    double target = l->y + l->above_center + page_height;
+    l = l->parent->nearestLine(target);
+    active.setToLeftOf(l->textLeftOf(setpoint), setpoint);
+}
+
+void Controller::selectPrevPage(double setpoint, double page_height) noexcept{
+    if(isNested()) return;
+
+    Line* l = activeLine();
+    double target = l->y + l->above_center - page_height;
+    l = l->parent->nearestLine(target);
+    active.setToLeftOf(l->textLeftOf(setpoint), setpoint);
+}
+
+bool Controller::contains(double x, double y) const{
+    return selection().contains(x, y);
+}
+
 void Controller::paintSelection(Painter& painter) const{
     selection().paintSelection(painter);
 }
@@ -653,55 +652,17 @@ void Controller::selectLine(const Line* l) noexcept{
 }
 
 void Controller::selectConstruct(const Construct* c) noexcept{
+    #ifndef HOPE_TYPESET_HEADLESS
     if(c->constructCode() != MARKERLINK){
         active.setToFrontOf(c->next());
         anchor.setToBackOf(c->prev());
     }else{
         static_cast<const MarkerLink*>(c)->clickThrough();
     }
-}
-
-void Controller::clickTo(const Phrase* p, double x, double y) noexcept{
-    if(x <= p->x){
-        setBothToFrontOf(p->front());
-    }else if(x >= p->x + p->width){
-        setBothToBackOf(p->back());
-    }else{
-        Text* t = p->textLeftOf(x);
-
-        if(t->containsX(x)){
-            active.setToPointOf(t, x);
-            consolidateToActive();
-        }else if(Construct* c = t->nextConstructInPhrase()){
-            clickTo(c, x, y);
-        }else{
-            setBothToBackOf(t);
-        }
-    }
-}
-
-void Controller::clickTo(const Construct* c, double x, double y) noexcept{
-    if(Subphrase* s = c->argAt(x, y)) clickTo(s, x, y);
-    else selectConstruct(c);
-}
-
-void Controller::shiftClick(const Phrase* p, double x) noexcept{
-    if(x <= p->x) active.setToFrontOf(p);
-    else if(x >= p->x + p->width) active.setToBackOf(p);
-    else{
-        Text* t = p->textLeftOf(x);
-        Construct* c = t->nextConstructInPhrase();
-        if(c && x > c->x + c->width/2) active.setToFrontOf(c->next());
-        else active.setToPointOf(p->textLeftOf(x), x);
-    }
-}
-
-double Controller::xActive() const{
-    return active.x();
-}
-
-double Controller::xAnchor() const{
-    return anchor.x();
+    #else
+    active.setToFrontOf(c->next());
+    anchor.setToBackOf(c->prev());
+    #endif
 }
 
 void Controller::deleteChar(){
@@ -814,6 +775,51 @@ Command* Controller::insertSerialNoSelection(const std::string& str){
         return CommandText::insert(active.text, active.index, str);
     }
 }
+
+#ifndef HOPE_TYPESET_HEADLESS
+void Controller::clickTo(const Phrase* p, double x, double y) noexcept{
+    if(x <= p->x){
+        setBothToFrontOf(p->front());
+    }else if(x >= p->x + p->width){
+        setBothToBackOf(p->back());
+    }else{
+        Text* t = p->textLeftOf(x);
+
+        if(t->containsX(x)){
+            active.setToPointOf(t, x);
+            consolidateToActive();
+        }else if(Construct* c = t->nextConstructInPhrase()){
+            clickTo(c, x, y);
+        }else{
+            setBothToBackOf(t);
+        }
+    }
+}
+
+void Controller::clickTo(const Construct* c, double x, double y) noexcept{
+    if(Subphrase* s = c->argAt(x, y)) clickTo(s, x, y);
+    else selectConstruct(c);
+}
+
+void Controller::shiftClick(const Phrase* p, double x) noexcept{
+    if(x <= p->x) active.setToFrontOf(p);
+    else if(x >= p->x + p->width) active.setToBackOf(p);
+    else{
+        Text* t = p->textLeftOf(x);
+        Construct* c = t->nextConstructInPhrase();
+        if(c && x > c->x + c->width/2) active.setToFrontOf(c->next());
+        else active.setToPointOf(p->textLeftOf(x), x);
+    }
+}
+
+double Controller::xActive() const{
+    return active.x();
+}
+
+double Controller::xAnchor() const{
+    return anchor.x();
+}
+#endif
 
 uint32_t Controller::advance() noexcept{
     assert(notAtTextEnd());
