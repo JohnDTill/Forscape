@@ -28,7 +28,7 @@ inline std::string readFile(const std::string& filename){
     std::string str = buffer.str();
     str.erase( std::remove(str.begin(), str.end(), '\r'), str.end() );
 
-    return buffer.str();
+    return str;
 }
 
 inline Typeset::Model* loadModel(const std::string& filename){
