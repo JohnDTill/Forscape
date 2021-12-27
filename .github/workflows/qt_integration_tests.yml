@@ -8,7 +8,7 @@ jobs:
         uses: jurplel/install-qt-action@v2
         with:
           modules: qtsvg
-      - run: sudo apt install libqt5x11extras5 xcb-util libxcb xcb-util-image xcb-util-renderutil xcb-util-wm xcb-util-keysyms
+      - run: sudo apt install libqt5x11extras5
       - uses: actions/checkout@v2
       - id: debug
         run: export QT_DEBUG_PLUGINS=1
