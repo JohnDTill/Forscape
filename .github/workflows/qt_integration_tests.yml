@@ -10,11 +10,11 @@ jobs:
           modules: qtsvg
       - run: sudo apt install libqt5x11extras5
       - uses: actions/checkout@v2
+      - id: debug
+        run: export QT_DEBUG_PLUGINS=1
       - id: cmake
         run: cd ${GITHUB_WORKSPACE}/test && cmake -DTEST_QT=ON -B../build_test -S.
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build_test && make
-      - id: debug
-        run: export QT_DEBUG_PLUGINS=1
       - id: run
         run: cd ${GITHUB_WORKSPACE}/build_test && ./HopeTests
