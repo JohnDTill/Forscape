@@ -7,7 +7,7 @@ jobs:
       - id: Qt
         uses: jurplel/install-qt-action@v2
         with:
-          version: 5.14.2 #Havin' an issue with Qt working
+          version: 5.12.12 #Havin' an issue with Qt working
           modules: qtsvg
       - uses: actions/checkout@v2
       - id: cmake
