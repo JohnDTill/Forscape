@@ -4,6 +4,7 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
+      - id: Qt
         uses: jurplel/install-qt-action@v2
         version: 5.14.2 #Havin' an issue with Qt working
         with:
