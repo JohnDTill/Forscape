@@ -6,7 +6,7 @@
 #include <QGraphicsView>
 #include <QProcess>
 #include <QWheelEvent>
-#include <QtSvg/QGraphicsSvgItem>
+#include <QGraphicsSvgItem>
 
 namespace QGraphvizCall{
 
