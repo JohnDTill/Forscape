@@ -64,7 +64,7 @@ static double failRatio(const QImage& im){
 }
 
 inline bool testTypesetQPainter(){
-    constexpr double threshold = 1e-12;
+    constexpr double threshold = 1e-4;
     constexpr size_t MAX_MOVES = 15;
     bool passing = true;
 
@@ -149,14 +149,6 @@ inline bool testTypesetQPainter(){
         if(num_moves > MAX_MOVES) break;
     }
 
-    if(passing){
-        report("Typeset QPainter", passing);
-    }else{
-        std::cout << "-- Typeset QPainter: KNOWN BUG (https://github.com/JohnDTill/Forscape/issues/12)" << std::endl;
-    }
-
-    return true;
-
-    //report("Typeset QPainter", passing);
-    //return passing;
+    report("Typeset QPainter", passing);
+    return passing;
 }

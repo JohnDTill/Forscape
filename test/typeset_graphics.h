@@ -41,14 +41,6 @@ inline bool testTypesetGraphics(){
         passing = false;
     }
 
-    if(passing){
-        report("Typeset QPainter", passing);
-    }else{
-        std::cout << "-- Typeset graphics: KNOWN BUG (https://github.com/JohnDTill/Forscape/issues/12)" << std::endl;
-    }
-
-    return true;
-
-    //report("Typeset graphics", passing);
-    //return passing;
+    report("Typeset graphics", passing);
+    return passing;
 }
