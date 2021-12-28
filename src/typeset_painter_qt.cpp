@@ -245,6 +245,7 @@ void Painter::drawDot(double x, double y){
 }
 
 double Painter::getWidth(const std::string& text){
+    assert(painter.font().kerning() == false);
     return painter.fontMetrics().horizontalAdvance( QString::fromStdString(text) );
 }
 

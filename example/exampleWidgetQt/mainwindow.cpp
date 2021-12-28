@@ -215,7 +215,9 @@ void MainWindow::on_actionOpen_triggered(){
     }
 
     QTextStream in(&file);
+    #ifdef QT5
     in.setCodec("UTF-8");
+    #endif
 
     std::string src = in.readAll().toStdString();
     if(!Hope::isValidSerial(src)){
@@ -274,7 +276,9 @@ void MainWindow::saveAs(QString path){
     }
 
     QTextStream out(&file);
+    #ifdef QT5
     out.setCodec("UTF-8");
+    #endif
     out << QString::fromStdString(editor->getModel()->toSerial());
 
     setWindowTitle("Forscape - " + file.fileName());
