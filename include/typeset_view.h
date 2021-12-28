@@ -77,8 +77,8 @@ private:
     double yOrigin() const;
     double getLineboxWidth() const noexcept;
 
-    static constexpr double ZOOM_DEFAULT = 2;
-    static constexpr double ZOOM_MAX = 5; static_assert(ZOOM_DEFAULT <= ZOOM_MAX);
+    static constexpr double ZOOM_DEFAULT = 2.0;
+    static constexpr double ZOOM_MAX = 5.0; static_assert(ZOOM_DEFAULT <= ZOOM_MAX);
     static constexpr double ZOOM_MIN = 0.75; static_assert(ZOOM_DEFAULT >= ZOOM_MIN);
     static constexpr double ZOOM_DELTA = 1.1; static_assert(ZOOM_DELTA > 1);
     static constexpr size_t CURSOR_BLINK_INTERVAL = 600;

@@ -39,11 +39,11 @@ static QColor getColor(SemanticType type){
 }
 
 static double getWidth(const QFont& font, const std::string& text){
-    return QFontMetrics(font).horizontalAdvance( QString::fromStdString(text) );
+    return QFontMetricsF(font).horizontalAdvance( QString::fromStdString(text) );
 }
 
 static double getWidth(const QFont& font, char ch){
-    return QFontMetrics(font).horizontalAdvance(ch);
+    return QFontMetricsF(font).horizontalAdvance(ch);
 }
 
 double getWidth(SemanticType type, uint8_t depth, const std::string& text){
@@ -246,7 +246,7 @@ void Painter::drawDot(double x, double y){
 
 double Painter::getWidth(const std::string& text){
     assert(painter.font().kerning() == false);
-    return painter.fontMetrics().horizontalAdvance( QString::fromStdString(text) );
+    return QFontMetricsF(painter.font()).horizontalAdvance( QString::fromStdString(text) );
 }
 
 void Painter::drawLineNumber(double y, size_t num, bool active){
@@ -254,10 +254,10 @@ void Painter::drawLineNumber(double y, size_t num, bool active){
     else painter.setPen(View::line_num_passive_color);
 
     painter.setFont(QFontDatabase().font("CMU Bright", "Roman", 8));
-    QFontMetrics fm = painter.fontMetrics();
+    QFontMetricsF fm (painter.font());
     QString str = QString::number(num);
     qreal x = x_offset - fm.horizontalAdvance(str);
-    y += painter.fontMetrics().descent()/2;
+    y += painter.fontMetrics().descent() / 2;
     painter.drawText(x, y, str);
 }
 
@@ -268,7 +268,7 @@ void Painter::setSelectionMode(){
 void Painter::drawSymbol(char ch, double x, double y, double w, double h){
     x += x_offset;
 
-    double scale_x = w / painter.fontMetrics().horizontalAdvance(ch);
+    double scale_x = w / QFontMetricsF(painter.font()).horizontalAdvance(ch);
     double scale_y = h / painter.fontMetrics().ascent();
     x /= scale_x;
     y = (y + h - painter.fontMetrics().descent()) / scale_y;
@@ -283,7 +283,7 @@ void Painter::drawSymbol(const std::string& str, double x, double y, double w, d
     x += x_offset;
 
     QString qstr = QString::fromStdString(str);
-    double scale_x = w / painter.fontMetrics().horizontalAdvance(qstr);
+    double scale_x = w / QFontMetricsF(painter.font()).horizontalAdvance(qstr);
     double scale_y = h / painter.fontMetrics().ascent();
     x /= scale_x;
     y = (y + h - painter.fontMetrics().descent()) / scale_y;
