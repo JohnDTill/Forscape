@@ -57,10 +57,10 @@ public:
     bool containsLine(double x, double y) const noexcept;
     bool containsLine(double x, double y, Text* tL, size_t iL, Text* tR, size_t iR) const noexcept;
     void paint(Painter& painter) const;
-    void paintSelectionText(Painter& painter) const;
-    void paintSelectionPhrase(Painter& painter) const;
-    void paintSelectionLines(Painter& painter) const;
-    void paintSelection(Painter& painter) const;
+    void paintSelectionText(Painter& painter, bool forward) const;
+    void paintSelectionPhrase(Painter& painter, bool forward) const;
+    void paintSelectionLines(Painter& painter, bool forward) const;
+    void paintSelection(Painter& painter, bool forward) const;
     void paintError(Painter& painter) const;
     void paintErrorSelectionless(Painter& painter) const;
     void paintErrorText(Painter& painter) const;
