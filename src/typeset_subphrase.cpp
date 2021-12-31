@@ -31,8 +31,8 @@ void Subphrase::setParent(Construct* c) noexcept{
 }
 
 #ifndef HOPE_TYPESET_HEADLESS
-void Subphrase::paint(Painter& painter) const{
-    if(numTexts() > 1 || !text(0)->empty()) Phrase::paint(painter);
+void Subphrase::paint(Painter& painter, bool forward) const{
+    if(numTexts() > 1 || !text(0)->empty()) Phrase::paint(painter, forward);
     else painter.drawEmptySubphrase(x, y, width, height());
 }
 

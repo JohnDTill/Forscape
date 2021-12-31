@@ -18,7 +18,7 @@ public:
     Construct* parent;
 
     #ifndef HOPE_TYPESET_HEADLESS
-    virtual void paint(Painter& painter) const override;
+    virtual void paint(Painter& painter, bool forward = true) const override;
     virtual void resize() noexcept override;
     #endif
 };

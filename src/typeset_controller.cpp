@@ -259,7 +259,7 @@ bool Controller::contains(double x, double y) const{
 }
 
 void Controller::paintSelection(Painter& painter) const{
-    selection().paintSelection(painter);
+    selection().paintSelection(painter, isForward());
 }
 
 void Controller::paintCursor(Painter& painter) const {

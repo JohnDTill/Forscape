@@ -32,7 +32,7 @@ public:
     void setType(SemanticType type);
     void setScriptLevel(uint8_t depth);
     void setOffset(double x, double y);
-    void drawText(double x, double y, const std::string& text);
+    void drawText(double x, double y, const std::string& text, bool forward = true);
     void drawText(double x, double y, char ch);
     void drawSymbol(double x, double y, const std::string& text);
     void drawLine(double x, double y, double w, double h);

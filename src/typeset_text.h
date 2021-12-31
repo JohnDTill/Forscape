@@ -79,10 +79,10 @@ class Text {
         uint8_t scriptDepth() const noexcept;
         size_t indexNearest(double x_in) const noexcept;
         size_t indexLeft(double x_in) const noexcept;
-        void paint(Painter& painter) const;
-        void paintUntil(Painter& painter, size_t stop) const;
-        void paintAfter(Painter& painter, size_t start) const;
-        void paintMid(Painter& painter, size_t start, size_t stop) const;
+        void paint(Painter& painter, bool forward = true) const;
+        void paintUntil(Painter& painter, size_t stop, bool forward = true) const;
+        void paintAfter(Painter& painter, size_t start, bool forward = true) const;
+        void paintMid(Painter& painter, size_t start, size_t stop, bool forward = true) const;
         bool containsX(double x_test) const noexcept;
         bool containsY(double y_test) const noexcept;
         bool containsXInBounds(double x_test, size_t start, size_t stop) const noexcept;

@@ -104,10 +104,20 @@ void Painter::setOffset(double x, double y){
     x_offset = x;
 }
 
-void Painter::drawText(double x, double y, const std::string& text){
+void Painter::drawText(double x, double y, const std::string& text, bool forward){
     x += x_offset;
-    y += painter.fontMetrics().capHeight();
-    painter.drawText(x, y, QString::fromStdString(text));
+    QString q_str = QString::fromStdString(text);
+
+    if(forward){
+        y += painter.fontMetrics().capHeight();
+        painter.drawText(x, y, q_str);
+    }else{
+        y += painter.fontMetrics().capHeight();
+        y -= painter.fontMetrics().ascent();
+        double h = painter.fontMetrics().height();
+        double w = QFontMetricsF(painter.font()).horizontalAdvance(q_str);
+        painter.drawText(QRectF(x, y, w, h), Qt::AlignRight|Qt::AlignBaseline, q_str);
+    }
 }
 
 void Painter::drawSymbol(double x, double y, const std::string& text){

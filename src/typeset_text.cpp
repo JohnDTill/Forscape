@@ -351,63 +351,67 @@ size_t Text::indexLeft(double x_in) const noexcept{
     return size();
 }
 
-void Text::paint(Painter& painter) const{
+void Text::paint(Painter& painter, bool forward) const{
     size_t start = 0;
     double x = this->x;
     for(const SemanticTag& tag : tags){
-        painter.drawText(x, y, str.substr(start, tag.index-start));
-        x += painter.getWidth(str.substr(start, tag.index-start));
+        std::string substr = str.substr(start, tag.index-start);
+        painter.drawText(x, y, substr, forward);
+        x += painter.getWidth(substr);
         start = tag.index;
         painter.setType(tag.type);
     }
-    painter.drawText(x, y, str.substr(start));
+    painter.drawText(x, y, str.substr(start), forward);
 }
 
-void Text::paintUntil(Painter& painter, size_t stop) const{
+void Text::paintUntil(Painter& painter, size_t stop, bool forward) const{
     size_t start = 0;
     double x = this->x;
     for(const SemanticTag& tag : tags){
         if(tag.index >= stop) break;
-        painter.drawText(x, y, str.substr(start, tag.index-start));
-        x += painter.getWidth(str.substr(start, tag.index-start));
+        std::string substr = str.substr(start, tag.index-start);
+        painter.drawText(x, y, substr, forward);
+        x += painter.getWidth(substr);
         start = tag.index;
         painter.setType(tag.type);
     }
-    painter.drawText(x, y, str.substr(start, stop - start));
+    painter.drawText(x, y, str.substr(start, stop - start), forward);
 }
 
-void Text::paintAfter(Painter& painter, size_t start) const{
+void Text::paintAfter(Painter& painter, size_t start, bool forward) const{
     double x = this->x + xLocal(start);
     painter.setType(getTypeLeftOf(start));
 
     for(const SemanticTag& tag : tags){
         if(tag.index > start){
-            painter.drawText(x, y, str.substr(start, tag.index-start));
-            x += painter.getWidth(str.substr(start, tag.index-start));
+            std::string substr = str.substr(start, tag.index-start);
+            painter.drawText(x, y, substr, forward);
+            x += painter.getWidth(substr);
             start = tag.index;
             painter.setType(tag.type);
         }
     }
 
-    painter.drawText(x, y, str.substr(start));
+    painter.drawText(x, y, str.substr(start), forward);
 }
 
-void Text::paintMid(Painter& painter, size_t start, size_t stop) const{
+void Text::paintMid(Painter& painter, size_t start, size_t stop, bool forward) const{
+    painter.setScriptLevel(scriptDepth());
     double x = this->x + xLocal(start);
     painter.setType(getTypeLeftOf(start));
-    painter.setScriptLevel(scriptDepth());
 
     for(const SemanticTag& tag : tags){
         if(tag.index > start){
             if(tag.index >= stop) break;
-            painter.drawText(x, y, str.substr(start, tag.index-start));
-            x += painter.getWidth(str.substr(start, tag.index-start));
+            std::string substr = str.substr(start, tag.index-start);
+            painter.drawText(x, y, substr, forward);
+            x += painter.getWidth(substr);
             start = tag.index;
             painter.setType(tag.type);
         }
     }
 
-    painter.drawText(x, y, str.substr(start, stop-start));
+    painter.drawText(x, y, str.substr(start, stop-start), forward);
 }
 
 bool Text::containsX(double x_test) const noexcept{

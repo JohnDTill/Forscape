@@ -510,57 +510,77 @@ void Selection::paint(Painter& painter) const{
     }
 }
 
-void Selection::paintSelectionText(Painter& painter) const{
+void Selection::paintSelectionText(Painter& painter, bool forward) const{
     if(iL!=iR){
-        double x = tR->xGlobal(iL);
         double y = tR->y;
-        double w = tR->xGlobal(iR) - x;
         double h = tR->height();
 
-        painter.drawSelection(x, y, w, h);
-        tR->paintMid(painter, iL, iR);
+        if(forward){
+            double x = tR->xGlobal(iL);
+            double w = tR->xGlobal(iR) - x;
+            painter.drawSelection(x, y, w, h);
+        }else{
+            int x = tR->xGlobal(iL);
+            int xEnd = tR->xGlobal(iR);
+            painter.drawSelection(x, y, xEnd-x, h);
+        }
+
+        tR->paintMid(painter, iL, iR, forward);
     }
 }
 
-void Selection::paintSelectionPhrase(Painter& painter) const{
-    double x = tL->xGlobal(iL);
+void Selection::paintSelectionPhrase(Painter& painter, bool forward) const{
     double y = phrase()->y;
-    double w = tR->xGlobal(iR) - x;
     double h = phrase()->height();
 
-    painter.drawSelection(x, y, w, h);
-    phrase()->paintMid(painter, tL, iL, tR, iR);
+    if(forward){
+        double x = tL->xGlobal(iL);
+        double w = tR->xGlobal(iR) - x;
+        painter.drawSelection(x, y, w, h);
+    }else{
+        int x = tL->xGlobal(iL);
+        int xEnd = tR->xGlobal(iR);
+        painter.drawSelection(x, y, xEnd-x, h);
+    }
+    phrase()->paintMid(painter, tL, iL, tR, iR, forward);
 }
 
-void Selection::paintSelectionLines(Painter& painter) const {
-    double x = tL->x + tL->xLocal(iL);
+void Selection::paintSelectionLines(Painter& painter, bool forward) const {
     double y = lL->y;
-    double w = lL->width - tL->xPhrase(iL) + NEWLINE_EXTRA;
     double h = lL->height();
-    painter.drawSelection(x, y, w, h);
-    lL->paintAfter(painter, tL, iL);
+
+    if(forward){
+        double x = tL->x + tL->xLocal(iL);
+        double w = lL->width - tL->xPhrase(iL) + NEWLINE_EXTRA;
+        painter.drawSelection(x, y, w, h);
+    }else{
+        int x = tL->x + tL->xLocal(iL);
+        int xEnd = lL->x + lL->width + NEWLINE_EXTRA;
+        painter.drawSelection(x, y, xEnd-x, h);
+    }
+    lL->paintAfter(painter, tL, iL, forward);
 
     for(Line* l = lL->nextAsserted(); l != lR; l = l->nextAsserted()){
         painter.drawSelection(l->x, l->y, l->width + NEWLINE_EXTRA, l->height());
-        l->paint(painter);
+        l->paint(painter, forward);
     }
 
     if(iR == 0 && tR == lR->front()) return;
 
-    x = lR->x;
+    double x = lR->x;
     y = lR->y;
-    w = tR->xGlobal(iR) - x;
+    double w = tR->xGlobal(iR) - x;
     h = lR->height();
     painter.drawSelection(x, y, w, h);
-    lR->paintUntil(painter, tR, iR);
+    lR->paintUntil(painter, tR, iR, forward);
 }
 
-void Selection::paintSelection(Painter& painter) const{
+void Selection::paintSelection(Painter& painter, bool forward) const{
     painter.setSelectionMode();
 
-    if(isTextSelection()) paintSelectionText(painter);
-    else if(isPhraseSelection()) paintSelectionPhrase(painter);
-    else paintSelectionLines(painter);
+    if(isTextSelection()) paintSelectionText(painter, forward);
+    else if(isPhraseSelection()) paintSelectionPhrase(painter, forward);
+    else paintSelectionLines(painter, forward);
 }
 
 void Selection::paintError(Painter& painter) const{
