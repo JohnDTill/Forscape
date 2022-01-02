@@ -619,19 +619,69 @@ Value Interpreter::matrix(ParseNode pn){
                 parse_tree.getLeft(pn).text->nextConstructAsserted()
                 );
 
-    Eigen::MatrixXd mat(tm->rows, tm->cols);
+    std::vector<size_t> elem_cols; elem_cols.resize(tm->cols);
+    std::vector<size_t> elem_rows; elem_rows.resize(tm->rows);
+    std::vector<Value> elements; elements.resize(tm->numArgs());
 
     size_t curr = 0;
     for(size_t i = 0; i < tm->rows; i++){
         for(size_t j = 0; j < tm->cols; j++){
-            const ParseNode& arg = parse_tree.arg(pn, curr++);
-            Value e = interpretExpr(arg);
-            if(e.index() != double_index){
-                error(NON_NUMERIC_TYPE, arg);
-                return NIL;
+            const ParseNode& arg = parse_tree.arg(pn, curr);
+            elements[curr] = interpretExpr(arg);
+            const Value& e = elements[curr++];
+
+            switch (e.index()) {
+                case double_index:
+                    if(i==0) elem_cols[j] = 1;
+                    else if(elem_cols[j] != 1) return error(ErrorCode::DIMENSION_MISMATCH, pn);
+                    if(j==0) elem_rows[i] = 1;
+                    else if(elem_rows[i] != 1) return error(ErrorCode::DIMENSION_MISMATCH, pn);
+                    break;
+
+                case MatrixXd_index:{
+                    const Eigen::MatrixXd& e_mat = std::get<Eigen::MatrixXd>(e);
+                    if(i==0) elem_cols[j] = e_mat.cols();
+                    else if(elem_cols[j] != e_mat.cols()) return error(ErrorCode::DIMENSION_MISMATCH, pn);
+                    if(j==0) elem_rows[i] = e_mat.rows();
+                    else if(elem_rows[i] != e_mat.rows()) return error(ErrorCode::DIMENSION_MISMATCH, pn);
+                    break;
+                }
+
+                default: return error(ErrorCode::TYPE_ERROR, arg);
             }
-            mat(i,j) = std::get<double>(e);
         }
+    }
+
+    size_t rows = 0;
+    for(auto count : elem_rows) rows += count;
+    size_t cols = 0;
+    for(auto count : elem_cols) cols += count;
+
+    Eigen::MatrixXd mat(rows, cols);
+
+    size_t row = 0;
+    for(size_t i = 0; i < tm->rows; i++){
+        size_t col = 0;
+        for(size_t j = 0; j < tm->cols; j++){
+            const Value& e = elements[j + i*tm->cols];
+            switch(e.index()){
+                case double_index:
+                    mat(row, col) = std::get<double>(e);
+                    break;
+
+                case MatrixXd_index:{
+                    const Eigen::MatrixXd& e_mat = std::get<Eigen::MatrixXd>(e);
+                    mat.block(row, col, e_mat.rows(), e_mat.cols()) = e_mat;
+                    break;
+                }
+
+                default: assert(false);
+            }
+
+            col += elem_cols[j];
+        }
+
+        row += elem_rows[i];
     }
 
     return mat;
