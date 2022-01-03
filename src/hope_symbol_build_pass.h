@@ -104,7 +104,7 @@ public:
     SymbolTable symbol_table;
 
 private:
-    static const std::unordered_map<std::string_view, ParseNodeType> predef;
+    static const std::unordered_map<std::string_view, Op> predef;
     std::vector<size_t> symbol_id_index;
     size_t active_scope_id;
     typedef std::vector<size_t> Id;

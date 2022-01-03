@@ -73,13 +73,13 @@ private:
     Value implicitMult(ParseNode pn, size_t start = 0);
     Value sum(ParseNode pn);
     Value prod(ParseNode pn);
-    Value big(ParseNode pn, ParseNodeType type);
+    Value big(ParseNode pn, Op type);
     Value cases(ParseNode pn);
     bool evaluateCondition(ParseNode pn);
     Value interpretExpr(ParseNode pn);
     Value unaryDispatch(ParseNode pn);
     Value binaryDispatch(ParseNode pn);
-    Value binaryDispatch(ParseNodeType type, const Value& lhs, const Value& rhs, ParseNode op_node);
+    Value binaryDispatch(Op type, const Value& lhs, const Value& rhs, ParseNode op_node);
     void reassign(ParseNode lhs, ParseNode rhs);
     void reassignSubscript(ParseNode lhs, ParseNode rhs);
     void elementWiseAssignment(ParseNode pn);

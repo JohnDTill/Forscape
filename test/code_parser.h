@@ -19,17 +19,17 @@ static ParseTree eval(const std::string& src){
     return parser.parse_tree;
 }
 
-static bool testExpressionType(const std::string& src, ParseNodeType type){
+static bool testExpressionType(const std::string& src, Op type){
     bool passing = true;
     ParseTree parse_tree = eval(src);
     ParseNode root = parse_tree.back();
-    assert(parse_tree.getType(root) == PN_BLOCK);
+    assert(parse_tree.getOp(root) == OP_BLOCK);
     ParseNode stmt = parse_tree.arg(root, 0);
-    assert(parse_tree.getType(stmt) == PN_EXPR_STMT);
+    assert(parse_tree.getOp(stmt) == OP_EXPR_STMT);
     ParseNode expr = parse_tree.child(stmt);
-    if(parse_tree.getType(expr) != type){
+    if(parse_tree.getOp(expr) != type){
         std::cout << "Expected type " << type << ", got "
-                  << parse_tree.getType(expr) << std::endl;
+                  << parse_tree.getOp(expr) << std::endl;
         passing = false;
     }
 
@@ -56,15 +56,15 @@ static bool testFormatting(const std::string& src, const std::string& fmt){
     return passing;
 }
 
-static bool testStatementType(const std::string& src, ParseNodeType type){
+static bool testStatementType(const std::string& src, Op type){
     bool passing = true;
     ParseTree parse_tree = eval(src);
     ParseNode root = parse_tree.back();
-    assert(parse_tree.getType(root) == PN_BLOCK);
+    assert(parse_tree.getOp(root) == OP_BLOCK);
     ParseNode stmt = parse_tree.arg(root, 0);
-    if(parse_tree.getType(stmt) != type){
+    if(parse_tree.getOp(stmt) != type){
         std::cout << "Expected type " << type << ", got "
-                  << parse_tree.getType(stmt) << std::endl;
+                  << parse_tree.getOp(stmt) << std::endl;
         passing = false;
     }
 
@@ -74,17 +74,17 @@ static bool testStatementType(const std::string& src, ParseNodeType type){
 inline bool testParser() {
     bool passing = true;
 
-    passing &= testExpressionType("2", PN_INTEGER_LITERAL);
-    passing &= testExpressionType("x", PN_IDENTIFIER);
-    passing &= testExpressionType("2.2", PN_DECIMAL_LITERAL);
-    passing &= testExpressionType("2 + 2", PN_ADDITION);
-    passing &= testExpressionType("2 + 2*1", PN_ADDITION);
-    passing &= testExpressionType("3x", PN_IMPLICIT_MULTIPLY);
+    passing &= testExpressionType("2", OP_INTEGER_LITERAL);
+    passing &= testExpressionType("x", OP_IDENTIFIER);
+    passing &= testExpressionType("2.2", OP_DECIMAL_LITERAL);
+    passing &= testExpressionType("2 + 2", OP_ADDITION);
+    passing &= testExpressionType("2 + 2*1", OP_ADDITION);
+    passing &= testExpressionType("3x", OP_IMPLICIT_MULTIPLY);
 
-    passing &= testStatementType("2", PN_EXPR_STMT);
-    passing &= testStatementType("x = 2", PN_EQUAL);
-    passing &= testStatementType("x + y = 2.5", PN_EQUAL);
-    passing &= testStatementType("3x + 2y = 6", PN_EQUAL);
+    passing &= testStatementType("2", OP_EXPR_STMT);
+    passing &= testStatementType("x = 2", OP_EQUAL);
+    passing &= testStatementType("x + y = 2.5", OP_EQUAL);
+    passing &= testStatementType("3x + 2y = 6", OP_EQUAL);
 
     std::string input = "x + y = 2.5\n"
                         "3x + 2y = 6\n";

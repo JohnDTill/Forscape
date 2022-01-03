@@ -70,13 +70,13 @@ def main():
             header_writer.write(f"    void {setter}(ParseNode pn, size_t value) noexcept;  \\\n")
             source_file.write(
                 f"size_t ParseTree::{getter}(ParseNode pn) const noexcept{{\n"
-                f"    assert(getType(pn) == PN_{node.enum});\n"
+                f"    assert(getOp(pn) == OP_{node.enum});\n"
                 f"    return getFlag(pn);\n"
                 "}\n\n"
             )
             source_file.write(
                 f"void ParseTree::{setter}(ParseNode pn, size_t value) noexcept{{\n"
-                f"    assert(getType(pn) == PN_{node.enum});\n"
+                f"    assert(getOp(pn) == OP_{node.enum});\n"
                 f"    setFlag(pn, value);\n"
                 "}\n\n"
             )

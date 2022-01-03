@@ -8,14 +8,14 @@ def main():
     )
 
     header_writer = cpp.HeaderWriter(
-        name="parsenodetype",
+        name="parsenode_ops",
         inner_namespace="Code",
         includes=["inttypes.h", "stddef.h"],
     )
 
-    header_writer.write("typedef size_t ParseNodeType;\n\n")
+    header_writer.write("typedef size_t Op;\n\n")
     for i in range(0, len(nodes)):
-        header_writer.write(f"constexpr size_t PN_{nodes[i].enum} = {i};\n")
+        header_writer.write(f"constexpr size_t OP_{nodes[i].enum} = {i};\n")
     header_writer.write("\n\n")
 
     header_writer.finalize()
@@ -27,9 +27,9 @@ def main():
     )
 
     header_writer.write("void ParseTree::writeType(std::string& src, ParseNode n) const{\n"
-                        "    switch(getType(n)){\n")
+                        "    switch(getOp(n)){\n")
     for node in nodes:
-        header_writer.write(f"        case PN_{node.enum}: ")
+        header_writer.write(f"        case OP_{node.enum}: ")
         if node.label:
             header_writer.write(f"src += \"\\\"{node.label}\\\"\"; ")
         elif node.enum == "IDENTIFIER":

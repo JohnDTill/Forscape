@@ -2,7 +2,7 @@
 #define HOPE_PARSE_TREE_H
 
 #include <code_ast_fields.h>
-#include <code_parsenodetype.h>
+#include <code_parsenode_ops.h>
 #include <cassert>
 #include <limits>
 #include <string>
@@ -36,18 +36,18 @@ public:
     ParseNode rhs(ParseNode node) const noexcept;
     ParseNode child(ParseNode node) const noexcept;
     std::string str(ParseNode node) const;
-    ParseNode addTerminal(ParseNodeType type, const Typeset::Selection& c);
-    ParseNode addUnary(ParseNodeType type, const Typeset::Selection& c, ParseNode child);
-    ParseNode addUnary(ParseNodeType type, ParseNode child);
-    ParseNode addLeftUnary(ParseNodeType type, const Typeset::Marker& left, ParseNode child);
-    ParseNode addRightUnary(ParseNodeType type, const Typeset::Marker& right, ParseNode child);
-    ParseNode addBinary(ParseNodeType type, const Typeset::Selection& c, ParseNode lhs, ParseNode rhs);
-    ParseNode addBinary(ParseNodeType type, ParseNode lhs, ParseNode rhs);
-    ParseNode addTernary(ParseNodeType type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C);
-    ParseNode addTernary(ParseNodeType type, ParseNode A, ParseNode B, ParseNode C);
-    ParseNode addQuadary(ParseNodeType type, ParseNode A, ParseNode B, ParseNode C, ParseNode D);
-    ParseNode addQuadary(ParseNodeType type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C, ParseNode D);
-    ParseNode addPentary(ParseNodeType type, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E);
+    ParseNode addTerminal(Op type, const Typeset::Selection& c);
+    ParseNode addUnary(Op type, const Typeset::Selection& c, ParseNode child);
+    ParseNode addUnary(Op type, ParseNode child);
+    ParseNode addLeftUnary(Op type, const Typeset::Marker& left, ParseNode child);
+    ParseNode addRightUnary(Op type, const Typeset::Marker& right, ParseNode child);
+    ParseNode addBinary(Op type, const Typeset::Selection& c, ParseNode lhs, ParseNode rhs);
+    ParseNode addBinary(Op type, ParseNode lhs, ParseNode rhs);
+    ParseNode addTernary(Op type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C);
+    ParseNode addTernary(Op type, ParseNode A, ParseNode B, ParseNode C);
+    ParseNode addQuadary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D);
+    ParseNode addQuadary(Op type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C, ParseNode D);
+    ParseNode addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E);
 
     #ifndef NDEBUG
     std::string toGraphviz(ParseNode root) const;
@@ -57,7 +57,7 @@ public:
 
     class NaryBuilder{
     public:
-        NaryBuilder(ParseTree& tree, ParseNodeType type);
+        NaryBuilder(ParseTree& tree, Op type);
         void addNaryChild(ParseNode index);
         ParseNode finalize();
         ParseNode finalize(const Typeset::Marker& right);
@@ -74,7 +74,7 @@ public:
         #endif
     };
 
-    NaryBuilder naryBuilder(ParseNodeType type);
+    NaryBuilder naryBuilder(Op type);
 
 private:
     static constexpr size_t UNITIALIZED = std::numeric_limits<size_t>::max();
