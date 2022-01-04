@@ -1,5 +1,8 @@
 property,type,words
 op,ParseNodeType,1
 flag,size_t,1
+type,size_t,1
+rows,size_t,1
+cols,size_t,1
 selection,Typeset::Selection,4
 num_args,size_t,1

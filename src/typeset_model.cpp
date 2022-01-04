@@ -503,6 +503,7 @@ void Model::performSemanticFormatting(){
         root = parser.parse_tree.back();
         symbol_builder.resolveSymbols();
         symbol_table = std::move(symbol_builder.doc_map);
+        type_resolver.resolve(root);
     }
 }
 

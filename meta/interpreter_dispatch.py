@@ -37,7 +37,6 @@ def main():
 
     with open("../src/generated/hope_interpreter_gen.cpp", "w", encoding="utf-8") as codegen_file:
         codegen_file.write("#include \"hope_interpreter.h\"\n\n")
-        codegen_file.write("#include \"hope_error.h\" //DO THIS: REMOVE\n\n")
         codegen_file.write("#include <math.h>\n\n")
         codegen_file.write("#ifdef HOPE_EIGEN_UNSUPPORTED\n"
                            "#include <unsupported/Eigen/MatrixFunctions>\n"
