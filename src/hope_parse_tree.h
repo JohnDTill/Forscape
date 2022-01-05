@@ -5,6 +5,7 @@
 #include <code_parsenode_ops.h>
 #include <cassert>
 #include <limits>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -23,8 +24,7 @@ class ParseTree : private std::vector<size_t> {
 public:
     HOPE_AST_FIELD_CODEGEN_DECLARATIONS
 
-    void clear() noexcept { std::vector<size_t>::clear(); }
-    ParseNode back() const noexcept;
+    void clear() noexcept;
     bool empty() const noexcept;
     const Typeset::Marker& getLeft(ParseNode index) const noexcept;
     void setLeft(ParseNode index, const Typeset::Marker& m) noexcept;
@@ -35,6 +35,8 @@ public:
     ParseNode lhs(ParseNode node) const noexcept;
     ParseNode rhs(ParseNode node) const noexcept;
     ParseNode child(ParseNode node) const noexcept;
+    std::span<ParseNode> children(ParseNode node) noexcept;
+    std::span<const ParseNode> constChildren(ParseNode node) const noexcept;
     std::string str(ParseNode node) const;
     ParseNode addTerminal(Op type, const Typeset::Selection& c);
     ParseNode addUnary(Op type, const Typeset::Selection& c, ParseNode child);
@@ -50,8 +52,10 @@ public:
     ParseNode addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E);
 
     #ifndef NDEBUG
-    std::string toGraphviz(ParseNode root) const;
+    std::string toGraphviz() const;
     #endif
+
+    size_t root;
 
     static constexpr ParseNode EMPTY = std::numeric_limits<size_t>::max();
 
@@ -78,8 +82,8 @@ public:
 
 private:
     static constexpr size_t UNITIALIZED = std::numeric_limits<size_t>::max();
+    static constexpr size_t LEFT_MARKER_OFFSET = SELECTION_OFFSET + 2;
     static constexpr size_t RIGHT_MARKER_OFFSET = SELECTION_OFFSET;
-    static constexpr size_t LEFT_MARKER_OFFSET = SELECTION_OFFSET - 2;
     size_t fields(size_t node) const noexcept{ return getNumArgs(node)+FIXED_FIELDS; }
 
     #ifndef NDEBUG

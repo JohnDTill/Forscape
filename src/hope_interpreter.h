@@ -44,8 +44,8 @@ public:
     ErrorCode error_code = NO_ERROR;
     ParseNode error_node = ParseTree::EMPTY;
 
-    void run(const ParseTree& parse_tree, SymbolTable symbol_table, ParseNode root);
-    void runThread(const ParseTree& parse_tree, SymbolTable symbol_table, ParseNode root);
+    void run(const ParseTree& parse_tree, SymbolTable symbol_table);
+    void runThread(const ParseTree& parse_tree, SymbolTable symbol_table);
     void stop();
 
 private:
@@ -53,7 +53,6 @@ private:
     ParseTree parse_tree;
     Closure* active_closure = nullptr;
     Stack stack;
-    ParseNode root;
 
     void reset() noexcept;
     Value error(ErrorCode code, ParseNode pn) noexcept;

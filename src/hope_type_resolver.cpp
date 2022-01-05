@@ -23,21 +23,20 @@ std::string toBinaryField(size_t n, uint8_t digits = 64){
 TypeResolver::TypeResolver(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors) noexcept
     : parse_tree(parse_tree), symbol_table(symbol_table), errors(errors) {}
 
-void TypeResolver::resolve(size_t root){
-    this->root = root;
+void TypeResolver::resolve(){
     performPass();
     //reportErrors(root);
 }
 
 void TypeResolver::performPass() noexcept{
-    traverseNode(root);
+    traverseNode(parse_tree.root);
 }
 
 void TypeResolver::traverseNode(size_t pn) noexcept{
     if(pn == ParseTree::EMPTY) return;
     //compareWithChildren(pn);
     parse_tree.setType(pn, TYPE_ANY);
-    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++) traverseNode(parse_tree.arg(pn, i));
+    for(auto child : parse_tree.children(pn)) traverseNode(child);
     compareWithChildren(pn);
 }
 
@@ -180,11 +179,10 @@ void TypeResolver::compareWithChildren(size_t pn) noexcept{
 
 void TypeResolver::enforceSameAsChildren(size_t pn) noexcept{
     size_t type = parse_tree.getType(pn);
-    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
-        type &= parse_tree.getType(parse_tree.arg(pn, i));
+    auto children = parse_tree.children(pn);
+    for(auto child : children) type &= parse_tree.getType(child);
     parse_tree.setType(pn, type);
-    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
-        parse_tree.setType(parse_tree.arg(pn,i), type);
+    for(auto child : children) parse_tree.setType(child, type);
 }
 
 void TypeResolver::enforceType(size_t pn, size_t type) noexcept{
@@ -211,14 +209,14 @@ void TypeResolver::enforceSame(size_t a, size_t b) noexcept{
 
 void TypeResolver::reportErrors(size_t pn) noexcept{
     if(pn == ParseTree::EMPTY) return;
-    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++) reportErrors(parse_tree.arg(pn, i));
+    for(auto child : parse_tree.constChildren(pn)) reportErrors(child);
     size_t type = parse_tree.getType(pn);
 
     switch (type) {
         case TYPE_ERROR:
             //Type is overconstrained
             errors.push_back(Error(parse_tree.getSelection(pn), ErrorCode::TYPE_NOT_ADDABLE));
-            std::cout << "Overconstrained node: " << parse_tree.str(pn)  << " = " << toBinaryField(type) << std::endl;
+            //std::cout << "Overconstrained node: " << parse_tree.str(pn)  << " = " << toBinaryField(type) << std::endl;
             break;
         case TYPE_NUMERIC:
         case TYPE_STRING:
@@ -229,7 +227,7 @@ void TypeResolver::reportErrors(size_t pn) noexcept{
         default:
             //Type is underconstrained
             errors.push_back(Error(parse_tree.getSelection(pn), ErrorCode::TYPE_NOT_ADDABLE));
-            std::cout << "Underconstrained node: " << parse_tree.str(pn)  << " = " << toBinaryField(type) << std::endl;
+            //std::cout << "Underconstrained node: " << parse_tree.str(pn)  << " = " << toBinaryField(type) << std::endl;
     }
 }
 

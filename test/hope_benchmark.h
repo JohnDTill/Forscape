@@ -58,14 +58,14 @@ void runBenchmark(){
     }
     report("SymbolTable", ITER_SYMBOL_TABLE);
 
-    Code::ParseNode root = parser.parse_tree.back();
+    Code::ParseNode root = parser.parse_tree.root;
     Code::SymbolTableBuilder sym_table(parser.parse_tree, m);
     sym_table.resolveSymbols();
     Code::Interpreter interpreter;
 
     startClock();
     for(size_t i = 0; i < ITER_INTERPRETER; i++)
-        interpreter.run(parser.parse_tree, sym_table.symbol_table, root);
+        interpreter.run(parser.parse_tree, sym_table.symbol_table);
     report("Interpreter", ITER_INTERPRETER);
 
     #ifndef HOPE_TYPESET_HEADLESS

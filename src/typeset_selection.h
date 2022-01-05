@@ -41,6 +41,7 @@ public:
     Marker left;
 
     size_t getConstructArgSize() const noexcept;
+    size_t getMatrixRows() const noexcept;
     void formatBasicIdentifier() const noexcept;
     void formatComment() const noexcept;
     void formatKeyword() const noexcept;

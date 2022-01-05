@@ -1,12 +1,8 @@
 #include "hope_interpreter.h"
 
 #include <code_parsenode_ops.h>
+#include "construct_codes.h"
 #include "hope_symbol_link_pass.h"
-#include <typeset_line.h>
-#include <typeset_model.h>
-#include <typeset_text.h>
-#include <typeset_command_line.h>
-#include <typeset_all_constructs.h>
 
 #include <Eigen/Eigen>
 #include <thread>
@@ -23,26 +19,25 @@ namespace Hope {
 
 namespace Code {
 
-void Interpreter::run(const ParseTree& parse_tree, SymbolTable symbol_table, ParseNode root){
-    assert(parse_tree.getOp(root) == OP_BLOCK);
+void Interpreter::run(const ParseTree& parse_tree, SymbolTable symbol_table){
+    assert(parse_tree.getOp(parse_tree.root) == OP_BLOCK);
     reset();
 
     this->parse_tree = parse_tree;
     SymbolTableLinker linker(symbol_table, this->parse_tree);
     linker.link();
 
-    blockStmt(root);
+    blockStmt(this->parse_tree.root);
     status = FINISHED;
 }
 
-void Interpreter::runThread(const ParseTree& parse_tree, SymbolTable symbol_table, ParseNode root){
+void Interpreter::runThread(const ParseTree& parse_tree, SymbolTable symbol_table){
     status = NORMAL;
-    this->root = root;
-    std::thread(&Interpreter::run, this, parse_tree, symbol_table, root).detach();
+    std::thread(&Interpreter::run, this, parse_tree, symbol_table).detach();
 }
 
 void Interpreter::stop(){
-    error(USER_STOP, root);
+    error(USER_STOP, parse_tree.root);
 }
 
 void Interpreter::reset() noexcept {
@@ -89,8 +84,8 @@ void Interpreter::interpretStmt(ParseNode pn){
 }
 
 void Interpreter::printStmt(ParseNode pn){
-    for(size_t i = 0; i < parse_tree.getNumArgs(pn) && status == NORMAL; i++)
-        printNode(parse_tree.arg(pn, i));
+    for(auto arg : parse_tree.children(pn))
+        if(status == NORMAL) printNode(arg);
 }
 
 void Interpreter::assertStmt(ParseNode pn){
@@ -195,8 +190,7 @@ void Interpreter::initClosure(Closure& closure, ParseNode captured, ParseNode up
         }
     }
 
-    for(size_t i = 0; i < parse_tree.getNumArgs(upvalues); i++){
-        ParseNode up = parse_tree.arg(upvalues, i);
+    for(auto up : parse_tree.children(upvalues)){
         switch (parse_tree.getOp(up)) {
             case OP_IDENTIFIER:{ //Place on heap
                 Value* v = new Value();
@@ -613,19 +607,19 @@ Value& Interpreter::readUpvalue(ParseNode pn){
 }
 
 Value Interpreter::matrix(ParseNode pn){
-    if(parse_tree.getNumArgs(pn) == 1) return interpretExpr(parse_tree.arg(pn, 0));
+    size_t nargs = parse_tree.getNumArgs(pn);
+    if(nargs == 1) return interpretExpr(parse_tree.arg(pn, 0));
+    size_t typeset_rows = parse_tree.getFlag(pn);
+    size_t typeset_cols = nargs/typeset_rows;
+    assert(typeset_cols*typeset_rows == nargs);
 
-    Typeset::Matrix* tm = static_cast<Typeset::Matrix*>(
-                parse_tree.getLeft(pn).text->nextConstructAsserted()
-                );
-
-    std::vector<size_t> elem_cols; elem_cols.resize(tm->cols);
-    std::vector<size_t> elem_rows; elem_rows.resize(tm->rows);
-    std::vector<Value> elements; elements.resize(tm->numArgs());
+    std::vector<size_t> elem_cols; elem_cols.resize(typeset_cols);
+    std::vector<size_t> elem_rows; elem_rows.resize(typeset_rows);
+    std::vector<Value> elements; elements.resize(nargs);
 
     size_t curr = 0;
-    for(size_t i = 0; i < tm->rows; i++){
-        for(size_t j = 0; j < tm->cols; j++){
+    for(size_t i = 0; i < typeset_rows; i++){
+        for(size_t j = 0; j < typeset_cols; j++){
             const ParseNode& arg = parse_tree.arg(pn, curr);
             elements[curr] = interpretExpr(arg);
             const Value& e = elements[curr++];
@@ -660,10 +654,10 @@ Value Interpreter::matrix(ParseNode pn){
     Eigen::MatrixXd mat(rows, cols);
 
     size_t row = 0;
-    for(size_t i = 0; i < tm->rows; i++){
+    for(size_t i = 0; i < typeset_rows; i++){
         size_t col = 0;
-        for(size_t j = 0; j < tm->cols; j++){
-            const Value& e = elements[j + i*tm->cols];
+        for(size_t j = 0; j < typeset_cols; j++){
+            const Value& e = elements[j + i*typeset_cols];
             switch(e.index()){
                 case double_index:
                     mat(row, col) = std::get<double>(e);
@@ -1026,17 +1020,14 @@ void Interpreter::printNode(const ParseNode& pn){
             break;
 
         case MatrixXd_index:{
-            const Eigen::MatrixXd& mat = std::get<Eigen::MatrixXd>(val);
-            Typeset::Construct* c = new Typeset::Matrix(mat.rows(), mat.cols());
-
-            for(Eigen::Index i = 0; i < mat.rows(); i++){
-                for(Eigen::Index j = 0; j < mat.cols(); j++){
-                    c->arg(i*mat.cols()+j)->front()->str = formatted(mat(i,j));
-                }
-            }
-
-            str = c->toString();
-            delete c;
+            auto mat = std::get<Eigen::MatrixXd>(val);
+            str += OPEN;
+            str += MATRIX;
+            str += mat.rows();
+            str += mat.cols();
+            for(size_t i = 0; i < mat.rows(); i++)
+                for(size_t j = 0; j < mat.cols(); j++)
+                    str += formatted(mat(i,j)) + CLOSE;
             break;
         }
 

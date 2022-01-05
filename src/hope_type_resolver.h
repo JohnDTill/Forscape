@@ -23,7 +23,7 @@ class TypeResolver{
 
     public:
         TypeResolver(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors) noexcept;
-        void resolve(size_t root);
+        void resolve();
 
     private:
         void performPass() noexcept;
@@ -40,7 +40,6 @@ class TypeResolver{
         ParseTree& parse_tree;
         SymbolTable& symbol_table;
         std::vector<Code::Error>& errors;
-        size_t root;
         bool had_change;
 };
 

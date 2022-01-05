@@ -22,7 +22,7 @@ static ParseTree eval(const std::string& src){
 static bool testExpressionType(const std::string& src, Op type){
     bool passing = true;
     ParseTree parse_tree = eval(src);
-    ParseNode root = parse_tree.back();
+    ParseNode root = parse_tree.root;
     assert(parse_tree.getOp(root) == OP_BLOCK);
     ParseNode stmt = parse_tree.arg(root, 0);
     assert(parse_tree.getOp(stmt) == OP_EXPR_STMT);
@@ -59,7 +59,7 @@ static bool testFormatting(const std::string& src, const std::string& fmt){
 static bool testStatementType(const std::string& src, Op type){
     bool passing = true;
     ParseTree parse_tree = eval(src);
-    ParseNode root = parse_tree.back();
+    ParseNode root = parse_tree.root;
     assert(parse_tree.getOp(root) == OP_BLOCK);
     ParseNode stmt = parse_tree.arg(root, 0);
     if(parse_tree.getOp(stmt) != type){

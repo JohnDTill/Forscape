@@ -27,7 +27,7 @@ void Parser::parseAll(){
     }
 
     Typeset::Selection c(markers.front().first, markers.back().second);
-    builder.finalize(c);
+    parse_tree.root = builder.finalize(c);
 }
 
 ParseNode Parser::checkedStatement() noexcept{
@@ -850,7 +850,10 @@ ParseNode Parser::matrix() noexcept{
         consume(ARGCLOSE);
     }
 
-    return builder.finalize(c);
+    ParseNode m = builder.finalize(c);
+    parse_tree.setFlag(m, c.getMatrixRows());
+
+    return m;
 }
 
 Parser::ParseNode Parser::cases() noexcept{

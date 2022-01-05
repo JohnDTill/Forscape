@@ -33,32 +33,27 @@ def main():
 
         for field in fields:
             field_size = int(field.words)
-            offset += field_size - 1
             header_writer.write(f"    static constexpr size_t {field.property.upper()}_OFFSET = {offset}; \\\n")
-            offset += 1
+            offset += field_size
             if field_size == 1:
                 T = "size_t"
-                ref = f"(*this)[pn-{field.property.upper()}_OFFSET]"
-                const_ref = f"(*this)[pn-{field.property.upper()}_OFFSET]"
+                ref = f"(*this)[pn+{field.property.upper()}_OFFSET]"
+                const_ref = f"(*this)[pn+{field.property.upper()}_OFFSET]"
             else:
                 T = f"const {field.type}&"
-                ref = f"*reinterpret_cast<{field.type}*>(data()+pn-{field.property.upper()}_OFFSET)"
-                const_ref = f"*reinterpret_cast<const {field.type}*>(data()+pn-{field.property.upper()}_OFFSET)"
+                ref = f"*reinterpret_cast<{field.type}*>(data()+pn+{field.property.upper()}_OFFSET)"
+                const_ref = f"*reinterpret_cast<const {field.type}*>(data()+pn+{field.property.upper()}_OFFSET)"
             getter = to_camel_case("get_" + field.property)
             setter = to_camel_case("set_" + field.property)
             header_writer.write(f"    {T} {getter}(ParseNode pn) const noexcept; \\\n")
             header_writer.write(f"    void {setter}(ParseNode pn, {T} {field.property}) noexcept;  \\\n")
             source_file.write(
                 f"{T} ParseTree::{getter}(ParseNode pn) const noexcept{{\n"
-                "    assert(pn < size());\n"
-                "    assert(pn+1 >= FIXED_FIELDS);\n"
                 f"    return {const_ref};\n"
                 "}\n\n"
             )
             source_file.write(
                 f"void ParseTree::{setter}(ParseNode pn, {T} {field.property}) noexcept{{\n"
-                "    assert(pn < size());\n"
-                "    assert(pn+1 >= FIXED_FIELDS);\n"
                 f"    {ref} = {field.property};\n"
                 "}\n\n"
             )
