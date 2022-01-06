@@ -1,7 +1,10 @@
 #ifndef HOPE_TYPE_RESOLVER_H
 #define HOPE_TYPE_RESOLVER_H
 
+#include <algorithm>
+#include <code_error_types.h>
 #include <limits>
+#include <unordered_map>
 #include <vector>
 
 namespace Hope {
@@ -13,29 +16,46 @@ class ParseTree;
 struct SymbolTable;
 
 class TypeResolver{
-    static constexpr size_t TYPE_ERROR = 0;
-    static constexpr size_t TYPE_ANY = std::numeric_limits<size_t>::max();
-    static constexpr size_t TYPE_NUMERIC = 1;
-    static constexpr size_t TYPE_STRING = 1 << 1;
-    static constexpr size_t TYPE_ALG = 1 << 2;
-    static constexpr size_t TYPE_BINARY = 1 << 3;
-    static constexpr size_t TYPE_UNCHECKED = 1 << 4;
+    enum Type {
+        TYPE_ERROR,
+        TYPE_NUMERIC,
+        TYPE_STRING,
+        TYPE_ALG,
+        TYPE_BOOLEAN,
+        TYPE_CALLABLE,
+        TYPE_UNCHECKED,
+    };
+
+    struct FunctionSignature{
+        size_t pn;
+        std::vector<size_t> type_fields; //Could use a small array
+
+        bool operator==(const FunctionSignature& other) const noexcept {
+            return pn == other.pn && std::equal(type_fields.begin(), type_fields.end(), other.type_fields.begin());
+        }
+    };
+
+    struct FunctionSignatureHash{
+        size_t operator()(const FunctionSignature& fs) const noexcept {
+            std::size_t seed = fs.pn;
+            for(const auto& i : fs.type_fields) seed ^= i + 0x9e3779b9 + (seed << 12) + (seed >> 4);
+            return seed;
+        }
+    };
+
+    std::unordered_map<FunctionSignature, size_t, FunctionSignatureHash> concrete_functions;
 
     public:
         TypeResolver(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors) noexcept;
         void resolve();
 
     private:
-        void performPass() noexcept;
-        void traverseNode(size_t pn) noexcept;
-        void compareWithChildren(size_t pn) noexcept;
-        void enforceSameAsChildren(size_t pn) noexcept;
-        void enforceType(size_t pn, size_t type) noexcept;
-        void enforceNumeric(size_t pn) noexcept;
-        void enforceBinary(size_t pn) noexcept;
-        void enforceString(size_t pn) noexcept;
-        void enforceSame(size_t a, size_t b) noexcept;
-        void reportErrors(size_t pn) noexcept;
+        void resolveStmt(size_t pn) noexcept;
+        size_t traverseNode(size_t pn) noexcept;
+        size_t callSite(size_t pn) noexcept;
+        size_t implicitMult(size_t pn) noexcept;
+        size_t instantiate(const FunctionSignature& sig) noexcept;
+        size_t error(size_t pn, ErrorCode code = ErrorCode::TYPE_ERROR) noexcept;
 
         ParseTree& parse_tree;
         SymbolTable& symbol_table;

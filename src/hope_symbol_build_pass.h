@@ -14,18 +14,10 @@ namespace Code {
 static constexpr size_t NONE = std::numeric_limits<size_t>::max();
 
 struct Symbol{
-    struct Access{
-        ParseNode pn;
-        size_t closure_depth;
-
-        Access(ParseNode pn, size_t closure_depth) :
-            pn(pn), closure_depth(closure_depth) {}
-    };
-
     std::vector<Typeset::Selection>* document_occurences;
     size_t declaration_lexical_depth;
     size_t declaration_closure_depth;
-    size_t stack_index;
+    size_t flag;
     bool is_const;
     bool is_used = false;
     bool is_reassigned = false; //Used to determine if parameters are constant
@@ -37,12 +29,14 @@ struct Symbol{
     Symbol()
         : declaration_lexical_depth(0) {}
 
-    Symbol(Typeset::Selection first_occurence,
-               size_t lexical_depth,
-               size_t closure_depth,
-               bool is_const)
+    Symbol(ParseNode pn,
+           Typeset::Selection first_occurence,
+           size_t lexical_depth,
+           size_t closure_depth,
+           bool is_const)
         : declaration_lexical_depth(lexical_depth),
           declaration_closure_depth(closure_depth),
+          flag(pn),
           is_const(is_const) {
         document_occurences = new std::vector<Typeset::Selection>();
         document_occurences->push_back(first_occurence);

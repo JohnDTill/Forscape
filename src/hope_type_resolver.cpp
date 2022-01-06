@@ -24,56 +24,90 @@ TypeResolver::TypeResolver(ParseTree& parse_tree, SymbolTable& symbol_table, std
     : parse_tree(parse_tree), symbol_table(symbol_table), errors(errors) {}
 
 void TypeResolver::resolve(){
-    performPass();
-    //reportErrors(root);
+    resolveStmt(parse_tree.root);
 }
 
-void TypeResolver::performPass() noexcept{
-    traverseNode(parse_tree.root);
-}
+void TypeResolver::resolveStmt(size_t pn) noexcept{
+    assert(pn != ParseTree::EMPTY);
 
-void TypeResolver::traverseNode(size_t pn) noexcept{
-    if(pn == ParseTree::EMPTY) return;
-    //compareWithChildren(pn);
-    parse_tree.setType(pn, TYPE_ANY);
-    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++) traverseNode(parse_tree.arg(pn, i));
-    compareWithChildren(pn);
-}
-
-void TypeResolver::compareWithChildren(size_t pn) noexcept{
     switch (parse_tree.getOp(pn)) {
-        case OP_SLICE:
-        case OP_SLICE_ALL:
-            enforceNumeric(pn); //DO THIS: Wait, what?
-            enforceSameAsChildren(pn); break;
+        case OP_ASSIGN:
+        case OP_EQUAL:
+            parse_tree.setFlag(parse_tree.lhs(pn), traverseNode(parse_tree.rhs(pn)));
             break;
+        case OP_REASSIGN:{
+            ParseNode var = parse_tree.getFlag(parse_tree.lhs(pn));
+            if(parse_tree.getFlag(var) != traverseNode(parse_tree.rhs(pn)))
+                error(parse_tree.rhs(pn));
+            break;
+        }
+
+        case OP_IF:
+        case OP_WHILE:
+            if(traverseNode(parse_tree.lhs(pn)) != TYPE_BOOLEAN)
+                error(parse_tree.lhs(pn));
+            resolveStmt(parse_tree.rhs(pn));
+            break;
+
+        case OP_IF_ELSE:
+            if(traverseNode(parse_tree.arg(pn, 0)) != TYPE_BOOLEAN)
+                error(parse_tree.arg(pn, 0));
+            resolveStmt(parse_tree.arg(pn, 1));
+            resolveStmt(parse_tree.arg(pn, 2));
+            break;
+
+        case OP_ALGORITHM:
+            break; //Function does not have a signature - this is resolved at call site
+
+        default:
+            for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++) resolveStmt(parse_tree.arg(pn, i));
+    }
+}
+
+size_t TypeResolver::traverseNode(size_t pn) noexcept{
+    assert(pn != ParseTree::EMPTY);
+
+    switch (parse_tree.getOp(pn)) {
+        case OP_LAMBDA:
+            return TYPE_CALLABLE; //Function does not have a signature - this is resolved at call site
         case OP_IDENTIFIER:
-            //DO THIS
-            break;
+        case OP_READ_GLOBAL:
+        case OP_READ_UPVALUE:
+            return parse_tree.getFlag(parse_tree.getFlag(pn));
         case OP_CALL:
-            //DO THIS
-            break;
-        case OP_ADDITION:
-            enforceType(pn, TYPE_NUMERIC|TYPE_STRING);
-            enforceSameAsChildren(pn);
-            break;
+            return callSite(pn);
+        case OP_IMPLICIT_MULTIPLY:
+            return implicitMult(pn);
+        case OP_ADDITION:{
+            size_t type = traverseNode(parse_tree.arg(pn, 0));
+            if(type != TYPE_NUMERIC && type != TYPE_STRING)
+                return error(parse_tree.arg(pn, 0), TYPE_NOT_ADDABLE);
+            for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++)
+                if(traverseNode(parse_tree.arg(pn, i)) != type)
+                    return error(parse_tree.arg(pn, i), TYPE_NOT_ADDABLE);
+            return type;
+        }
+        case OP_SLICE:
+            for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
+                if(traverseNode(parse_tree.arg(pn, i)) != TYPE_NUMERIC)
+                    return error(parse_tree.arg(pn, i), BAD_READ_OR_SUBSCRIPT);
+            return TYPE_NUMERIC;
+        case OP_SLICE_ALL:
+            if(traverseNode(parse_tree.child(pn)) != TYPE_NUMERIC)
+                return error(parse_tree.child(pn));
+            return TYPE_NUMERIC;
         case OP_MULTIPLICATION:
         case OP_MATRIX:
         case OP_SUBSCRIPT_ACCESS:
         case OP_ELEMENTWISE_ASSIGNMENT:
         case OP_UNIT_VECTOR:
-            enforceNumeric(pn);
-            enforceSameAsChildren(pn);
-            break;
-        case OP_IMPLICIT_MULTIPLY:
-            //DO THIS - more complexity here
-            enforceNumeric(pn);
-            enforceSameAsChildren(pn);
-            break;
+            for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
+                if(traverseNode(parse_tree.arg(pn, i)) != TYPE_NUMERIC)
+                    return error(parse_tree.arg(pn, i));
+            return TYPE_NUMERIC;
         case OP_GROUP_BRACKET:
         case OP_GROUP_PAREN:
-            enforceSame(pn, parse_tree.child(pn));
-            break;
+            return traverseNode(parse_tree.child(pn));
         case OP_SUBTRACTION:
         case OP_DIVIDE:
         case OP_FRACTION:
@@ -90,16 +124,12 @@ void TypeResolver::compareWithChildren(size_t pn) noexcept{
         case OP_NORM_p:
         case OP_POWER:
         case OP_ROOT:
-            enforceNumeric(pn);
-            enforceNumeric(parse_tree.lhs(pn));
-            enforceNumeric(parse_tree.rhs(pn));
-            break;
-
+            if(traverseNode(parse_tree.lhs(pn)) != TYPE_NUMERIC) return error(parse_tree.lhs(pn));
+            if(traverseNode(parse_tree.rhs(pn)) != TYPE_NUMERIC) return error(parse_tree.rhs(pn));
+            return TYPE_NUMERIC;
         case OP_LENGTH:
-            enforceNumeric(pn);
-            enforceType(parse_tree.child(pn), TYPE_NUMERIC);
-            break;
-
+            if(traverseNode(parse_tree.child(pn)) != TYPE_NUMERIC) return error(parse_tree.child(pn));
+            return TYPE_NUMERIC;
         case OP_ARCCOSINE:
         case OP_ARCCOTANGENT:
         case OP_ARCSINE:
@@ -125,33 +155,27 @@ void TypeResolver::compareWithChildren(size_t pn) noexcept{
         case OP_TANGENT:
         case OP_TRANSPOSE:
         case OP_UNARY_MINUS:
-            enforceNumeric(pn);
-            enforceNumeric(parse_tree.child(pn));
-            break;
-        case OP_LOGICAL_AND:
+            if(traverseNode(parse_tree.child(pn)) != TYPE_NUMERIC) return error(parse_tree.child(pn));
+            return TYPE_NUMERIC;
         case OP_LOGICAL_NOT:
+            if(traverseNode(parse_tree.child(pn)) != TYPE_BOOLEAN) return error(parse_tree.child(pn));
+            return TYPE_BOOLEAN;
+        case OP_LOGICAL_AND:
         case OP_LOGICAL_OR:
-            enforceBinary(pn);
-            enforceSameAsChildren(pn);
-            break;
+            if(traverseNode(parse_tree.lhs(pn)) != TYPE_BOOLEAN) return error(parse_tree.lhs(pn));
+            if(traverseNode(parse_tree.rhs(pn)) != TYPE_BOOLEAN) return error(parse_tree.rhs(pn));
+            return TYPE_BOOLEAN;
         case OP_GREATER:
         case OP_GREATER_EQUAL:
         case OP_LESS:
         case OP_LESS_EQUAL:
-            enforceBinary(pn);
-            enforceNumeric(parse_tree.lhs(pn));
-            enforceNumeric(parse_tree.rhs(pn));
-            break;
+            if(traverseNode(parse_tree.lhs(pn)) != TYPE_NUMERIC) return error(parse_tree.lhs(pn));
+            if(traverseNode(parse_tree.rhs(pn)) != TYPE_NUMERIC) return error(parse_tree.rhs(pn));
+            return TYPE_BOOLEAN;
         case OP_EQUAL:
         case OP_NOT_EQUAL:
-            enforceBinary(pn);
-            enforceSame(parse_tree.lhs(pn), parse_tree.rhs(pn));
-            break;
-        case OP_ASSIGN:
-        case OP_REASSIGN:
-            parse_tree.setType(pn, TYPE_UNCHECKED);
-            enforceSame(parse_tree.lhs(pn), parse_tree.rhs(pn));
-            break;
+            if(traverseNode(parse_tree.lhs(pn)) != traverseNode(parse_tree.rhs(pn))) return error(parse_tree.lhs(pn));
+            return TYPE_BOOLEAN;
         case OP_DECIMAL_LITERAL:
         case OP_INTEGER_LITERAL:
         case OP_PI:
@@ -162,74 +186,48 @@ void TypeResolver::compareWithChildren(size_t pn) noexcept{
         case OP_REDUCED_PLANCK_CONSTANT:
         case OP_STEFAN_BOLTZMANN_CONSTANT:
         case OP_IDENTITY_AUTOSIZE:
-            enforceNumeric(pn);
-            break;
+            return TYPE_NUMERIC;
         case OP_FALSE:
         case OP_TRUE:
-            enforceBinary(pn);
-            break;
+            return TYPE_BOOLEAN;
         case OP_STRING:
-            enforceString(pn);
-            break;
-
+            return TYPE_STRING;
         default:
-            parse_tree.setType(pn, TYPE_UNCHECKED);
+            for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++) traverseNode(parse_tree.arg(pn, i));
+            return TYPE_UNCHECKED;
     }
 }
 
-void TypeResolver::enforceSameAsChildren(size_t pn) noexcept{
-    size_t type = parse_tree.getType(pn);
-    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
-        type &= parse_tree.getType(parse_tree.arg(pn, i));
-    parse_tree.setType(pn, type);
-    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
-        parse_tree.setType(parse_tree.arg(pn,i), type);
+size_t TypeResolver::callSite(size_t pn) noexcept{
+    FunctionSignature sig;
+    for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++)
+        sig.type_fields.push_back(traverseNode(parse_tree.arg(pn, i)));
+
+    //DO THIS
+    //Your callsite theory depends on the idea that you can always statically resolve a called value...
+
+    auto lookup = concrete_functions.find(sig);
+    return (lookup != concrete_functions.end()) ? parse_tree.getFlag(lookup->second) : instantiate(sig);
+
 }
 
-void TypeResolver::enforceType(size_t pn, size_t type) noexcept{
-    parse_tree.setType(pn, parse_tree.getType(pn) & type);
+size_t TypeResolver::implicitMult(size_t pn) noexcept{
+    //DO THIS
+    //Determine if multiplication or function call
+
+    return TYPE_ERROR;
 }
 
-void TypeResolver::enforceNumeric(size_t pn) noexcept{
-    parse_tree.setType(pn, parse_tree.getType(pn) & TYPE_NUMERIC);
+size_t TypeResolver::instantiate(const FunctionSignature& sig) noexcept{
+    //DO THIS
+    //Beware of Achille's heel of type-differing recursion (?)
+
+    return TYPE_ERROR;
 }
 
-void TypeResolver::enforceBinary(size_t pn) noexcept{
-    parse_tree.setType(pn, parse_tree.getType(pn) & TYPE_BINARY);
-}
-
-void TypeResolver::enforceString(size_t pn) noexcept{
-    parse_tree.setType(pn, parse_tree.getType(pn) & TYPE_STRING);
-}
-
-void TypeResolver::enforceSame(size_t a, size_t b) noexcept{
-    size_t type = parse_tree.getType(a) & parse_tree.getType(b);
-    parse_tree.setType(a, type);
-    parse_tree.setType(b, type);
-}
-
-void TypeResolver::reportErrors(size_t pn) noexcept{
-    if(pn == ParseTree::EMPTY) return;
-    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++) reportErrors(parse_tree.arg(pn, i));
-    size_t type = parse_tree.getType(pn);
-
-    switch (type) {
-        case TYPE_ERROR:
-            //Type is overconstrained
-            errors.push_back(Error(parse_tree.getSelection(pn), ErrorCode::TYPE_NOT_ADDABLE));
-            //std::cout << "Overconstrained node: " << parse_tree.str(pn)  << " = " << toBinaryField(type) << std::endl;
-            break;
-        case TYPE_NUMERIC:
-        case TYPE_STRING:
-        case TYPE_BINARY:
-        case TYPE_ALG:
-        case TYPE_UNCHECKED:
-            break;
-        default:
-            //Type is underconstrained
-            errors.push_back(Error(parse_tree.getSelection(pn), ErrorCode::TYPE_NOT_ADDABLE));
-            //std::cout << "Underconstrained node: " << parse_tree.str(pn)  << " = " << toBinaryField(type) << std::endl;
-    }
+size_t TypeResolver::error(size_t pn, ErrorCode code) noexcept{
+    errors.push_back(Error(parse_tree.getSelection(pn), code));
+    return TYPE_ERROR;
 }
 
 }

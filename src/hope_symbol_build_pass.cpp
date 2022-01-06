@@ -296,6 +296,7 @@ void SymbolTableBuilder::resolveReference(ParseNode pn){
 void SymbolTableBuilder::resolveReference(ParseNode pn, const Typeset::Selection& c, size_t sym_id){
     assert(parse_tree.getOp(pn) == OP_IDENTIFIER);
     Symbol& sym = symbol_table.symbols[sym_id];
+    parse_tree.setFlag(pn, sym.flag);
     sym.is_used = true;
 
     sym.document_occurences->push_back(c);
@@ -582,10 +583,10 @@ void SymbolTableBuilder::finalize(const Symbol& sym){
 void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable){
     assert(map.find(c) == map.end());
     size_t index = ids.size();
-    symbol_id_index.push_back(ids.size());
+    symbol_id_index.push_back(index);
     ids.push_back(Id({symbol_table.symbols.size()}));
     activeScope().subscopes.back().usages.push_back(Scope::Usage(symbol_table.symbols.size(), pn, Scope::DECLARE));
-    symbol_table.symbols.push_back(Symbol(c, lexical_depth, closure_depth, immutable));
+    symbol_table.symbols.push_back(Symbol(pn, c, lexical_depth, closure_depth, immutable));
     map[c] = index;
 }
 
@@ -594,7 +595,7 @@ void SymbolTableBuilder::appendEntry(size_t index, const Typeset::Selection& c, 
     Id& id_info = ids[index];
     id_info.push_back(symbol_table.symbols.size());
     activeScope().subscopes.back().usages.push_back(Scope::Usage(symbol_table.symbols.size(), pn, Scope::DECLARE));
-    symbol_table.symbols.push_back(Symbol(c, lexical_depth, closure_depth, immutable));
+    symbol_table.symbols.push_back(Symbol(pn, c, lexical_depth, closure_depth, immutable));
 }
 
 }

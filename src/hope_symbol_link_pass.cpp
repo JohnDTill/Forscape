@@ -43,7 +43,7 @@ void SymbolTableLinker::link(size_t scope_index){
                     parse_tree.setClosureIndex(pn, closure_size.back());
                     closures.back()[usage.var_id] = closure_size.back()++;
                 }else{
-                    sym.stack_index = stack_size++;
+                    sym.flag = stack_size++;
                 }
             }else{
                 if(sym.is_closure_nested){
@@ -58,9 +58,9 @@ void SymbolTableLinker::link(size_t scope_index){
                     parse_tree.setClosureIndex(pn, closures.back()[usage.var_id]);
                 }else if(sym.declaration_closure_depth == 0){
                     parse_tree.setOp(pn, OP_READ_GLOBAL);
-                    parse_tree.setGlobalIndex(pn, sym.stack_index);
+                    parse_tree.setGlobalIndex(pn, sym.flag);
                 }else{
-                    parse_tree.setStackOffset(pn, stack_size - 1 - sym.stack_index);
+                    parse_tree.setStackOffset(pn, stack_size - 1 - sym.flag);
                 }
             }
         }
