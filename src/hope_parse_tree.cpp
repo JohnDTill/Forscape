@@ -60,14 +60,6 @@ ParseNode ParseTree::child(ParseNode node) const noexcept{
     return arg(node, 0);
 }
 
-std::span<ParseNode> ParseTree::children(ParseNode node) noexcept{
-    return std::span{data() + node + FIXED_FIELDS, getNumArgs(node)};
-}
-
-std::span<const ParseNode> ParseTree::constChildren(ParseNode node) const noexcept{
-    return std::span{data() + node + FIXED_FIELDS, getNumArgs(node)};
-}
-
 std::string ParseTree::str(ParseNode node) const{
     return getSelection(node).str();
 }

@@ -32,8 +32,8 @@ void SymbolTableBuilder::resolveSymbols(){
     reset();
 
     ParseNode n = parse_tree.root;
-    for(auto child : parse_tree.children(n))
-        resolveStmt(child);
+    for(size_t i = 0; i < parse_tree.getNumArgs(n); i++)
+        resolveStmt(parse_tree.arg(n, i));
 
     decreaseLexicalDepth();
 }
@@ -96,11 +96,11 @@ size_t SymbolTableBuilder::symbolIndexFromSelection(const Typeset::Selection& se
 
 void SymbolTableBuilder::resolveStmt(ParseNode pn){
     switch (parse_tree.getOp(pn)) {
-        case OP_EQUAL: resolveEquality(pn); break;
-        case OP_ASSIGN: resolveAssignment(pn); break;
-        case OP_BLOCK: resolveBlock(pn); break;
-        case OP_ALGORITHM: resolveAlgorithm(pn); break;
-        case OP_PROTOTYPE_ALG: resolvePrototype(pn); break;
+    case OP_EQUAL: resolveEquality(pn); break;
+    case OP_ASSIGN: resolveAssignment(pn); break;
+    case OP_BLOCK: resolveBlock(pn); break;
+    case OP_ALGORITHM: resolveAlgorithm(pn); break;
+    case OP_PROTOTYPE_ALG: resolvePrototype(pn); break;
 
         case OP_WHILE:
         case OP_IF:
@@ -339,13 +339,13 @@ void SymbolTableBuilder::resolveBody(ParseNode pn){
 }
 
 void SymbolTableBuilder::resolveBlock(ParseNode pn){
-    for(auto child : parse_tree.children(pn))
-        resolveStmt(child);
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
+        resolveStmt( parse_tree.arg(pn, i) );
 }
 
 void SymbolTableBuilder::resolveDefault(ParseNode pn){
-    for(auto child : parse_tree.children(pn))
-        resolveExpr(child);
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
+        resolveExpr(parse_tree.arg(pn, i));
 }
 
 void SymbolTableBuilder::resolveLambda(ParseNode pn){
@@ -354,8 +354,8 @@ void SymbolTableBuilder::resolveLambda(ParseNode pn){
     ParseNode params = parse_tree.arg(pn, 2);
     assert(parse_tree.getOp(params) == OP_LIST);
 
-    for(auto param : parse_tree.children(params))
-        defineLocalScope(param);
+    for(size_t i = 0; i < parse_tree.getNumArgs(params); i++)
+        defineLocalScope( parse_tree.arg(params, i) );
 
     ParseNode rhs = parse_tree.arg(pn, 3);
     resolveExpr(rhs);
@@ -401,7 +401,10 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
     increaseClosureDepth(pn);
 
     if(captured != ParseTree::EMPTY){
-        for(auto capture : parse_tree.children(captured)){
+        size_t N = parse_tree.getNumArgs(captured);
+
+        for(size_t i = 0; i < N; i++){
+            ParseNode capture = parse_tree.arg(captured, i);
             defineLocalScope(capture, false);
             symbol_table.symbols.back().is_captured = true;
             symbol_table.symbols.back().is_closure_nested = true;
@@ -409,7 +412,8 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
     }
 
     size_t params_start = symbol_table.symbols.size();
-    for(auto param : parse_tree.children(params)){
+    for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
+        ParseNode param = parse_tree.arg(params, i);
         if(parse_tree.getOp(param) == OP_EQUAL){
             resolveExpr(parse_tree.rhs(param));
             param = parse_tree.lhs(param);

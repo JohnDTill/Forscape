@@ -36,7 +36,7 @@ void TypeResolver::traverseNode(size_t pn) noexcept{
     if(pn == ParseTree::EMPTY) return;
     //compareWithChildren(pn);
     parse_tree.setType(pn, TYPE_ANY);
-    for(auto child : parse_tree.children(pn)) traverseNode(child);
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++) traverseNode(parse_tree.arg(pn, i));
     compareWithChildren(pn);
 }
 
@@ -179,10 +179,11 @@ void TypeResolver::compareWithChildren(size_t pn) noexcept{
 
 void TypeResolver::enforceSameAsChildren(size_t pn) noexcept{
     size_t type = parse_tree.getType(pn);
-    auto children = parse_tree.children(pn);
-    for(auto child : children) type &= parse_tree.getType(child);
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
+        type &= parse_tree.getType(parse_tree.arg(pn, i));
     parse_tree.setType(pn, type);
-    for(auto child : children) parse_tree.setType(child, type);
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
+        parse_tree.setType(parse_tree.arg(pn,i), type);
 }
 
 void TypeResolver::enforceType(size_t pn, size_t type) noexcept{
@@ -209,7 +210,7 @@ void TypeResolver::enforceSame(size_t a, size_t b) noexcept{
 
 void TypeResolver::reportErrors(size_t pn) noexcept{
     if(pn == ParseTree::EMPTY) return;
-    for(auto child : parse_tree.constChildren(pn)) reportErrors(child);
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++) reportErrors(parse_tree.arg(pn, i));
     size_t type = parse_tree.getType(pn);
 
     switch (type) {

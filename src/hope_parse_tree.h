@@ -5,7 +5,6 @@
 #include <code_parsenode_ops.h>
 #include <cassert>
 #include <limits>
-#include <span>
 #include <string>
 #include <vector>
 
@@ -35,8 +34,6 @@ public:
     ParseNode lhs(ParseNode node) const noexcept;
     ParseNode rhs(ParseNode node) const noexcept;
     ParseNode child(ParseNode node) const noexcept;
-    std::span<ParseNode> children(ParseNode node) noexcept;
-    std::span<const ParseNode> constChildren(ParseNode node) const noexcept;
     std::string str(ParseNode node) const;
     ParseNode addTerminal(Op type, const Typeset::Selection& c);
     ParseNode addUnary(Op type, const Typeset::Selection& c, ParseNode child);

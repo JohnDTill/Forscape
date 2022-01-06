@@ -84,8 +84,8 @@ void Interpreter::interpretStmt(ParseNode pn){
 }
 
 void Interpreter::printStmt(ParseNode pn){
-    for(auto arg : parse_tree.children(pn))
-        if(status == NORMAL) printNode(arg);
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn) && status == NORMAL; i++)
+        printNode(parse_tree.arg(pn, i));
 }
 
 void Interpreter::assertStmt(ParseNode pn){
@@ -190,7 +190,8 @@ void Interpreter::initClosure(Closure& closure, ParseNode captured, ParseNode up
         }
     }
 
-    for(auto up : parse_tree.children(upvalues)){
+    for(size_t i = 0; i < parse_tree.getNumArgs(upvalues); i++){
+        ParseNode up = parse_tree.arg(upvalues, i);
         switch (parse_tree.getOp(up)) {
             case OP_IDENTIFIER:{ //Place on heap
                 Value* v = new Value();
