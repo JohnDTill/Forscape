@@ -502,8 +502,6 @@ void Model::performSemanticFormatting(){
         if(parser.parse_tree.empty() || !errors.empty()) return;
         symbol_builder.resolveSymbols();
         symbol_table = std::move(symbol_builder.doc_map);
-        if(!errors.empty()) return;
-        //type_resolver.resolve();
     }
 }
 

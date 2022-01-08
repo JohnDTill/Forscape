@@ -9,7 +9,6 @@
 #include "hope_scanner.h"
 #include "hope_parser.h"
 #include "hope_symbol_build_pass.h"
-#include "hope_type_resolver.h"
 #include "hope_interpreter.h"
 
 namespace Hope {
@@ -103,7 +102,6 @@ private:
 
     Code::IdMap symbol_table;
     Code::SymbolTableBuilder symbol_builder = Code::SymbolTableBuilder(parser.parse_tree, this);
-    Code::TypeResolver type_resolver = Code::TypeResolver(parser.parse_tree, symbol_builder.symbol_table, errors);
 
     std::vector<Command*> undo_stack;
     std::vector<Command*> redo_stack;
