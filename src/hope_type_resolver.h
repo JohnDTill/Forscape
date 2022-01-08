@@ -26,35 +26,45 @@ class TypeResolver{
         TYPE_UNCHECKED,
     };
 
-    struct FunctionSignature{
-        size_t pn;
-        std::vector<size_t> type_fields; //Could use a small array
+    struct FuncSignature{
+        size_t nargs;
+        std::vector<size_t> default_arg_types;
+    };
 
-        bool operator==(const FunctionSignature& other) const noexcept {
-            return pn == other.pn && std::equal(type_fields.begin(), type_fields.end(), other.type_fields.begin());
+    std::vector<FuncSignature> function_signatures;
+    size_t active_signature;
+
+    struct CallSignature{
+        size_t pn;
+        std::vector<size_t> arg_types; //Could use a small array
+
+        bool operator==(const CallSignature& other) const noexcept {
+            return pn == other.pn && std::equal(arg_types.begin(), arg_types.end(), other.arg_types.begin());
         }
     };
 
-    struct FunctionSignatureHash{
-        size_t operator()(const FunctionSignature& fs) const noexcept {
-            std::size_t seed = fs.pn;
-            for(const auto& i : fs.type_fields) seed ^= i + 0x9e3779b9 + (seed << 12) + (seed >> 4);
+    struct CallSignatureHash{
+        size_t operator()(const CallSignature& cs) const noexcept {
+            std::size_t seed = cs.pn;
+            for(const auto& i : cs.arg_types) seed ^= i + 0x9e3779b9 + (seed << 12) + (seed >> 4);
             return seed;
         }
     };
 
-    std::unordered_map<FunctionSignature, size_t, FunctionSignatureHash> concrete_functions;
+    std::unordered_map<CallSignature, size_t, CallSignatureHash> instantiated_functions;
 
     public:
         TypeResolver(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors) noexcept;
         void resolve();
 
     private:
+        void reset() noexcept;
         void resolveStmt(size_t pn) noexcept;
-        size_t traverseNode(size_t pn) noexcept;
+        void resolveParams(size_t pn, size_t params) noexcept;
+        size_t resolveExpr(size_t pn) noexcept;
         size_t callSite(size_t pn) noexcept;
         size_t implicitMult(size_t pn) noexcept;
-        size_t instantiate(const FunctionSignature& sig) noexcept;
+        size_t instantiate(const CallSignature& sig) noexcept;
         size_t error(size_t pn, ErrorCode code = ErrorCode::TYPE_ERROR) noexcept;
 
         ParseTree& parse_tree;

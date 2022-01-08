@@ -464,7 +464,7 @@ Parser::ParseNode Parser::parenGrouping() noexcept{
     Typeset::Marker left = lMark();
     advance();
     match(NEWLINE);
-    ParseNode nested = expression();
+    ParseNode nested = disjunction();
     if(peek(RIGHTPAREN)){
         Typeset::Marker right = rMark();
         advance();
@@ -476,7 +476,7 @@ Parser::ParseNode Parser::parenGrouping() noexcept{
     do{
         consume(COMMA);
         match(NEWLINE);
-        builder.addNaryChild(expression());
+        builder.addNaryChild(disjunction());
         match(NEWLINE);
     } while(!peek(RIGHTPAREN) && noErrors());
     Typeset::Marker right = rMark();
