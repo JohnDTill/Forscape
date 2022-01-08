@@ -57,7 +57,19 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
             resolveStmt(parse_tree.arg(pn, 2));
             break;
 
+        case OP_FOR:
+            resolveStmt(parse_tree.arg(pn, 0));
+            if(resolveExpr(parse_tree.arg(pn, 1)) != TYPE_BOOLEAN) error(parse_tree.arg(pn, 1));
+            resolveStmt(parse_tree.arg(pn, 2));
+            resolveStmt(parse_tree.arg(pn, 3));
+            break;
+
+        case OP_EXPR_STMT:
+            resolveExpr(parse_tree.child(pn));
+            break;
+
         case OP_ALGORITHM:
+            //DO THIS
             resolveParams(pn, parse_tree.arg(pn, 3));
             break;
 
@@ -91,6 +103,7 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
 
     switch (parse_tree.getOp(pn)) {
         case OP_LAMBDA:
+            //DO THIS
             resolveParams(pn, parse_tree.arg(pn, 2));
             return TYPE_CALLABLE;
         case OP_IDENTIFIER:
