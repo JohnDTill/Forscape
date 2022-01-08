@@ -72,7 +72,7 @@ std::string Model::toSerial() const {
 std::string Model::run(){
     assert(errors.empty());
 
-    interpreter.run(parser.parse_tree, symbol_builder.symbol_table, root);
+    interpreter.run(parser.parse_tree, symbol_builder.symbol_table);
 
     std::string str;
     str.reserve(interpreter.message_queue.size_approx());
@@ -90,7 +90,7 @@ std::string Model::run(){
 
 void Model::runThread(){
     assert(errors.empty());
-    interpreter.runThread(parser.parse_tree, symbol_builder.symbol_table, root);
+    interpreter.runThread(parser.parse_tree, symbol_builder.symbol_table);
 }
 
 void Model::stop(){
@@ -416,7 +416,7 @@ Selection Model::idAt(double x, double y) noexcept{
 
 #ifndef NDEBUG
 std::string Model::parseTreeDot() const{
-    return parser.parse_tree.toGraphviz(root);
+    return parser.parse_tree.toGraphviz();
 }
 #endif
 
@@ -499,8 +499,7 @@ void Model::performSemanticFormatting(){
     scanner.scanAll();
     if(!is_output){
         parser.parseAll();
-        if(parser.parse_tree.empty()) return;
-        root = parser.parse_tree.back();
+        if(parser.parse_tree.empty() || !errors.empty()) return;
         symbol_builder.resolveSymbols();
         symbol_table = std::move(symbol_builder.doc_map);
     }

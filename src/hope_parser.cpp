@@ -1,6 +1,6 @@
 #include "hope_parser.h"
 
-#include <code_parsenodetype.h>
+#include <code_parsenode_ops.h>
 #include "typeset_model.h"
 
 namespace Hope {
@@ -19,7 +19,7 @@ void Parser::parseAll(){
     loops = 0;
     error_node = UNITIALIZED;
 
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(PN_BLOCK);
+    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_BLOCK);
     skipNewlines();
     while (!peek(ENDOFFILE)) {
         builder.addNaryChild( checkedStatement() );
@@ -27,7 +27,7 @@ void Parser::parseAll(){
     }
 
     Typeset::Selection c(markers.front().first, markers.back().second);
-    builder.finalize(c);
+    parse_tree.root = builder.finalize(c);
 }
 
 ParseNode Parser::checkedStatement() noexcept{
@@ -51,8 +51,8 @@ ParseNode Parser::statement() noexcept{
         case ASSERT: return assertStatement();
         case ALGORITHM: return algStatement();
         case RETURN: return returnStatement();
-        case BREAK: return loops ? terminalAndAdvance(PN_BREAK) : error(BAD_BREAK);
-        case CONTINUE: return loops ? terminalAndAdvance(PN_CONTINUE) : error(BAD_CONTINUE);
+        case BREAK: return loops ? terminalAndAdvance(OP_BREAK) : error(BAD_BREAK);
+        case CONTINUE: return loops ? terminalAndAdvance(OP_CONTINUE) : error(BAD_CONTINUE);
         default: return mathStatement();
     }
 }
@@ -69,12 +69,12 @@ ParseNode Parser::ifStatement() noexcept{
         Typeset::Marker right = rMark();
         Typeset::Selection c(left, right);
 
-        return parse_tree.addTernary(PN_IF_ELSE, c, condition, body, el);
+        return parse_tree.addTernary(OP_IF_ELSE, c, condition, body, el);
     }else{
         Typeset::Marker right = rMark();
         Typeset::Selection c(left, right);
 
-        return parse_tree.addBinary(PN_IF, c, condition, body);
+        return parse_tree.addBinary(OP_IF, c, condition, body);
     }
 }
 
@@ -90,7 +90,7 @@ Parser::ParseNode Parser::whileStatement() noexcept{
     Typeset::Marker right = rMark();
     Typeset::Selection c(left, right);
 
-    return parse_tree.addBinary(PN_WHILE, c, condition, body);
+    return parse_tree.addBinary(OP_WHILE, c, condition, body);
 }
 
 Parser::ParseNode Parser::forStatement() noexcept{
@@ -98,15 +98,15 @@ Parser::ParseNode Parser::forStatement() noexcept{
     advance();
     consume(LEFTPAREN);
     ParseNode initializer = peek(SEMICOLON) ?
-                            makeTerminalNode(PN_BLOCK) :
+                            makeTerminalNode(OP_BLOCK) :
                             statement();
     consume(SEMICOLON);
     ParseNode condition = peek(SEMICOLON) ?
-                          makeTerminalNode(PN_TRUE) :
+                          makeTerminalNode(OP_TRUE) :
                           disjunction();
     consume(SEMICOLON);
     ParseNode update = peek(RIGHTPAREN) ?
-                       makeTerminalNode(PN_BLOCK) :
+                       makeTerminalNode(OP_BLOCK) :
                        statement();
     consume(RIGHTPAREN);
     loops++;
@@ -115,7 +115,7 @@ Parser::ParseNode Parser::forStatement() noexcept{
     Typeset::Marker right = rMark();
     Typeset::Selection c(left, right);
 
-    return parse_tree.addQuadary(PN_FOR, c, initializer, condition, update, body);
+    return parse_tree.addQuadary(OP_FOR, c, initializer, condition, update, body);
 }
 
 ParseNode Parser::printStatement() noexcept{
@@ -123,7 +123,7 @@ ParseNode Parser::printStatement() noexcept{
     advance();
     consume(LEFTPAREN);
 
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(PN_PRINT);
+    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_PRINT);
 
     do{
         builder.addNaryChild(disjunction());
@@ -146,7 +146,7 @@ Parser::ParseNode Parser::assertStatement() noexcept{
     Typeset::Selection c(left, right);
     consume(RIGHTPAREN);
 
-    return parse_tree.addUnary(PN_ASSERT, c, e);
+    return parse_tree.addUnary(OP_ASSERT, c, e);
 }
 
 ParseNode Parser::blockStatement() noexcept{
@@ -159,7 +159,7 @@ ParseNode Parser::blockStatement() noexcept{
 
     Typeset::Marker left = lMark();
     consume(LEFTBRACKET);
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(PN_BLOCK);
+    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_BLOCK);
 
     skipNewlines();
     while(noErrors() && !match(RIGHTBRACKET)){
@@ -176,19 +176,19 @@ ParseNode Parser::blockStatement() noexcept{
 Parser::ParseNode Parser::algStatement() noexcept{
     advance();
 
-    ParseNode id = param();
+    ParseNode id = isolatedIdentifier();
 
     if(!peek(LEFTPAREN) & !peek(LEFTBRACE))
-        return parse_tree.addUnary(PN_PROTOTYPE_ALG, id);
+        return parse_tree.addUnary(OP_PROTOTYPE_ALG, id);
 
     ParseNode captures = match(LEFTBRACE) ?
-                         paramList(RIGHTBRACE) :
+                         captureList() :
                          ParseTree::EMPTY;
 
     ParseNode referenced_upvalues = ParseTree::EMPTY;
 
     consume(LEFTPAREN);
-    ParseNode params = paramList(RIGHTPAREN);
+    ParseNode params = paramList();
 
     size_t loops_backup = 0;
     std::swap(loops_backup, loops);
@@ -196,7 +196,7 @@ Parser::ParseNode Parser::algStatement() noexcept{
     std::swap(loops_backup, loops);
 
     return parse_tree.addPentary(
-                PN_ALGORITHM,
+                OP_ALGORITHM,
                 id,
                 captures,
                 referenced_upvalues,
@@ -208,7 +208,7 @@ Parser::ParseNode Parser::algStatement() noexcept{
 Parser::ParseNode Parser::returnStatement() noexcept{
     Typeset::Marker m = lMark();
     advance();
-    return parse_tree.addLeftUnary(PN_RETURN, m, disjunction());
+    return parse_tree.addLeftUnary(OP_RETURN, m, disjunction());
 }
 
 ParseNode Parser::mathStatement() noexcept{
@@ -217,13 +217,13 @@ ParseNode Parser::mathStatement() noexcept{
     switch (currentType()) {
         case EQUALS: return equality(n);
         case LEFTARROW: return assignment(n);
-        default: return parse_tree.addUnary(PN_EXPR_STMT, n);
+        default: return parse_tree.addUnary(OP_EXPR_STMT, n);
     }
 }
 
 ParseNode Parser::assignment(const ParseNode& lhs) noexcept{
     advance();
-    return parse_tree.addBinary(PN_ASSIGN, lhs, expression());
+    return parse_tree.addBinary(OP_ASSIGN, lhs, expression());
 }
 
 ParseNode Parser::expression() noexcept{
@@ -231,7 +231,7 @@ ParseNode Parser::expression() noexcept{
 }
 
 ParseNode Parser::equality(const ParseNode& lhs) noexcept{
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(PN_EQUAL);
+    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_EQUAL);
     builder.addNaryChild(lhs);
 
     do {
@@ -247,7 +247,7 @@ Parser::ParseNode Parser::disjunction() noexcept{
 
     for(;;){
         switch (currentType()) {
-            case DISJUNCTION: advance(); n = parse_tree.addBinary(PN_LOGICAL_OR, n, conjunction()); break;
+            case DISJUNCTION: advance(); n = parse_tree.addBinary(OP_LOGICAL_OR, n, conjunction()); break;
             default: return n;
         }
     }
@@ -258,7 +258,7 @@ Parser::ParseNode Parser::conjunction() noexcept{
 
     for(;;){
         switch (currentType()) {
-            case CONJUNCTION: advance(); n = parse_tree.addBinary(PN_LOGICAL_AND, n, comparison()); break;
+            case CONJUNCTION: advance(); n = parse_tree.addBinary(OP_LOGICAL_AND, n, comparison()); break;
             default: return n;
         }
     }
@@ -269,12 +269,12 @@ Parser::ParseNode Parser::comparison() noexcept{
 
     for(;;){
         switch (currentType()) {
-            case EQUALS: advance(); n = parse_tree.addBinary(PN_EQUAL, n, addition()); break;
-            case NOTEQUAL: advance(); n = parse_tree.addBinary(PN_NOT_EQUAL, n, addition()); break;
-            case LESS: advance(); n = parse_tree.addBinary(PN_LESS, n, addition()); break;
-            case LESSEQUAL: advance(); n = parse_tree.addBinary(PN_LESS_EQUAL, n, addition()); break;
-            case GREATER: advance(); n = parse_tree.addBinary(PN_GREATER, n, addition()); break;
-            case GREATEREQUAL: advance(); n = parse_tree.addBinary(PN_GREATER_EQUAL, n, addition()); break;
+            case EQUALS: advance(); n = parse_tree.addBinary(OP_EQUAL, n, addition()); break;
+            case NOTEQUAL: advance(); n = parse_tree.addBinary(OP_NOT_EQUAL, n, addition()); break;
+            case LESS: advance(); n = parse_tree.addBinary(OP_LESS, n, addition()); break;
+            case LESSEQUAL: advance(); n = parse_tree.addBinary(OP_LESS_EQUAL, n, addition()); break;
+            case GREATER: advance(); n = parse_tree.addBinary(OP_GREATER, n, addition()); break;
+            case GREATEREQUAL: advance(); n = parse_tree.addBinary(OP_GREATER_EQUAL, n, addition()); break;
             default: return n;
         }
     }
@@ -285,8 +285,8 @@ ParseNode Parser::addition() noexcept{
 
     for(;;){
         switch (currentType()) {
-            case PLUS: advance(); n = parse_tree.addBinary(PN_ADDITION, n, multiplication()); break;
-            case MINUS: advance(); n = parse_tree.addBinary(PN_SUBTRACTION, n, multiplication()); break;
+            case PLUS: advance(); n = parse_tree.addBinary(OP_ADDITION, n, multiplication()); break;
+            case MINUS: advance(); n = parse_tree.addBinary(OP_SUBTRACTION, n, multiplication()); break;
             default: return n;
         }
     }
@@ -297,15 +297,15 @@ ParseNode Parser::multiplication() noexcept{
 
     for(;;){
         switch (currentType()) {
-            case MULTIPLY: advance(); n = parse_tree.addBinary(PN_MULTIPLICATION, n, leftUnary()); break;
-            case DIVIDE: advance(); n = parse_tree.addBinary(PN_DIVIDE, n, leftUnary()); break;
-            case FORWARDSLASH: advance(); n = parse_tree.addBinary(PN_FORWARDSLASH, n, leftUnary()); break;
-            case BACKSLASH: advance(); n = parse_tree.addBinary(PN_BACKSLASH, n, leftUnary()); break;
-            case TIMES: if(parsing_dims) return n; advance(); n = parse_tree.addBinary(PN_CROSS, n, leftUnary()); break;
-            case DOTPRODUCT: advance(); n = parse_tree.addBinary(PN_DOT, n, leftUnary()); break;
-            case PERCENT: advance(); n = parse_tree.addBinary(PN_MODULUS, n, leftUnary()); break;
-            case OUTERPRODUCT: advance(); n = parse_tree.addBinary(PN_OUTER_PRODUCT, n, leftUnary()); break;
-            case ODOT: advance(); n = parse_tree.addBinary(PN_ODOT, n, leftUnary()); break;
+            case MULTIPLY: advance(); n = parse_tree.addBinary(OP_MULTIPLICATION, n, leftUnary()); break;
+            case DIVIDE: advance(); n = parse_tree.addBinary(OP_DIVIDE, n, leftUnary()); break;
+            case FORWARDSLASH: advance(); n = parse_tree.addBinary(OP_FORWARDSLASH, n, leftUnary()); break;
+            case BACKSLASH: advance(); n = parse_tree.addBinary(OP_BACKSLASH, n, leftUnary()); break;
+            case TIMES: if(parsing_dims) return n; advance(); n = parse_tree.addBinary(OP_CROSS, n, leftUnary()); break;
+            case DOTPRODUCT: advance(); n = parse_tree.addBinary(OP_DOT, n, leftUnary()); break;
+            case PERCENT: advance(); n = parse_tree.addBinary(OP_MODULUS, n, leftUnary()); break;
+            case OUTERPRODUCT: advance(); n = parse_tree.addBinary(OP_OUTER_PRODUCT, n, leftUnary()); break;
+            case ODOT: advance(); n = parse_tree.addBinary(OP_ODOT, n, leftUnary()); break;
             default: return n;
         }
     }
@@ -316,12 +316,12 @@ ParseNode Parser::leftUnary() noexcept{
         case MINUS:{
             Typeset::Marker m = lMark();
             advance();
-            return parse_tree.addLeftUnary(PN_UNARY_MINUS, m, implicitMult());
+            return parse_tree.addLeftUnary(OP_UNARY_MINUS, m, implicitMult());
         }
         case NOT:{
             Typeset::Marker m = lMark();
             advance();
-            return parse_tree.addLeftUnary(PN_LOGICAL_NOT, m, implicitMult());
+            return parse_tree.addLeftUnary(OP_LOGICAL_NOT, m, implicitMult());
         }
         default: return implicitMult();
     }
@@ -341,7 +341,7 @@ ParseNode Parser::implicitMult() noexcept{
 }
 
 Parser::ParseNode Parser::collectImplicitMult(ParseNode n) noexcept{
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(PN_IMPLICIT_MULTIPLY);
+    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_IMPLICIT_MULTIPLY);
     builder.addNaryChild(n);
     builder.addNaryChild(rightUnary());
 
@@ -369,9 +369,9 @@ ParseNode Parser::rightUnary() noexcept{
             case EXCLAM:{
                 Typeset::Marker m = rMark();
                 advance();
-                return parse_tree.addRightUnary(PN_FACTORIAL, m, n);
+                return parse_tree.addRightUnary(OP_FACTORIAL, m, n);
             }
-            case CARET: advance(); return parse_tree.addBinary(PN_POWER, n, implicitMult());
+            case CARET: advance(); return parse_tree.addBinary(OP_POWER, n, implicitMult());
             case TOKEN_SUPERSCRIPT: n = superscript(n); break;
             case TOKEN_SUBSCRIPT: n = subscript(n, rMark()); break;
             case TOKEN_DUALSCRIPT: n = dualscript(n); break;
@@ -386,18 +386,18 @@ ParseNode Parser::primary() noexcept{
         case IDENTIFIER: return identifier();
 
         //Value literal
-        case INFTY: return terminalAndAdvance(PN_INFTY);
-        case EMPTYSET: return terminalAndAdvance(PN_EMPTY_SET);
-        case TRUE: return terminalAndAdvance(PN_TRUE);
-        case FALSE: return terminalAndAdvance(PN_FALSE);
-        case STRING: return terminalAndAdvance(PN_STRING);
-        case GRAVITY: return terminalAndAdvance(PN_GRAVITY);
+        case INFTY: return terminalAndAdvance(OP_INFTY);
+        case EMPTYSET: return terminalAndAdvance(OP_EMPTY_SET);
+        case TRUE: return terminalAndAdvance(OP_TRUE);
+        case FALSE: return terminalAndAdvance(OP_FALSE);
+        case STRING: return terminalAndAdvance(OP_STRING);
+        case GRAVITY: return terminalAndAdvance(OP_GRAVITY);
 
         //Grouping
         case LEFTPAREN: return parenGrouping();
-        case LEFTCEIL: return grouping(PN_CEIL, RIGHTCEIL);
-        case LEFTFLOOR: return grouping(PN_FLOOR, RIGHTFLOOR);
-        case BAR: return grouping(PN_ABS, BAR);
+        case LEFTCEIL: return grouping(OP_CEIL, RIGHTCEIL);
+        case LEFTFLOOR: return grouping(OP_FLOOR, RIGHTFLOOR);
+        case BAR: return grouping(OP_ABS, BAR);
         case DOUBLEBAR: return norm();
         case LEFTANGLE: return innerProduct();
 
@@ -417,43 +417,43 @@ ParseNode Parser::primary() noexcept{
         case TOKEN_BIGCOPROD1:
             return error(EMPTY_BIG_SYMBOL);
 
-        case TOKEN_BIGSUM2: return big(PN_SUMMATION);
-        case TOKEN_BIGPROD2: return big(PN_PRODUCT);
+        case TOKEN_BIGSUM2: return big(OP_SUMMATION);
+        case TOKEN_BIGPROD2: return big(OP_PRODUCT);
 
-        case TOKEN_ACCENTHAT: return oneArgConstruct(PN_ACCENT_HAT);
+        case TOKEN_ACCENTHAT: return oneArgConstruct(OP_ACCENT_HAT);
 
         //Keyword funcs
         case LENGTH: return length();
-        case SIN: return trig(PN_SINE);
-        case COS: return trig(PN_COSINE);
-        case TAN: return trig(PN_TANGENT);
-        case ARCSIN: return trig(PN_ARCSINE);
-        case ARCCOS: return trig(PN_ARCCOSINE);
-        case ARCTAN: return trig(PN_ARCTANGENT);
-        case ARCTAN2: return twoArgs(PN_ARCTANGENT2);
-        case CSC: return trig(PN_COSECANT);
-        case SEC: return trig(PN_SECANT);
-        case COT: return trig(PN_COTANGENT);
-        case ARCCSC: return trig(PN_ARCCOSECANT);
-        case ARCSEC: return trig(PN_ARCSECANT);
-        case ARCCOT: return trig(PN_ARCCOTANGENT);
-        case SINH: return trig(PN_HYPERBOLIC_SINE);
-        case COSH: return trig(PN_HYPERBOLIC_COSINE);
-        case TANH: return trig(PN_HYPERBOLIC_TANGENT);
-        case ARCSINH: return trig(PN_HYPERBOLIC_ARCSINE);
-        case ARCCOSH: return trig(PN_HYPERBOLIC_ARCCOSINE);
-        case ARCTANH: return trig(PN_HYPERBOLIC_ARCTANGENT);
-        case CSCH: return trig(PN_HYPERBOLIC_COSECANT);
-        case SECH: return trig(PN_HYPERBOLIC_SECANT);
-        case COTH: return trig(PN_HYPERBOLIC_COTANGENT);
-        case ARCCSCH: return trig(PN_HYPERBOLIC_ARCCOSECANT);
-        case ARCSECH: return trig(PN_HYPERBOLIC_ARCSECANT);
-        case ARCCOTH: return trig(PN_HYPERBOLIC_ARCCOTANGENT);
-        case EXP: return oneArg(PN_EXP);
-        case NATURALLOG: return oneArg(PN_NATURAL_LOG);
+        case SIN: return trig(OP_SINE);
+        case COS: return trig(OP_COSINE);
+        case TAN: return trig(OP_TANGENT);
+        case ARCSIN: return trig(OP_ARCSINE);
+        case ARCCOS: return trig(OP_ARCCOSINE);
+        case ARCTAN: return trig(OP_ARCTANGENT);
+        case ARCTAN2: return twoArgs(OP_ARCTANGENT2);
+        case CSC: return trig(OP_COSECANT);
+        case SEC: return trig(OP_SECANT);
+        case COT: return trig(OP_COTANGENT);
+        case ARCCSC: return trig(OP_ARCCOSECANT);
+        case ARCSEC: return trig(OP_ARCSECANT);
+        case ARCCOT: return trig(OP_ARCCOTANGENT);
+        case SINH: return trig(OP_HYPERBOLIC_SINE);
+        case COSH: return trig(OP_HYPERBOLIC_COSINE);
+        case TANH: return trig(OP_HYPERBOLIC_TANGENT);
+        case ARCSINH: return trig(OP_HYPERBOLIC_ARCSINE);
+        case ARCCOSH: return trig(OP_HYPERBOLIC_ARCCOSINE);
+        case ARCTANH: return trig(OP_HYPERBOLIC_ARCTANGENT);
+        case CSCH: return trig(OP_HYPERBOLIC_COSECANT);
+        case SECH: return trig(OP_HYPERBOLIC_SECANT);
+        case COTH: return trig(OP_HYPERBOLIC_COTANGENT);
+        case ARCCSCH: return trig(OP_HYPERBOLIC_ARCCOSECANT);
+        case ARCSECH: return trig(OP_HYPERBOLIC_ARCSECANT);
+        case ARCCOTH: return trig(OP_HYPERBOLIC_ARCCOTANGENT);
+        case EXP: return oneArg(OP_EXP);
+        case NATURALLOG: return oneArg(OP_NATURAL_LOG);
         case LOG: return log();
-        case ERRORFUNCTION: return oneArg(PN_ERROR_FUNCTION);
-        case COMPERRFUNC: return oneArg(PN_COMP_ERR_FUNC);
+        case ERRORFUNCTION: return oneArg(OP_ERROR_FUNCTION);
+        case COMPERRFUNC: return oneArg(OP_COMP_ERR_FUNC);
 
         default:
             return error(EXPECTED_PRIMARY);
@@ -464,19 +464,19 @@ Parser::ParseNode Parser::parenGrouping() noexcept{
     Typeset::Marker left = lMark();
     advance();
     match(NEWLINE);
-    ParseNode nested = expression();
+    ParseNode nested = disjunction();
     if(peek(RIGHTPAREN)){
         Typeset::Marker right = rMark();
         advance();
-        return parse_tree.addUnary(PN_GROUP_PAREN, Typeset::Selection(left, right), nested);
+        return parse_tree.addUnary(OP_GROUP_PAREN, Typeset::Selection(left, right), nested);
     }
 
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(PN_LIST);
+    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_LIST);
     builder.addNaryChild(nested);
     do{
         consume(COMMA);
         match(NEWLINE);
-        builder.addNaryChild(expression());
+        builder.addNaryChild(disjunction());
         match(NEWLINE);
     } while(!peek(RIGHTPAREN) && noErrors());
     Typeset::Marker right = rMark();
@@ -490,7 +490,7 @@ Parser::ParseNode Parser::parenGrouping() noexcept{
     Typeset::Selection sel(left, rMarkPrev());
 
     return parse_tree.addTernary(
-                PN_LAMBDA,
+                OP_LAMBDA,
                 sel,
                 ParseTree::EMPTY,
                 list,
@@ -498,30 +498,50 @@ Parser::ParseNode Parser::parenGrouping() noexcept{
            );
 }
 
-Parser::ParseNode Parser::paramList(TokenType close) noexcept{
+Parser::ParseNode Parser::paramList() noexcept{
     Typeset::Marker left = lMarkPrev();
 
     if(peek(RIGHTPAREN)){
         Typeset::Marker right = rMark();
         advance();
-        return parse_tree.addTerminal(PN_LIST, Typeset::Selection(left, right));
+        return parse_tree.addTerminal(OP_LIST, Typeset::Selection(left, right));
     }
 
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(PN_LIST);
+    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_LIST);
     do{
         match(NEWLINE);
         builder.addNaryChild(param());
         match(NEWLINE);
     } while(match(COMMA) && noErrors());
     Typeset::Marker right = rMark();
-    consume(close);
+    consume(RIGHTPAREN);
 
     ParseNode list = builder.finalize(Typeset::Selection(left, right));
 
     if(noErrors())
         return list;
     else
-        return parse_tree.addTerminal(PN_LIST, Typeset::Selection(left, right));
+        return parse_tree.addTerminal(OP_LIST, Typeset::Selection(left, right));
+}
+
+Parser::ParseNode Parser::captureList() noexcept{
+    Typeset::Marker left = lMarkPrev();
+
+    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_LIST);
+    do{
+        match(NEWLINE);
+        builder.addNaryChild(isolatedIdentifier());
+        match(NEWLINE);
+    } while(match(COMMA) && noErrors());
+    Typeset::Marker right = rMark();
+    consume(RIGHTBRACE);
+
+    ParseNode list = builder.finalize(Typeset::Selection(left, right));
+
+    if(noErrors())
+        return list;
+    else
+        return parse_tree.addTerminal(OP_LIST, Typeset::Selection(left, right));
 }
 
 ParseNode Parser::grouping(size_t type, TokenType close) noexcept{
@@ -548,23 +568,23 @@ Parser::ParseNode Parser::norm() noexcept{
         Typeset::Selection s(left, right);
         if(match(INFTY)){
             consume(ARGCLOSE);
-            return parse_tree.addUnary(PN_NORM_INFTY, s, nested);
+            return parse_tree.addUnary(OP_NORM_INFTY, s, nested);
         }else if(peek(INTEGER) && rMark().index - lMark().index == 1){
             if(lMark().charRight() == 1){
                 advance();
                 consume(ARGCLOSE);
-                return parse_tree.addUnary(PN_NORM_1, s, nested);
+                return parse_tree.addUnary(OP_NORM_1, s, nested);
             }else if(lMark().charRight() == 2){
                 advance();
                 consume(ARGCLOSE);
-                return parse_tree.addUnary(PN_NORM, s, nested);
+                return parse_tree.addUnary(OP_NORM, s, nested);
             }
         }
         ParseNode e = expression();
         consume(ARGCLOSE);
-        return parse_tree.addBinary(PN_NORM_p, s, nested, e);
+        return parse_tree.addBinary(OP_NORM_p, s, nested, e);
     }else{
-        return parse_tree.addUnary(PN_NORM, s, nested);
+        return parse_tree.addUnary(OP_NORM, s, nested);
     }
 }
 
@@ -576,7 +596,7 @@ Parser::ParseNode Parser::innerProduct() noexcept{
     ParseNode rhs = expression();
     consume(RIGHTANGLE);
 
-    return parse_tree.addBinary(PN_INNER_PRODUCT, Typeset::Selection(left, rMarkPrev()), lhs, rhs);
+    return parse_tree.addBinary(OP_INNER_PRODUCT, Typeset::Selection(left, rMarkPrev()), lhs, rhs);
 }
 
 ParseNode Parser::integer() noexcept{
@@ -586,14 +606,14 @@ ParseNode Parser::integer() noexcept{
     if(left.charRight() == '0' &&
        rMark().index - left.index > 1) return error(LEADING_ZEROES);
 
-    ParseNode n = terminalAndAdvance(PN_INTEGER_LITERAL);
+    ParseNode n = terminalAndAdvance(OP_INTEGER_LITERAL);
     switch (currentType()) {
         case TOKEN_SUBSCRIPT:{
             sel.format(SEM_PREDEFINEDMATNUM);
             if(sel.strView() == "0")
-                return twoDims(PN_ZERO_MATRIX);
+                return twoDims(OP_ZERO_MATRIX);
             else if(sel.strView() == "1")
-                return twoDims(PN_ONES_MATRIX);
+                return twoDims(OP_ONES_MATRIX);
             else return error(UNRECOGNIZED_SYMBOL);
         }
         case PERIOD:{
@@ -603,8 +623,8 @@ ParseNode Parser::integer() noexcept{
             }
             const Typeset::Selection sel(left, rMark());
             sel.formatNumber();
-            ParseNode decimal = terminalAndAdvance(PN_INTEGER_LITERAL);
-            return parse_tree.addBinary(PN_DECIMAL_LITERAL, sel, n, decimal);
+            ParseNode decimal = terminalAndAdvance(OP_INTEGER_LITERAL);
+            return parse_tree.addBinary(OP_DECIMAL_LITERAL, sel, n, decimal);
         }
         default:
             sel.formatNumber();
@@ -613,7 +633,7 @@ ParseNode Parser::integer() noexcept{
 }
 
 ParseNode Parser::identifier() noexcept{
-    ParseNode id = terminalAndAdvance(PN_IDENTIFIER);
+    ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
 
     switch (currentType()) {
         case LEFTPAREN: return call(id);
@@ -621,10 +641,10 @@ ParseNode Parser::identifier() noexcept{
         case TOKEN_SUBSCRIPT:
             if(parse_tree.str(id) == "e"){
                 parse_tree.getSelection(id).format(SEM_PREDEFINEDMAT);
-                return oneDim(PN_UNIT_VECTOR);
+                return oneDim(OP_UNIT_VECTOR);
             }else if(parse_tree.str(id) == "I" && noErrors()){
                 size_t index_backup = index;
-                ParseNode pn = twoDims(PN_IDENTITY_MATRIX);
+                ParseNode pn = twoDims(OP_IDENTITY_MATRIX);
                 if(noErrors()){
                     parse_tree.getSelection(id).format(SEM_PREDEFINEDMAT);
                     return pn;
@@ -645,7 +665,7 @@ ParseNode Parser::identifier() noexcept{
                 consume(ARGCLOSE);
                 ParseNode elem = expression();
                 consume(ARGCLOSE);
-                ParseNode n = parse_tree.addTernary(PN_UNIT_VECTOR, c, elem, dim0, dim1);
+                ParseNode n = parse_tree.addTernary(OP_UNIT_VECTOR, c, elem, dim0, dim1);
                 parsing_dims = false;
                 return n;
             }
@@ -654,16 +674,19 @@ ParseNode Parser::identifier() noexcept{
     }
 }
 
+Parser::ParseNode Parser::isolatedIdentifier() noexcept{
+    if(!peek(IDENTIFIER)) return error(UNRECOGNIZED_SYMBOL);
+    return terminalAndAdvance(OP_IDENTIFIER);
+}
+
 Parser::ParseNode Parser::param() noexcept{
     if(!peek(IDENTIFIER)) return error(UNRECOGNIZED_SYMBOL);
-    ParseNode id = terminalAndAdvance(PN_IDENTIFIER);
-    return match(EQUALS) ?
-           parse_tree.addBinary(PN_EQUAL, id, expression()) :
-           id;
+    ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
+    return match(EQUALS) ? parse_tree.addBinary(OP_EQUAL, id, expression()) : id;
 }
 
 ParseNode Parser::call(const ParseNode& id) noexcept{
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(PN_CALL);
+    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_CALL);
     builder.addNaryChild(id);
     advance();
     if(!peek(RIGHTPAREN)){
@@ -693,11 +716,11 @@ Parser::ParseNode Parser::lambda(const ParseNode& id) noexcept{
     Typeset::Selection sel(left, rMarkPrev());
 
     return parse_tree.addQuadary(
-                PN_LAMBDA,
+                OP_LAMBDA,
                 sel,
                 capture_list,
                 referenced_upvalues,
-                parse_tree.addUnary(PN_LIST, id),
+                parse_tree.addUnary(OP_LIST, id),
                 e
            );
 }
@@ -711,7 +734,7 @@ ParseNode Parser::fraction() noexcept{
     ParseNode den = expression();
     consume(ARGCLOSE);
 
-    return parse_tree.addBinary(PN_FRACTION, c, num, den);
+    return parse_tree.addBinary(OP_FRACTION, c, num, den);
 }
 
 Parser::ParseNode Parser::binomial() noexcept{
@@ -723,7 +746,7 @@ Parser::ParseNode Parser::binomial() noexcept{
     ParseNode k = expression();
     consume(ARGCLOSE);
 
-    return parse_tree.addBinary(PN_BINOMIAL, c, n, k);
+    return parse_tree.addBinary(OP_BINOMIAL, c, n, k);
 }
 
 ParseNode Parser::superscript(const ParseNode& lhs) noexcept{
@@ -737,12 +760,12 @@ ParseNode Parser::superscript(const ParseNode& lhs) noexcept{
     switch (currentType()) {
         case TRANSPOSE:{
             advance();
-            n = parse_tree.addUnary(PN_TRANSPOSE, c, lhs);
+            n = parse_tree.addUnary(OP_TRANSPOSE, c, lhs);
             break;
         }
         case DAGGER:{
             advance();
-            n = parse_tree.addUnary(PN_DAGGER, c, lhs);
+            n = parse_tree.addUnary(OP_DAGGER, c, lhs);
             break;
         }
         case MULTIPLY:{
@@ -753,16 +776,16 @@ ParseNode Parser::superscript(const ParseNode& lhs) noexcept{
         }
         case PLUS:{
             advance();
-            n = parse_tree.addUnary(PN_PSEUDO_INVERSE, c, lhs);
+            n = parse_tree.addUnary(OP_PSEUDO_INVERSE, c, lhs);
             break;
         }
         case CONJUNCTION:
         case CARET:{
             advance();
-            n = parse_tree.addUnary(PN_ACCENT_HAT, c, lhs);
+            n = parse_tree.addUnary(OP_ACCENT_HAT, c, lhs);
             break;
         }
-        default: n = parse_tree.addBinary(PN_POWER, c, lhs, expression());
+        default: n = parse_tree.addBinary(OP_POWER, c, lhs, expression());
     }
 
     consume(ARGCLOSE);
@@ -775,7 +798,7 @@ Parser::ParseNode Parser::subscript(const ParseNode& lhs, const Typeset::Marker&
     Typeset::Selection selection(left, right);
     advance();
 
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(PN_SUBSCRIPT_ACCESS);
+    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_SUBSCRIPT_ACCESS);
     builder.addNaryChild(lhs);
     do{ builder.addNaryChild(subExpr()); } while(match(COMMA));
 
@@ -794,12 +817,12 @@ Parser::ParseNode Parser::dualscript(const ParseNode& lhs) noexcept{
         case TRANSPOSE:{
             advance();
             require(ARGCLOSE);
-            return parse_tree.addUnary(PN_TRANSPOSE, c, subscript(lhs, right));
+            return parse_tree.addUnary(OP_TRANSPOSE, c, subscript(lhs, right));
         }
         case DAGGER:{
             advance();
             require(ARGCLOSE);
-            return parse_tree.addUnary(PN_DAGGER, c, subscript(lhs, right));
+            return parse_tree.addUnary(OP_DAGGER, c, subscript(lhs, right));
         }
         case MULTIPLY:{
             parse_tree.setRight(lhs, right);
@@ -810,31 +833,31 @@ Parser::ParseNode Parser::dualscript(const ParseNode& lhs) noexcept{
         case PLUS:{
             advance();
             require(ARGCLOSE);
-            return parse_tree.addUnary(PN_PSEUDO_INVERSE, c, subscript(lhs, right));
+            return parse_tree.addUnary(OP_PSEUDO_INVERSE, c, subscript(lhs, right));
         }
         default:
             ParseNode power = expression();
             require(ARGCLOSE);
-            return parse_tree.addBinary(PN_POWER, c, subscript(lhs, right), power);
+            return parse_tree.addBinary(OP_POWER, c, subscript(lhs, right), power);
     }
 }
 
 Parser::ParseNode Parser::subExpr() noexcept{
     ParseNode first = peek(COLON) ?
-                      parse_tree.addTerminal(PN_SLICE_ALL, selection()) :
+                      parse_tree.addTerminal(OP_SLICE_ALL, selection()) :
                       expression();
 
     if(!match(COLON))
         return first; //Simple subscript
     else if(peek(COMMA) || peek(ARGCLOSE))
-        return parse_tree.addUnary(PN_SLICE, first); //x_:,1 access
+        return parse_tree.addUnary(OP_SLICE, first); //x_:,1 access
 
     ParseNode second = peek(COLON) ?
-                       parse_tree.addTerminal(PN_SLICE_ALL, selection()) :
+                       parse_tree.addTerminal(OP_SLICE_ALL, selection()) :
                        expression();
 
-    if(!match(COLON)) return parse_tree.addBinary(PN_SLICE, first, second);
-    else return parse_tree.addTernary(PN_SLICE, first, second, expression());
+    if(!match(COLON)) return parse_tree.addBinary(OP_SLICE, first, second);
+    else return parse_tree.addTernary(OP_SLICE, first, second, expression());
 }
 
 ParseNode Parser::matrix() noexcept{
@@ -843,21 +866,24 @@ ParseNode Parser::matrix() noexcept{
     size_t argc = c.getConstructArgSize();
     if(argc == 1) return error(SCALAR_MATRIX, c);
 
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(PN_MATRIX);
+    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_MATRIX);
 
     for(size_t i = 0; i < argc; i++){
         builder.addNaryChild( expression() );
         consume(ARGCLOSE);
     }
 
-    return builder.finalize(c);
+    ParseNode m = builder.finalize(c);
+    parse_tree.setFlag(m, c.getMatrixRows());
+
+    return m;
 }
 
 Parser::ParseNode Parser::cases() noexcept{
     const Typeset::Selection& c = selection();
     advance();
     size_t argc = c.getConstructArgSize();
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(PN_CASES);
+    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_CASES);
 
     for(size_t i = 0; i < argc; i++){
         builder.addNaryChild( disjunction() );
@@ -870,7 +896,7 @@ Parser::ParseNode Parser::cases() noexcept{
 Parser::ParseNode Parser::squareRoot() noexcept{
     const Typeset::Selection& c = selection();
     advance();
-    ParseNode n = parse_tree.addUnary(PN_SQRT, c, expression());
+    ParseNode n = parse_tree.addUnary(OP_SQRT, c, expression());
     consume(ARGCLOSE);
 
     return n;
@@ -884,10 +910,10 @@ Parser::ParseNode Parser::nRoot() noexcept{
     ParseNode arg = expression();
     consume(ARGCLOSE);
 
-    return parse_tree.addBinary(PN_ROOT, c, arg, base);
+    return parse_tree.addBinary(OP_ROOT, c, arg, base);
 }
 
-Parser::ParseNode Parser::oneDim(ParseNodeType type) noexcept{
+Parser::ParseNode Parser::oneDim(Op type) noexcept{
     Typeset::Selection c(lMarkPrev(), rMark());
     advance();
     parsing_dims = true;
@@ -898,7 +924,7 @@ Parser::ParseNode Parser::oneDim(ParseNodeType type) noexcept{
     return pn;
 }
 
-Parser::ParseNode Parser::twoDims(ParseNodeType type) noexcept{
+Parser::ParseNode Parser::twoDims(Op type) noexcept{
     Typeset::Selection c(lMarkPrev(), rMark());
     advance();
     parsing_dims = true;
@@ -920,10 +946,10 @@ Parser::ParseNode Parser::length() noexcept{
     consume(RIGHTPAREN);
 
     if(!noErrors()) return error_node;
-    return parse_tree.addUnary(PN_LENGTH, Typeset::Selection(left, right), arg);
+    return parse_tree.addUnary(OP_LENGTH, Typeset::Selection(left, right), arg);
 }
 
-Parser::ParseNode Parser::trig(ParseNodeType type) noexcept{
+Parser::ParseNode Parser::trig(Op type) noexcept{
     const Typeset::Marker& left = lMark();
     advance();
     if(match(TOKEN_SUPERSCRIPT)){
@@ -932,9 +958,9 @@ Parser::ParseNode Parser::trig(ParseNodeType type) noexcept{
         ParseNode fn = parse_tree.addLeftUnary(type, left, leftUnary());
         const Typeset::Marker& right = parse_tree.getRight(fn);
         Typeset::Selection c(left, right);
-        if(parse_tree.getType(power) == PN_UNARY_MINUS)
+        if(parse_tree.getOp(power) == OP_UNARY_MINUS)
             return error(AMBIGIOUS_TRIG_POWER, c);
-        return parse_tree.addBinary(PN_POWER, c, fn, power);
+        return parse_tree.addBinary(OP_POWER, c, fn, power);
     }
 
     return parse_tree.addLeftUnary(type, left, leftUnary());
@@ -949,13 +975,13 @@ const Typeset::Marker& left = lMark();
         ParseNode arg = leftUnary();
         const Typeset::Marker& right = parse_tree.getRight(arg);
         Typeset::Selection c(left, right);
-        return parse_tree.addBinary(PN_LOGARITHM_BASE, c, arg, base);
+        return parse_tree.addBinary(OP_LOGARITHM_BASE, c, arg, base);
     }
 
-    return parse_tree.addLeftUnary(PN_LOGARITHM, left, leftUnary());
+    return parse_tree.addLeftUnary(OP_LOGARITHM, left, leftUnary());
 }
 
-Parser::ParseNode Parser::oneArg(ParseNodeType type) noexcept{
+Parser::ParseNode Parser::oneArg(Op type) noexcept{
     const Typeset::Marker& left = lMark();
     advance();
     consume(LEFTPAREN);
@@ -967,7 +993,7 @@ Parser::ParseNode Parser::oneArg(ParseNodeType type) noexcept{
     return parse_tree.addUnary(type, c, e);
 }
 
-Parser::ParseNode Parser::twoArgs(ParseNodeType type) noexcept{
+Parser::ParseNode Parser::twoArgs(Op type) noexcept{
     const Typeset::Marker& left = lMark();
     advance();
     consume(LEFTPAREN);
@@ -981,17 +1007,17 @@ Parser::ParseNode Parser::twoArgs(ParseNodeType type) noexcept{
     return parse_tree.addBinary(type, c, a, b);
 }
 
-Parser::ParseNode Parser::big(ParseNodeType type) noexcept{
+Parser::ParseNode Parser::big(Op type) noexcept{
     const Typeset::Marker& left = lMark();
     Typeset::Selection err_sel(left, rMark());
     advance();
     ParseNode end = expression();
     consume(ARGCLOSE);
     if(!noErrors() || !peek(IDENTIFIER)) return error(UNRECOGNIZED_SYMBOL, err_sel);
-    ParseNode id = terminalAndAdvance(PN_IDENTIFIER);
+    ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
     if(!match(EQUALS) && !match(LEFTARROW)) return error(UNRECOGNIZED_SYMBOL, err_sel);
     ParseNode start = expression();
-    ParseNode assign = parse_tree.addBinary(PN_ASSIGN, id, start);
+    ParseNode assign = parse_tree.addBinary(OP_ASSIGN, id, start);
     consume(ARGCLOSE);
     ParseNode body = expression();
     if(!noErrors()) return error_node;
@@ -1001,7 +1027,7 @@ Parser::ParseNode Parser::big(ParseNodeType type) noexcept{
     return parse_tree.addTernary(type, sel, assign, end, body);
 }
 
-Parser::ParseNode Parser::oneArgConstruct(ParseNodeType type) noexcept{
+Parser::ParseNode Parser::oneArgConstruct(Op type) noexcept{
     Typeset::Selection sel(lMark(), rMark());
     advance();
     ParseNode child = disjunction();

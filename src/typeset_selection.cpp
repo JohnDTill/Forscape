@@ -2,6 +2,7 @@
 
 #include "typeset_construct.h"
 #include "typeset_line.h"
+#include <typeset_matrix.h>
 #include "typeset_model.h"
 #include "typeset_phrase.h"
 #include "typeset_text.h"
@@ -160,6 +161,14 @@ size_t Selection::getConstructArgSize() const noexcept{
     assert(tR->id == tL->id+1);
 
     return tL->nextConstructAsserted()->numArgs();
+}
+
+size_t Selection::getMatrixRows() const noexcept{
+    assert(isPhraseSelection());
+    assert(tR->id == tL->id+1);
+    assert(tL->nextConstructAsserted()->constructCode() == MATRIX);
+
+    return static_cast<Typeset::Matrix*>(tL->nextConstructAsserted())->rows;
 }
 
 void Selection::formatBasicIdentifier() const noexcept{

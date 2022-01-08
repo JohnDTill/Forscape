@@ -39,11 +39,11 @@ void SymbolTableLinker::link(size_t scope_index){
                 if(sym.is_closure_nested && !sym.is_captured){
                     assert(sym.declaration_closure_depth <= closures.size());
 
-                    parse_tree.setType(pn, PN_READ_UPVALUE);
+                    parse_tree.setOp(pn, OP_READ_UPVALUE);
                     parse_tree.setClosureIndex(pn, closure_size.back());
                     closures.back()[usage.var_id] = closure_size.back()++;
                 }else{
-                    sym.stack_index = stack_size++;
+                    sym.flag = stack_size++;
                 }
             }else{
                 if(sym.is_closure_nested){
@@ -54,13 +54,13 @@ void SymbolTableLinker::link(size_t scope_index){
                         if(closure.find(usage.var_id) == closure.end())
                             closure[usage.var_id] = closure_size[i]++;
                     }
-                    parse_tree.setType(pn, PN_READ_UPVALUE);
+                    parse_tree.setOp(pn, OP_READ_UPVALUE);
                     parse_tree.setClosureIndex(pn, closures.back()[usage.var_id]);
                 }else if(sym.declaration_closure_depth == 0){
-                    parse_tree.setType(pn, PN_READ_GLOBAL);
-                    parse_tree.setGlobalIndex(pn, sym.stack_index);
+                    parse_tree.setOp(pn, OP_READ_GLOBAL);
+                    parse_tree.setGlobalIndex(pn, sym.flag);
                 }else{
-                    parse_tree.setStackOffset(pn, stack_size - 1 - sym.stack_index);
+                    parse_tree.setStackOffset(pn, stack_size - 1 - sym.flag);
                 }
             }
         }
@@ -71,27 +71,27 @@ void SymbolTableLinker::link(size_t scope_index){
     if(scope.closing_function != NONE){
         ParseNode fn = scope.closing_function;
 
-        ParseTree::NaryBuilder upvalue_builder = parse_tree.naryBuilder(PN_LIST);
+        ParseTree::NaryBuilder upvalue_builder = parse_tree.naryBuilder(OP_LIST);
         for(const auto& entry : closures.back()){
             size_t symbol_index = entry.first;
             const Symbol& sym = symbol_table.symbols[symbol_index];
-            ParseNode n = parse_tree.addTerminal(PN_IDENTIFIER, sym.document_occurences->front());
+            ParseNode n = parse_tree.addTerminal(OP_IDENTIFIER, sym.document_occurences->front());
 
             parse_tree.setFlag(n, entry.second);
 
             if(sym.declaration_closure_depth != closures.size())
-                parse_tree.setType(n, PN_READ_UPVALUE);
+                parse_tree.setOp(n, OP_READ_UPVALUE);
 
             upvalue_builder.addNaryChild(n);
         }
 
         ParseNode upvalue_list = upvalue_builder.finalize(parse_tree.getSelection(fn));
 
-        switch (parse_tree.getType(fn)) {
-            case PN_ALGORITHM:
+        switch (parse_tree.getOp(fn)) {
+            case OP_ALGORITHM:
                 parse_tree.setArg(fn, 2, upvalue_list);
                 break;
-            case PN_LAMBDA:
+            case OP_LAMBDA:
                 parse_tree.setArg(fn, 1, upvalue_list);
                 break;
         }

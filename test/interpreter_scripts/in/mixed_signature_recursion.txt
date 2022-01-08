@@ -1,0 +1,16 @@
+counter ← 10
+
+alg countdown(x){
+    print(x, "\n")
+    if(counter > 0){
+        isEven = (counter % 2 = 0)
+        counter ← counter - 1
+        if(isEven){
+            countdown("Skipping even")
+        }else{
+            countdown(counter)
+        }
+    }
+}
+
+countdown(counter)

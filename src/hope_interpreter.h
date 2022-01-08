@@ -44,8 +44,8 @@ public:
     ErrorCode error_code = NO_ERROR;
     ParseNode error_node = ParseTree::EMPTY;
 
-    void run(const ParseTree& parse_tree, SymbolTable symbol_table, ParseNode root);
-    void runThread(const ParseTree& parse_tree, SymbolTable symbol_table, ParseNode root);
+    void run(const ParseTree& parse_tree, SymbolTable symbol_table);
+    void runThread(const ParseTree& parse_tree, SymbolTable symbol_table);
     void stop();
 
 private:
@@ -53,7 +53,6 @@ private:
     ParseTree parse_tree;
     Closure* active_closure = nullptr;
     Stack stack;
-    ParseNode root;
 
     void reset() noexcept;
     Value error(ErrorCode code, ParseNode pn) noexcept;
@@ -73,13 +72,13 @@ private:
     Value implicitMult(ParseNode pn, size_t start = 0);
     Value sum(ParseNode pn);
     Value prod(ParseNode pn);
-    Value big(ParseNode pn, ParseNodeType type);
+    Value big(ParseNode pn, Op type);
     Value cases(ParseNode pn);
     bool evaluateCondition(ParseNode pn);
     Value interpretExpr(ParseNode pn);
     Value unaryDispatch(ParseNode pn);
     Value binaryDispatch(ParseNode pn);
-    Value binaryDispatch(ParseNodeType type, const Value& lhs, const Value& rhs, ParseNode op_node);
+    Value binaryDispatch(Op type, const Value& lhs, const Value& rhs, ParseNode op_node);
     void reassign(ParseNode lhs, ParseNode rhs);
     void reassignSubscript(ParseNode lhs, ParseNode rhs);
     void elementWiseAssignment(ParseNode pn);

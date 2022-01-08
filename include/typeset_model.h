@@ -102,7 +102,6 @@ private:
 
     Code::IdMap symbol_table;
     Code::SymbolTableBuilder symbol_builder = Code::SymbolTableBuilder(parser.parse_tree, this);
-    Code::ParseNode root;
 
     std::vector<Command*> undo_stack;
     std::vector<Command*> redo_stack;

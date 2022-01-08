@@ -1,6 +1,6 @@
 #include "hope_parse_tree.h"
 
-#include <code_parsenodetype.h>
+#include <code_parsenode_ops.h>
 #include "typeset_selection.h"
 
 #ifndef NDEBUG
@@ -12,8 +12,8 @@ namespace Hope {
 
 namespace Code {
 
-ParseNode ParseTree::back() const noexcept{
-    return size()-1;
+void ParseTree::clear() noexcept {
+    std::vector<size_t>::clear();
 }
 
 bool ParseTree::empty() const noexcept{
@@ -21,28 +21,28 @@ bool ParseTree::empty() const noexcept{
 }
 
 const Typeset::Marker& ParseTree::getLeft(ParseNode index) const noexcept{
-    return *reinterpret_cast<const Typeset::Marker*>(data()+index-LEFT_MARKER_OFFSET);
+    return *reinterpret_cast<const Typeset::Marker*>(data()+index+LEFT_MARKER_OFFSET);
 }
 
 void ParseTree::setLeft(ParseNode index, const Typeset::Marker& m) noexcept{
-    *reinterpret_cast<Typeset::Marker*>(data()+index-LEFT_MARKER_OFFSET) = m;
+    *reinterpret_cast<Typeset::Marker*>(data()+index+LEFT_MARKER_OFFSET) = m;
 }
 
 const Typeset::Marker& ParseTree::getRight(ParseNode index) const noexcept{
-    return *reinterpret_cast<const Typeset::Marker*>(data()+index-RIGHT_MARKER_OFFSET);
+    return *reinterpret_cast<const Typeset::Marker*>(data()+index+RIGHT_MARKER_OFFSET);
 }
 
-void ParseTree::setRight(ParseNode index, const Typeset::Marker &m) noexcept{
-    *reinterpret_cast<Typeset::Marker*>(data()+index-RIGHT_MARKER_OFFSET) = m;
+void ParseTree::setRight(ParseNode index, const Typeset::Marker& m) noexcept{
+    *reinterpret_cast<Typeset::Marker*>(data()+index+RIGHT_MARKER_OFFSET) = m;
 }
 
 ParseNode ParseTree::arg(ParseNode node, size_t index) const noexcept{
     assert(index < getNumArgs(node));
-    return (*this)[node-FIXED_FIELDS-index];
+    return (*this)[node+FIXED_FIELDS+index];
 }
 
 void ParseTree::setArg(ParseNode node, size_t index, ParseNode val) noexcept{
-    (*this)[node-FIXED_FIELDS-index] = val;
+    (*this)[node+FIXED_FIELDS+index] = val;
 }
 
 ParseNode ParseTree::lhs(ParseNode node) const noexcept{
@@ -65,154 +65,166 @@ std::string ParseTree::str(ParseNode node) const{
 }
 
 size_t ParseTree::addTerminal(size_t type, const Typeset::Selection& c){
+    ParseNode pn = size();
+
     resize(size() + FIXED_FIELDS);
-    ParseNode pn = size()-1;
-    setNumArgs(pn, 0);
+    setOp(pn, type);
     setSelection(pn, c);
-    setType(pn, type);
+    setNumArgs(pn, 0);
 
     return pn;
 }
 
 size_t ParseTree::addUnary(size_t type, const Typeset::Selection& c, size_t child){
-    push_back(child);
-    resize(size() + FIXED_FIELDS);
-    ParseNode pn = size()-1;
-    setNumArgs(pn, 1);
+    ParseNode pn = size();
+
+    resize(size() + FIXED_FIELDS + 1);
+    setOp(pn, type);
     setSelection(pn, c);
-    setType(pn, type);
+    setNumArgs(pn, 1);
+    setArg(pn, 0, child);
 
     return pn;
 }
 
 size_t ParseTree::addUnary(size_t type, size_t child){
-    push_back(child);
-    resize(size() + FIXED_FIELDS);
-    ParseNode pn = size()-1;
-    setNumArgs(pn, 1);
+    ParseNode pn = size();
+
+    resize(size() + FIXED_FIELDS + 1);
+    setOp(pn, type);
     setSelection(pn, getSelection(child));
-    setType(pn, type);
+    setNumArgs(pn, 1);
+    setArg(pn, 0, child);
 
     return pn;
 }
 
 size_t ParseTree::addLeftUnary(size_t type, const Typeset::Marker& left, size_t child){
-    push_back(child);
-    resize(size() + FIXED_FIELDS);
-    ParseNode pn = size()-1;
-    setNumArgs(pn, 1);
+    ParseNode pn = size();
+
+    resize(size() + FIXED_FIELDS + 1);
+    setOp(pn, type);
     setLeft(pn, left);
     setRight(pn, getRight(child));
-    setType(pn, type);
+    setNumArgs(pn, 1);
+    setArg(pn, 0, child);
 
     return pn;
 }
 
 size_t ParseTree::addRightUnary(size_t type, const Typeset::Marker& right, size_t child){
-    push_back(child);
-    resize(size() + FIXED_FIELDS);
-    ParseNode pn = size()-1;
-    setNumArgs(pn, 1);
+    ParseNode pn = size();
+
+    resize(size() + FIXED_FIELDS + 1);
+    setOp(pn, type);
     setLeft(pn, getLeft(child));
     setRight(pn, right);
-    setType(pn, type);
+    setNumArgs(pn, 1);
+    setArg(pn, 0, child);
 
     return pn;
 }
 
 size_t ParseTree::addBinary(size_t type, const Typeset::Selection& c, size_t lhs, size_t rhs){
-    push_back(rhs);
-    push_back(lhs);
-    resize(size() + FIXED_FIELDS);
-    ParseNode pn = size()-1;
-    setNumArgs(pn, 2);
+    ParseNode pn = size();
+
+    resize(size() + FIXED_FIELDS + 2);
+    setOp(pn, type);
     setSelection(pn, c);
-    setType(pn, type);
+    setNumArgs(pn, 2);
+    setArg(pn, 0, lhs);
+    setArg(pn, 1, rhs);
 
     return pn;
 }
 
 size_t ParseTree::addBinary(size_t type, size_t lhs, size_t rhs){
-    push_back(rhs);
-    push_back(lhs);
-    resize(size() + FIXED_FIELDS);
-    ParseNode pn = size()-1;
-    setNumArgs(pn, 2);
+    ParseNode pn = size();
+
+    resize(size() + FIXED_FIELDS + 2);
+    setOp(pn, type);
     setLeft(pn, getLeft(lhs));
     setRight(pn, getRight(rhs));
-    setType(pn, type);
+    setNumArgs(pn, 2);
+    setArg(pn, 0, lhs);
+    setArg(pn, 1, rhs);
 
     return pn;
 }
 
 size_t ParseTree::addTernary(size_t type, const Typeset::Selection& c, size_t A, size_t B, size_t C){
-    push_back(C);
-    push_back(B);
-    push_back(A);
-    resize(size() + FIXED_FIELDS);
-    ParseNode pn = size()-1;
-    setNumArgs(pn, 3);
+    ParseNode pn = size();
+
+    resize(size() + FIXED_FIELDS + 3);
+    setOp(pn, type);
     setSelection(pn, c);
-    setType(pn, type);
+    setNumArgs(pn, 3);
+    setArg(pn, 0, A);
+    setArg(pn, 1, B);
+    setArg(pn, 2, C);
 
     return pn;
 }
 
-ParseNode ParseTree::addTernary(ParseNodeType type, ParseNode A, ParseNode B, ParseNode C){
-    push_back(C);
-    push_back(B);
-    push_back(A);
-    resize(size() + FIXED_FIELDS);
-    ParseNode pn = size()-1;
-    setNumArgs(pn, 3);
+ParseNode ParseTree::addTernary(Op type, ParseNode A, ParseNode B, ParseNode C){
+    ParseNode pn = size();
+
+    resize(size() + FIXED_FIELDS + 3);
+    setOp(pn, type);
     setLeft(pn, getLeft(A));
     setRight(pn, getRight(C));
-    setType(pn, type);
+    setNumArgs(pn, 3);
+    setArg(pn, 0, A);
+    setArg(pn, 1, B);
+    setArg(pn, 2, C);
 
     return pn;
 }
 
-ParseNode ParseTree::addQuadary(ParseNodeType type, ParseNode A, ParseNode B, ParseNode C, ParseNode D){
-    push_back(D);
-    push_back(C);
-    push_back(B);
-    push_back(A);
-    resize(size() + FIXED_FIELDS);
-    ParseNode pn = size()-1;
-    setNumArgs(pn, 4);
+ParseNode ParseTree::addQuadary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D){
+    ParseNode pn = size();
+
+    resize(size() + FIXED_FIELDS + 4);
+    setOp(pn, type);
     setLeft(pn, getLeft(A));
     setRight(pn, getRight(D));
-    setType(pn, type);
-
-    return pn;
-}
-
-ParseNode ParseTree::addQuadary(ParseNodeType type, const Typeset::Selection &c, ParseNode A, ParseNode B, ParseNode C, ParseNode D){
-    push_back(D);
-    push_back(C);
-    push_back(B);
-    push_back(A);
-    resize(size() + FIXED_FIELDS);
-    ParseNode pn = size()-1;
     setNumArgs(pn, 4);
-    setSelection(pn, c);
-    setType(pn, type);
+    setArg(pn, 0, A);
+    setArg(pn, 1, B);
+    setArg(pn, 2, C);
+    setArg(pn, 3, D);
 
     return pn;
 }
 
-ParseNode ParseTree::addPentary(ParseNodeType type, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E){
-    push_back(E);
-    push_back(D);
-    push_back(C);
-    push_back(B);
-    push_back(A);
-    resize(size() + FIXED_FIELDS);
-    ParseNode pn = size()-1;
-    setNumArgs(pn, 5);
+ParseNode ParseTree::addQuadary(Op type, const Typeset::Selection &c, ParseNode A, ParseNode B, ParseNode C, ParseNode D){
+    ParseNode pn = size();
+
+    resize(size() + FIXED_FIELDS + 4);
+    setOp(pn, type);
+    setSelection(pn, c);
+    setNumArgs(pn, 4);
+    setArg(pn, 0, A);
+    setArg(pn, 1, B);
+    setArg(pn, 2, C);
+    setArg(pn, 3, D);
+
+    return pn;
+}
+
+ParseNode ParseTree::addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E){
+    ParseNode pn = size();
+
+    resize(size() + FIXED_FIELDS + 5);
+    setOp(pn, type);
     setLeft(pn, getLeft(A));
     setRight(pn, getRight(E));
-    setType(pn, type);
+    setNumArgs(pn, 5);
+    setArg(pn, 0, A);
+    setArg(pn, 1, B);
+    setArg(pn, 2, C);
+    setArg(pn, 3, D);
+    setArg(pn, 4, E);
 
     return pn;
 }
@@ -222,7 +234,7 @@ ParseTree::NaryBuilder ParseTree::naryBuilder(size_t type){
 }
 
 #ifndef NDEBUG
-std::string ParseTree::toGraphviz(ParseNode root) const{
+std::string ParseTree::toGraphviz() const{
     std::string src = "digraph {\n\trankdir=TB\n\n";
     size_t sze = 0;
     graphvizHelper(src, root, sze);
@@ -260,13 +272,14 @@ size_t ParseTree::NaryBuilder::finalize(){
     built = true;
     #endif
 
-    tree.insert(tree.end(), children.rbegin(), children.rend());
+    ParseNode pn = tree.size();
+
     tree.resize(tree.size() + FIXED_FIELDS);
-    ParseNode pn = tree.size()-1;
-    tree.setNumArgs(pn, children.size());
+    tree.setOp(pn, type);
     tree.setLeft(pn, tree.getLeft(children.front()));
     tree.setRight(pn, tree.getRight(children.back()));
-    tree.setType(pn, type);
+    tree.setNumArgs(pn, children.size());
+    tree.insert(tree.end(), children.begin(), children.end());
 
     return pn;
 }
@@ -277,13 +290,14 @@ size_t ParseTree::NaryBuilder::finalize(const Typeset::Marker& right){
     built = true;
     #endif
 
-    tree.insert(tree.end(), children.rbegin(), children.rend());
+    ParseNode pn = tree.size();
+
     tree.resize(tree.size() + FIXED_FIELDS);
-    ParseNode pn = tree.size()-1;
-    tree.setNumArgs(pn, children.size());
+    tree.setOp(pn, type);
     tree.setLeft(pn, tree.getLeft(children.front()));
     tree.setRight(pn, right);
-    tree.setType(pn, type);
+    tree.setNumArgs(pn, children.size());
+    tree.insert(tree.end(), children.begin(), children.end());
 
     return pn;
 }
@@ -294,12 +308,13 @@ size_t ParseTree::NaryBuilder::finalize(const Typeset::Selection& c){
     built = true;
     #endif
 
-    tree.insert(tree.end(), children.rbegin(), children.rend());
+    ParseNode pn = tree.size();
+
     tree.resize(tree.size() + FIXED_FIELDS);
-    ParseNode pn = tree.size()-1;
-    tree.setNumArgs(pn, children.size());
+    tree.setOp(pn, type);
     tree.setSelection(pn, c);
-    tree.setType(pn, type);
+    tree.setNumArgs(pn, children.size());
+    tree.insert(tree.end(), children.begin(), children.end());
 
     return pn;
 }

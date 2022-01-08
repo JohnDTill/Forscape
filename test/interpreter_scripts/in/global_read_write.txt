@@ -1,0 +1,12 @@
+counter ← 10
+alg countdown(){
+    if(counter ≠ 0){
+        print(counter, "\n")
+        counter ← counter - 1
+        countdown()
+    }else{
+        print("LIFTOFF!!!")
+    }
+}
+
+countdown()

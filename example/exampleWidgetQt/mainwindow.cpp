@@ -108,19 +108,21 @@ void MainWindow::run(){
     if(!editor->isEnabled()) return;
 
     console->setModel(Typeset::Model::fromSerial("", true));
-
-    editor_had_focus = false;
-    if(editor->hasFocus()){
-        editor_had_focus = true;
-
-        //setEnabled is a tab event. take focus before it fires.
-        setFocus(Qt::FocusReason::NoFocusReason);
-    }
-
-    editor->setEnabled(false);
-    editor->setReadOnly(true);
     editor->runThread(console);
-    if(editor->getModel()->errors.empty()) interpreter_poll_timer.start(INTERPETER_POLL_PERIOD);
+    if(editor->getModel()->errors.empty()){
+        interpreter_poll_timer.start(INTERPETER_POLL_PERIOD);
+
+        editor_had_focus = false;
+        if(editor->hasFocus()){
+            editor_had_focus = true;
+
+            //setEnabled is a tab event. take focus before it fires.
+            setFocus(Qt::FocusReason::NoFocusReason);
+        }
+
+        editor->setEnabled(false);
+        editor->setReadOnly(true);
+    }
 }
 
 void MainWindow::stop(){

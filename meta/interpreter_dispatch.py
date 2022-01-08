@@ -7,7 +7,7 @@ def main():
         csv_filepath="interpreter_dispatch.csv",
         tuple_name="Rule",
     )
-    all_types = set()
+    all_ops = set()
     unary_ops = set()
     binary_ops = set()
 
@@ -19,7 +19,7 @@ def main():
         if not rule.a:
             nullary_rules.append(rule)
         else:
-            all_types.add(rule.a)
+            all_ops.add(rule.a)
             if not rule.b:
                 ops = rule.op.split("|")
                 for op in ops:
@@ -30,14 +30,13 @@ def main():
                 for op in ops:
                     if op != "CALL":
                         binary_ops.add(op)
-                all_types.add(rule.b)
+                all_ops.add(rule.b)
                 binary_rules.append(rule)
-    all_types.remove("ANY")
-    all_types.remove("NOT_a")
+    all_ops.remove("ANY")
+    all_ops.remove("NOT_a")
 
     with open("../src/generated/hope_interpreter_gen.cpp", "w", encoding="utf-8") as codegen_file:
         codegen_file.write("#include \"hope_interpreter.h\"\n\n")
-        codegen_file.write("#include \"hope_error.h\" //DO THIS: REMOVE\n\n")
         codegen_file.write("#include <math.h>\n\n")
         codegen_file.write("#ifdef HOPE_EIGEN_UNSUPPORTED\n"
                            "#include <unsupported/Eigen/MatrixFunctions>\n"
@@ -50,45 +49,45 @@ def main():
         codegen_file.write("Value Interpreter::interpretExpr(ParseNode pn) {\n"
                            "    if(status != NORMAL) return NIL; //DO THIS - very wasteful to allows check for errors\n"
                            "\n"
-                           "    switch( parse_tree.getType(pn) ){\n")
+                           "    switch( parse_tree.getOp(pn) ){\n")
         for rule in nullary_rules:
             ops = rule.op.split('|')
             if len(ops) == 1:
-                codegen_file.write(f"        case PN_{ops[0]}: return {rule.impl};\n")
+                codegen_file.write(f"        case OP_{ops[0]}: return {rule.impl};\n")
             else:
                 for op in ops:
-                    codegen_file.write(f"        case PN_{op}:\n")
+                    codegen_file.write(f"        case OP_{op}:\n")
                 codegen_file.write(f"            return {rule.impl};\n")
         codegen_file.write("\n")
         for op in unary_ops:
-            codegen_file.write(f"        case PN_{op}:\n")
+            codegen_file.write(f"        case OP_{op}:\n")
         codegen_file.write("            return unaryDispatch(pn);\n\n")
         for op in binary_ops:
-            codegen_file.write(f"        case PN_{op}:\n")
+            codegen_file.write(f"        case OP_{op}:\n")
         codegen_file.write("            return binaryDispatch(pn);\n\n")
         codegen_file.write("        default: return error(UNRECOGNIZED_EXPR, pn);\n"
                            "    }\n"
                            "}\n\n")
 
-        codegen_file.write("static constexpr uint16_t unaryCode(ParseNodeType t, size_t value_type){\n"
-                           "    assert((t & (value_type << 8)) == 0);\n"
-                           "    assert((t | (value_type << 8)) <= std::numeric_limits<uint16_t>::max());\n"
-                           "    return static_cast<uint16_t>(t | (value_type << 8));\n"
+        codegen_file.write("static constexpr uint16_t unaryCode(Op t, size_t value_op){\n"
+                           "    assert((t & (value_op << 8)) == 0);\n"
+                           "    assert((t | (value_op << 8)) <= std::numeric_limits<uint16_t>::max());\n"
+                           "    return static_cast<uint16_t>(t | (value_op << 8));\n"
                            "}\n\n")
 
         codegen_file.write("Value Interpreter::unaryDispatch(ParseNode pn) {\n"
                            "    Value child = interpretExpr( parse_tree.child(pn) );\n\n"
-                           "    switch( unaryCode(parse_tree.getType(pn), child.index()) ){\n")
+                           "    switch( unaryCode(parse_tree.getOp(pn), child.index()) ){\n")
 
         for rule in unary_rules:
             ops = rule.op.split('|')
             for op in ops:
                 if rule.a == "ANY":
-                    types = all_types
+                    ops = all_ops
                 else:
-                    types = {rule.a}
+                    ops = {rule.a}
 
-                for typ in types:
+                for typ in ops:
                     constraints = []
                     if rule.constraint:
                         constraints = rule.constraint.split(":")
@@ -96,7 +95,7 @@ def main():
                     else:
                         impl = re.sub(r'\ba\b', f'std::get<{typ}>(child)', rule.impl)
 
-                    codegen_file.write(f"        case unaryCode(PN_{op}, {typ}_index):\n")
+                    codegen_file.write(f"        case unaryCode(OP_{op}, {typ}_index):\n")
             if rule.eigen_unsupported:
                 codegen_file.write("            #ifdef HOPE_EIGEN_UNSUPPORTED\n")
             if rule.constraint:
@@ -120,10 +119,10 @@ def main():
                            "    }\n"
                            "}\n\n")
 
-        codegen_file.write("static constexpr uint16_t binaryCode(ParseNodeType t, size_t a_type, size_t b_type){\n"
-                           "    assert((t & (a_type << 8) & (b_type << 12)) == 0);\n"
-                           "    assert((t | (a_type << 8) | (b_type << 12)) <= std::numeric_limits<uint16_t>::max());\n"
-                           "    return static_cast<uint16_t>(t | (a_type << 8) | (b_type << 12));\n"
+        codegen_file.write("static constexpr uint16_t binaryCode(Op t, size_t a_op, size_t b_op){\n"
+                           "    assert((t & (a_op << 8) & (b_op << 12)) == 0);\n"
+                           "    assert((t | (a_op << 8) | (b_op << 12)) <= std::numeric_limits<uint16_t>::max());\n"
+                           "    return static_cast<uint16_t>(t | (a_op << 8) | (b_op << 12));\n"
                            "}\n\n")
 
         codegen_file.write("Value Interpreter::binaryDispatch(ParseNode pn) {\n"
@@ -132,43 +131,43 @@ def main():
                            "    Value vL = interpretExpr(lhs);\n"
                            "    Value vR = interpretExpr(rhs);\n"
                            "\n"
-                           "    return binaryDispatch(parse_tree.getType(pn), vL, vR, pn);\n"
+                           "    return binaryDispatch(parse_tree.getOp(pn), vL, vR, pn);\n"
                            "}\n"
                            "\n"
-                           "Value Interpreter::binaryDispatch(ParseNodeType type, const Value& lhs, const Value& rhs, ParseNode pn){\n"
-                           "    switch( binaryCode(type, lhs.index(), rhs.index()) ){\n")
+                           "Value Interpreter::binaryDispatch(Op op, const Value& lhs, const Value& rhs, ParseNode pn){\n"
+                           "    switch( binaryCode(op, lhs.index(), rhs.index()) ){\n")
 
         for rule in binary_rules:
             ops = rule.op.split('|')
             for op in ops:
                 if rule.a == "ANY":
-                    a_types = all_types
+                    a_ops = all_ops
                 else:
-                    a_types = {rule.a}
+                    a_ops = {rule.a}
 
-                for a_type in a_types:
+                for a_op in a_ops:
                     if rule.b == "NOT_a":
-                        b_types = set(all_types)
-                        b_types.remove(a_type)
+                        b_ops = set(all_ops)
+                        b_ops.remove(a_op)
                     else:
-                        b_types = {rule.b}
+                        b_ops = {rule.b}
 
-                    for b_type in b_types:
+                    for b_op in b_ops:
                         constraints = []
                         if rule.constraint:
                             constraints = rule.constraint.split(":")
                             impl = rule.impl
                         else:
-                            impl = re.sub(r'\ba\b', f'std::get<{a_type}>(lhs)', rule.impl)
-                            impl = re.sub(r'\bb\b', f'std::get<{b_type}>(rhs)', impl)
+                            impl = re.sub(r'\ba\b', f'std::get<{a_op}>(lhs)', rule.impl)
+                            impl = re.sub(r'\bb\b', f'std::get<{b_op}>(rhs)', impl)
 
-                        codegen_file.write(f"        case binaryCode(PN_{op}, {a_type}_index, {b_type}_index):\n")
+                        codegen_file.write(f"        case binaryCode(OP_{op}, {a_op}_index, {b_op}_index):\n")
             if rule.eigen_unsupported:
                 codegen_file.write("            #ifdef HOPE_EIGEN_UNSUPPORTED\n")
             if rule.constraint:
                 codegen_file.write("        {\n")
-                codegen_file.write(f"            const auto& a = std::get<{a_type}>(lhs);\n")
-                codegen_file.write(f"            const auto& b = std::get<{b_type}>(rhs);\n")
+                codegen_file.write(f"            const auto& a = std::get<{a_op}>(lhs);\n")
+                codegen_file.write(f"            const auto& b = std::get<{b_op}>(rhs);\n")
             for con in constraints:
                 parts = con.split("=>")
                 assert len(parts) == 2, f"Missing arrow for {con}"
