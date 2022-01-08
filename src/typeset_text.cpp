@@ -414,6 +414,31 @@ void Text::paintMid(Painter& painter, size_t start, size_t stop, bool forward) c
     painter.drawText(x, y, str.substr(start, stop-start), forward);
 }
 
+void Text::paintGrouping(Painter& painter, size_t start) const{
+    assert(start < size());
+    size_t stop = start + glyphSize(str[start]);
+
+    painter.setScriptLevel(scriptDepth());
+    double x = this->x + xLocal(start);
+    painter.setType(getTypeLeftOf(start));
+
+    for(const SemanticTag& tag : tags){
+        if(tag.index > start){
+            if(tag.index >= stop) break;
+            std::string substr = str.substr(start, tag.index-start);
+            double width = painter.getWidth(substr);
+            painter.drawHighlightedGrouping(x, y, width, substr);
+            x += width;
+            start = tag.index;
+            painter.setType(tag.type);
+        }
+    }
+
+    std::string substr = str.substr(start, stop-start);
+    double width = painter.getWidth(substr);
+    painter.drawHighlightedGrouping(x, y, width, substr);
+}
+
 bool Text::containsX(double x_test) const noexcept{
     return (x_test >= x) & (x_test <= x + width);
 }

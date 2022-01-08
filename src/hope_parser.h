@@ -19,12 +19,17 @@ public:
     Parser(const Scanner& scanner, Typeset::Model* model);
     void parseAll();
     ParseTree parse_tree;
+    std::unordered_map<Typeset::Marker, Typeset::Marker> open_symbols;
+    std::unordered_map<Typeset::Marker, Typeset::Marker> close_symbols;
 
 private:
     //Predominant noexcept behavior requires elimination of dynamic allocation and recursion
 
     typedef size_t ParseNode;
 
+    void reset() noexcept;
+    void registerGrouping(const Typeset::Selection& sel);
+    void registerGrouping(const Typeset::Marker& l, const Typeset::Marker& r);
     ParseNode checkedStatement() noexcept;
     ParseNode statement() noexcept;
     ParseNode ifStatement() noexcept;

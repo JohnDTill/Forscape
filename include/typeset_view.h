@@ -45,6 +45,8 @@ public:
     static QColor line_box_border_color;
     static QColor line_num_active_color;
     static QColor line_num_passive_color;
+    static QColor grouping_highlight_color;
+    static QColor grouping_background_color;
     QColor background_color = Qt::white;
     QColor disabled_background_color = QPalette().color(QPalette::Disabled, QPalette::Window);
 

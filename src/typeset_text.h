@@ -83,6 +83,7 @@ class Text {
         void paintUntil(Painter& painter, size_t stop, bool forward = true) const;
         void paintAfter(Painter& painter, size_t start, bool forward = true) const;
         void paintMid(Painter& painter, size_t start, size_t stop, bool forward = true) const;
+        void paintGrouping(Painter& painter, size_t start) const;
         bool containsX(double x_test) const noexcept;
         bool containsY(double y_test) const noexcept;
         bool containsXInBounds(double x_test, size_t start, size_t stop) const noexcept;

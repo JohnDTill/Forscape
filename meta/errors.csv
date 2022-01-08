@@ -54,3 +54,8 @@ ASSERT_FAIL,y,Assertion failed
 SCALAR_MATRIX,,1×1 matrix is ambiguous
 UNUSED_ELEM_AGN_INDEX,,Undeclared variable\n(an element assignment index must be used in rhs to prevent ambiguity)
 INTERRUPT,,Execution stopped by user
+EXPECT_LPAREN,,Expected ‘(‘
+EXPECT_RPAREN,,Expected ‘)’
+EXPECT_RBRACE,,Expected ‘]’
+EXPECT_DOUBLEBAR,,Expected ‘‖’
+EXPECT_RANGLE,,Expected ‘⟩’

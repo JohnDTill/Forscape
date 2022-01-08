@@ -47,6 +47,7 @@ public:
     void updateLayout();
     void paint(Painter& painter) const;
     void paint(Painter& painter, double xL, double yT, double xR, double yB) const;
+    void paintGroupings(Painter& painter, const Typeset::Marker& loc) const;
     #endif
 
     #ifndef NDEBUG
