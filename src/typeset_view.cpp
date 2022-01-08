@@ -61,6 +61,8 @@ QColor View::line_box_fill_color = QColor::fromRgb(240, 240, 240);
 QColor View::line_box_border_color = Qt::lightGray;
 QColor View::line_num_active_color = Qt::black;
 QColor View::line_num_passive_color = Qt::darkGray;
+QColor View::grouping_highlight_color = QColor::fromRgb(255, 0, 0);
+QColor View::grouping_background_color = QColor::fromRgb(180, 238, 180);
 
 View::View()
     : model(Model::fromSerial("")),
@@ -702,7 +704,10 @@ void View::drawModel(double xL, double yT, double xR, double yB){
             c.paintHighlight(painter);
     }
 
+    const Typeset::Marker& cursor = getController().active;
+
     model->paint(painter, xL, yT, xR, yB);
+    model->paintGroupings(painter, cursor);
     controller.paintSelection(painter);
     if(show_cursor){
         if(insert_mode) controller.paintInsertCursor(painter);

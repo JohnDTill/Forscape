@@ -120,6 +120,21 @@ void Painter::drawText(double x, double y, const std::string& text, bool forward
     }
 }
 
+void Painter::drawHighlightedGrouping(double x, double y, double w, const std::string& text){
+    x += x_offset;
+
+    painter.setPen(View::grouping_background_color);
+    painter.setBrush(View::grouping_background_color);
+    painter.drawRect(x, y, w, painter.fontMetrics().ascent());
+
+    painter.setPen(View::grouping_highlight_color);
+    y += painter.fontMetrics().capHeight();
+    painter.drawText(x, y, QString::fromStdString(text));
+
+    painter.setPen(View::text_cursor_color);
+    painter.setBrush(View::text_cursor_color);
+}
+
 void Painter::drawSymbol(double x, double y, const std::string& text){
     x += x_offset;
     QFont font = painter.font();

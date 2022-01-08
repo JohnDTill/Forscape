@@ -388,6 +388,25 @@ void Model::paint(Painter& painter, double, double yT, double, double yB) const{
     }
 }
 
+void Model::paintGroupings(Painter& painter, const Marker& loc) const{
+    auto open_lookup = parser.open_symbols.find(loc);
+    if(open_lookup != parser.open_symbols.end()){
+        loc.text->paintGrouping(painter, loc.index);
+        Typeset::Marker right = open_lookup->second;
+        right.decrementIndex();
+        right.text->paintGrouping(painter, right.index);
+    }
+
+    auto close_lookup = parser.close_symbols.find(loc);
+    if(close_lookup != parser.close_symbols.end()){
+        Typeset::Marker rstart = loc;
+        rstart.decrementIndex();
+        loc.text->paintGrouping(painter, rstart.index);
+        Typeset::Marker left = close_lookup->second;
+        left.text->paintGrouping(painter, left.index);
+    }
+}
+
 Selection Model::idAt(double x, double y) noexcept{
     Line* l = nearestLine(y);
     if(!l->containsY(y)) return Selection();

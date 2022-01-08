@@ -13,11 +13,7 @@ Parser::Parser(const Scanner &scanner, Typeset::Model* model)
 }
 
 void Parser::parseAll(){
-    parse_tree.clear();
-    index = 0;
-    parsing_dims = false;
-    loops = 0;
-    error_node = UNITIALIZED;
+    reset();
 
     ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_BLOCK);
     skipNewlines();
@@ -28,6 +24,25 @@ void Parser::parseAll(){
 
     Typeset::Selection c(markers.front().first, markers.back().second);
     parse_tree.root = builder.finalize(c);
+}
+
+void Parser::reset() noexcept{
+    parse_tree.clear();
+    open_symbols.clear();
+    close_symbols.clear();
+    index = 0;
+    parsing_dims = false;
+    loops = 0;
+    error_node = UNITIALIZED;
+}
+
+void Parser::registerGrouping(const Typeset::Selection& sel){
+    registerGrouping(sel.left, sel.right);
+}
+
+void Parser::registerGrouping(const Typeset::Marker& l, const Typeset::Marker& r){
+    open_symbols[l] = r;
+    close_symbols[r] = l;
 }
 
 ParseNode Parser::checkedStatement() noexcept{
@@ -60,9 +75,12 @@ ParseNode Parser::statement() noexcept{
 ParseNode Parser::ifStatement() noexcept{
     Typeset::Marker left = lMark();
     advance();
-    consume(LEFTPAREN);
+    Typeset::Marker cond_l = lMark();
+    if(!match(LEFTPAREN)) return error(EXPECT_LPAREN);
     ParseNode condition = disjunction();
-    consume(RIGHTPAREN);
+    Typeset::Marker cond_r = rMark();
+    if(!match(RIGHTPAREN)) return error(EXPECT_RPAREN);
+    registerGrouping(cond_l, cond_r);
     ParseNode body = blockStatement();
     if(match(ELSE)){
         size_t el = blockStatement();
@@ -81,9 +99,12 @@ ParseNode Parser::ifStatement() noexcept{
 Parser::ParseNode Parser::whileStatement() noexcept{
     Typeset::Marker left = lMark();
     advance();
-    consume(LEFTPAREN);
+    Typeset::Marker l_cond = lMark();
+    if(!match(LEFTPAREN)) return error(EXPECT_LPAREN);
     ParseNode condition = disjunction();
-    consume(RIGHTPAREN);
+    Typeset::Marker r_cond = rMark();
+    if(!match(RIGHTPAREN)) return error(EXPECT_RPAREN);
+    registerGrouping(l_cond, r_cond);
     loops++;
     ParseNode body = blockStatement();
     loops--;
@@ -96,7 +117,8 @@ Parser::ParseNode Parser::whileStatement() noexcept{
 Parser::ParseNode Parser::forStatement() noexcept{
     Typeset::Marker left = lMark();
     advance();
-    consume(LEFTPAREN);
+    Typeset::Marker l_cond = lMark();
+    if(!match(LEFTPAREN)) return error(EXPECT_LPAREN);
     ParseNode initializer = peek(SEMICOLON) ?
                             makeTerminalNode(OP_BLOCK) :
                             statement();
@@ -108,7 +130,9 @@ Parser::ParseNode Parser::forStatement() noexcept{
     ParseNode update = peek(RIGHTPAREN) ?
                        makeTerminalNode(OP_BLOCK) :
                        statement();
-    consume(RIGHTPAREN);
+    Typeset::Marker r_cond = rMark();
+    if(!match(RIGHTPAREN)) return error(EXPECT_RPAREN);
+    registerGrouping(l_cond, r_cond);
     loops++;
     ParseNode body = blockStatement();
     loops--;
@@ -121,7 +145,8 @@ Parser::ParseNode Parser::forStatement() noexcept{
 ParseNode Parser::printStatement() noexcept{
     Typeset::Marker left = lMark();
     advance();
-    consume(LEFTPAREN);
+    Typeset::Marker l_group = lMark();
+    if(!match(LEFTPAREN)) return error(EXPECT_LPAREN);
 
     ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_PRINT);
 
@@ -130,23 +155,29 @@ ParseNode Parser::printStatement() noexcept{
     } while(noErrors() && match(COMMA));
 
     Typeset::Marker right = rMark();
-    Typeset::Selection c(left, right);
-    consume(RIGHTPAREN);
+    Typeset::Selection sel(left, right);
+    if(!match(RIGHTPAREN)){
+        builder.finalize(sel);
+        return error(EXPECT_RPAREN);
+    }
+    registerGrouping(l_group, right);
 
-    return builder.finalize(c);
+    return builder.finalize(sel);
 }
 
 Parser::ParseNode Parser::assertStatement() noexcept{
     Typeset::Marker left = lMark();
     advance();
-    consume(LEFTPAREN);
+    Typeset::Marker l_group = lMark();
+    if(!match(LEFTPAREN)) return error(EXPECT_LPAREN);
     ParseNode e = disjunction();
 
     Typeset::Marker right = rMark();
-    Typeset::Selection c(left, right);
-    consume(RIGHTPAREN);
+    Typeset::Selection sel(left, right);
+    if(!match(RIGHTPAREN)) return error(EXPECT_RPAREN);
+    registerGrouping(l_group, right);
 
-    return parse_tree.addUnary(OP_ASSERT, c, e);
+    return parse_tree.addUnary(OP_ASSERT, sel, e);
 }
 
 ParseNode Parser::blockStatement() noexcept{
@@ -167,10 +198,10 @@ ParseNode Parser::blockStatement() noexcept{
         skipNewlines();
     }
 
-    Typeset::Marker right = lMarkPrev();
-    Typeset::Selection c(left, right);
+    Typeset::Selection sel(left, rMarkPrev());
+    if(noErrors()) registerGrouping(sel);
 
-    return builder.finalize(c);
+    return builder.finalize(sel);
 }
 
 Parser::ParseNode Parser::algStatement() noexcept{
@@ -467,8 +498,10 @@ Parser::ParseNode Parser::parenGrouping() noexcept{
     ParseNode nested = disjunction();
     if(peek(RIGHTPAREN)){
         Typeset::Marker right = rMark();
+        Typeset::Selection sel(left, right);
+        registerGrouping(sel);
         advance();
-        return parse_tree.addUnary(OP_GROUP_PAREN, Typeset::Selection(left, right), nested);
+        return parse_tree.addUnary(OP_GROUP_PAREN, sel, nested);
     }
 
     ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_LIST);
@@ -479,15 +512,18 @@ Parser::ParseNode Parser::parenGrouping() noexcept{
         builder.addNaryChild(disjunction());
         match(NEWLINE);
     } while(!peek(RIGHTPAREN) && noErrors());
-    Typeset::Marker right = rMark();
-    if(noErrors()) advance();
+    Typeset::Selection sel(left, rMark());
+    if(noErrors()){
+        registerGrouping(sel);
+        advance();
+    }
 
-    ParseNode list = builder.finalize(Typeset::Selection(left, right));
+    ParseNode list = builder.finalize(sel);
 
     if(!match(MAPSTO)) return list;
 
     ParseNode expr = expression();
-    Typeset::Selection sel(left, rMarkPrev());
+    sel.right = rMarkPrev();
 
     return parse_tree.addTernary(
                 OP_LAMBDA,
@@ -502,9 +538,10 @@ Parser::ParseNode Parser::paramList() noexcept{
     Typeset::Marker left = lMarkPrev();
 
     if(peek(RIGHTPAREN)){
-        Typeset::Marker right = rMark();
+        Typeset::Selection sel(left, rMark());
+        registerGrouping(sel);
         advance();
-        return parse_tree.addTerminal(OP_LIST, Typeset::Selection(left, right));
+        return parse_tree.addTerminal(OP_LIST, sel);
     }
 
     ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_LIST);
@@ -513,15 +550,16 @@ Parser::ParseNode Parser::paramList() noexcept{
         builder.addNaryChild(param());
         match(NEWLINE);
     } while(match(COMMA) && noErrors());
-    Typeset::Marker right = rMark();
+    Typeset::Selection sel(left, rMark());
     consume(RIGHTPAREN);
+    if(noErrors()) registerGrouping(sel);
 
-    ParseNode list = builder.finalize(Typeset::Selection(left, right));
+    ParseNode list = builder.finalize(sel);
 
     if(noErrors())
         return list;
     else
-        return parse_tree.addTerminal(OP_LIST, Typeset::Selection(left, right));
+        return parse_tree.addTerminal(OP_LIST, sel);
 }
 
 Parser::ParseNode Parser::captureList() noexcept{
@@ -533,26 +571,27 @@ Parser::ParseNode Parser::captureList() noexcept{
         builder.addNaryChild(isolatedIdentifier());
         match(NEWLINE);
     } while(match(COMMA) && noErrors());
-    Typeset::Marker right = rMark();
+    Typeset::Selection sel(left, rMark());
     consume(RIGHTBRACE);
 
-    ParseNode list = builder.finalize(Typeset::Selection(left, right));
-
-    if(noErrors())
+    if(noErrors()){
+        registerGrouping(sel);
+        ParseNode list = builder.finalize(sel);
         return list;
-    else
-        return parse_tree.addTerminal(OP_LIST, Typeset::Selection(left, right));
+    }else{
+        return parse_tree.addTerminal(OP_LIST, sel);
+    }
 }
 
 ParseNode Parser::grouping(size_t type, TokenType close) noexcept{
     Typeset::Marker left = lMark();
     advance();
     ParseNode nested = disjunction();
-    Typeset::Marker right = rMark();
-    Typeset::Selection s(left, right);
+    Typeset::Selection sel(left, rMark());
     consume(close);
+    if(noErrors()) registerGrouping(sel);
 
-    return parse_tree.addUnary(type, s, nested);
+    return parse_tree.addUnary(type, sel, nested);
 }
 
 Parser::ParseNode Parser::norm() noexcept{
@@ -560,8 +599,9 @@ Parser::ParseNode Parser::norm() noexcept{
     advance();
     ParseNode nested = expression();
     Typeset::Marker right = rMark();
-    Typeset::Selection s(left, right);
-    consume(DOUBLEBAR);
+    Typeset::Selection sel(left, right);
+    if(!match(DOUBLEBAR)) return error(EXPECT_DOUBLEBAR);
+    registerGrouping(sel);
 
     if(match(TOKEN_SUBSCRIPT)){
         Typeset::Marker right = rMarkPrev();
@@ -584,7 +624,7 @@ Parser::ParseNode Parser::norm() noexcept{
         consume(ARGCLOSE);
         return parse_tree.addBinary(OP_NORM_p, s, nested, e);
     }else{
-        return parse_tree.addUnary(OP_NORM, s, nested);
+        return parse_tree.addUnary(OP_NORM, sel, nested);
     }
 }
 
@@ -594,9 +634,11 @@ Parser::ParseNode Parser::innerProduct() noexcept{
     ParseNode lhs = expression();
     consume(BAR);
     ParseNode rhs = expression();
-    consume(RIGHTANGLE);
+    Typeset::Selection sel(left, rMark());
+    if(!match(RIGHTANGLE)) return error(EXPECT_RANGLE);
+    registerGrouping(sel);
 
-    return parse_tree.addBinary(OP_INNER_PRODUCT, Typeset::Selection(left, rMarkPrev()), lhs, rhs);
+    return parse_tree.addBinary(OP_INNER_PRODUCT, sel, lhs, rhs);
 }
 
 ParseNode Parser::integer() noexcept{
@@ -686,6 +728,8 @@ Parser::ParseNode Parser::param() noexcept{
 }
 
 ParseNode Parser::call(const ParseNode& id) noexcept{
+    Typeset::Marker lmark = lMark();
+
     ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_CALL);
     builder.addNaryChild(id);
     advance();
@@ -697,7 +741,10 @@ ParseNode Parser::call(const ParseNode& id) noexcept{
         }
     }
 
-    size_t n = builder.finalize(rMark());
+    Typeset::Marker rmark = rMark();
+    registerGrouping(Typeset::Selection(lmark, rmark));
+
+    size_t n = builder.finalize(rmark);
     if(noErrors()) advance();
 
     return n;
@@ -940,10 +987,12 @@ Parser::ParseNode Parser::twoDims(Op type) noexcept{
 Parser::ParseNode Parser::length() noexcept{
     Typeset::Marker left = lMark();
     advance();
+    Typeset::Marker lparen_mark = lMark();
     consume(LEFTPAREN);
     ParseNode arg = expression();
     Typeset::Marker right = rMark();
     consume(RIGHTPAREN);
+    registerGrouping(Typeset::Selection(lparen_mark, right));
 
     if(!noErrors()) return error_node;
     return parse_tree.addUnary(OP_LENGTH, Typeset::Selection(left, right), arg);
