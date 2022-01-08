@@ -17,13 +17,10 @@ struct SymbolTable;
 
 class TypeResolver{
     enum Type {
-        TYPE_ERROR,
         TYPE_NUMERIC,
         TYPE_STRING,
-        TYPE_ALG,
         TYPE_BOOLEAN,
         TYPE_CALLABLE,
-        TYPE_UNCHECKED,
     };
 
     struct FuncSignature{
@@ -63,7 +60,7 @@ class TypeResolver{
         void resolveParams(size_t pn, size_t params) noexcept;
         size_t resolveExpr(size_t pn) noexcept;
         size_t callSite(size_t pn) noexcept;
-        size_t implicitMult(size_t pn) noexcept;
+        size_t implicitMult(size_t pn, size_t start = 0) noexcept;
         size_t instantiate(const CallSignature& sig) noexcept;
         size_t error(size_t pn, ErrorCode code = ErrorCode::TYPE_ERROR) noexcept;
 

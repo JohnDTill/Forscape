@@ -176,19 +176,19 @@ ParseNode Parser::blockStatement() noexcept{
 Parser::ParseNode Parser::algStatement() noexcept{
     advance();
 
-    ParseNode id = param();
+    ParseNode id = isolatedIdentifier();
 
     if(!peek(LEFTPAREN) & !peek(LEFTBRACE))
         return parse_tree.addUnary(OP_PROTOTYPE_ALG, id);
 
     ParseNode captures = match(LEFTBRACE) ?
-                         paramList(RIGHTBRACE) :
+                         captureList() :
                          ParseTree::EMPTY;
 
     ParseNode referenced_upvalues = ParseTree::EMPTY;
 
     consume(LEFTPAREN);
-    ParseNode params = paramList(RIGHTPAREN);
+    ParseNode params = paramList();
 
     size_t loops_backup = 0;
     std::swap(loops_backup, loops);
@@ -498,7 +498,7 @@ Parser::ParseNode Parser::parenGrouping() noexcept{
            );
 }
 
-Parser::ParseNode Parser::paramList(TokenType close) noexcept{
+Parser::ParseNode Parser::paramList() noexcept{
     Typeset::Marker left = lMarkPrev();
 
     if(peek(RIGHTPAREN)){
@@ -514,7 +514,27 @@ Parser::ParseNode Parser::paramList(TokenType close) noexcept{
         match(NEWLINE);
     } while(match(COMMA) && noErrors());
     Typeset::Marker right = rMark();
-    consume(close);
+    consume(RIGHTPAREN);
+
+    ParseNode list = builder.finalize(Typeset::Selection(left, right));
+
+    if(noErrors())
+        return list;
+    else
+        return parse_tree.addTerminal(OP_LIST, Typeset::Selection(left, right));
+}
+
+Parser::ParseNode Parser::captureList() noexcept{
+    Typeset::Marker left = lMarkPrev();
+
+    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_LIST);
+    do{
+        match(NEWLINE);
+        builder.addNaryChild(isolatedIdentifier());
+        match(NEWLINE);
+    } while(match(COMMA) && noErrors());
+    Typeset::Marker right = rMark();
+    consume(RIGHTBRACE);
 
     ParseNode list = builder.finalize(Typeset::Selection(left, right));
 
@@ -654,12 +674,15 @@ ParseNode Parser::identifier() noexcept{
     }
 }
 
+Parser::ParseNode Parser::isolatedIdentifier() noexcept{
+    if(!peek(IDENTIFIER)) return error(UNRECOGNIZED_SYMBOL);
+    return terminalAndAdvance(OP_IDENTIFIER);
+}
+
 Parser::ParseNode Parser::param() noexcept{
     if(!peek(IDENTIFIER)) return error(UNRECOGNIZED_SYMBOL);
     ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
-    return match(EQUALS) ?
-           parse_tree.addBinary(OP_EQUAL, id, expression()) :
-           id;
+    return match(EQUALS) ? parse_tree.addBinary(OP_EQUAL, id, expression()) : id;
 }
 
 ParseNode Parser::call(const ParseNode& id) noexcept{

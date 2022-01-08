@@ -50,12 +50,14 @@ private:
     ParseNode rightUnary() noexcept;
     ParseNode primary() noexcept;
     ParseNode parenGrouping() noexcept;
-    ParseNode paramList(TokenType close) noexcept;
+    ParseNode paramList() noexcept;
+    ParseNode captureList() noexcept;
     ParseNode grouping(size_t type, TokenType close) noexcept;
     ParseNode norm() noexcept;
     ParseNode innerProduct() noexcept;
     ParseNode integer() noexcept;
     ParseNode identifier() noexcept;
+    ParseNode isolatedIdentifier() noexcept;
     ParseNode param() noexcept;
     ParseNode call(const ParseNode& id) noexcept;
     ParseNode lambda(const ParseNode& id) noexcept;

@@ -38,6 +38,11 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
             break;
         }
 
+        case OP_ELEMENTWISE_ASSIGNMENT:
+            if(resolveExpr(parse_tree.lhs(pn)) != TYPE_NUMERIC) error(parse_tree.lhs(pn));
+            else if(resolveExpr(parse_tree.rhs(pn)) != TYPE_NUMERIC) error(parse_tree.rhs(pn));
+            break;
+
         case OP_IF:
         case OP_WHILE:
             if(resolveExpr(parse_tree.lhs(pn)) != TYPE_BOOLEAN)
@@ -56,8 +61,16 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
             resolveParams(pn, parse_tree.arg(pn, 3));
             break;
 
-        default:
+        case OP_BLOCK:
             for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++) resolveStmt(parse_tree.arg(pn, i));
+            break;
+
+        case OP_PRINT:
+            for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++) resolveExpr(parse_tree.arg(pn, i));
+            break;
+
+        default:
+            assert(false);
     }
 }
 
@@ -103,8 +116,6 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
                     return error(parse_tree.arg(pn, i), BAD_READ_OR_SUBSCRIPT);
             return TYPE_NUMERIC;
         case OP_SLICE_ALL:
-            if(resolveExpr(parse_tree.child(pn)) != TYPE_NUMERIC)
-                return error(parse_tree.child(pn));
             return TYPE_NUMERIC;
         case OP_MULTIPLICATION:
         case OP_MATRIX:
@@ -182,6 +193,14 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
             if(resolveExpr(parse_tree.lhs(pn)) != TYPE_NUMERIC) return error(parse_tree.lhs(pn));
             if(resolveExpr(parse_tree.rhs(pn)) != TYPE_NUMERIC) return error(parse_tree.rhs(pn));
             return TYPE_BOOLEAN;
+        case OP_CASES:{
+            if(resolveExpr(parse_tree.arg(pn, 0)) != TYPE_BOOLEAN) return error(parse_tree.arg(pn, 0));
+            size_t type = resolveExpr(parse_tree.arg(pn, 1));
+            for(size_t i = 2; i < parse_tree.getNumArgs(pn); i+=2)
+                if(resolveExpr(parse_tree.arg(pn, i)) != TYPE_BOOLEAN) return error(parse_tree.arg(pn, i));
+                else if(resolveExpr(parse_tree.arg(pn, i+1)) != type) return error(parse_tree.arg(pn, i+1));
+            return type;
+        }
         case OP_EQUAL:
         case OP_NOT_EQUAL:
             if(resolveExpr(parse_tree.lhs(pn)) != resolveExpr(parse_tree.rhs(pn))) return error(parse_tree.lhs(pn));
@@ -203,8 +222,8 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
         case OP_STRING:
             return TYPE_STRING;
         default:
-            for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++) resolveExpr(parse_tree.arg(pn, i));
-            return TYPE_UNCHECKED;
+            assert(false);
+            return TYPE_BOOLEAN;
     }
 }
 
@@ -235,9 +254,15 @@ size_t TypeResolver::callSite(size_t pn) noexcept{
 
 }
 
-size_t TypeResolver::implicitMult(size_t pn) noexcept{
-    //DO THIS
-    //Determine if multiplication or function call
+size_t TypeResolver::implicitMult(size_t pn, size_t start) noexcept{
+    ParseNode lhs = parse_tree.arg(pn, start);
+    size_t tl = resolveExpr(lhs);
+    if(start == parse_tree.getNumArgs(pn)-1) return tl;
+    size_t tr = implicitMult(pn, start+1);
+    if(tl == TYPE_NUMERIC) return (tr == TYPE_NUMERIC) ? TYPE_NUMERIC : error(parse_tree.arg(pn, start+1));
+    else if(tl != TYPE_CALLABLE) return error(lhs, NOT_CALLABLE);
+
+    //DO THIS - resolve function call
 
     return TYPE_ERROR;
 }
