@@ -411,7 +411,7 @@ Selection Model::idAt(double x, double y) noexcept{
     Line* l = nearestLine(y);
     if(!l->containsY(y)) return Selection();
 
-    Text* t = l->textLeftOf(x); //DO THIS: use recursive search
+    Text* t = l->textNearest(x, y);
     if(!t->containsX(x) || !t->containsY(y)) return Selection();
 
     size_t index = t->indexLeft(x);

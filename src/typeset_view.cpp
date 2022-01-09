@@ -3,6 +3,7 @@
 #include <typeset_command_pair.h>
 #include <typeset_construct.h>
 #include <typeset_line.h>
+#include <typeset_markerlink.h>
 #include <typeset_model.h>
 
 #include <chrono>
@@ -199,7 +200,7 @@ void View::dispatchDoubleClick(double x, double y){
 }
 
 void View::dispatchHover(double x, double y){
-    setCursorAppearance(x);
+    setCursorAppearance(x, y);
 
     switch(mouse_hold_state){
         case Hover: resolveTooltip(x, y); break;
@@ -277,6 +278,7 @@ void View::resolveRightClick(double x, double y, int xScreen, int yScreen){
         auto lookup = model->symbol_table.find(c.getAnchor());
         append(renameAction, "Rename", rename, true, lookup!=model->symbol_table.end())
         append(gotoDefAction, "Go to definition", goToDef, true, lookup!=model->symbol_table.end())
+        append(gotoDefAction, "Find usages", findUsages, true, console && lookup!=model->symbol_table.end())
         menu.addSeparator();
     }
 
@@ -353,11 +355,6 @@ void View::resolveLineDrag(double y) noexcept{
 }
 
 void View::resolveTooltip(double x, double y) noexcept{
-    Construct* con = model->constructAt(x, y);
-    if(con && con->constructCode() == MARKERLINK){
-        QWidget::setCursor(Qt::PointingHandCursor);
-    }
-
     for(const Code::Error& err : model->errors){
         if(err.selection.contains(x, y)){
             setTooltipError(err.message());
@@ -377,7 +374,6 @@ void View::resolveTooltip(double x, double y) noexcept{
 
 void View::resolveSelectionDrag(double x, double y){
     mouse_hold_state = Hover;
-    setCursorAppearance(x);
 
     if(controller.contains(x, y)) return;
 
@@ -680,9 +676,15 @@ void View::paste(){
     model->mutate(controller.getInsertSerial(str), controller);
 }
 
-void View::setCursorAppearance(double x){
-    if(mouse_hold_state != SelectionDrag)
-        QWidget::setCursor(isInLineBox(x) ? Qt::ArrowCursor : Qt::IBeamCursor);
+void View::setCursorAppearance(double x, double y){
+    if(mouse_hold_state != SelectionDrag){
+        Construct* con = model->constructAt(x, y);
+        if(con && con->constructCode() == MARKERLINK){
+            QWidget::setCursor(Qt::PointingHandCursor);
+        }else{
+            QWidget::setCursor(isInLineBox(x) ? Qt::ArrowCursor : Qt::IBeamCursor);
+        }
+    }
 }
 
 void View::drawBackground(const QRect& rect){
@@ -857,6 +859,33 @@ void View::goToDef(){
     restartCursorBlink();
     ensureCursorVisible();
     repaint();
+}
+
+void View::findUsages(){
+    assert(console);
+
+    Controller c = model->idAt(controller.active);
+    assert(c.hasSelection());
+
+    auto lookup = model->symbol_table.find(c.getAnchor());
+    assert(lookup != model->symbol_table.end());
+
+    Model* m = new Model();
+    m->is_output = true;
+    console->setModel(m);
+    size_t last_handled = std::numeric_limits<size_t>::max();
+    for(const auto& entry : *lookup->second){
+        Line* target_line = entry.getStartLine();
+        if(target_line->id != last_handled){
+            last_handled = target_line->id;
+            m->lastLine()->appendConstruct(new Typeset::MarkerLink(target_line, this));
+            console->controller.moveToEndOfDocument();
+            std::string line_snippet = target_line->toString();
+            console->controller.insertSerial("  " + line_snippet + "\n");
+        }
+    }
+
+    console->updateModel();
 }
 
 void View::paintEvent(QPaintEvent* event){
