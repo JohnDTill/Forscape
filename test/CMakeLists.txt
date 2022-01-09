@@ -15,6 +15,7 @@ set(SRC ${BASE}/src)
 set(CONSTRUCT ${SRC}/typeset_constructs)
 set(GEN ${SRC}/generated)
 set(COMMAND ${SRC}/typeset_commands)
+set(EXAMPLE ${BASE}/example/exampleWidgetQt)
 include_directories(${INCLUDE})
 include_directories(${SRC})
 include_directories(${CONSTRUCT})
@@ -128,6 +129,8 @@ if (${TEST_QT})
         ${SRC}/typeset_painter_qt.cpp
         ${SRC}/typeset_view.cpp
         ${INCLUDE}/typeset_view.h
+        ${EXAMPLE}/symboltreeview.cpp
+        ${EXAMPLE}/symboltreeview.h
     )
 else()
     add_compile_definitions(HOPE_TYPESET_HEADLESS)

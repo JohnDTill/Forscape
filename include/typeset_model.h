@@ -27,6 +27,7 @@ class Model {
 public:
     Code::Scanner scanner = Code::Scanner(this);
     Code::Parser parser = Code::Parser(scanner, this);
+    Code::SymbolTableBuilder symbol_builder = Code::SymbolTableBuilder(parser.parse_tree, this);
     Code::Interpreter interpreter;
     std::vector<Code::Error> errors;
 
@@ -102,7 +103,6 @@ private:
     friend Code::Interpreter;
 
     Code::IdMap symbol_table;
-    Code::SymbolTableBuilder symbol_builder = Code::SymbolTableBuilder(parser.parse_tree, this);
 
     std::vector<Command*> undo_stack;
     std::vector<Command*> redo_stack;

@@ -21,6 +21,7 @@
 
 #include "mathtoolbar.h"
 #include "searchdialog.h"
+#include "symboltreeview.h"
 
 #include <iostream>
 
@@ -191,7 +192,9 @@ void MainWindow::parseTree(){
 
 void MainWindow::symbolTable(){
     #ifndef NDEBUG
-    std::cout << "Implement this (MainWindow, Line " << __LINE__ << ")" << std::endl;
+    Typeset::Model* m = editor->getModel();
+    SymbolTreeView* view = new SymbolTreeView(m->parser.parse_tree, m->symbol_builder.symbol_table);
+    view->show();
     #endif
 }
 
