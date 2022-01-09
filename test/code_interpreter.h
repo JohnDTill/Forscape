@@ -6,15 +6,23 @@
 
 #include <filesystem>
 
+#ifndef HOPE_TYPESET_HEADLESS
+#include "../example/exampleWidgetQt/symboltreeview.h"
+#endif
+
 using namespace Hope;
 using namespace Code;
 
 inline bool testExpression(const std::string& in, const std::string& expect){
     Typeset::Model* input = Typeset::Model::fromSerial("print(" + in + ")");
+    std::string str = input->run();
+
     #ifndef NDEBUG
     input->parseTreeDot(); //Make sure dot generation doesn't crash
+    #ifndef HOPE_TYPESET_HEADLESS
+    SymbolTreeView view(input->parser.parse_tree, input->symbol_builder.symbol_table);
     #endif
-    std::string str = input->run();
+    #endif
 
     delete input;
 
@@ -37,10 +45,14 @@ inline bool testCase(const std::string& name){
     std::string out = readFile(base_test_path + "/out/" + name + ".txt");
 
     Typeset::Model* input = Typeset::Model::fromSerial(in);
+    std::string str = input->run();
+
     #ifndef NDEBUG
     input->parseTreeDot(); //Make sure dot generation doesn't crash
+    #ifndef HOPE_TYPESET_HEADLESS
+    SymbolTreeView view(input->parser.parse_tree, input->symbol_builder.symbol_table);
     #endif
-    std::string str = input->run();
+    #endif
 
     delete input;
 

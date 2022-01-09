@@ -71,6 +71,8 @@ set(PROJECT_SOURCES
     searchdialog.h
     searchdialog.cpp
     searchdialog.ui
+    symboltreeview.cpp
+    symboltreeview.h
     ${GEN_FILES}
     ${SRC}/hope_error.cpp
     ${INCLUDE}/hope_error.h
