@@ -212,25 +212,6 @@ bool Phrase::hasConstructs() const noexcept{
     return !constructs.empty();
 }
 
-Text* Phrase::textNearest(double x, double y) const{
-    if(x <= this->x){
-        return texts.front();
-    }else if(x >= this->x + width){
-        return texts.back();
-    }else{
-        Text* t = textLeftOf(x);
-
-        if(t->containsX(x)){
-            return t;
-        }else if(Construct* c = t->nextConstructInPhrase()){
-            if(Subphrase* s = c->argAt(x, y)) return s->textNearest(x, y);
-            else return x > c->x + c->width/2 ? c->next() : t;
-        }else{
-            return t;
-        }
-    }
-}
-
 #ifdef HOPE_SEMANTIC_DEBUGGING
 std::string Phrase::toStringWithSemanticTags() const{
     std::string out = texts[0]->toSerialWithSemanticTags();
@@ -367,6 +348,25 @@ bool Phrase::contains(double x_test, double y_test) const noexcept{
 
 bool Phrase::containsY(double y_test) const noexcept{
     return (y_test >= y) & (y_test <= y+height());
+}
+
+Text* Phrase::textNearest(double x, double y) const{
+    if(x <= this->x){
+        return texts.front();
+    }else if(x >= this->x + width){
+        return texts.back();
+    }else{
+        Text* t = textLeftOf(x);
+
+        if(t->containsX(x)){
+            return t;
+        }else if(Construct* c = t->nextConstructInPhrase()){
+            if(Subphrase* s = c->argAt(x, y)) return s->textNearest(x, y);
+            else return x > c->x + c->width/2 ? c->next() : t;
+        }else{
+            return t;
+        }
+    }
 }
 #endif
 
