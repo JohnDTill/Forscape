@@ -74,6 +74,7 @@ public:
     virtual void paintMid(Painter& painter, Text* tL, size_t iL, Text* tR, size_t iR, bool forward = true) const;
     bool contains(double x_test, double y_test) const noexcept;
     bool containsY(double y_test) const noexcept;
+    Text* textNearest(double x, double y) const;
     double width;
     double above_center;
     double under_center;

@@ -51,6 +51,7 @@ public:
     QColor disabled_background_color = QPalette().color(QPalette::Disabled, QPalette::Window);
 
     std::vector<Typeset::Selection>* highlighted_words = nullptr;
+    View* console = nullptr;
 
 private:
     void dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held);
@@ -121,7 +122,7 @@ protected:
     void onBlink() noexcept;
 
 private:
-    void setCursorAppearance(double x);
+    void setCursorAppearance(double x, double y);
     void drawBackground(const QRect& rect);
     void drawLinebox(double yT, double yB);
     void fillInScrollbarCorner();
@@ -145,6 +146,7 @@ public slots:
 private slots:
     void rename();
     void goToDef();
+    void findUsages();
 
 public:
     QImage toPng() const;

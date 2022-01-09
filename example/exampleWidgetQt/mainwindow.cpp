@@ -56,6 +56,8 @@ MainWindow::MainWindow(QWidget* parent)
     console->setReadOnly(true);
     vbox->addWidget(console);
 
+    editor->console = console;
+
     setWindowTitle("Forscape - new script");
 
     QGuiApplication::setWindowIcon(QIcon("lambda.ico"));
