@@ -26,7 +26,7 @@ const std::unordered_map<std::string_view, Op> SymbolTableBuilder::predef {
 };
 
 SymbolTableBuilder::SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model)
-    : errors(model->errors), parse_tree(parse_tree) {}
+    : errors(model->errors), parse_tree(parse_tree), symbol_table(model->parser.symbol_table) {}
 
 void SymbolTableBuilder::resolveSymbols(){
     reset();
@@ -41,13 +41,9 @@ void SymbolTableBuilder::resolveSymbols(){
 void SymbolTableBuilder::reset() noexcept{
     ids.clear();
     map.clear();
-    doc_map.clear();
-    symbol_table.scopes.clear();
-    symbol_table.symbols.clear();
     symbol_id_index.clear();
     lexical_depth = GLOBAL_DEPTH;
     closure_depth = 0;
-    symbol_table.scopes.push_back(Scope(NONE, NONE));
     active_scope_id = 0;
 }
 
@@ -55,17 +51,12 @@ Scope& SymbolTableBuilder::activeScope() noexcept{
     return symbol_table.scopes[active_scope_id];
 }
 
-void SymbolTableBuilder::addScope(ParseNode closing_function){
-    activeScope().subscopes.back().subscope_id = symbol_table.scopes.size();
-    symbol_table.scopes.push_back(Scope(closing_function, active_scope_id));
-    active_scope_id = symbol_table.scopes.size()-1;
-    activeScope().subscopes.push_back(Scope::Subscope());
+void SymbolTableBuilder::addScope(){
+    active_scope_id++;
 }
 
 void SymbolTableBuilder::closeScope() noexcept{
-    active_scope_id = activeScope().parent_id;
-    if(active_scope_id != NONE)
-        activeScope().subscopes.push_back(Scope::Subscope());
+    active_scope_id++;
 }
 
 Symbol& SymbolTableBuilder::lastSymbolOfId(const Id& identifier) noexcept{
@@ -299,10 +290,11 @@ void SymbolTableBuilder::resolveReference(ParseNode pn, const Typeset::Selection
     parse_tree.setFlag(pn, sym.flag);
     sym.is_used = true;
 
-    sym.document_occurences->push_back(c);
+    sym.document_occurences.push_back(c);
     sym.is_closure_nested |= sym.declaration_closure_depth && (closure_depth != sym.declaration_closure_depth);
 
-    activeScope().subscopes.back().usages.push_back(Scope::Usage(sym_id, pn, Scope::READ));
+    //DO THIS
+    //activeScope().subscopes.back().usages.push_back(Scope::Usage(sym_id, pn, Scope::READ));
 }
 
 void SymbolTableBuilder::resolveConditional1(ParseNode pn){
@@ -521,19 +513,21 @@ void SymbolTableBuilder::increaseLexicalDepth(){
 }
 
 void SymbolTableBuilder::decreaseLexicalDepth(){
-    for(const Scope::Subscope& subscope : activeScope().subscopes){
-        for(const Scope::Usage& usage : subscope.usages){
-            if(usage.type != Scope::DECLARE) continue;
-            size_t sym_id = usage.var_id;
+    size_t stop = active_scope_id;
+    size_t start = stop;
+    while(symbol_table.scopes[start].prev != NONE) start = symbol_table.scopes[start].prev;
 
+    for(size_t curr = start; curr <= stop; curr = symbol_table.scopes[curr].next){
+        Scope& scope = symbol_table.scopes[curr];
+        for(size_t sym_id = scope.sym_begin; sym_id < scope.sym_end; sym_id++){
             Id& id = ids[symbol_id_index[sym_id]];
             Symbol& sym = symbol_table.symbols[sym_id];
             assert(sym.declaration_lexical_depth == lexical_depth);
 
-            finalize(sym);
+            finalize(sym_id);
 
             if(id.size() == 1){
-                map.erase(sym.document_occurences->front()); //Much better to erase empty entries than check for them
+                map.erase(sym.document_occurences.front()); //Much better to erase empty entries than check for them
                 Id().swap(id); //Frees memory allocated to id_info
                 //The entry in id_infos is left stranded, but that's
                 //preferable to re-indexing.
@@ -550,7 +544,7 @@ void SymbolTableBuilder::decreaseLexicalDepth(){
 void SymbolTableBuilder::increaseClosureDepth(ParseNode pn){
     closure_depth++;
     lexical_depth++;
-    addScope(pn);
+    addScope();
 }
 
 void SymbolTableBuilder::decreaseClosureDepth(){
@@ -558,7 +552,8 @@ void SymbolTableBuilder::decreaseClosureDepth(){
     decreaseLexicalDepth();
 }
 
-void SymbolTableBuilder::finalize(const Symbol& sym){
+void SymbolTableBuilder::finalize(size_t sym_id){
+    const Symbol& sym = symbol_table.symbols[sym_id];
     assert(sym.declaration_lexical_depth == lexical_depth);
 
     SemanticType fmt = SEM_ID;
@@ -570,14 +565,14 @@ void SymbolTableBuilder::finalize(const Symbol& sym){
         fmt = SEM_ID_FUN_IMPURE;
     }
 
-    for(const Typeset::Selection& c : *sym.document_occurences){
-        doc_map[c.left] = sym.document_occurences;
+    for(const Typeset::Selection& c : sym.document_occurences){
+        symbol_table.occurence_to_symbol_map[c.left] = sym_id;
         c.format(fmt);
     }
 
     //DO THIS - you need warnings, some errors are pedantic
     if(!sym.is_used)
-        errors.push_back(Error(sym.document_occurences->back(), UNUSED_VAR));
+        errors.push_back(Error(sym.document_occurences.back(), UNUSED_VAR));
 }
 
 void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable){
@@ -585,7 +580,6 @@ void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bo
     size_t index = ids.size();
     symbol_id_index.push_back(index);
     ids.push_back(Id({symbol_table.symbols.size()}));
-    activeScope().subscopes.back().usages.push_back(Scope::Usage(symbol_table.symbols.size(), pn, Scope::DECLARE));
     symbol_table.symbols.push_back(Symbol(pn, c, lexical_depth, closure_depth, immutable));
     map[c] = index;
 }
@@ -594,7 +588,6 @@ void SymbolTableBuilder::appendEntry(size_t index, const Typeset::Selection& c, 
     symbol_id_index.push_back(index);
     Id& id_info = ids[index];
     id_info.push_back(symbol_table.symbols.size());
-    activeScope().subscopes.back().usages.push_back(Scope::Usage(symbol_table.symbols.size(), pn, Scope::DECLARE));
     symbol_table.symbols.push_back(Symbol(pn, c, lexical_depth, closure_depth, immutable));
 }
 

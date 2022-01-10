@@ -4,6 +4,7 @@
 #include "hope_error.h"
 #include "hope_parse_tree.h"
 #include "hope_scanner.h"
+#include "hope_scope_tree.h"
 #include <vector>
 
 #ifndef NDEBUG
@@ -19,6 +20,7 @@ public:
     Parser(const Scanner& scanner, Typeset::Model* model);
     void parseAll();
     ParseTree parse_tree;
+    SymbolTable symbol_table;
     std::unordered_map<Typeset::Marker, Typeset::Marker> open_symbols;
     std::unordered_map<Typeset::Marker, Typeset::Marker> close_symbols;
 
@@ -97,6 +99,7 @@ private:
     ParseNode makeTerminalNode(size_t type) noexcept;
     ParseNode terminalAndAdvance(size_t type) noexcept;
     const Typeset::Selection selection() const noexcept;
+    const Typeset::Selection selectionPrev() const noexcept;
     const Typeset::Marker& lMark() const noexcept;
     const Typeset::Marker& rMark() const noexcept;
     const Typeset::Marker& lMarkPrev() const noexcept;

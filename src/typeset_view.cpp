@@ -275,10 +275,11 @@ void View::resolveRightClick(double x, double y, int xScreen, int yScreen){
 
     Controller c = model->idAt(x, y);
     if(c.hasSelection()){
-        auto lookup = model->symbol_table.find(c.getAnchor());
-        append(renameAction, "Rename", rename, true, lookup!=model->symbol_table.end())
-        append(gotoDefAction, "Go to definition", goToDef, true, lookup!=model->symbol_table.end())
-        append(gotoDefAction, "Find usages", findUsages, true, console && lookup!=model->symbol_table.end())
+        auto& symbol_table = model->parser.symbol_table;
+        auto lookup = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
+        append(renameAction, "Rename", rename, true, lookup!=symbol_table.occurence_to_symbol_map.end())
+        append(gotoDefAction, "Go to definition", goToDef, true, lookup!=symbol_table.occurence_to_symbol_map.end())
+        append(gotoDefAction, "Find usages", findUsages, true, console && lookup!=symbol_table.occurence_to_symbol_map.end())
         menu.addSeparator();
     }
 
@@ -436,9 +437,10 @@ void View::updateHighlighting(){
 
     Controller c = model->idAt(controller.active);
     if(c.hasSelection()){
-        auto it = model->symbol_table.find(c.getAnchor());
-        if(it != model->symbol_table.end()){
-            highlighted_words = it->second;
+        auto& symbol_table = model->parser.symbol_table;
+        auto it = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
+        if(it != symbol_table.occurence_to_symbol_map.end()){
+            highlighted_words = &symbol_table.symbols[it->second].document_occurences;
         }
     }
 }
@@ -842,20 +844,22 @@ void View::rename(){
     std::string name = text.toStdString();
 
     Controller c = model->idAt(controller.active);
-    auto lookup = model->symbol_table.find(c.getAnchor());
+    auto& symbol_table = model->parser.symbol_table;
+    auto lookup = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
     assert(c.hasSelection());
 
-    rename(*lookup->second, name);
+    rename(symbol_table.symbols[lookup->second].document_occurences, name);
 }
 
 void View::goToDef(){
     Controller c = model->idAt(controller.active);
     assert(c.hasSelection());
 
-    auto lookup = model->symbol_table.find(c.getAnchor());
-    assert(lookup != model->symbol_table.end());
+    auto& symbol_table = model->parser.symbol_table;
+    auto lookup = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
+    assert(lookup != symbol_table.occurence_to_symbol_map.end());
 
-    controller = lookup->second->front().right;
+    controller = symbol_table.symbols[lookup->second].document_occurences.front().right;
     restartCursorBlink();
     ensureCursorVisible();
     repaint();
@@ -867,14 +871,16 @@ void View::findUsages(){
     Controller c = model->idAt(controller.active);
     assert(c.hasSelection());
 
-    auto lookup = model->symbol_table.find(c.getAnchor());
-    assert(lookup != model->symbol_table.end());
+    auto& symbol_table = model->parser.symbol_table;
+    auto lookup = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
+    assert(lookup != symbol_table.occurence_to_symbol_map.end());
+    const auto& occurences = symbol_table.symbols[lookup->second].document_occurences;
 
     Model* m = new Model();
     m->is_output = true;
     console->setModel(m);
     size_t last_handled = std::numeric_limits<size_t>::max();
-    for(const auto& entry : *lookup->second){
+    for(const auto& entry : occurences){
         Line* target_line = entry.getStartLine();
         if(target_line->id != last_handled){
             last_handled = target_line->id;

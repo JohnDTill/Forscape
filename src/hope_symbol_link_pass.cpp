@@ -23,13 +23,14 @@ void SymbolTableLinker::link(size_t scope_index){
 
     const Scope& scope = symbol_table.scopes[scope_index];
 
-    if(scope.closing_function != NONE){
+    if(scope.closure != NONE){
         closures.push_back(std::unordered_map<size_t, size_t>());
         closure_size.push_back(0);
     }
 
     stack_frame.push_back(stack_size);
 
+    /*
     for(const Scope::Subscope& subscope : scope.subscopes){
         for(const Scope::Usage& usage : subscope.usages){
             Symbol& sym = symbol_table.symbols[usage.var_id];
@@ -67,15 +68,16 @@ void SymbolTableLinker::link(size_t scope_index){
 
         link(subscope.subscope_id);
     }
+    */
 
-    if(scope.closing_function != NONE){
-        ParseNode fn = scope.closing_function;
+    if(scope.closure != NONE){
+        ParseNode fn = scope.closure;
 
         ParseTree::NaryBuilder upvalue_builder = parse_tree.naryBuilder(OP_LIST);
         for(const auto& entry : closures.back()){
             size_t symbol_index = entry.first;
             const Symbol& sym = symbol_table.symbols[symbol_index];
-            ParseNode n = parse_tree.addTerminal(OP_IDENTIFIER, sym.document_occurences->front());
+            ParseNode n = parse_tree.addTerminal(OP_IDENTIFIER, sym.document_occurences.front());
 
             parse_tree.setFlag(n, entry.second);
 

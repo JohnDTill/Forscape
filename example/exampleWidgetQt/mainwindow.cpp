@@ -193,7 +193,7 @@ void MainWindow::parseTree(){
 void MainWindow::symbolTable(){
     #ifndef NDEBUG
     Typeset::Model* m = editor->getModel();
-    SymbolTreeView* view = new SymbolTreeView(m->parser.parse_tree, m->symbol_builder.symbol_table);
+    SymbolTreeView* view = new SymbolTreeView(m->parser.symbol_table);
     view->show();
     #endif
 }

@@ -72,7 +72,7 @@ std::string Model::toSerial() const {
 std::string Model::run(){
     assert(errors.empty());
 
-    interpreter.run(parser.parse_tree, symbol_builder.symbol_table);
+    interpreter.run(parser.parse_tree, parser.symbol_table);
 
     std::string str;
     str.reserve(interpreter.message_queue.size_approx());
@@ -90,7 +90,7 @@ std::string Model::run(){
 
 void Model::runThread(){
     assert(errors.empty());
-    interpreter.runThread(parser.parse_tree, symbol_builder.symbol_table);
+    interpreter.runThread(parser.parse_tree, parser.symbol_table);
 }
 
 void Model::stop(){
@@ -347,6 +347,10 @@ void Model::insert(const std::vector<Line*>& l){
     lines.insert(lines.begin() + l.front()->id, l.begin(), l.end());
 }
 
+Marker Model::begin() const noexcept{
+    return Marker(firstText(), 0);
+}
+
 #ifndef HOPE_TYPESET_HEADLESS
 void Model::calculateSizes(){
     for(Line* l : lines) l->updateSize();
@@ -502,14 +506,6 @@ void Model::clearFormatting() noexcept{
     }
 
     errors.clear();
-
-    std::unordered_set<std::vector<Typeset::Selection>*> deleted;
-    for(const auto& entry : symbol_table){
-        std::vector<Typeset::Selection>* occurences = entry.second;
-        if(deleted.insert(occurences).second)
-            delete occurences;
-    }
-    symbol_table.clear();
 }
 
 void Model::performSemanticFormatting(){
@@ -520,7 +516,6 @@ void Model::performSemanticFormatting(){
         parser.parseAll();
         if(parser.parse_tree.empty() || !errors.empty()) return;
         symbol_builder.resolveSymbols();
-        symbol_table = std::move(symbol_builder.doc_map);
     }
 }
 
