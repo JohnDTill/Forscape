@@ -1,5 +1,6 @@
 #include "hope_symbol_table.h"
 
+#include <algorithm>
 #include <cassert>
 #include <unordered_set>
 
