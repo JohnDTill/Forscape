@@ -21,7 +21,7 @@ struct Marker{
     Marker(const Marker&) noexcept = default;
     Marker(Marker&&) noexcept = default;
     Marker& operator=(const Marker&) noexcept = default;
-
+    bool precedesInclusive(const Marker& other) const noexcept;
     void setToFrontOf(Text* t) noexcept;
     void setToBackOf(Text* t) noexcept;
     void setToFrontOf(const Phrase* p) noexcept;
@@ -54,9 +54,11 @@ struct Marker{
     std::string_view strLeft() const noexcept;
     bool compareRight(const Marker& other) const noexcept;
     bool compareLeft(const Marker& other) const noexcept;
+    Model* getModel() const noexcept;
 
     #ifndef HOPE_TYPESET_HEADLESS
     double x() const;
+    double y() const noexcept;
     void setToPointOf(Text* t, double setpoint);
     void setToLeftOf(Text* t, double setpoint);
     #endif

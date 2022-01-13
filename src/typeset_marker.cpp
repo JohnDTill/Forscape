@@ -22,6 +22,12 @@ Marker::Marker(const Model* model) noexcept
 Marker::Marker(Text* t, size_t i) noexcept
     : text(t), index(i) {}
 
+bool Marker::precedesInclusive(const Marker& other) const noexcept{
+    assert(getModel() == other.getModel());
+    if(text != other.text) return text->precedes(other.text);
+    else return index <= other.index;
+}
+
 void Marker::setToFrontOf(Text* t) noexcept{
     text = t;
     index = 0;
@@ -197,9 +203,17 @@ bool Marker::compareLeft(const Marker& other) const noexcept{
     return strLeft() == other.strLeft();
 }
 
+Model* Marker::getModel() const noexcept{
+    return text->getModel();
+}
+
 #ifndef HOPE_TYPESET_HEADLESS
 double Marker::x() const{
     return text->xGlobal(index);
+}
+
+double Marker::y() const noexcept{
+    return text->y;
 }
 
 void Marker::setToPointOf(Text* t, double setpoint) {

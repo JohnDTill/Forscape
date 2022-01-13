@@ -41,6 +41,8 @@ struct Symbol{
            bool is_const);
 
     size_t closureIndex() const noexcept;
+
+    const Typeset::Selection& sel() const noexcept;
 };
 
 enum UsageType{
@@ -134,6 +136,10 @@ public:
         for_name.str = "for";
         big_name.str = "big symbol";
     }
+
+    size_t containingScope(const Typeset::Marker& m) const noexcept;
+
+    std::vector<Typeset::Selection> getSuggestions(const Typeset::Marker& loc) const;
 
     Typeset::Selection global() noexcept{
         return Typeset::Selection(&global_name, 0, 6);

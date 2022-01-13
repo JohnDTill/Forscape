@@ -52,6 +52,7 @@ class Text {
         size_t leadingSpaces() const noexcept;
         std::string_view checkKeyword(size_t iR) const noexcept;
         void findCaseInsensitive(const std::string& target, std::vector<Selection>& hits);
+        bool precedes(Text* other) const noexcept;
 
         std::string str;
         size_t id;

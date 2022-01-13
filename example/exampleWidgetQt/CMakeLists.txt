@@ -60,6 +60,61 @@ set(GEN_FILES
     ${GEN}/unicode_superscripts.h
 )
 
+set(CONSTRUCT_FILES
+    ${CONSTRUCT}/typeset_accentbar.cpp
+    ${CONSTRUCT}/typeset_accentbar.h
+    ${CONSTRUCT}/typeset_accentbreve.h
+    ${CONSTRUCT}/typeset_accentdddot.h
+    ${CONSTRUCT}/typeset_accentddot.h
+    ${CONSTRUCT}/typeset_accentdot.h
+    ${CONSTRUCT}/typeset_accenthat.h
+    ${CONSTRUCT}/typeset_accenttilde.h
+    ${CONSTRUCT}/typeset_bigcoprod0.h
+    ${CONSTRUCT}/typeset_bigcoprod1.h
+    ${CONSTRUCT}/typeset_bigcoprod2.h
+    ${CONSTRUCT}/typeset_bigintersection0.h
+    ${CONSTRUCT}/typeset_bigintersection1.h
+    ${CONSTRUCT}/typeset_bigintersection2.h
+    ${CONSTRUCT}/typeset_bigprod0.h
+    ${CONSTRUCT}/typeset_bigprod1.h
+    ${CONSTRUCT}/typeset_bigprod2.h
+    ${CONSTRUCT}/typeset_bigsum0.h
+    ${CONSTRUCT}/typeset_bigsum1.h
+    ${CONSTRUCT}/typeset_bigsum2.h
+    ${CONSTRUCT}/typeset_bigunion0.h
+    ${CONSTRUCT}/typeset_bigunion1.h
+    ${CONSTRUCT}/typeset_bigunion2.h
+    ${CONSTRUCT}/typeset_binomial.h
+    ${CONSTRUCT}/typeset_cases.h
+    ${CONSTRUCT}/typeset_doubleintegral0.h
+    ${CONSTRUCT}/typeset_doubleintegral1.h
+    ${CONSTRUCT}/typeset_doubleintegralconv0.h
+    ${CONSTRUCT}/typeset_doubleintegralconv1.h
+    ${CONSTRUCT}/typeset_dualscript.h
+    ${CONSTRUCT}/typeset_fraction.h
+    ${CONSTRUCT}/typeset_inf.h
+    ${CONSTRUCT}/typeset_integral0.h
+    ${CONSTRUCT}/typeset_integral1.h
+    ${CONSTRUCT}/typeset_integral2.h
+    ${CONSTRUCT}/typeset_integralconv0.h
+    ${CONSTRUCT}/typeset_integralconv1.h
+    ${CONSTRUCT}/typeset_integralconv2.h
+    ${CONSTRUCT}/typeset_limit.h
+    ${CONSTRUCT}/typeset_markerlink.h
+    ${CONSTRUCT}/typeset_matrix.h
+    ${CONSTRUCT}/typeset_max.h
+    ${CONSTRUCT}/typeset_min.h
+    ${CONSTRUCT}/typeset_nrt.h
+    ${CONSTRUCT}/typeset_sqrt.h
+    ${CONSTRUCT}/typeset_subscript.h
+    ${CONSTRUCT}/typeset_sup.h
+    ${CONSTRUCT}/typeset_superscript.h
+    ${CONSTRUCT}/typeset_tripleintegral0.h
+    ${CONSTRUCT}/typeset_tripleintegral1.h
+    ${CONSTRUCT}/typeset_tripleintegralconv0.h
+    ${CONSTRUCT}/typeset_tripleintegralconv1.h
+)
+
 set(PROJECT_SOURCES
     main.cpp
     mainwindow.cpp
@@ -74,6 +129,7 @@ set(PROJECT_SOURCES
     symboltreeview.cpp
     symboltreeview.h
     ${GEN_FILES}
+    ${CONSTRUCT_FILES}
     ${SRC}/hope_error.cpp
     ${INCLUDE}/hope_error.h
     ${SRC}/hope_interpreter.cpp

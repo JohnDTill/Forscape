@@ -114,6 +114,15 @@ bool Selection::operator!=(const Selection& other) const noexcept{
     return !(*this == other);
 }
 
+bool Selection::startsWith(const Selection& other) const noexcept{
+    if(textSpan() < other.textSpan()) return false;
+
+    //DO THIS - improve implementation
+    if(!isTextSelection() || !other.isTextSelection()) return false;
+    auto prefix = other.strView();
+    return strView().substr(0, prefix.size()) == prefix;
+}
+
 size_t Selection::hashDesignedForIdentifiers() const noexcept{
     //The vast majority of identifiers will be text selections.
     if(isTextSelection()) return std::hash<std::string_view>()(strView());
@@ -256,6 +265,10 @@ Phrase* Selection::phrase() const noexcept{
 size_t Selection::characterSpan() const noexcept{
     assert(isTextSelection());
     return iR-iL;
+}
+
+size_t Selection::textSpan() const noexcept{
+    return right.index - left.index;
 }
 
 std::string Selection::selectedTextSelection() const {

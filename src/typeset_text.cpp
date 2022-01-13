@@ -93,6 +93,14 @@ void Text::findCaseInsensitive(const std::string& target, std::vector<Selection>
     }
 }
 
+bool Text::precedes(Text* other) const noexcept{
+    assert(getModel() == other->getModel());
+
+    //DO THIS - this is not entirely accurate
+    if(y != other->y) return y < other->y;
+    else return x < other->x;
+}
+
 Phrase* Text::getParent() const noexcept{
     //Not great to expose this detail, but I can't find a better way, and it should be stable
     return parent;

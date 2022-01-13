@@ -1,6 +1,7 @@
 #include "hope_symbol_table.h"
 
 #include <cassert>
+#include <unordered_set>
 
 namespace Hope {
 
@@ -22,6 +23,10 @@ size_t Symbol::closureIndex() const noexcept{
     return declaration_closure_depth - 1;
 }
 
+const Typeset::Selection& Symbol::sel() const noexcept{
+    return document_occurences.front();
+}
+
 Usage::Usage()
     : var_id(NONE), type(DECLARE) {}
 
@@ -37,6 +42,44 @@ bool ScopeSegment::isStartOfScope() const noexcept{
 
 bool ScopeSegment::isEndOfScope() const noexcept{
     return next == NONE;
+}
+
+size_t SymbolTable::containingScope(const Typeset::Marker& m) const noexcept{
+    auto search_fn = [](const ScopeSegment& scope, const Typeset::Marker& m){
+        return scope.start.precedesInclusive(m);
+    };
+    auto lookup = std::lower_bound(scopes.begin(), scopes.end(), m, search_fn);
+    return lookup - scopes.begin() - (lookup != scopes.begin());
+}
+
+std::vector<Typeset::Selection> SymbolTable::getSuggestions(const Typeset::Marker& loc) const{
+    //DO THIS - probably best to choose the data structure for search then filter results,
+    //          instead of populating by iterating over symbol table
+
+    std::unordered_set<Typeset::Selection> suggestions;
+
+    Typeset::Marker left = loc;
+    left.decrementToPrevWord();
+    Typeset::Selection typed(left, loc);
+
+    for(size_t i = containingScope(loc); i != NONE; i = scopes[i].parent){
+        for(size_t j = i; j != NONE; j = scopes[j].prev){
+            const ScopeSegment& seg = scopes[j];
+            for(size_t k = seg.sym_begin; k < seg.sym_end; k++){
+                const Typeset::Selection& candidate = symbols[k].sel();
+                if(candidate.startsWith(typed)) suggestions.insert(candidate);
+            }
+        }
+    }
+
+    std::vector<Typeset::Selection> sorted;
+    sorted.insert(sorted.end(), suggestions.begin(), suggestions.end());
+    auto comp = [](const Typeset::Selection& a, const Typeset::Selection& b){
+        return a.str() < b.str();
+    };
+    std::sort(sorted.begin(), sorted.end(), comp);
+
+    return sorted;
 }
 
 ScopeId SymbolTable::head(ScopeId index) const noexcept{

@@ -591,6 +591,13 @@ void View::keyPressEvent(QKeyEvent* e){
             controller.keystroke(str);
             updateXSetpoint();
             restartCursorBlink();
+
+            auto suggestions = model->symbol_builder.symbol_table.getSuggestions(controller.active);
+
+            std::cout << "---suggestions---\n";
+            for(const auto& suggestion : suggestions)
+                std::cout << suggestion.str() << '\n';
+            std::cout.flush();
     }
 
     ensureCursorVisible();

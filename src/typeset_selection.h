@@ -29,6 +29,7 @@ public:
     std::string_view strView() const noexcept;
     bool operator==(const Selection& other) const noexcept;
     bool operator!=(const Selection& other) const noexcept;
+    bool startsWith(const Selection& other) const noexcept;
     size_t hashDesignedForIdentifiers() const noexcept;
     bool isTopLevel() const noexcept;
     bool isNested() const noexcept;
@@ -84,6 +85,7 @@ public:
 private:
     Phrase* phrase() const noexcept;
     size_t characterSpan() const noexcept;
+    size_t textSpan() const noexcept;
     std::string selectedTextSelection() const;
     std::string selectedPhrase() const;
     std::string selectedLines() const;
