@@ -3,7 +3,7 @@
 
 #include "hope_error.h"
 #include "hope_parse_tree.h"
-#include "hope_scope_tree.h"
+#include "hope_symbol_table.h"
 #include <unordered_map>
 #include <vector>
 

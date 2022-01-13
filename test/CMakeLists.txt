@@ -68,8 +68,6 @@ set(SOURCES
     ${SRC}/hope_parser.h
     ${SRC}/hope_scanner.cpp
     ${SRC}/hope_scanner.h
-    ${SRC}/hope_scope_tree.cpp
-    ${SRC}/hope_scope_tree.h
     ${INCLUDE}/hope_serial.h
     ${INCLUDE}/hope_serial_unicode.h
     ${SRC}/hope_stack.cpp
@@ -78,6 +76,8 @@ set(SOURCES
     ${SRC}/hope_symbol_build_pass.h
     ${SRC}/hope_symbol_link_pass.cpp
     ${SRC}/hope_symbol_link_pass.h
+    ${SRC}/hope_symbol_table.cpp
+    ${SRC}/hope_symbol_table.h
     ${SRC}/hope_unicode.h
     ${INCLUDE}/typeset_command.h
     ${SRC}/typeset_construct.cpp
