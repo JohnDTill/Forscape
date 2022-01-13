@@ -68,6 +68,8 @@ set(SOURCES
     ${SRC}/hope_parser.h
     ${SRC}/hope_scanner.cpp
     ${SRC}/hope_scanner.h
+    ${SRC}/hope_scope_tree.cpp
+    ${SRC}/hope_scope_tree.h
     ${INCLUDE}/hope_serial.h
     ${INCLUDE}/hope_serial_unicode.h
     ${SRC}/hope_stack.cpp

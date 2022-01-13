@@ -28,7 +28,6 @@ void Parser::parseAll(){
 
 void Parser::reset() noexcept{
     parse_tree.clear();
-    symbol_table.reset(model->begin());
     open_symbols.clear();
     close_symbols.clear();
     index = 0;
@@ -75,7 +74,6 @@ ParseNode Parser::statement() noexcept{
 
 ParseNode Parser::ifStatement() noexcept{
     Typeset::Marker left = lMark();
-    Typeset::Selection if_sel = selection();
     advance();
     Typeset::Marker cond_l = lMark();
     if(!match(LEFTPAREN)) return error(EXPECT_LPAREN);
@@ -83,13 +81,9 @@ ParseNode Parser::ifStatement() noexcept{
     Typeset::Marker cond_r = rMark();
     if(!match(RIGHTPAREN)) return error(EXPECT_RPAREN);
     registerGrouping(cond_l, cond_r);
-    symbol_table.addScope(if_sel, rMarkPrev());
     ParseNode body = blockStatement();
-    symbol_table.closeScope(rMarkPrev());
     if(match(ELSE)){
-        symbol_table.addScope(selectionPrev(), lMark());
         size_t el = blockStatement();
-        symbol_table.closeScope(rMarkPrev());
         Typeset::Marker right = rMark();
         Typeset::Selection c(left, right);
 
@@ -104,7 +98,6 @@ ParseNode Parser::ifStatement() noexcept{
 
 Parser::ParseNode Parser::whileStatement() noexcept{
     Typeset::Marker left = lMark();
-    Typeset::Selection while_sel = selection();
     advance();
     Typeset::Marker l_cond = lMark();
     if(!match(LEFTPAREN)) return error(EXPECT_LPAREN);
@@ -112,10 +105,8 @@ Parser::ParseNode Parser::whileStatement() noexcept{
     Typeset::Marker r_cond = rMark();
     if(!match(RIGHTPAREN)) return error(EXPECT_RPAREN);
     registerGrouping(l_cond, r_cond);
-    symbol_table.addScope(while_sel, lMark());
     loops++;
     ParseNode body = blockStatement();
-    symbol_table.closeScope(rMarkPrev());
     loops--;
     Typeset::Marker right = rMark();
     Typeset::Selection c(left, right);
@@ -125,10 +116,8 @@ Parser::ParseNode Parser::whileStatement() noexcept{
 
 Parser::ParseNode Parser::forStatement() noexcept{
     Typeset::Marker left = lMark();
-    Typeset::Selection for_sel = selection();
     advance();
     Typeset::Marker l_cond = lMark();
-    symbol_table.addScope(for_sel, lMark());
     if(!match(LEFTPAREN)) return error(EXPECT_LPAREN);
     ParseNode initializer = peek(SEMICOLON) ?
                             makeTerminalNode(OP_BLOCK) :
@@ -147,7 +136,6 @@ Parser::ParseNode Parser::forStatement() noexcept{
     loops++;
     ParseNode body = blockStatement();
     loops--;
-    symbol_table.closeScope(rMarkPrev());
     Typeset::Marker right = rMark();
     Typeset::Selection c(left, right);
 
@@ -226,8 +214,6 @@ Parser::ParseNode Parser::algStatement() noexcept{
 
     ParseNode captures = match(LEFTBRACE) ? captureList() : ParseTree::EMPTY;
 
-    symbol_table.addScope(parse_tree.getSelection(id), lMark(), captures);
-
     ParseNode referenced_upvalues = ParseTree::EMPTY;
 
     consume(LEFTPAREN);
@@ -237,7 +223,6 @@ Parser::ParseNode Parser::algStatement() noexcept{
     std::swap(loops_backup, loops);
     ParseNode body = blockStatement();
     std::swap(loops_backup, loops);
-    symbol_table.closeScope(rMarkPrev());
 
     return parse_tree.addPentary(
                 OP_ALGORITHM,
@@ -766,14 +751,11 @@ ParseNode Parser::call(const ParseNode& id) noexcept{
 Parser::ParseNode Parser::lambda(const ParseNode& id) noexcept{
     advance();
 
-    symbol_table.addScope(Typeset::Selection(&symbol_table.lambda, 0, 6), lMark());
-
     Typeset::Marker left = parse_tree.getLeft(id);
 
     ParseNode capture_list = ParseTree::EMPTY;
     ParseNode referenced_upvalues = ParseTree::EMPTY;
     ParseNode e = expression();
-    symbol_table.closeScope(rMarkPrev());
     if(!noErrors()) return e;
 
     Typeset::Selection sel(left, rMarkPrev());

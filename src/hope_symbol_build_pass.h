@@ -17,6 +17,7 @@ class SymbolTableBuilder{
 public:
     SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model);
     void resolveSymbols();
+    SymbolTable symbol_table;
 
 private:
     static const std::unordered_map<std::string_view, Op> predef;
@@ -31,22 +32,21 @@ private:
     size_t lexical_depth = GLOBAL_DEPTH;
     size_t closure_depth = 0;
     ParseTree& parse_tree;
-    SymbolTable& symbol_table;
 
     void reset() noexcept;
-    Scope& activeScope() noexcept;
-    void addScope();
-    void closeScope() noexcept;
+    ScopeSegment& activeScope() noexcept;
+    void addScope(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode closure = NONE);
+    void closeScope(const Typeset::Marker& end) noexcept;
     Symbol& lastSymbolOfId(const Id& identifier) noexcept;
     Symbol& lastSymbolOfId(IdIndex index) noexcept;
     size_t lastSymbolIndexOfId(IdIndex index) const noexcept;
     Symbol& lastDefinedSymbol() noexcept;
     Symbol* symbolFromSelection(const Typeset::Selection& sel) noexcept;
     size_t symbolIndexFromSelection(const Typeset::Selection& sel) const noexcept;
-    void increaseLexicalDepth();
-    void decreaseLexicalDepth();
-    void increaseClosureDepth(ParseNode pn);
-    void decreaseClosureDepth();
+    void increaseLexicalDepth(const Typeset::Selection& name, const Typeset::Marker& begin);
+    void decreaseLexicalDepth(const Typeset::Marker& end);
+    void increaseClosureDepth(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode pn);
+    void decreaseClosureDepth(const Typeset::Marker& end);
     size_t getUpvalueIndex(IdIndex value, size_t closure_index);
     void finalize(size_t sym_id);
     void makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable);
@@ -60,10 +60,10 @@ private:
     bool resolvePotentialIdSub(ParseNode pn);
     void resolveReference(ParseNode pn);
     void resolveReference(ParseNode pn, const Typeset::Selection& c, size_t sym_id);
-    void resolveConditional1(ParseNode pn);
+    void resolveConditional1(const Typeset::Selection& name, ParseNode pn);
     void resolveConditional2(ParseNode pn);
     void resolveFor(ParseNode pn);
-    void resolveBody(ParseNode pn);
+    void resolveBody(const Typeset::Selection& name, ParseNode pn);
     void resolveBlock(ParseNode pn);
     void resolveDefault(ParseNode pn);
     void resolveLambda(ParseNode pn);

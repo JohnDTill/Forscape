@@ -275,7 +275,7 @@ void View::resolveRightClick(double x, double y, int xScreen, int yScreen){
 
     Controller c = model->idAt(x, y);
     if(c.hasSelection()){
-        auto& symbol_table = model->parser.symbol_table;
+        auto& symbol_table = model->symbol_builder.symbol_table;
         auto lookup = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
         append(renameAction, "Rename", rename, true, lookup!=symbol_table.occurence_to_symbol_map.end())
         append(gotoDefAction, "Go to definition", goToDef, true, lookup!=symbol_table.occurence_to_symbol_map.end())
@@ -437,7 +437,7 @@ void View::updateHighlighting(){
 
     Controller c = model->idAt(controller.active);
     if(c.hasSelection()){
-        auto& symbol_table = model->parser.symbol_table;
+        auto& symbol_table = model->symbol_builder.symbol_table;
         auto it = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
         if(it != symbol_table.occurence_to_symbol_map.end()){
             highlighted_words = &symbol_table.symbols[it->second].document_occurences;
@@ -844,7 +844,7 @@ void View::rename(){
     std::string name = text.toStdString();
 
     Controller c = model->idAt(controller.active);
-    auto& symbol_table = model->parser.symbol_table;
+    auto& symbol_table = model->symbol_builder.symbol_table;
     auto lookup = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
     assert(c.hasSelection());
 
@@ -855,7 +855,7 @@ void View::goToDef(){
     Controller c = model->idAt(controller.active);
     assert(c.hasSelection());
 
-    auto& symbol_table = model->parser.symbol_table;
+    auto& symbol_table = model->symbol_builder.symbol_table;
     auto lookup = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
     assert(lookup != symbol_table.occurence_to_symbol_map.end());
 
@@ -871,7 +871,7 @@ void View::findUsages(){
     Controller c = model->idAt(controller.active);
     assert(c.hasSelection());
 
-    auto& symbol_table = model->parser.symbol_table;
+    auto& symbol_table = model->symbol_builder.symbol_table;
     auto lookup = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
     assert(lookup != symbol_table.occurence_to_symbol_map.end());
     const auto& occurences = symbol_table.symbols[lookup->second].document_occurences;

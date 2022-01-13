@@ -6,6 +6,10 @@
 #include <limits>
 #include <vector>
 
+#ifndef NDEBUG
+#include <iostream>
+#endif
+
 namespace Hope {
 
 namespace Code {
@@ -28,89 +32,146 @@ struct Symbol{
     bool is_ewise_index = false;
     bool is_captured = false;
 
-    Symbol()
-        : declaration_lexical_depth(0) {}
+    Symbol();
 
     Symbol(size_t pn,
            Typeset::Selection first_occurence,
            size_t lexical_depth,
            size_t closure_depth,
-           bool is_const)
-        : declaration_lexical_depth(lexical_depth),
-          declaration_closure_depth(closure_depth),
-          flag(pn),
-          is_const(is_const) {
-        document_occurences.push_back(first_occurence);
-    }
+           bool is_const);
 
-    size_t closureIndex() const noexcept{
-        assert(declaration_closure_depth != 0);
-        return declaration_closure_depth - 1;
-    }
+    size_t closureIndex() const noexcept;
 };
 
-struct Scope{
+enum UsageType{
+    DECLARE,
+    REASSIGN,
+    READ,
+};
+
+struct Usage{
+    size_t var_id;
+    ParseNode pn;
+    UsageType type;
+
+    Usage();
+
+    Usage(size_t var_id, ParseNode pn, UsageType type);
+};
+
+struct ScopeSegment{
     Typeset::Selection name;
     Typeset::Marker start;
     ParseNode closure;
     ScopeId parent;
     ScopeId prev;
     SymbolId sym_begin;
+    size_t usage_begin;
     ScopeId next = NONE;
     SymbolId sym_end = NONE;
+    size_t usage_end = NONE;
 
-    Scope(
+    ScopeSegment(
         const Typeset::Selection& name,
-        const Typeset::Marker& doc_start,
+        const Typeset::Marker& start,
         ParseNode closure,
         ScopeId parent,
         ScopeId prev,
-        SymbolId sym_begin
-        )
-        : name(name), start(doc_start), closure(closure), parent(parent), prev(prev), sym_begin(sym_begin) {}
+        SymbolId sym_begin,
+        size_t usage_begin
+        );
+
+    bool isStartOfScope() const noexcept;
+    bool isEndOfScope() const noexcept;
 };
 
 class SymbolTable{
 public:
-    Typeset::Text global_name;
-    Typeset::Text lambda;
+    #ifndef NDEBUG
+    void log() const{
+        std::cout << "Num scopes: " << std::to_string(scopes.size()) << std::endl;
+        size_t depth = 0;
+        for(const ScopeSegment& scope : scopes){
+            if(scope.isStartOfScope()){
+                for(size_t i = 0; i < depth; i++) std::cout << "    ";
+                std::cout << scope.name.str() << " - " << std::to_string(scope.sym_end - scope.sym_begin) << '\n';
+            }
+            for(size_t i = scope.sym_begin; i < scope.sym_end; i++){
+                for(size_t j = 0; j <= depth; j++) std::cout << "    ";
+                std::cout << symbols[i].document_occurences.front().str() << '\n';
+            }
+
+            if(scope.isEndOfScope()) depth--;
+            else depth++;
+        }
+
+        std::cout << std::endl;
+    }
+    #endif
 
 public:
-    std::vector<Scope> scopes;
+    std::vector<ScopeSegment> scopes;
     std::vector<Symbol> symbols;
     std::unordered_map<Typeset::Marker, SymbolId> occurence_to_symbol_map;
+    std::vector<Usage> usages;
+
+    Typeset::Text global_name;
+    Typeset::Text lambda_name;
+    Typeset::Text elementwise_asgn;
+    Typeset::Text if_name;
+    Typeset::Text else_name;
+    Typeset::Text while_name;
+    Typeset::Text for_name;
+    Typeset::Text big_name;
 
     SymbolTable(){
         global_name.str = "Global";
-        global_name.str = "lambda";
+        lambda_name.str = "lambda";
+        elementwise_asgn.str = "element-wise assignment";
+        if_name.str = "if";
+        else_name.str = "else";
+        while_name.str = "while";
+        for_name.str = "for";
+        big_name.str = "big symbol";
     }
 
-    void reset(const Typeset::Marker& doc_start) noexcept{
-        scopes.clear();
-        symbols.clear();
-        occurence_to_symbol_map.clear();
-
-        Typeset::Selection sel(&global_name, 0, 6);
-        scopes.push_back(Scope(sel, doc_start, NONE, NONE, NONE, symbols.size()));
+    Typeset::Selection global() noexcept{
+        return Typeset::Selection(&global_name, 0, 6);
     }
 
-    void addScope(const Typeset::Selection& name, const Typeset::Marker& start, ParseNode closure = NONE){
-        Scope& active_scope = scopes.back();
-        active_scope.sym_end = symbols.size();
-        scopes.push_back(Scope(name, start, closure, scopes.size()-1, NONE, symbols.size()));
+    Typeset::Selection lambda() noexcept{
+        return Typeset::Selection(&lambda_name, 0, 6);
     }
 
-    void closeScope(const Typeset::Marker& stop){
-        Scope& closed_scope = scopes.back();
-        closed_scope.sym_end = symbols.size();
-        closed_scope.next = NONE;
-
-        size_t prev_index = closed_scope.parent;
-        Scope& prev_scope = scopes[prev_index];
-        prev_scope.next = scopes.size();
-
-        scopes.push_back(Scope(prev_scope.name, stop, prev_scope.closure, prev_scope.parent, prev_index, symbols.size()));
+    Typeset::Selection ewise() noexcept{
+        return Typeset::Selection(&elementwise_asgn, 0, elementwise_asgn.size());
     }
+
+    Typeset::Selection ifSel() noexcept{
+        return Typeset::Selection(&if_name, 0, 2);
+    }
+
+    Typeset::Selection elseSel() noexcept{
+        return Typeset::Selection(&else_name, 0, 4);
+    }
+
+    Typeset::Selection whileSel() noexcept{
+        return Typeset::Selection(&while_name, 0, 5);
+    }
+
+    Typeset::Selection forSel() noexcept{
+        return Typeset::Selection(&for_name, 0, 3);
+    }
+
+    Typeset::Selection big() noexcept{
+        return Typeset::Selection(&big_name, 0, big_name.size());
+    }
+
+    ScopeId head(ScopeId index) const noexcept;
+    void reset(const Typeset::Marker& doc_start) noexcept;
+    void addScope(const Typeset::Selection& name, const Typeset::Marker& start, ParseNode closure = NONE);
+    void closeScope(const Typeset::Marker& stop);
+    void finalize();
 };
 
 }
