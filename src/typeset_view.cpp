@@ -75,6 +75,12 @@ View::View()
     else show_cursor = false;
     setMouseTracking(true);
 
+    recommender->hide();
+    connect(recommender, SIGNAL(itemActivated(QListWidgetItem*)), this, SLOT(takeRecommendation(QListWidgetItem*)));
+    connect(recommender, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(takeRecommendation(QListWidgetItem*)));
+    recommender->setMinimumHeight(0);
+    recommender->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::MinimumExpanding);
+
     v_scroll = new QScrollBar(Qt::Vertical, this);
     h_scroll = new QScrollBar(Qt::Horizontal, this);
     connect(v_scroll, SIGNAL(valueChanged(int)), this, SLOT(repaint()));
@@ -408,6 +414,14 @@ double View::yModel(double yScreen) const noexcept{
     return yScreen/zoom - yOrigin();
 }
 
+double View::xScreen(double xModel) const noexcept{
+    return zoom*(xModel + xOrigin());
+}
+
+double View::yScreen(double yModel) const noexcept{
+    return zoom*(yModel + yOrigin());
+}
+
 void View::zoomIn() noexcept{
     zoom = std::min(ZOOM_MAX, zoom*ZOOM_DELTA);
 }
@@ -510,10 +524,35 @@ double View::getLineboxWidth() const noexcept{
     return show_line_nums*LINEBOX_WIDTH;
 }
 
+void View::recommend(){
+    auto suggestions = model->symbol_builder.symbol_table.getSuggestions(controller.active);
+    if(suggestions.empty()){
+        recommender->hide();
+    }else{
+        recommender->clear();
+        for(const auto& suggestion : suggestions)
+            recommender->addItem(QString::fromStdString(suggestion.str()));
+
+        double x = xScreen(controller.xActive());
+        double y = yScreen(controller.active.y() + controller.active.text->height());
+        recommender->move(x, y);
+        int full_list_height = recommender->sizeHintForRow(0) * recommender->count() + 2*recommender->frameWidth();
+        static constexpr int MAX_HEIGHT = 250;
+        if(full_list_height <= MAX_HEIGHT){
+            recommender->setFixedHeight(full_list_height);
+        }else{
+            recommender->setFixedHeight(MAX_HEIGHT);
+        }
+        recommender->show();
+    }
+}
+
 void View::keyPressEvent(QKeyEvent* e){
     constexpr int Ctrl = Qt::ControlModifier;
     constexpr int Shift = Qt::ShiftModifier;
     constexpr int CtrlShift = Qt::ControlModifier | Qt::ShiftModifier;
+
+    bool hide_recommender = true;
 
     switch (e->key() | e->modifiers()) {
         case Qt::Key_Z|Ctrl: if(allow_write) model->undo(controller); updateXSetpoint(); restartCursorBlink(); break;
@@ -522,7 +561,15 @@ void View::keyPressEvent(QKeyEvent* e){
         case Qt::Key_Left: controller.moveToPrevChar(); updateXSetpoint(); restartCursorBlink(); update(); break;
         case Qt::Key_Right|Ctrl: controller.moveToNextWord(); updateXSetpoint(); restartCursorBlink(); update(); break;
         case Qt::Key_Left|Ctrl: controller.moveToPrevWord(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_Down: controller.moveToNextLine(x_setpoint); restartCursorBlink(); update(); break;
+        case Qt::Key_Down:
+            if(recommender->isVisible()){
+                recommender->setCurrentRow(0);
+                recommender->setFocus();
+                hide_recommender = false;
+            }else{
+                controller.moveToNextLine(x_setpoint); restartCursorBlink(); update();
+            }
+            break;
         case Qt::Key_Up: controller.moveToPrevLine(x_setpoint); restartCursorBlink(); update(); break;
         case Qt::Key_Home: controller.moveToStartOfLine(); updateXSetpoint(); restartCursorBlink(); update(); break;
         case Qt::Key_End: controller.moveToEndOfLine(); updateXSetpoint(); restartCursorBlink(); update(); break;
@@ -570,7 +617,7 @@ void View::keyPressEvent(QKeyEvent* e){
             restartCursorBlink();
         }
             break;
-        case Qt::Key_Return: if(allow_write) controller.newline(); updateXSetpoint(); restartCursorBlink(); break;
+        case Qt::Key_Return: if(focusWidget() != this) return; if(allow_write) controller.newline(); updateXSetpoint(); restartCursorBlink(); break;
         case Qt::Key_Return|Shift: if(allow_write) controller.newline(); updateXSetpoint(); restartCursorBlink(); break;
         case Qt::Key_Tab: if(allow_write) controller.tab(); break; //DO THIS - tab dependent on scope
         #ifdef __EMSCRIPTEN__
@@ -591,35 +638,40 @@ void View::keyPressEvent(QKeyEvent* e){
             controller.keystroke(str);
             updateXSetpoint();
             restartCursorBlink();
-
-            auto suggestions = model->symbol_builder.symbol_table.getSuggestions(controller.active);
-
-            std::cout << "---suggestions---\n";
-            for(const auto& suggestion : suggestions)
-                std::cout << suggestion.str() << '\n';
-            std::cout.flush();
+            recommend();
+            hide_recommender = false;
     }
 
+    if(hide_recommender && recommender->isVisible()){
+        recommender->hide();
+        setFocus();
+    }
     ensureCursorVisible();
     updateHighlighting();
     repaint();
 }
 
 void View::mousePressEvent(QMouseEvent* e){
+    if(focusWidget() != this) return;
+
     double click_x = xModel(e->x());
     double click_y = yModel(e->y());
     bool right_click = e->buttons() == Qt::RightButton;
     bool shift_held = e->modifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
 
     dispatchClick(click_x, click_y, e->globalX(), e->globalY(), right_click, shift_held);
+
+    recommender->hide();
 }
 
 void View::mouseDoubleClickEvent(QMouseEvent* e){
     dispatchDoubleClick(xModel(e->x()), yModel(e->y()));
+    recommender->hide();
 }
 
 void View::mouseReleaseEvent(QMouseEvent* e){
     dispatchRelease(xModel(e->x()), yModel(e->y()));
+    recommender->hide();
 }
 
 void View::mouseMoveEvent(QMouseEvent* e){
@@ -631,6 +683,7 @@ void View::wheelEvent(QWheelEvent* e){
     bool up = e->angleDelta().y() > 0;
 
     dispatchMousewheel(ctrl_held, up);
+    recommender->hide();
 }
 
 void View::focusInEvent(QFocusEvent*){
@@ -654,6 +707,8 @@ void View::focusOutEvent(QFocusEvent* e){
         stopCursorBlink();
         assert(mouse_hold_state == Hover);
     }
+
+    if(focusWidget() != recommender) recommender->hide();
 }
 
 void View::resizeEvent(QResizeEvent* e){
@@ -899,6 +954,15 @@ void View::findUsages(){
     }
 
     console->updateModel();
+}
+
+void View::takeRecommendation(QListWidgetItem* item){
+    controller.selectPrevWord();
+    controller.insertSerial(item->text().toStdString());
+    updateXSetpoint();
+    updateModel();
+    recommender->hide();
+    QTimer::singleShot(0, this, SLOT(setFocus())); //Delay 1 cycle to avoid whatever input activated item
 }
 
 void View::paintEvent(QPaintEvent* event){

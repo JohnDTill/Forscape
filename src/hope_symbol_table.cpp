@@ -68,7 +68,7 @@ std::vector<Typeset::Selection> SymbolTable::getSuggestions(const Typeset::Marke
             const ScopeSegment& seg = scopes[j];
             for(size_t k = seg.sym_begin; k < seg.sym_end; k++){
                 const Typeset::Selection& candidate = symbols[k].sel();
-                if(candidate.startsWith(typed)) suggestions.insert(candidate);
+                if(candidate.startsWith(typed) && candidate.right != loc) suggestions.insert(candidate);
             }
         }
     }
