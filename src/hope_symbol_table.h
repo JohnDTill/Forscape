@@ -26,6 +26,7 @@ struct Symbol{
     size_t declaration_closure_depth;
     size_t flag;
     size_t shadowed_var;
+    size_t comment;
     bool is_const;
     bool is_used = false;
     bool is_reassigned = false; //Used to determine if parameters are constant

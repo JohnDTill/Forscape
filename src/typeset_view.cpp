@@ -372,9 +372,16 @@ void View::resolveTooltip(double x, double y) noexcept{
     Controller c = model->idAt(x, y);
     if(c.hasSelection()){
         setToolTipDuration(std::numeric_limits<int>::max());
-        setToolTip("<b>Identifier</b><div style=\"color:blue\">" + QString::fromStdString(c.selectedText()));
+        const auto& symbol_table = model->symbol_builder.symbol_table;
+        auto lookup = symbol_table.occurence_to_symbol_map.find(c.anchor);
+        assert(lookup != symbol_table.occurence_to_symbol_map.end());
+        const auto& symbol = symbol_table.symbols[lookup->second];
+        QString tooltip = "<b>" + QString::fromStdString(c.selectedText()) + "</b>";
+        if(symbol.comment != Hope::Code::ParseTree::EMPTY)
+            tooltip += "<div style=\"color:green\">" + QString::fromStdString(symbol_table.parse_tree.str(symbol.comment));
+        setToolTip(tooltip);
         return;
-    }    
+    }
 
     clearTooltip();
 }
@@ -954,6 +961,7 @@ void View::findUsages(){
 void View::takeRecommendation(QListWidgetItem* item){
     controller.selectPrevWord();
     controller.insertSerial(item->text().toStdString());
+    model->performSemanticFormatting();
     updateXSetpoint();
     updateModel();
     recommender->hide();

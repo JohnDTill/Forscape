@@ -4,8 +4,8 @@
 
 SymbolTreeView::SymbolTreeView(const Hope::Code::SymbolTable& symbol_table){
     setWindowTitle("Symbol Table");
-    constexpr size_t N_FIELDS = 3;
-    setHeaderLabels({"Name", "Type", "Const"});
+    constexpr size_t N_FIELDS = 4;
+    setHeaderLabels({"Name", "Type", "Const", "Description"});
     constexpr int NAME_COLUMN = 0;
 
     QTreeWidgetItem* last_added_item = nullptr;
@@ -42,6 +42,10 @@ SymbolTreeView::SymbolTreeView(const Hope::Code::SymbolTable& symbol_table){
             const auto& symbol = symbol_table.symbols[i];
             item->setText(NAME_COLUMN, QString::fromStdString(symbol_table.getSel(i).str()));
             item->setText(2, QChar('0' + symbol.is_const));
+            if(symbol.comment != Hope::Code::ParseTree::EMPTY){
+                std::string desc = symbol_table.parse_tree.str(symbol.comment);
+                item->setText(3, QString::fromStdString(desc));
+            }
             last_added_item = item;
         }
 

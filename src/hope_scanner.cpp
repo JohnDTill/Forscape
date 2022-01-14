@@ -76,9 +76,9 @@ TokenType Scanner::forwardSlash() noexcept{
 TokenType Scanner::comment() noexcept{
     controller->selectEndOfLine();
     controller->formatComment();
-    controller->deselect();
+    controller->anchor.index += 2;
 
-    return scanToken();
+    return createToken(COMMENT);
 }
 
 TokenType Scanner::createToken(TokenType type) noexcept{

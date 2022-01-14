@@ -28,7 +28,7 @@ inline bool testScanner(){
     bool passing = true;
 
     std::string input = "print(\"Hello world!\") //This is a test";
-    std::vector<TokenType> expected = {PRINT, LEFTPAREN, STRING, RIGHTPAREN, ENDOFFILE};
+    std::vector<TokenType> expected = {PRINT, LEFTPAREN, STRING, RIGHTPAREN, COMMENT, ENDOFFILE};
     Typeset::Model* model = Typeset::Model::fromSerial(input);
     Code::Scanner* scanner = new Scanner(model);
     scanner->scanAll();
