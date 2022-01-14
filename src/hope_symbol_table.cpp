@@ -12,10 +12,11 @@ namespace Code {
 Symbol::Symbol()
     : declaration_lexical_depth(0) {}
 
-Symbol::Symbol(size_t pn, size_t lexical_depth, size_t closure_depth, bool is_const)
+Symbol::Symbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed_var, bool is_const)
     : declaration_lexical_depth(lexical_depth),
       declaration_closure_depth(closure_depth),
       flag(pn),
+      shadowed_var(shadowed_var),
       is_const(is_const) {}
 
 size_t Symbol::closureIndex() const noexcept{
@@ -44,9 +45,9 @@ bool ScopeSegment::isEndOfScope() const noexcept{
     return next == NONE;
 }
 
-void SymbolTable::addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, bool is_const){
+void SymbolTable::addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed, bool is_const){
     occurence_to_symbol_map[parse_tree.getLeft(pn)] = symbols.size();
-    symbols.push_back(Symbol(pn, lexical_depth, closure_depth, is_const));
+    symbols.push_back(Symbol(pn, lexical_depth, closure_depth, shadowed, is_const));
 }
 
 void SymbolTable::addOccurence(const Typeset::Marker& left, size_t sym_index){

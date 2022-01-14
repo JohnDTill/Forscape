@@ -63,9 +63,7 @@ void SymbolTableBuilder::resolveSymbols(){
 
 void SymbolTableBuilder::reset() noexcept{
     symbol_table.reset(parse_tree.getLeft(parse_tree.root));
-    ids.clear();
     map.clear();
-    symbol_id_index.clear();
     lexical_depth = GLOBAL_DEPTH;
     closure_depth = 0;
     active_scope_id = 0;
@@ -102,30 +100,13 @@ void SymbolTableBuilder::closeScope(const Typeset::Marker& end) noexcept{
     }
 }
 
-Symbol& SymbolTableBuilder::lastSymbolOfId(const Id& identifier) noexcept{
-    return symbol_table.symbols[identifier.back()];
-}
-
-Symbol& SymbolTableBuilder::lastSymbolOfId(IdIndex index) noexcept{
-    return lastSymbolOfId(ids[index]);
-}
-
-size_t SymbolTableBuilder::lastSymbolIndexOfId(IdIndex index) const noexcept{
-    return ids[index].back();
-}
-
 Symbol& SymbolTableBuilder::lastDefinedSymbol() noexcept{
     return symbol_table.symbols.back();
 }
 
-Symbol* SymbolTableBuilder::symbolFromSelection(const Typeset::Selection& sel) noexcept{
-    auto lookup = map.find(sel);
-    return lookup == map.end() ? nullptr : &lastSymbolOfId(lookup->second);
-}
-
 size_t SymbolTableBuilder::symbolIndexFromSelection(const Typeset::Selection& sel) const noexcept{
     auto lookup = map.find(sel);
-    return lookup == map.end() ? NONE : lastSymbolIndexOfId(lookup->second);
+    return lookup == map.end() ? NONE : lookup->second;
 }
 
 void SymbolTableBuilder::resolveStmt(ParseNode pn){
@@ -207,7 +188,7 @@ void SymbolTableBuilder::resolveAssignmentId(ParseNode pn){
     if(lookup == map.end()){
         makeEntry(c, id, false);
     }else{
-        size_t sym_index = lastSymbolIndexOfId(lookup->second);
+        size_t sym_index = lookup->second;
         Symbol& sym = symbol_table.symbols[sym_index];
         sym.is_reassigned = true;
         parse_tree.setOp(pn, OP_REASSIGN);
@@ -318,8 +299,7 @@ void SymbolTableBuilder::resolveReference(ParseNode pn){
         }
         errors.push_back(Error(c, BAD_READ));
     }else{
-        size_t id_index = lookup->second;
-        resolveReference(pn, c, ids[id_index].back());
+        resolveReference(pn, c, lookup->second);
     }
 }
 
@@ -407,16 +387,16 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
         parse_tree.setStackOffset(name, NONE); //This is a kludge to tell the interpreter it's not a prototype
     }else{
         size_t index = lookup->second;
-        Id& id = ids[index];
-        Symbol& sym = lastSymbolOfId(id);
+        Symbol& sym = symbol_table.symbols[index];
         if(sym.declaration_lexical_depth == lexical_depth){
             if(sym.is_prototype){
-                resolveReference(name, sel, id.back());
+                resolveReference(name, sel, index);
             }else{
                 errors.push_back(Error(sel, TYPE_ERROR));
             }
         }else if(sym.declaration_lexical_depth == lexical_depth){
-            appendEntry(index, name, true);
+            appendEntry(index, name, lookup->second, true);
+            lookup->second = symbol_table.symbols.size()-1;
         }
 
         sym.is_prototype = false;
@@ -532,13 +512,14 @@ bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable){
         makeEntry(c, pn, immutable);
     }else{
         size_t index = lookup->second;
-        Symbol& sym = lastSymbolOfId(index);
+        Symbol& sym = symbol_table.symbols[index];
         if(sym.declaration_lexical_depth == lexical_depth){
             bool CONST = sym.is_const;
             errors.push_back(Error(c, CONST ? REASSIGN_CONSTANT : MUTABLE_CONST_ASSIGN));
             return false;
         }else{
-            appendEntry(index, pn, immutable);
+            appendEntry(index, pn, lookup->second, immutable);
+            lookup->second = symbol_table.symbols.size()-1;
         }
     }
 
@@ -556,19 +537,15 @@ void SymbolTableBuilder::decreaseLexicalDepth(const Typeset::Marker& end){
     for(size_t curr = symbol_table.head(active_scope_id-1); curr < active_scope_id; curr = symbol_table.scopes[curr].next){
         ScopeSegment& scope = symbol_table.scopes[curr];
         for(size_t sym_id = scope.sym_begin; sym_id < scope.sym_end; sym_id++){
-            Id& id = ids[symbol_id_index[sym_id]];
             Symbol& sym = symbol_table.symbols[sym_id];
             assert(sym.declaration_lexical_depth == lexical_depth);
 
             finalize(sym_id);
 
-            if(id.size() == 1){
+            if(sym.shadowed_var == NONE){
                 map.erase(sym.sel(parse_tree)); //Much better to erase empty entries than check for them
-                Id().swap(id); //Frees memory allocated to id_info
-                //The entry in id_infos is left stranded, but that's
-                //preferable to re-indexing.
             }else{
-                id.pop_back();
+                map[sym.sel(parse_tree)] = sym.shadowed_var;
             }
         }
     }
@@ -595,20 +572,14 @@ void SymbolTableBuilder::finalize(size_t sym_id){
 
 void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable){
     assert(map.find(c) == map.end());
-    size_t index = ids.size();
-    symbol_id_index.push_back(index);
-    ids.push_back(Id({symbol_table.symbols.size()}));
+    map[c] = symbol_table.symbols.size();
     symbol_table.usages.push_back(Usage(symbol_table.symbols.size(), pn, DECLARE));
-    symbol_table.addSymbol(pn, lexical_depth, closure_depth, immutable);
-    map[c] = index;
+    symbol_table.addSymbol(pn, lexical_depth, closure_depth, NONE, immutable);
 }
 
-void SymbolTableBuilder::appendEntry(size_t index, ParseNode pn, bool immutable){
-    symbol_id_index.push_back(index);
-    Id& id_info = ids[index];
-    id_info.push_back(symbol_table.symbols.size());
+void SymbolTableBuilder::appendEntry(size_t index, ParseNode pn, size_t prev, bool immutable){
     symbol_table.usages.push_back(Usage(symbol_table.symbols.size(), pn, DECLARE));
-    symbol_table.addSymbol(pn, lexical_depth, closure_depth, immutable);
+    symbol_table.addSymbol(pn, lexical_depth, closure_depth, prev, immutable);
 }
 
 }

@@ -25,12 +25,8 @@ public:
 
 private:
     static const std::unordered_map<std::string_view, Op> predef;
-    std::vector<size_t> symbol_id_index;
     size_t active_scope_id;
-    typedef std::vector<size_t> Id;
-    typedef size_t IdIndex;
-    std::vector<Id> ids; //DO THIS - eliminate nested vector
-    std::unordered_map<Typeset::Selection, IdIndex> map;
+    std::unordered_map<Typeset::Selection, SymbolId> map;
     static constexpr size_t GLOBAL_DEPTH = 0;
     size_t lexical_depth = GLOBAL_DEPTH;
     size_t closure_depth = 0;
@@ -39,20 +35,15 @@ private:
     ScopeSegment& activeScope() noexcept;
     void addScope(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode closure = NONE);
     void closeScope(const Typeset::Marker& end) noexcept;
-    Symbol& lastSymbolOfId(const Id& identifier) noexcept;
-    Symbol& lastSymbolOfId(IdIndex index) noexcept;
-    size_t lastSymbolIndexOfId(IdIndex index) const noexcept;
     Symbol& lastDefinedSymbol() noexcept;
-    Symbol* symbolFromSelection(const Typeset::Selection& sel) noexcept;
     size_t symbolIndexFromSelection(const Typeset::Selection& sel) const noexcept;
     void increaseLexicalDepth(const Typeset::Selection& name, const Typeset::Marker& begin);
     void decreaseLexicalDepth(const Typeset::Marker& end);
     void increaseClosureDepth(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode pn);
     void decreaseClosureDepth(const Typeset::Marker& end);
-    size_t getUpvalueIndex(IdIndex value, size_t closure_index);
     void finalize(size_t sym_id);
     void makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable);
-    void appendEntry(size_t index, ParseNode pn, bool immutable);
+    void appendEntry(size_t index, ParseNode pn, size_t prev, bool immutable);
     void resolveStmt(ParseNode pn);
     void resolveExpr(ParseNode pn);
     void resolveEquality(ParseNode pn);
@@ -77,9 +68,9 @@ private:
 
     struct Closure {
         ParseNode fn;
-        std::unordered_map<IdIndex, size_t> upvalue_indices;
+        std::unordered_map<size_t, size_t> upvalue_indices;
         size_t num_upvalues = 0;
-        std::vector<std::pair<IdIndex, bool> > upvalues;
+        std::vector<std::pair<size_t, bool> > upvalues;
         std::vector<size_t> captured;
 
         Closure(){}

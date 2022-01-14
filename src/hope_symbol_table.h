@@ -25,6 +25,7 @@ struct Symbol{
     size_t declaration_lexical_depth;
     size_t declaration_closure_depth;
     size_t flag;
+    size_t shadowed_var;
     bool is_const;
     bool is_used = false;
     bool is_reassigned = false; //Used to determine if parameters are constant
@@ -38,6 +39,7 @@ struct Symbol{
     Symbol(size_t pn,
            size_t lexical_depth,
            size_t closure_depth,
+           size_t shadowed_var,
            bool is_const);
 
     size_t closureIndex() const noexcept;
@@ -116,7 +118,7 @@ public:
         big_name.str = "big symbol";
     }
 
-    void addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, bool is_const);
+    void addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed, bool is_const);
     void addOccurence(const Typeset::Marker& left, size_t sym_index);
     size_t containingScope(const Typeset::Marker& m) const noexcept;
     std::vector<Typeset::Selection> getSuggestions(const Typeset::Marker& loc) const;
