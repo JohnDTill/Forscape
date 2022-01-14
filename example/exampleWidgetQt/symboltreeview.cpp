@@ -40,7 +40,7 @@ SymbolTreeView::SymbolTreeView(const Hope::Code::SymbolTable& symbol_table){
                         new QTreeWidgetItem(this) :
                         new QTreeWidgetItem(items.top());
             const auto& symbol = symbol_table.symbols[i];
-            item->setText(NAME_COLUMN, QString::fromStdString(symbol.document_occurences.front().str()));
+            item->setText(NAME_COLUMN, QString::fromStdString(symbol_table.getSel(i).str()));
             item->setText(2, QChar('0' + symbol.is_const));
             last_added_item = item;
         }

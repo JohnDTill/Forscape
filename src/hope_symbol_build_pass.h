@@ -14,6 +14,10 @@ namespace Code {
 class ParseTree;
 
 class SymbolTableBuilder{
+private:
+    std::vector<Error>& errors;
+    ParseTree& parse_tree;
+
 public:
     SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model);
     void resolveSymbols();
@@ -27,11 +31,9 @@ private:
     typedef size_t IdIndex;
     std::vector<Id> ids; //DO THIS - eliminate nested vector
     std::unordered_map<Typeset::Selection, IdIndex> map;
-    std::vector<Error>& errors;
     static constexpr size_t GLOBAL_DEPTH = 0;
     size_t lexical_depth = GLOBAL_DEPTH;
     size_t closure_depth = 0;
-    ParseTree& parse_tree;
 
     void reset() noexcept;
     ScopeSegment& activeScope() noexcept;
@@ -50,7 +52,7 @@ private:
     size_t getUpvalueIndex(IdIndex value, size_t closure_index);
     void finalize(size_t sym_id);
     void makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable);
-    void appendEntry(size_t index, const Typeset::Selection& c, ParseNode pn, bool immutable);
+    void appendEntry(size_t index, ParseNode pn, bool immutable);
     void resolveStmt(ParseNode pn);
     void resolveExpr(ParseNode pn);
     void resolveEquality(ParseNode pn);

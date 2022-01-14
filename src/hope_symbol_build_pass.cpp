@@ -26,7 +26,7 @@ const std::unordered_map<std::string_view, Op> SymbolTableBuilder::predef {
 };
 
 SymbolTableBuilder::SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model)
-    : errors(model->errors), parse_tree(parse_tree) {}
+    : errors(model->errors), parse_tree(parse_tree), symbol_table(parse_tree) {}
 
 void SymbolTableBuilder::resolveSymbols(){
     reset();
@@ -40,10 +40,24 @@ void SymbolTableBuilder::resolveSymbols(){
     for(size_t curr = 0; curr != NONE; curr = symbol_table.scopes[curr].next){
         ScopeSegment& scope = symbol_table.scopes[curr];
         for(size_t sym_id = scope.sym_begin; sym_id < scope.sym_end; sym_id++){
-            Symbol& sym = symbol_table.symbols[sym_id];
-            assert(sym.declaration_lexical_depth == lexical_depth);
+            assert(symbol_table.symbols[sym_id].declaration_lexical_depth == lexical_depth);
             finalize(sym_id);
         }
+    }
+
+    for(const Usage& usage : symbol_table.usages){
+        const Symbol& sym = symbol_table.symbols[usage.var_id];
+
+        SemanticType fmt = SEM_ID;
+        if(sym.is_ewise_index){
+            fmt = SEM_ID_EWISE_INDEX;
+        }else if(sym.is_closure_nested | sym.is_captured){
+            fmt = SEM_LINK;
+        }else if(!sym.is_const){
+            fmt = SEM_ID_FUN_IMPURE;
+        }
+
+        parse_tree.getSelection(usage.pn).format(fmt);
     }
 }
 
@@ -315,7 +329,7 @@ void SymbolTableBuilder::resolveReference(ParseNode pn, const Typeset::Selection
     parse_tree.setFlag(pn, sym.flag);
     sym.is_used = true;
 
-    sym.document_occurences.push_back(c);
+    symbol_table.addOccurence(parse_tree.getLeft(pn), sym_id);
     sym.is_closure_nested |= sym.declaration_closure_depth && (closure_depth != sym.declaration_closure_depth);
 
     symbol_table.usages.push_back(Usage(sym_id, pn, READ));
@@ -402,7 +416,7 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
                 errors.push_back(Error(sel, TYPE_ERROR));
             }
         }else if(sym.declaration_lexical_depth == lexical_depth){
-            appendEntry(index, sel, name, true);
+            appendEntry(index, name, true);
         }
 
         sym.is_prototype = false;
@@ -524,7 +538,7 @@ bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable){
             errors.push_back(Error(c, CONST ? REASSIGN_CONSTANT : MUTABLE_CONST_ASSIGN));
             return false;
         }else{
-            appendEntry(index, c, pn, immutable);
+            appendEntry(index, pn, immutable);
         }
     }
 
@@ -549,7 +563,7 @@ void SymbolTableBuilder::decreaseLexicalDepth(const Typeset::Marker& end){
             finalize(sym_id);
 
             if(id.size() == 1){
-                map.erase(sym.document_occurences.front()); //Much better to erase empty entries than check for them
+                map.erase(sym.sel(parse_tree)); //Much better to erase empty entries than check for them
                 Id().swap(id); //Frees memory allocated to id_info
                 //The entry in id_infos is left stranded, but that's
                 //preferable to re-indexing.
@@ -574,26 +588,9 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end){
 }
 
 void SymbolTableBuilder::finalize(size_t sym_id){
-    const Symbol& sym = symbol_table.symbols[sym_id];
-    assert(sym.declaration_lexical_depth == lexical_depth);
-
-    SemanticType fmt = SEM_ID;
-    if(sym.is_ewise_index){
-        fmt = SEM_ID_EWISE_INDEX;
-    }else if(sym.is_closure_nested | sym.is_captured){
-        fmt = SEM_LINK;
-    }else if(!sym.is_const){
-        fmt = SEM_ID_FUN_IMPURE;
-    }
-
-    for(const Typeset::Selection& c : sym.document_occurences){
-        symbol_table.occurence_to_symbol_map[c.left] = sym_id;
-        c.format(fmt);
-    }
-
     //DO THIS - you need warnings, some errors are pedantic
-    if(!sym.is_used)
-        errors.push_back(Error(sym.document_occurences.back(), UNUSED_VAR));
+    if(!symbol_table.symbols[sym_id].is_used)
+        errors.push_back(Error(symbol_table.getSel(sym_id), UNUSED_VAR));
 }
 
 void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable){
@@ -602,16 +599,16 @@ void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bo
     symbol_id_index.push_back(index);
     ids.push_back(Id({symbol_table.symbols.size()}));
     symbol_table.usages.push_back(Usage(symbol_table.symbols.size(), pn, DECLARE));
-    symbol_table.symbols.push_back(Symbol(pn, c, lexical_depth, closure_depth, immutable));
+    symbol_table.addSymbol(pn, lexical_depth, closure_depth, immutable);
     map[c] = index;
 }
 
-void SymbolTableBuilder::appendEntry(size_t index, const Typeset::Selection& c, ParseNode pn, bool immutable){
+void SymbolTableBuilder::appendEntry(size_t index, ParseNode pn, bool immutable){
     symbol_id_index.push_back(index);
     Id& id_info = ids[index];
     id_info.push_back(symbol_table.symbols.size());
     symbol_table.usages.push_back(Usage(symbol_table.symbols.size(), pn, DECLARE));
-    symbol_table.symbols.push_back(Symbol(pn, c, lexical_depth, closure_depth, immutable));
+    symbol_table.addSymbol(pn, lexical_depth, closure_depth, immutable);
 }
 
 }

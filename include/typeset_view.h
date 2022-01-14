@@ -52,7 +52,7 @@ public:
     QColor background_color = Qt::white;
     QColor disabled_background_color = QPalette().color(QPalette::Disabled, QPalette::Window);
 
-    std::vector<Typeset::Selection>* highlighted_words = nullptr;
+    std::vector<Typeset::Selection> highlighted_words;
     View* console = nullptr;
 
 private:

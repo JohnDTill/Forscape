@@ -1,5 +1,6 @@
 #include "hope_symbol_table.h"
 
+#include "hope_parse_tree.h"
 #include <algorithm>
 #include <cassert>
 #include <unordered_set>
@@ -11,21 +12,19 @@ namespace Code {
 Symbol::Symbol()
     : declaration_lexical_depth(0) {}
 
-Symbol::Symbol(size_t pn, Typeset::Selection first_occurence, size_t lexical_depth, size_t closure_depth, bool is_const)
+Symbol::Symbol(size_t pn, size_t lexical_depth, size_t closure_depth, bool is_const)
     : declaration_lexical_depth(lexical_depth),
       declaration_closure_depth(closure_depth),
       flag(pn),
-      is_const(is_const) {
-    document_occurences.push_back(first_occurence);
-}
+      is_const(is_const) {}
 
 size_t Symbol::closureIndex() const noexcept{
     assert(declaration_closure_depth != 0);
     return declaration_closure_depth - 1;
 }
 
-const Typeset::Selection& Symbol::sel() const noexcept{
-    return document_occurences.front();
+const Typeset::Selection& Symbol::sel(const ParseTree& parse_tree) const noexcept{
+    return parse_tree.getSelection(flag);
 }
 
 Usage::Usage()
@@ -43,6 +42,15 @@ bool ScopeSegment::isStartOfScope() const noexcept{
 
 bool ScopeSegment::isEndOfScope() const noexcept{
     return next == NONE;
+}
+
+void SymbolTable::addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, bool is_const){
+    occurence_to_symbol_map[parse_tree.getLeft(pn)] = symbols.size();
+    symbols.push_back(Symbol(pn, lexical_depth, closure_depth, is_const));
+}
+
+void SymbolTable::addOccurence(const Typeset::Marker& left, size_t sym_index){
+    occurence_to_symbol_map[left] = sym_index;
 }
 
 size_t SymbolTable::containingScope(const Typeset::Marker& m) const noexcept{
@@ -67,7 +75,7 @@ std::vector<Typeset::Selection> SymbolTable::getSuggestions(const Typeset::Marke
         for(size_t j = i; j != NONE; j = scopes[j].prev){
             const ScopeSegment& seg = scopes[j];
             for(size_t k = seg.sym_begin; k < seg.sym_end; k++){
-                const Typeset::Selection& candidate = symbols[k].sel();
+                const Typeset::Selection& candidate = parse_tree.getSelection(symbols[k].flag);
                 if(candidate.startsWith(typed) && candidate.right != loc) suggestions.insert(candidate);
             }
         }
@@ -81,6 +89,21 @@ std::vector<Typeset::Selection> SymbolTable::getSuggestions(const Typeset::Marke
     std::sort(sorted.begin(), sorted.end(), comp);
 
     return sorted;
+}
+
+const Typeset::Selection& SymbolTable::getSel(size_t sym_index) const noexcept{
+    return symbols[sym_index].sel(parse_tree);
+}
+
+void SymbolTable::findHighlightedWords(const Typeset::Marker& loc, std::vector<Typeset::Selection>& found) const{
+    found.clear();
+    auto lookup = occurence_to_symbol_map.find(loc);
+    if(lookup == occurence_to_symbol_map.end()) return;
+
+    size_t sym_id = lookup->second;
+    for(const Usage& usage : usages)
+        if(usage.var_id == sym_id)
+            found.push_back(parse_tree.getSelection(usage.pn));
 }
 
 ScopeId SymbolTable::head(ScopeId index) const noexcept{

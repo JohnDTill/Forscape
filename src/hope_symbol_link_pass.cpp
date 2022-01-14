@@ -67,7 +67,7 @@ void SymbolTableLinker::link(){
                 for(const auto& entry : closures.back()){
                     size_t symbol_index = entry.first;
                     const Symbol& sym = symbol_table.symbols[symbol_index];
-                    ParseNode n = parse_tree.addTerminal(OP_IDENTIFIER, sym.document_occurences.front());
+                    ParseNode n = parse_tree.addTerminal(OP_IDENTIFIER, sym.sel(parse_tree));
 
                     parse_tree.setFlag(n, entry.second);
 

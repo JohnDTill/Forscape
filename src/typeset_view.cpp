@@ -118,7 +118,7 @@ Model* View::getModel() const noexcept{
 
 void View::setModel(Model* m, bool owned){
     if(model_owned) delete model;
-    highlighted_words = nullptr;
+    highlighted_words.clear();
     model_owned = owned;
     model = m;
     controller = Controller(model);
@@ -447,15 +447,12 @@ void View::stopCursorBlink(){
 }
 
 void View::updateHighlighting(){
-    highlighted_words = nullptr;
+    highlighted_words.clear();
 
     Controller c = model->idAt(controller.active);
     if(c.hasSelection()){
         auto& symbol_table = model->symbol_builder.symbol_table;
-        auto it = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
-        if(it != symbol_table.occurence_to_symbol_map.end()){
-            highlighted_words = &symbol_table.symbols[it->second].document_occurences;
-        }
+        symbol_table.findHighlightedWords(c.getAnchor(), highlighted_words);
     }
 }
 
@@ -765,10 +762,8 @@ void View::drawModel(double xL, double yT, double xR, double yB){
     for(const Code::Error& e : model->errors)
         e.selection.paintError(painter);
 
-    if(highlighted_words){
-        for(const Selection& c : *highlighted_words)
-            c.paintHighlight(painter);
-    }
+    for(const Selection& c : highlighted_words)
+        c.paintHighlight(painter);
 
     const Typeset::Marker& cursor = getController().active;
 
@@ -906,11 +901,12 @@ void View::rename(){
     std::string name = text.toStdString();
 
     Controller c = model->idAt(controller.active);
-    auto& symbol_table = model->symbol_builder.symbol_table;
-    auto lookup = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
     assert(c.hasSelection());
 
-    rename(symbol_table.symbols[lookup->second].document_occurences, name);
+    auto& symbol_table = model->symbol_builder.symbol_table;
+    std::vector<Typeset::Selection> occurences;
+    symbol_table.findHighlightedWords(c.getAnchor(), occurences);
+    rename(occurences, name);
 }
 
 void View::goToDef(){
@@ -921,7 +917,7 @@ void View::goToDef(){
     auto lookup = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
     assert(lookup != symbol_table.occurence_to_symbol_map.end());
 
-    controller = symbol_table.symbols[lookup->second].document_occurences.front().right;
+    controller = symbol_table.getSel(lookup->second);
     restartCursorBlink();
     ensureCursorVisible();
     repaint();
@@ -934,9 +930,8 @@ void View::findUsages(){
     assert(c.hasSelection());
 
     auto& symbol_table = model->symbol_builder.symbol_table;
-    auto lookup = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
-    assert(lookup != symbol_table.occurence_to_symbol_map.end());
-    const auto& occurences = symbol_table.symbols[lookup->second].document_occurences;
+    std::vector<Typeset::Selection> occurences;
+    symbol_table.findHighlightedWords(c.getAnchor(), occurences);
 
     Model* m = new Model();
     m->is_output = true;

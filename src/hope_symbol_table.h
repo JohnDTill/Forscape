@@ -14,13 +14,14 @@ namespace Hope {
 
 namespace Code {
 
+class ParseTree;
+
 static constexpr size_t NONE = std::numeric_limits<size_t>::max();
 typedef size_t ParseNode;
 typedef size_t ScopeId;
 typedef size_t SymbolId;
 
 struct Symbol{
-    std::vector<Typeset::Selection> document_occurences; //DO THIS - eliminate nested vector
     size_t declaration_lexical_depth;
     size_t declaration_closure_depth;
     size_t flag;
@@ -35,14 +36,13 @@ struct Symbol{
     Symbol();
 
     Symbol(size_t pn,
-           Typeset::Selection first_occurence,
            size_t lexical_depth,
            size_t closure_depth,
            bool is_const);
 
     size_t closureIndex() const noexcept;
 
-    const Typeset::Selection& sel() const noexcept;
+    const Typeset::Selection& sel(const ParseTree& parse_tree) const noexcept;
 };
 
 enum UsageType{
@@ -89,33 +89,11 @@ struct ScopeSegment{
 
 class SymbolTable{
 public:
-    #ifndef NDEBUG
-    void log() const{
-        std::cout << "Num scopes: " << std::to_string(scopes.size()) << std::endl;
-        size_t depth = 0;
-        for(const ScopeSegment& scope : scopes){
-            if(scope.isStartOfScope()){
-                for(size_t i = 0; i < depth; i++) std::cout << "    ";
-                std::cout << scope.name.str() << " - " << std::to_string(scope.sym_end - scope.sym_begin) << '\n';
-            }
-            for(size_t i = scope.sym_begin; i < scope.sym_end; i++){
-                for(size_t j = 0; j <= depth; j++) std::cout << "    ";
-                std::cout << symbols[i].document_occurences.front().str() << '\n';
-            }
-
-            if(scope.isEndOfScope()) depth--;
-            else depth++;
-        }
-
-        std::cout << std::endl;
-    }
-    #endif
-
-public:
     std::vector<ScopeSegment> scopes;
     std::vector<Symbol> symbols;
     std::unordered_map<Typeset::Marker, SymbolId> occurence_to_symbol_map;
     std::vector<Usage> usages;
+    const ParseTree& parse_tree;
 
     Typeset::Text global_name;
     Typeset::Text lambda_name;
@@ -126,7 +104,8 @@ public:
     Typeset::Text for_name;
     Typeset::Text big_name;
 
-    SymbolTable(){
+    SymbolTable(const ParseTree& parse_tree)
+        : parse_tree(parse_tree) {
         global_name.str = "Global";
         lambda_name.str = "lambda";
         elementwise_asgn.str = "element-wise assignment";
@@ -137,9 +116,12 @@ public:
         big_name.str = "big symbol";
     }
 
+    void addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, bool is_const);
+    void addOccurence(const Typeset::Marker& left, size_t sym_index);
     size_t containingScope(const Typeset::Marker& m) const noexcept;
-
     std::vector<Typeset::Selection> getSuggestions(const Typeset::Marker& loc) const;
+    const Typeset::Selection& getSel(size_t sym_index) const noexcept;
+    void findHighlightedWords(const Typeset::Marker& loc, std::vector<Typeset::Selection>& found) const;
 
     Typeset::Selection global() noexcept{
         return Typeset::Selection(&global_name, 0, 6);
