@@ -2,6 +2,7 @@
 #define HOPE_SERIAL_UNICODE_H
 
 #include "construct_codes.h"
+#include "hope_serial.h"
 #include "hope_unicode.h"
 #include "unicode_subscripts.h"
 #include "unicode_superscripts.h"

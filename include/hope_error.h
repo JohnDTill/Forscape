@@ -17,8 +17,7 @@ struct Error {
     const Typeset::Selection selection;
     const ErrorCode code;
 
-    Error(Typeset::Selection controller, ErrorCode code)
-        : selection(controller), code(code) {}
+    Error(Typeset::Selection controller, ErrorCode code);
 
     #ifndef HOPE_TYPESET_HEADLESS
     void writeTo(Typeset::Text* t, Typeset::View* caller) const;

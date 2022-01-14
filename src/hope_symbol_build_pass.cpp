@@ -26,7 +26,7 @@ const std::unordered_map<std::string_view, Op> SymbolTableBuilder::predef {
 };
 
 SymbolTableBuilder::SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model)
-    : errors(model->errors), parse_tree(parse_tree) {}
+    : errors(model->errors), parse_tree(parse_tree), symbol_table(parse_tree) {}
 
 void SymbolTableBuilder::resolveSymbols(){
     reset();
@@ -35,80 +35,91 @@ void SymbolTableBuilder::resolveSymbols(){
     for(size_t i = 0; i < parse_tree.getNumArgs(n); i++)
         resolveStmt(parse_tree.arg(n, i));
 
-    decreaseLexicalDepth();
+    symbol_table.finalize();
+
+    for(size_t curr = 0; curr != NONE; curr = symbol_table.scopes[curr].next){
+        ScopeSegment& scope = symbol_table.scopes[curr];
+        for(size_t sym_id = scope.sym_begin; sym_id < scope.sym_end; sym_id++){
+            assert(symbol_table.symbols[sym_id].declaration_lexical_depth == lexical_depth);
+            finalize(sym_id);
+        }
+    }
+
+    for(const Usage& usage : symbol_table.usages){
+        const Symbol& sym = symbol_table.symbols[usage.var_id];
+
+        SemanticType fmt = SEM_ID;
+        if(sym.is_ewise_index){
+            fmt = SEM_ID_EWISE_INDEX;
+        }else if(sym.is_closure_nested | sym.is_captured){
+            fmt = SEM_LINK;
+        }else if(!sym.is_const){
+            fmt = SEM_ID_FUN_IMPURE;
+        }
+
+        parse_tree.getSelection(usage.pn).format(fmt);
+    }
 }
 
 void SymbolTableBuilder::reset() noexcept{
-    ids.clear();
+    symbol_table.reset(parse_tree.getLeft(parse_tree.root));
     map.clear();
-    doc_map.clear();
-    symbol_table.scopes.clear();
-    symbol_table.symbols.clear();
-    symbol_id_index.clear();
     lexical_depth = GLOBAL_DEPTH;
     closure_depth = 0;
-    symbol_table.scopes.push_back(Scope(NONE, NONE));
     active_scope_id = 0;
 }
 
-Scope& SymbolTableBuilder::activeScope() noexcept{
+ScopeSegment& SymbolTableBuilder::activeScope() noexcept{
     return symbol_table.scopes[active_scope_id];
 }
 
-void SymbolTableBuilder::addScope(ParseNode closing_function){
-    activeScope().subscopes.back().subscope_id = symbol_table.scopes.size();
-    symbol_table.scopes.push_back(Scope(closing_function, active_scope_id));
-    active_scope_id = symbol_table.scopes.size()-1;
-    activeScope().subscopes.push_back(Scope::Subscope());
+void SymbolTableBuilder::addScope(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode closure){
+    symbol_table.addScope(name, begin);
+
+    size_t sze = symbol_table.symbols.size();
+    size_t n_usages = symbol_table.usages.size();
+    symbol_table.scopes[active_scope_id].sym_end = sze;
+    symbol_table.scopes[active_scope_id].usage_end = n_usages;
+    active_scope_id++;
+    symbol_table.scopes[active_scope_id].sym_begin = sze;
+    symbol_table.scopes[active_scope_id].usage_begin = n_usages;
+    symbol_table.scopes[active_scope_id].closure = closure;
 }
 
-void SymbolTableBuilder::closeScope() noexcept{
-    active_scope_id = activeScope().parent_id;
-    if(active_scope_id != NONE)
-        activeScope().subscopes.push_back(Scope::Subscope());
-}
+void SymbolTableBuilder::closeScope(const Typeset::Marker& end) noexcept{
+    symbol_table.closeScope(end);
 
-Symbol& SymbolTableBuilder::lastSymbolOfId(const Id& identifier) noexcept{
-    return symbol_table.symbols[identifier.back()];
-}
-
-Symbol& SymbolTableBuilder::lastSymbolOfId(IdIndex index) noexcept{
-    return lastSymbolOfId(ids[index]);
-}
-
-size_t SymbolTableBuilder::lastSymbolIndexOfId(IdIndex index) const noexcept{
-    return ids[index].back();
+    size_t sze = symbol_table.symbols.size();
+    size_t n_usages = symbol_table.usages.size();
+    symbol_table.scopes[active_scope_id].sym_end = sze;
+    symbol_table.scopes[active_scope_id].usage_end = n_usages;
+    active_scope_id++;
+    if(active_scope_id < symbol_table.scopes.size()){
+        symbol_table.scopes[active_scope_id].sym_begin = sze;
+        symbol_table.scopes[active_scope_id].usage_begin = n_usages;
+    }
 }
 
 Symbol& SymbolTableBuilder::lastDefinedSymbol() noexcept{
     return symbol_table.symbols.back();
 }
 
-Symbol* SymbolTableBuilder::symbolFromSelection(const Typeset::Selection& sel) noexcept{
-    auto lookup = map.find(sel);
-    return lookup == map.end() ? nullptr : &lastSymbolOfId(lookup->second);
-}
-
 size_t SymbolTableBuilder::symbolIndexFromSelection(const Typeset::Selection& sel) const noexcept{
     auto lookup = map.find(sel);
-    return lookup == map.end() ? NONE : lastSymbolIndexOfId(lookup->second);
+    return lookup == map.end() ? NONE : lookup->second;
 }
 
 void SymbolTableBuilder::resolveStmt(ParseNode pn){
     switch (parse_tree.getOp(pn)) {
-    case OP_EQUAL: resolveEquality(pn); break;
-    case OP_ASSIGN: resolveAssignment(pn); break;
-    case OP_BLOCK: resolveBlock(pn); break;
-    case OP_ALGORITHM: resolveAlgorithm(pn); break;
-    case OP_PROTOTYPE_ALG: resolvePrototype(pn); break;
-
-        case OP_WHILE:
-        case OP_IF:
-            resolveConditional1(pn); break;
-
+        case OP_EQUAL: resolveEquality(pn); break;
+        case OP_ASSIGN: resolveAssignment(pn); break;
+        case OP_BLOCK: resolveBlock(pn); break;
+        case OP_ALGORITHM: resolveAlgorithm(pn); break;
+        case OP_PROTOTYPE_ALG: resolvePrototype(pn); break;
+        case OP_WHILE: resolveConditional1(symbol_table.whileSel(), pn); break;
+        case OP_IF: resolveConditional1(symbol_table.ifSel(), pn); break;
         case OP_IF_ELSE: resolveConditional2(pn); break;
         case OP_FOR: resolveFor(pn); break;
-
         default: resolveDefault(pn);
     }
 }
@@ -177,7 +188,7 @@ void SymbolTableBuilder::resolveAssignmentId(ParseNode pn){
     if(lookup == map.end()){
         makeEntry(c, id, false);
     }else{
-        size_t sym_index = lastSymbolIndexOfId(lookup->second);
+        size_t sym_index = lookup->second;
         Symbol& sym = symbol_table.symbols[sym_index];
         sym.is_reassigned = true;
         parse_tree.setOp(pn, OP_REASSIGN);
@@ -225,7 +236,7 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
         }
 
         parse_tree.setOp(pn, OP_ELEMENTWISE_ASSIGNMENT);
-        increaseLexicalDepth();
+        increaseLexicalDepth(symbol_table.ewise(), parse_tree.getLeft(pn));
         size_t vars_start = symbol_table.symbols.size();
         for(ParseNode pn : undefined_vars){
             bool success = defineLocalScope(pn, false);
@@ -243,7 +254,7 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
             }
         }
 
-        decreaseLexicalDepth();
+        decreaseLexicalDepth(parse_tree.getRight(pn));
     }else if(!undefined_vars.empty()){
         for(ParseNode pn : undefined_vars)
             errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ_OR_SUBSCRIPT));
@@ -288,8 +299,7 @@ void SymbolTableBuilder::resolveReference(ParseNode pn){
         }
         errors.push_back(Error(c, BAD_READ));
     }else{
-        size_t id_index = lookup->second;
-        resolveReference(pn, c, ids[id_index].back());
+        resolveReference(pn, c, lookup->second);
     }
 }
 
@@ -299,36 +309,36 @@ void SymbolTableBuilder::resolveReference(ParseNode pn, const Typeset::Selection
     parse_tree.setFlag(pn, sym.flag);
     sym.is_used = true;
 
-    sym.document_occurences->push_back(c);
+    symbol_table.addOccurence(parse_tree.getLeft(pn), sym_id);
     sym.is_closure_nested |= sym.declaration_closure_depth && (closure_depth != sym.declaration_closure_depth);
 
-    activeScope().subscopes.back().usages.push_back(Scope::Usage(sym_id, pn, Scope::READ));
+    symbol_table.usages.push_back(Usage(sym_id, pn, READ));
 }
 
-void SymbolTableBuilder::resolveConditional1(ParseNode pn){
+void SymbolTableBuilder::resolveConditional1(const Typeset::Selection& name, ParseNode pn){
     resolveExpr( parse_tree.arg(pn, 0) );
-    resolveBody( parse_tree.arg(pn, 1) );
+    resolveBody( name, parse_tree.arg(pn, 1) );
 }
 
 void SymbolTableBuilder::resolveConditional2(ParseNode pn){
     resolveExpr( parse_tree.arg(pn, 0) );
-    resolveBody( parse_tree.arg(pn, 1) );
-    resolveBody( parse_tree.arg(pn, 2) );
+    resolveBody( symbol_table.ifSel(), parse_tree.arg(pn, 1) );
+    resolveBody( symbol_table.elseSel(), parse_tree.arg(pn, 2) );
 }
 
 void SymbolTableBuilder::resolveFor(ParseNode pn){
-    increaseLexicalDepth();
+    increaseLexicalDepth(symbol_table.forSel(), parse_tree.getLeft(parse_tree.arg(pn, 1)));
     resolveStmt(parse_tree.arg(pn, 0));
     resolveExpr(parse_tree.arg(pn, 1));
     resolveStmt(parse_tree.arg(pn, 2));
     resolveStmt(parse_tree.arg(pn, 3));
-    decreaseLexicalDepth();
+    decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-void SymbolTableBuilder::resolveBody(ParseNode pn){
-    increaseLexicalDepth();
+void SymbolTableBuilder::resolveBody(const Typeset::Selection& name, ParseNode pn){
+    increaseLexicalDepth(name, parse_tree.getLeft(pn));
     resolveStmt(pn);
-    decreaseLexicalDepth();
+    decreaseLexicalDepth(parse_tree.getRight(pn));
 
     switch (parse_tree.getOp(pn)) {
         case OP_EQUAL:
@@ -350,7 +360,7 @@ void SymbolTableBuilder::resolveDefault(ParseNode pn){
 }
 
 void SymbolTableBuilder::resolveLambda(ParseNode pn){
-    increaseClosureDepth(pn);
+    increaseClosureDepth(symbol_table.lambda(), parse_tree.getLeft(pn), pn);
 
     ParseNode params = parse_tree.arg(pn, 2);
     assert(parse_tree.getOp(params) == OP_LIST);
@@ -361,7 +371,7 @@ void SymbolTableBuilder::resolveLambda(ParseNode pn){
     ParseNode rhs = parse_tree.arg(pn, 3);
     resolveExpr(rhs);
 
-    decreaseClosureDepth();
+    decreaseClosureDepth(parse_tree.getRight(pn));
 }
 
 void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
@@ -377,16 +387,16 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
         parse_tree.setStackOffset(name, NONE); //This is a kludge to tell the interpreter it's not a prototype
     }else{
         size_t index = lookup->second;
-        Id& id = ids[index];
-        Symbol& sym = lastSymbolOfId(id);
+        Symbol& sym = symbol_table.symbols[index];
         if(sym.declaration_lexical_depth == lexical_depth){
             if(sym.is_prototype){
-                resolveReference(name, sel, id.back());
+                resolveReference(name, sel, index);
             }else{
                 errors.push_back(Error(sel, TYPE_ERROR));
             }
         }else if(sym.declaration_lexical_depth == lexical_depth){
-            appendEntry(index, sel, name, true);
+            appendEntry(index, name, lookup->second, true);
+            lookup->second = symbol_table.symbols.size()-1;
         }
 
         sym.is_prototype = false;
@@ -399,7 +409,7 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
         }
     }
 
-    increaseClosureDepth(pn);
+    increaseClosureDepth(parse_tree.getSelection(name), parse_tree.getLeft(body), pn);
 
     if(captured != ParseTree::EMPTY){
         size_t N = parse_tree.getNumArgs(captured);
@@ -437,7 +447,7 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
         sym.is_const = !sym.is_reassigned;
     }
 
-    decreaseClosureDepth();
+    decreaseClosureDepth(parse_tree.getRight(body));
 }
 
 void SymbolTableBuilder::resolvePrototype(ParseNode pn){
@@ -468,7 +478,7 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn){
 }
 
 void SymbolTableBuilder::resolveBig(ParseNode pn){
-    increaseLexicalDepth();
+    increaseLexicalDepth(symbol_table.big(), parse_tree.getLeft(pn));
     ParseNode assign = parse_tree.arg(pn, 0);
     if( parse_tree.getOp(assign) != OP_ASSIGN ) return;
     ParseNode id = parse_tree.lhs(assign);
@@ -481,7 +491,7 @@ void SymbolTableBuilder::resolveBig(ParseNode pn){
     resolveExpr( stop );
     resolveExpr( body );
 
-    decreaseLexicalDepth();
+    decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
 bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable){
@@ -502,100 +512,74 @@ bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable){
         makeEntry(c, pn, immutable);
     }else{
         size_t index = lookup->second;
-        Symbol& sym = lastSymbolOfId(index);
+        Symbol& sym = symbol_table.symbols[index];
         if(sym.declaration_lexical_depth == lexical_depth){
             bool CONST = sym.is_const;
             errors.push_back(Error(c, CONST ? REASSIGN_CONSTANT : MUTABLE_CONST_ASSIGN));
             return false;
         }else{
-            appendEntry(index, c, pn, immutable);
+            appendEntry(index, pn, lookup->second, immutable);
+            lookup->second = symbol_table.symbols.size()-1;
         }
     }
 
     return true;
 }
 
-void SymbolTableBuilder::increaseLexicalDepth(){
+void SymbolTableBuilder::increaseLexicalDepth(const Typeset::Selection& name, const Typeset::Marker& begin){
     lexical_depth++;
-    addScope();
+    addScope(name, begin);
 }
 
-void SymbolTableBuilder::decreaseLexicalDepth(){
-    for(const Scope::Subscope& subscope : activeScope().subscopes){
-        for(const Scope::Usage& usage : subscope.usages){
-            if(usage.type != Scope::DECLARE) continue;
-            size_t sym_id = usage.var_id;
+void SymbolTableBuilder::decreaseLexicalDepth(const Typeset::Marker& end){
+    closeScope(end);
 
-            Id& id = ids[symbol_id_index[sym_id]];
+    for(size_t curr = symbol_table.head(active_scope_id-1); curr < active_scope_id; curr = symbol_table.scopes[curr].next){
+        ScopeSegment& scope = symbol_table.scopes[curr];
+        for(size_t sym_id = scope.sym_begin; sym_id < scope.sym_end; sym_id++){
             Symbol& sym = symbol_table.symbols[sym_id];
             assert(sym.declaration_lexical_depth == lexical_depth);
 
-            finalize(sym);
+            finalize(sym_id);
 
-            if(id.size() == 1){
-                map.erase(sym.document_occurences->front()); //Much better to erase empty entries than check for them
-                Id().swap(id); //Frees memory allocated to id_info
-                //The entry in id_infos is left stranded, but that's
-                //preferable to re-indexing.
+            if(sym.shadowed_var == NONE){
+                map.erase(sym.sel(parse_tree)); //Much better to erase empty entries than check for them
             }else{
-                id.pop_back();
+                map[sym.sel(parse_tree)] = sym.shadowed_var;
             }
         }
     }
 
-    closeScope();
     lexical_depth--;
 }
 
-void SymbolTableBuilder::increaseClosureDepth(ParseNode pn){
+void SymbolTableBuilder::increaseClosureDepth(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode pn){
     closure_depth++;
     lexical_depth++;
-    addScope(pn);
+    addScope(name, begin, pn);
 }
 
-void SymbolTableBuilder::decreaseClosureDepth(){
+void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end){
     closure_depth--;
-    decreaseLexicalDepth();
+    decreaseLexicalDepth(end);
 }
 
-void SymbolTableBuilder::finalize(const Symbol& sym){
-    assert(sym.declaration_lexical_depth == lexical_depth);
-
-    SemanticType fmt = SEM_ID;
-    if(sym.is_ewise_index){
-        fmt = SEM_ID_EWISE_INDEX;
-    }else if(sym.is_closure_nested | sym.is_captured){
-        fmt = SEM_LINK;
-    }else if(!sym.is_const){
-        fmt = SEM_ID_FUN_IMPURE;
-    }
-
-    for(const Typeset::Selection& c : *sym.document_occurences){
-        doc_map[c.left] = sym.document_occurences;
-        c.format(fmt);
-    }
-
+void SymbolTableBuilder::finalize(size_t sym_id){
     //DO THIS - you need warnings, some errors are pedantic
-    if(!sym.is_used)
-        errors.push_back(Error(sym.document_occurences->back(), UNUSED_VAR));
+    if(!symbol_table.symbols[sym_id].is_used)
+        errors.push_back(Error(symbol_table.getSel(sym_id), UNUSED_VAR));
 }
 
 void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable){
     assert(map.find(c) == map.end());
-    size_t index = ids.size();
-    symbol_id_index.push_back(index);
-    ids.push_back(Id({symbol_table.symbols.size()}));
-    activeScope().subscopes.back().usages.push_back(Scope::Usage(symbol_table.symbols.size(), pn, Scope::DECLARE));
-    symbol_table.symbols.push_back(Symbol(pn, c, lexical_depth, closure_depth, immutable));
-    map[c] = index;
+    map[c] = symbol_table.symbols.size();
+    symbol_table.usages.push_back(Usage(symbol_table.symbols.size(), pn, DECLARE));
+    symbol_table.addSymbol(pn, lexical_depth, closure_depth, NONE, immutable);
 }
 
-void SymbolTableBuilder::appendEntry(size_t index, const Typeset::Selection& c, ParseNode pn, bool immutable){
-    symbol_id_index.push_back(index);
-    Id& id_info = ids[index];
-    id_info.push_back(symbol_table.symbols.size());
-    activeScope().subscopes.back().usages.push_back(Scope::Usage(symbol_table.symbols.size(), pn, Scope::DECLARE));
-    symbol_table.symbols.push_back(Symbol(pn, c, lexical_depth, closure_depth, immutable));
+void SymbolTableBuilder::appendEntry(size_t index, ParseNode pn, size_t prev, bool immutable){
+    symbol_table.usages.push_back(Usage(symbol_table.symbols.size(), pn, DECLARE));
+    symbol_table.addSymbol(pn, lexical_depth, closure_depth, prev, immutable);
 }
 
 }

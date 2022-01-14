@@ -69,6 +69,7 @@ size_t ParseTree::addTerminal(size_t type, const Typeset::Selection& c){
 
     resize(size() + FIXED_FIELDS);
     setOp(pn, type);
+    setFlag(pn, EMPTY);
     setSelection(pn, c);
     setNumArgs(pn, 0);
 
@@ -80,6 +81,7 @@ size_t ParseTree::addUnary(size_t type, const Typeset::Selection& c, size_t chil
 
     resize(size() + FIXED_FIELDS + 1);
     setOp(pn, type);
+    setFlag(pn, EMPTY);
     setSelection(pn, c);
     setNumArgs(pn, 1);
     setArg(pn, 0, child);
@@ -92,6 +94,7 @@ size_t ParseTree::addUnary(size_t type, size_t child){
 
     resize(size() + FIXED_FIELDS + 1);
     setOp(pn, type);
+    setFlag(pn, EMPTY);
     setSelection(pn, getSelection(child));
     setNumArgs(pn, 1);
     setArg(pn, 0, child);
@@ -104,6 +107,7 @@ size_t ParseTree::addLeftUnary(size_t type, const Typeset::Marker& left, size_t 
 
     resize(size() + FIXED_FIELDS + 1);
     setOp(pn, type);
+    setFlag(pn, EMPTY);
     setLeft(pn, left);
     setRight(pn, getRight(child));
     setNumArgs(pn, 1);
@@ -117,6 +121,7 @@ size_t ParseTree::addRightUnary(size_t type, const Typeset::Marker& right, size_
 
     resize(size() + FIXED_FIELDS + 1);
     setOp(pn, type);
+    setFlag(pn, EMPTY);
     setLeft(pn, getLeft(child));
     setRight(pn, right);
     setNumArgs(pn, 1);
@@ -130,6 +135,7 @@ size_t ParseTree::addBinary(size_t type, const Typeset::Selection& c, size_t lhs
 
     resize(size() + FIXED_FIELDS + 2);
     setOp(pn, type);
+    setFlag(pn, EMPTY);
     setSelection(pn, c);
     setNumArgs(pn, 2);
     setArg(pn, 0, lhs);
@@ -143,6 +149,7 @@ size_t ParseTree::addBinary(size_t type, size_t lhs, size_t rhs){
 
     resize(size() + FIXED_FIELDS + 2);
     setOp(pn, type);
+    setFlag(pn, EMPTY);
     setLeft(pn, getLeft(lhs));
     setRight(pn, getRight(rhs));
     setNumArgs(pn, 2);
@@ -157,6 +164,7 @@ size_t ParseTree::addTernary(size_t type, const Typeset::Selection& c, size_t A,
 
     resize(size() + FIXED_FIELDS + 3);
     setOp(pn, type);
+    setFlag(pn, EMPTY);
     setSelection(pn, c);
     setNumArgs(pn, 3);
     setArg(pn, 0, A);
@@ -171,6 +179,7 @@ ParseNode ParseTree::addTernary(Op type, ParseNode A, ParseNode B, ParseNode C){
 
     resize(size() + FIXED_FIELDS + 3);
     setOp(pn, type);
+    setFlag(pn, EMPTY);
     setLeft(pn, getLeft(A));
     setRight(pn, getRight(C));
     setNumArgs(pn, 3);
@@ -186,6 +195,7 @@ ParseNode ParseTree::addQuadary(Op type, ParseNode A, ParseNode B, ParseNode C, 
 
     resize(size() + FIXED_FIELDS + 4);
     setOp(pn, type);
+    setFlag(pn, EMPTY);
     setLeft(pn, getLeft(A));
     setRight(pn, getRight(D));
     setNumArgs(pn, 4);
@@ -202,6 +212,7 @@ ParseNode ParseTree::addQuadary(Op type, const Typeset::Selection &c, ParseNode 
 
     resize(size() + FIXED_FIELDS + 4);
     setOp(pn, type);
+    setFlag(pn, EMPTY);
     setSelection(pn, c);
     setNumArgs(pn, 4);
     setArg(pn, 0, A);
@@ -217,6 +228,7 @@ ParseNode ParseTree::addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, 
 
     resize(size() + FIXED_FIELDS + 5);
     setOp(pn, type);
+    setFlag(pn, EMPTY);
     setLeft(pn, getLeft(A));
     setRight(pn, getRight(E));
     setNumArgs(pn, 5);
@@ -276,6 +288,7 @@ size_t ParseTree::NaryBuilder::finalize(){
 
     tree.resize(tree.size() + FIXED_FIELDS);
     tree.setOp(pn, type);
+    tree.setFlag(pn, EMPTY);
     tree.setLeft(pn, tree.getLeft(children.front()));
     tree.setRight(pn, tree.getRight(children.back()));
     tree.setNumArgs(pn, children.size());
@@ -294,6 +307,7 @@ size_t ParseTree::NaryBuilder::finalize(const Typeset::Marker& right){
 
     tree.resize(tree.size() + FIXED_FIELDS);
     tree.setOp(pn, type);
+    tree.setFlag(pn, EMPTY);
     tree.setLeft(pn, tree.getLeft(children.front()));
     tree.setRight(pn, right);
     tree.setNumArgs(pn, children.size());
@@ -312,6 +326,7 @@ size_t ParseTree::NaryBuilder::finalize(const Typeset::Selection& c){
 
     tree.resize(tree.size() + FIXED_FIELDS);
     tree.setOp(pn, type);
+    tree.setFlag(pn, EMPTY);
     tree.setSelection(pn, c);
     tree.setNumArgs(pn, children.size());
     tree.insert(tree.end(), children.begin(), children.end());

@@ -42,6 +42,9 @@ Typeset::Model* Error::writeErrors(const std::vector<Error>& errors, Typeset::Vi
 }
 #endif
 
+Error::Error(Typeset::Selection controller, ErrorCode code)
+    : selection(controller), code(code) {}
+
 std::string Error::message() const{
     std::string msg = getMessage(code);
     if(shouldQuote(code)) msg += selection.str();

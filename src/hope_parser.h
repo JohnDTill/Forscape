@@ -93,10 +93,12 @@ private:
     void require(TokenType type) noexcept;
     void consume(TokenType type) noexcept;
     void skipNewlines() noexcept;
+    void skipNewline() noexcept;
     TokenType currentType() const noexcept;
     ParseNode makeTerminalNode(size_t type) noexcept;
     ParseNode terminalAndAdvance(size_t type) noexcept;
     const Typeset::Selection selection() const noexcept;
+    const Typeset::Selection selectionPrev() const noexcept;
     const Typeset::Marker& lMark() const noexcept;
     const Typeset::Marker& rMark() const noexcept;
     const Typeset::Marker& lMarkPrev() const noexcept;

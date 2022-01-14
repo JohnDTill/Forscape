@@ -212,9 +212,7 @@ Parser::ParseNode Parser::algStatement() noexcept{
     if(!peek(LEFTPAREN) & !peek(LEFTBRACE))
         return parse_tree.addUnary(OP_PROTOTYPE_ALG, id);
 
-    ParseNode captures = match(LEFTBRACE) ?
-                         captureList() :
-                         ParseTree::EMPTY;
+    ParseNode captures = match(LEFTBRACE) ? captureList() : ParseTree::EMPTY;
 
     ParseNode referenced_upvalues = ParseTree::EMPTY;
 
@@ -254,7 +252,9 @@ ParseNode Parser::mathStatement() noexcept{
 
 ParseNode Parser::assignment(const ParseNode& lhs) noexcept{
     advance();
-    return parse_tree.addBinary(OP_ASSIGN, lhs, expression());
+    ParseNode pn = parse_tree.addBinary(OP_ASSIGN, lhs, expression());
+    parse_tree.setFlag(lhs, match(COMMENT) ? parse_tree.addTerminal(OP_COMMENT, selectionPrev()) : ParseTree::EMPTY);
+    return pn;
 }
 
 ParseNode Parser::expression() noexcept{
@@ -270,7 +270,9 @@ ParseNode Parser::equality(const ParseNode& lhs) noexcept{
         builder.addNaryChild(expression());
     } while(peek(EQUALS));
 
-    return builder.finalize();
+    ParseNode pn = builder.finalize();
+    parse_tree.setFlag(lhs, match(COMMENT) ? parse_tree.addTerminal(OP_COMMENT, selectionPrev()) : ParseTree::EMPTY);
+    return pn;
 }
 
 Parser::ParseNode Parser::disjunction() noexcept{
@@ -1127,7 +1129,12 @@ void Parser::consume(TokenType type) noexcept{
 }
 
 void Parser::skipNewlines() noexcept{
-    while(tokens[index] == NEWLINE) index++;
+    while(tokens[index] == NEWLINE || tokens[index] == COMMENT) index++;
+}
+
+void Parser::skipNewline() noexcept{
+    if(tokens[index] == COMMENT) index+=2;
+    else if(tokens[index] == NEWLINE) index++;
 }
 
 TokenType Parser::currentType() const noexcept{
@@ -1147,6 +1154,10 @@ ParseNode Parser::terminalAndAdvance(size_t type) noexcept{
 
 const Typeset::Selection Parser::selection() const noexcept{
     return Typeset::Selection(markers[index]);
+}
+
+const Typeset::Selection Parser::selectionPrev() const noexcept{
+    return Typeset::Selection(markers[index-1]);
 }
 
 const Typeset::Marker& Parser::lMark() const noexcept{

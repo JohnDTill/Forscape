@@ -91,6 +91,7 @@ private:
     void clearRedo();
     void remove(size_t start, size_t stop) noexcept;
     void insert(const std::vector<Line*>& l);
+    Typeset::Marker begin() const noexcept;
 
     std::vector<Line*> lines;
     friend CommandLine;
@@ -101,8 +102,6 @@ private:
     friend Code::Parser;
     friend Code::SymbolTableBuilder;
     friend Code::Interpreter;
-
-    Code::IdMap symbol_table;
 
     std::vector<Command*> undo_stack;
     std::vector<Command*> redo_stack;

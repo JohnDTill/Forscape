@@ -75,6 +75,12 @@ View::View()
     else show_cursor = false;
     setMouseTracking(true);
 
+    recommender->hide();
+    connect(recommender, SIGNAL(itemActivated(QListWidgetItem*)), this, SLOT(takeRecommendation(QListWidgetItem*)));
+    connect(recommender, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(takeRecommendation(QListWidgetItem*)));
+    recommender->setMinimumHeight(0);
+    recommender->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::MinimumExpanding);
+
     v_scroll = new QScrollBar(Qt::Vertical, this);
     h_scroll = new QScrollBar(Qt::Horizontal, this);
     connect(v_scroll, SIGNAL(valueChanged(int)), this, SLOT(repaint()));
@@ -112,7 +118,7 @@ Model* View::getModel() const noexcept{
 
 void View::setModel(Model* m, bool owned){
     if(model_owned) delete model;
-    highlighted_words = nullptr;
+    highlighted_words.clear();
     model_owned = owned;
     model = m;
     controller = Controller(model);
@@ -275,10 +281,11 @@ void View::resolveRightClick(double x, double y, int xScreen, int yScreen){
 
     Controller c = model->idAt(x, y);
     if(c.hasSelection()){
-        auto lookup = model->symbol_table.find(c.getAnchor());
-        append(renameAction, "Rename", rename, true, lookup!=model->symbol_table.end())
-        append(gotoDefAction, "Go to definition", goToDef, true, lookup!=model->symbol_table.end())
-        append(gotoDefAction, "Find usages", findUsages, true, console && lookup!=model->symbol_table.end())
+        auto& symbol_table = model->symbol_builder.symbol_table;
+        auto lookup = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
+        append(renameAction, "Rename", rename, true, lookup!=symbol_table.occurence_to_symbol_map.end())
+        append(gotoDefAction, "Go to definition", goToDef, true, lookup!=symbol_table.occurence_to_symbol_map.end())
+        append(gotoDefAction, "Find usages", findUsages, true, console && lookup!=symbol_table.occurence_to_symbol_map.end())
         menu.addSeparator();
     }
 
@@ -365,9 +372,16 @@ void View::resolveTooltip(double x, double y) noexcept{
     Controller c = model->idAt(x, y);
     if(c.hasSelection()){
         setToolTipDuration(std::numeric_limits<int>::max());
-        setToolTip("<b>Identifier</b><div style=\"color:blue\">" + QString::fromStdString(c.selectedText()));
+        const auto& symbol_table = model->symbol_builder.symbol_table;
+        auto lookup = symbol_table.occurence_to_symbol_map.find(c.anchor);
+        assert(lookup != symbol_table.occurence_to_symbol_map.end());
+        const auto& symbol = symbol_table.symbols[lookup->second];
+        QString tooltip = "<b>" + QString::fromStdString(c.selectedText()) + "</b>";
+        if(symbol.comment != Hope::Code::ParseTree::EMPTY)
+            tooltip += "<div style=\"color:green\">" + QString::fromStdString(symbol_table.parse_tree.str(symbol.comment));
+        setToolTip(tooltip);
         return;
-    }    
+    }
 
     clearTooltip();
 }
@@ -407,6 +421,14 @@ double View::yModel(double yScreen) const noexcept{
     return yScreen/zoom - yOrigin();
 }
 
+double View::xScreen(double xModel) const noexcept{
+    return zoom*(xModel + xOrigin());
+}
+
+double View::yScreen(double yModel) const noexcept{
+    return zoom*(yModel + yOrigin());
+}
+
 void View::zoomIn() noexcept{
     zoom = std::min(ZOOM_MAX, zoom*ZOOM_DELTA);
 }
@@ -432,14 +454,12 @@ void View::stopCursorBlink(){
 }
 
 void View::updateHighlighting(){
-    highlighted_words = nullptr;
+    highlighted_words.clear();
 
     Controller c = model->idAt(controller.active);
     if(c.hasSelection()){
-        auto it = model->symbol_table.find(c.getAnchor());
-        if(it != model->symbol_table.end()){
-            highlighted_words = it->second;
-        }
+        auto& symbol_table = model->symbol_builder.symbol_table;
+        symbol_table.findHighlightedWords(c.getAnchor(), highlighted_words);
     }
 }
 
@@ -508,10 +528,35 @@ double View::getLineboxWidth() const noexcept{
     return show_line_nums*LINEBOX_WIDTH;
 }
 
+void View::recommend(){
+    auto suggestions = model->symbol_builder.symbol_table.getSuggestions(controller.active);
+    if(suggestions.empty()){
+        recommender->hide();
+    }else{
+        recommender->clear();
+        for(const auto& suggestion : suggestions)
+            recommender->addItem(QString::fromStdString(suggestion.str()));
+
+        double x = xScreen(controller.xActive());
+        double y = yScreen(controller.active.y() + controller.active.text->height());
+        recommender->move(x, y);
+        int full_list_height = recommender->sizeHintForRow(0) * recommender->count() + 2*recommender->frameWidth();
+        static constexpr int MAX_HEIGHT = 250;
+        if(full_list_height <= MAX_HEIGHT){
+            recommender->setFixedHeight(full_list_height);
+        }else{
+            recommender->setFixedHeight(MAX_HEIGHT);
+        }
+        recommender->show();
+    }
+}
+
 void View::keyPressEvent(QKeyEvent* e){
     constexpr int Ctrl = Qt::ControlModifier;
     constexpr int Shift = Qt::ShiftModifier;
     constexpr int CtrlShift = Qt::ControlModifier | Qt::ShiftModifier;
+
+    bool hide_recommender = true;
 
     switch (e->key() | e->modifiers()) {
         case Qt::Key_Z|Ctrl: if(allow_write) model->undo(controller); updateXSetpoint(); restartCursorBlink(); break;
@@ -520,7 +565,15 @@ void View::keyPressEvent(QKeyEvent* e){
         case Qt::Key_Left: controller.moveToPrevChar(); updateXSetpoint(); restartCursorBlink(); update(); break;
         case Qt::Key_Right|Ctrl: controller.moveToNextWord(); updateXSetpoint(); restartCursorBlink(); update(); break;
         case Qt::Key_Left|Ctrl: controller.moveToPrevWord(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_Down: controller.moveToNextLine(x_setpoint); restartCursorBlink(); update(); break;
+        case Qt::Key_Down:
+            if(recommender->isVisible()){
+                recommender->setCurrentRow(0);
+                recommender->setFocus();
+                hide_recommender = false;
+            }else{
+                controller.moveToNextLine(x_setpoint); restartCursorBlink(); update();
+            }
+            break;
         case Qt::Key_Up: controller.moveToPrevLine(x_setpoint); restartCursorBlink(); update(); break;
         case Qt::Key_Home: controller.moveToStartOfLine(); updateXSetpoint(); restartCursorBlink(); update(); break;
         case Qt::Key_End: controller.moveToEndOfLine(); updateXSetpoint(); restartCursorBlink(); update(); break;
@@ -568,7 +621,7 @@ void View::keyPressEvent(QKeyEvent* e){
             restartCursorBlink();
         }
             break;
-        case Qt::Key_Return: if(allow_write) controller.newline(); updateXSetpoint(); restartCursorBlink(); break;
+        case Qt::Key_Return: if(focusWidget() != this) return; if(allow_write) controller.newline(); updateXSetpoint(); restartCursorBlink(); break;
         case Qt::Key_Return|Shift: if(allow_write) controller.newline(); updateXSetpoint(); restartCursorBlink(); break;
         case Qt::Key_Tab: if(allow_write) controller.tab(); break; //DO THIS - tab dependent on scope
         #ifdef __EMSCRIPTEN__
@@ -589,28 +642,40 @@ void View::keyPressEvent(QKeyEvent* e){
             controller.keystroke(str);
             updateXSetpoint();
             restartCursorBlink();
+            recommend();
+            hide_recommender = false;
     }
 
+    if(hide_recommender && recommender->isVisible()){
+        recommender->hide();
+        setFocus();
+    }
     ensureCursorVisible();
     updateHighlighting();
     repaint();
 }
 
 void View::mousePressEvent(QMouseEvent* e){
+    if(focusWidget() != this) return;
+
     double click_x = xModel(e->x());
     double click_y = yModel(e->y());
     bool right_click = e->buttons() == Qt::RightButton;
     bool shift_held = e->modifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
 
     dispatchClick(click_x, click_y, e->globalX(), e->globalY(), right_click, shift_held);
+
+    recommender->hide();
 }
 
 void View::mouseDoubleClickEvent(QMouseEvent* e){
     dispatchDoubleClick(xModel(e->x()), yModel(e->y()));
+    recommender->hide();
 }
 
 void View::mouseReleaseEvent(QMouseEvent* e){
     dispatchRelease(xModel(e->x()), yModel(e->y()));
+    recommender->hide();
 }
 
 void View::mouseMoveEvent(QMouseEvent* e){
@@ -622,6 +687,7 @@ void View::wheelEvent(QWheelEvent* e){
     bool up = e->angleDelta().y() > 0;
 
     dispatchMousewheel(ctrl_held, up);
+    recommender->hide();
 }
 
 void View::focusInEvent(QFocusEvent*){
@@ -645,6 +711,8 @@ void View::focusOutEvent(QFocusEvent* e){
         stopCursorBlink();
         assert(mouse_hold_state == Hover);
     }
+
+    if(focusWidget() != recommender) recommender->hide();
 }
 
 void View::resizeEvent(QResizeEvent* e){
@@ -701,10 +769,8 @@ void View::drawModel(double xL, double yT, double xR, double yB){
     for(const Code::Error& e : model->errors)
         e.selection.paintError(painter);
 
-    if(highlighted_words){
-        for(const Selection& c : *highlighted_words)
-            c.paintHighlight(painter);
-    }
+    for(const Selection& c : highlighted_words)
+        c.paintHighlight(painter);
 
     const Typeset::Marker& cursor = getController().active;
 
@@ -842,20 +908,23 @@ void View::rename(){
     std::string name = text.toStdString();
 
     Controller c = model->idAt(controller.active);
-    auto lookup = model->symbol_table.find(c.getAnchor());
     assert(c.hasSelection());
 
-    rename(*lookup->second, name);
+    auto& symbol_table = model->symbol_builder.symbol_table;
+    std::vector<Typeset::Selection> occurences;
+    symbol_table.findHighlightedWords(c.getAnchor(), occurences);
+    rename(occurences, name);
 }
 
 void View::goToDef(){
     Controller c = model->idAt(controller.active);
     assert(c.hasSelection());
 
-    auto lookup = model->symbol_table.find(c.getAnchor());
-    assert(lookup != model->symbol_table.end());
+    auto& symbol_table = model->symbol_builder.symbol_table;
+    auto lookup = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
+    assert(lookup != symbol_table.occurence_to_symbol_map.end());
 
-    controller = lookup->second->front().right;
+    controller = symbol_table.getSel(lookup->second);
     restartCursorBlink();
     ensureCursorVisible();
     repaint();
@@ -867,14 +936,15 @@ void View::findUsages(){
     Controller c = model->idAt(controller.active);
     assert(c.hasSelection());
 
-    auto lookup = model->symbol_table.find(c.getAnchor());
-    assert(lookup != model->symbol_table.end());
+    auto& symbol_table = model->symbol_builder.symbol_table;
+    std::vector<Typeset::Selection> occurences;
+    symbol_table.findHighlightedWords(c.getAnchor(), occurences);
 
     Model* m = new Model();
     m->is_output = true;
     console->setModel(m);
     size_t last_handled = std::numeric_limits<size_t>::max();
-    for(const auto& entry : *lookup->second){
+    for(const auto& entry : occurences){
         Line* target_line = entry.getStartLine();
         if(target_line->id != last_handled){
             last_handled = target_line->id;
@@ -886,6 +956,16 @@ void View::findUsages(){
     }
 
     console->updateModel();
+}
+
+void View::takeRecommendation(QListWidgetItem* item){
+    controller.selectPrevWord();
+    controller.insertSerial(item->text().toStdString());
+    model->performSemanticFormatting();
+    updateXSetpoint();
+    updateModel();
+    recommender->hide();
+    QTimer::singleShot(0, this, SLOT(setFocus())); //Delay 1 cycle to avoid whatever input activated item
 }
 
 void View::paintEvent(QPaintEvent* event){

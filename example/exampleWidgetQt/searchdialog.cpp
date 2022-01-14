@@ -26,7 +26,7 @@ SearchDialog::SearchDialog(QWidget* parent, Typeset::View* in, Typeset::View* ou
 SearchDialog::~SearchDialog(){
     delete ui;
 
-    in->highlighted_words = nullptr;
+    in->highlighted_words.clear();
     in->repaint();
 }
 
@@ -42,7 +42,7 @@ void SearchDialog::on_findNextButton_clicked(){
         in->getController() = hits[index];
         in->ensureCursorVisible();
     }
-    in->highlighted_words = &hits;
+    in->highlighted_words = hits;
     in->repaint();
 }
 
@@ -54,7 +54,7 @@ void SearchDialog::on_findPrevButton_clicked(){
         in->getController() = hits[index];
         in->ensureCursorVisible();
     }
-    in->highlighted_words = &hits;
+    in->highlighted_words = hits;
     in->repaint();
 }
 
@@ -103,7 +103,7 @@ void SearchDialog::populateHits(){
 
 void SearchDialog::on_findEdit_textChanged(const QString&){
     populateHits();
-    in->highlighted_words = &hits;
+    in->highlighted_words = hits;
     in->repaint();
 }
 

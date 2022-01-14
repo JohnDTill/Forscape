@@ -4,6 +4,8 @@
 #include "typeset_controller.h"
 #include "typeset_painter.h"
 
+#include <QListWidget>
+
 class QScrollBar;
 
 namespace Hope {
@@ -50,7 +52,7 @@ public:
     QColor background_color = Qt::white;
     QColor disabled_background_color = QPalette().color(QPalette::Disabled, QPalette::Window);
 
-    std::vector<Typeset::Selection>* highlighted_words = nullptr;
+    std::vector<Typeset::Selection> highlighted_words;
     View* console = nullptr;
 
 private:
@@ -73,12 +75,15 @@ private:
     void updateXSetpoint();
     double xModel(double xScreen) const noexcept;
     double yModel(double yScreen) const noexcept;
+    double xScreen(double xModel) const noexcept;
+    double yScreen(double yModel) const noexcept;
     void restartCursorBlink() noexcept;
     void stopCursorBlink();
     void followLink(size_t line_num);
     double xOrigin() const;
     double yOrigin() const;
     double getLineboxWidth() const noexcept;
+    void recommend();
 
     static constexpr double ZOOM_DEFAULT = 2.0;
     static constexpr double ZOOM_MAX = 5.0; static_assert(ZOOM_DEFAULT <= ZOOM_MAX);
@@ -93,6 +98,8 @@ private:
     static constexpr double MARGIN_TOP = 10;
     static constexpr double MARGIN_BOT = 10;
     static constexpr double CURSOR_MARGIN = 10;
+
+    QListWidget* recommender = new QListWidget(this);
 
     Model* model;
     Controller controller;
@@ -147,6 +154,7 @@ private slots:
     void rename();
     void goToDef();
     void findUsages();
+    void takeRecommendation(QListWidgetItem* item);
 
 public:
     QImage toPng() const;

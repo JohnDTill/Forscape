@@ -347,6 +347,10 @@ void Model::insert(const std::vector<Line*>& l){
     lines.insert(lines.begin() + l.front()->id, l.begin(), l.end());
 }
 
+Marker Model::begin() const noexcept{
+    return Marker(firstText(), 0);
+}
+
 #ifndef HOPE_TYPESET_HEADLESS
 void Model::calculateSizes(){
     for(Line* l : lines) l->updateSize();
@@ -405,6 +409,19 @@ void Model::paintGroupings(Painter& painter, const Marker& loc) const{
         Typeset::Marker left = close_lookup->second;
         left.text->paintGrouping(painter, left.index);
     }
+
+    //DO THIS - delete me when scope lookup has adequate testing
+    #ifdef DRAW_ACTIVE_SCOPE
+    size_t scope = symbol_builder.symbol_table.containingScope(loc);
+    const Code::ScopeSegment& seg = symbol_builder.symbol_table.scopes[scope];
+    painter.drawNarrowCursor(seg.start.x(), seg.start.y(), 12);
+    if(scope+1 < symbol_builder.symbol_table.scopes.size()){
+        const Code::ScopeSegment& seg = symbol_builder.symbol_table.scopes[scope+1];
+        painter.drawNarrowCursor(seg.start.x(), seg.start.y(), 12);
+    }else{
+        painter.drawNarrowCursor(lastLine()->x + lastLine()->width, lastText()->y, 12);
+    }
+    #endif
 }
 
 Selection Model::idAt(double x, double y) noexcept{
@@ -502,14 +519,6 @@ void Model::clearFormatting() noexcept{
     }
 
     errors.clear();
-
-    std::unordered_set<std::vector<Typeset::Selection>*> deleted;
-    for(const auto& entry : symbol_table){
-        std::vector<Typeset::Selection>* occurences = entry.second;
-        if(deleted.insert(occurences).second)
-            delete occurences;
-    }
-    symbol_table.clear();
 }
 
 void Model::performSemanticFormatting(){
@@ -520,7 +529,6 @@ void Model::performSemanticFormatting(){
         parser.parseAll();
         if(parser.parse_tree.empty() || !errors.empty()) return;
         symbol_builder.resolveSymbols();
-        symbol_table = std::move(symbol_builder.doc_map);
     }
 }
 

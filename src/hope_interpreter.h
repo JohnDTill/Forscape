@@ -13,7 +13,7 @@ namespace Hope {
 namespace Code {
 
 class ParseTree;
-struct SymbolTable;
+class SymbolTable;
 
 class Interpreter{
 public:
