@@ -27,7 +27,7 @@ def main():
     execfile('errors.py')
     execfile('interpreter_dispatch.py')
     execfile('unicode_scripts.py')
-    pip.main(['install', 'wcwidth'])
+    os.system("pip install wcwidth")
     execfile('unicode_graphemes.py')
     
     shutil.copyfile("construct_codes.csv", "cache/construct_codes.csv")
