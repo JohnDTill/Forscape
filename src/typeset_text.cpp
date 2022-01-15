@@ -68,8 +68,12 @@ std::string Text::substr(size_t pos, size_t len) const{
     return str.substr(pos, len);
 }
 
-std::string_view Text::glyphAt(size_t index) const noexcept{
-    return std::string_view(str.data()+index, glyphSize(at(index)));
+std::string_view Text::codepointAt(size_t index) const noexcept{
+    return std::string_view(str.data()+index, codepointSize(at(index)));
+}
+
+std::string_view Text::graphemeAt(size_t index) const noexcept{
+    return std::string_view(str.data()+index, graphemeSize(str, index));
 }
 
 size_t Text::leadingSpaces() const noexcept{
@@ -305,7 +309,7 @@ size_t Text::indexNearest(double x_in) const noexcept{
 
     for(const SemanticTag& tag : tags){
         while(index < tag.index){
-            size_t glyph_size = glyphSize(str[index]);
+            size_t glyph_size = codepointSize(str[index]);
             double w = glyph_size == 1 ?
                        Hope::Typeset::getWidth(type, depth, str[index]) :
                        Hope::Typeset::getWidth(type, depth, str.substr(index, glyph_size));
@@ -317,7 +321,7 @@ size_t Text::indexNearest(double x_in) const noexcept{
         type = tag.type;
     }
     while(index < size()){
-        size_t glyph_size = glyphSize(str[index]);
+        size_t glyph_size = codepointSize(str[index]);
         double w = glyph_size == 1 ?
                    Hope::Typeset::getWidth(type, depth, str[index]) :
                    Hope::Typeset::getWidth(type, depth, str.substr(index, glyph_size));
@@ -342,7 +346,7 @@ size_t Text::indexLeft(double x_in) const noexcept{
 
     for(const SemanticTag& tag : tags){
         while(index < tag.index){
-            size_t glyph_size = glyphSize(str[index]);
+            size_t glyph_size = codepointSize(str[index]);
             left += glyph_size == 1 ?
                     Hope::Typeset::getWidth(type, depth, str[index]) :
                     Hope::Typeset::getWidth(type, depth, str.substr(index, glyph_size));
@@ -353,7 +357,7 @@ size_t Text::indexLeft(double x_in) const noexcept{
         type = tag.type;
     }
     while(index < size()){
-        size_t glyph_size = glyphSize(str[index]);
+        size_t glyph_size = codepointSize(str[index]);
         left += glyph_size == 1 ?
                 Hope::Typeset::getWidth(type, depth, str[index]) :
                 Hope::Typeset::getWidth(type, depth, str.substr(index, glyph_size));
@@ -429,7 +433,7 @@ void Text::paintMid(Painter& painter, size_t start, size_t stop, bool forward) c
 
 void Text::paintGrouping(Painter& painter, size_t start) const{
     assert(start < size());
-    size_t stop = start + glyphSize(str[start]);
+    size_t stop = start + codepointSize(str[start]);
 
     painter.setScriptLevel(scriptDepth());
     double x = this->x + xLocal(start);

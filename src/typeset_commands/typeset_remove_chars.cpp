@@ -4,13 +4,15 @@
 #include <typeset_text.h>
 #include <hope_unicode.h>
 
+#include <iostream>
+
 namespace Hope {
 
 namespace Typeset {
 
 RemoveChars::RemoveChars(Text* t, size_t index)
     : t(t), index(index) {
-    removed = t->glyphAt(index);
+    removed = t->graphemeAt(index);
 }
 
 bool RemoveChars::isCharacterDeletion() const noexcept {
@@ -18,18 +20,17 @@ bool RemoveChars::isCharacterDeletion() const noexcept {
 }
 
 void RemoveChars::removeAdditionalChar(){
-    size_t glyph_size = glyphSize(t->at(index));
-    removed += t->str.substr(index, glyph_size);
-    t->str.erase(index, glyph_size);
+    std::string_view additional = t->graphemeAt(index);
+    removed += additional;
+    t->str.erase(index, additional.size());
     #ifndef HOPE_TYPESET_HEADLESS
     t->resize();
     #endif
 }
 
 void RemoveChars::removeCharLeft(){
-    size_t old_index = index;
-    while(isContinuationCharacter(t->at(--index)));
-    size_t glyph_size = old_index - index;
+    size_t glyph_size = graphemeSizeLeft(t->str, index);
+    index -= glyph_size;
     removed.insert(0, t->str.substr(index, glyph_size));
     t->str.erase(index, glyph_size);
     #ifndef HOPE_TYPESET_HEADLESS

@@ -107,7 +107,7 @@ private:
         uint8_t ch = src[index];
         if(ch == OPEN) return true;
         else if(ch == CLOSE) return true;
-        index += glyphSize(ch);
+        index += codepointSize(ch);
 
         return src[index++] != CLOSE;
     }
@@ -207,7 +207,7 @@ private:
     void writeAccent(){
         char ch = src[index++];
         out += ch;
-        for(size_t i = 1; i < glyphSize(ch); i++)
+        for(size_t i = 1; i < codepointSize(ch); i++)
             out += src[index++];
         out += byte0;
         out += byte1;

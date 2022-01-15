@@ -7,6 +7,7 @@
 #include "typeset_phrase.h"
 #include "typeset_subphrase.h"
 #include "typeset_text.h"
+#include <unicode_zerowidth.h>
 #include <cassert>
 
 namespace Hope {
@@ -106,14 +107,32 @@ bool Marker::atFirstTextInPhrase() const noexcept{
     return text->id == 0;
 }
 
-void Marker::incrementIndex() noexcept{
+void Marker::incrementCodepoint() noexcept{
     assert(notAtTextEnd());
-    index += glyphSize(charRight());
+    index += codepointSize(charRight());
 }
 
-void Marker::decrementIndex() noexcept{
+void Marker::decrementCodepoint() noexcept{
     assert(notAtTextStart());
     do{ index--; } while(isContinuationCharacter(charRight()));
+}
+
+void Marker::incrementGrapheme() noexcept{
+    assert(notAtTextEnd());
+
+    incrementCodepoint();
+    size_t backup = index;
+    while(index < text->size() && ZERO_WIDTH_CHARS.find(scanGlyph()) != ZERO_WIDTH_CHARS.end())
+        backup = index;
+    index = backup;
+}
+
+void Marker::decrementGrapheme() noexcept{
+    assert(notAtTextStart());
+
+    while(index && ZERO_WIDTH_CHARS.find(codepointLeft()) != ZERO_WIDTH_CHARS.end())
+        decrementCodepoint();
+    if(index) decrementCodepoint();
 }
 
 void Marker::incrementToNextWord() noexcept{
@@ -121,29 +140,29 @@ void Marker::incrementToNextWord() noexcept{
 
     if(isAlphaNumeric(ch)){
         do{
-            index++;
+            incrementGrapheme();
         } while(notAtTextEnd() && isAlphaNumeric( charRight() ));
     }else{
         do {
-            incrementIndex();
+            incrementGrapheme();
         } while(notAtTextEnd() && !isAlphaNumeric( charRight() ));
     }
 }
 
 void Marker::decrementToPrevWord() noexcept{
-    decrementIndex();
+    decrementGrapheme();
     char ch = charRight();
 
     if(isAlphaNumeric(ch)){
         while(index && isAlphaNumeric( charRight() ))
-            decrementIndex();
+            decrementGrapheme();
         if(index!=0 || !isAlphaNumeric( text->at(0) ))
-            incrementIndex();
+            incrementGrapheme();
     }else{
         while(index && !isAlphaNumeric( charRight() ))
-            decrementIndex();
+            decrementGrapheme();
         if(index!=0 || isAlphaNumeric( text->at(0) ))
-            incrementIndex();
+            incrementGrapheme();
     }
 }
 
@@ -172,7 +191,7 @@ uint32_t Marker::codepointLeft() const noexcept{
     if(index == 0) return 0;
 
     Marker m = *this;
-    m.decrementIndex();
+    m.decrementCodepoint();
 
     return m.scanGlyph();
 }
