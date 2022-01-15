@@ -40,8 +40,10 @@ struct Marker{
     bool notAtTextEnd() const noexcept;
     bool notAtTextStart() const noexcept;
     bool atFirstTextInPhrase() const noexcept;
-    void incrementIndex() noexcept;
-    void decrementIndex() noexcept;
+    void incrementCodepoint() noexcept;
+    void decrementCodepoint() noexcept;
+    void incrementGrapheme() noexcept;
+    void decrementGrapheme() noexcept;
     void incrementToNextWord() noexcept;
     void decrementToPrevWord() noexcept;
     bool operator==(const Marker& other) const noexcept;

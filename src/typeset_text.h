@@ -48,7 +48,8 @@ class Text {
         bool empty() const noexcept;
         char at(size_t index) const noexcept;
         std::string substr(size_t pos, size_t len = std::string::npos) const;
-        std::string_view glyphAt(size_t index) const noexcept;
+        std::string_view codepointAt(size_t index) const noexcept;
+        std::string_view graphemeAt(size_t index) const noexcept;
         size_t leadingSpaces() const noexcept;
         std::string_view checkKeyword(size_t iR) const noexcept;
         void findCaseInsensitive(const std::string& target, std::vector<Selection>& hits);

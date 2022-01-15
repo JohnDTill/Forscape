@@ -960,7 +960,11 @@ void View::findUsages(){
 
 void View::takeRecommendation(QListWidgetItem* item){
     controller.selectPrevWord();
-    controller.insertSerial(item->text().toStdString());
+    std::string to_insert = item->text().toStdString();
+    if(to_insert != controller.selectedText())
+        controller.insertSerial(item->text().toStdString());
+    else
+        controller.consolidateToAnchor();
     model->performSemanticFormatting();
     updateXSetpoint();
     updateModel();

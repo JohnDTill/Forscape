@@ -3,10 +3,12 @@
 
 #include <cassert>
 #include <inttypes.h>
+#include <string>
+#include <unicode_zerowidth.h>
 
 namespace Hope {
 
-inline constexpr size_t glyphSize(uint8_t ch) noexcept{
+inline constexpr size_t codepointSize(uint8_t ch) noexcept{
     if(ch >> 7 == 0) return 1;
     assert((ch & (1 << 6)) != 0);
     if((ch & (1 << 5)) == 0) return 2;
@@ -57,6 +59,54 @@ inline constexpr bool isAlphaNumeric(char ch) noexcept{
            ((ch >= 'A') & (ch <= 'Z')) |
            ((ch >= '0') & (ch <= '9')) |
             (ch == '_');
+}
+
+static uint32_t expand(char ch) noexcept{
+    return static_cast<uint32_t>(static_cast<uint8_t>(ch));
+}
+
+inline uint32_t codepointInt(const std::string& str, size_t index){
+    assert(index < str.size());
+
+    uint8_t ch = str[index];
+
+    if(isAscii(ch)){
+        return ch;
+    }else if(sixthBitUnset(ch)){
+        uint32_t bit2 = expand(str[index+1]) << 8;
+        return ch | bit2;
+    }else if(fifthBitUnset(ch)){
+        uint32_t bit2 = expand(str[index+1]) << 8;
+        uint32_t bit3 = expand(str[index+2]) << 16;
+        return ch | bit2 | bit3;
+    }else{
+        uint32_t bit2 = expand(str[index+1]) << 8;
+        uint32_t bit3 = expand(str[index+2]) << 16;
+        uint32_t bit4 = expand(str[index+3]) << 24;
+        return ch | bit2 | bit3 | bit4;
+    }
+}
+
+inline size_t graphemeSize(const std::string& str, size_t index){
+    assert(index < str.size());
+
+    size_t start = index;
+    do {
+        index += codepointSize(str[index]);
+    } while(index < str.size() && isZeroWidth(codepointInt(str, index)));
+
+    return index - start;
+}
+
+inline size_t graphemeSizeLeft(const std::string& str, size_t index){
+    size_t end = index;
+
+    do {
+        assert(index != 0);
+        while(isContinuationCharacter(str[--index]));
+    } while( isZeroWidth(codepointInt(str, index)) );
+
+    return end-index;
 }
 
 inline constexpr uint32_t constructScannerCode(uint32_t code) noexcept{

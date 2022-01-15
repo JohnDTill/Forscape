@@ -63,7 +63,7 @@ void Controller::moveToNextChar() noexcept {
     if(hasSelection()){
         consolidateRight();
     }else if(notAtTextEnd()){
-        incrementActiveIndex();
+        incrementActiveGrapheme();
         consolidateToActive();
     }else if(Construct* c = active.text->nextConstructInPhrase()){
         setBothToFrontOf(c->textEnteringFromLeft());
@@ -78,7 +78,7 @@ void Controller::moveToPrevChar() noexcept{
     if(hasSelection()){
         consolidateLeft();
     }else if(notAtTextStart()){
-        decrementActiveIndex();
+        decrementActiveGrapheme();
         consolidateToActive();
     }else if(Construct* c = active.text->prevConstructInPhrase()){
         setBothToBackOf(c->textEnteringFromRight());
@@ -131,7 +131,7 @@ void Controller::moveToEndOfDocument() noexcept{
 
 void Controller::selectNextChar() noexcept {
     if(notAtTextEnd()){
-        incrementActiveIndex();
+        incrementActiveGrapheme();
     }else if(Construct* c = active.text->nextConstructInPhrase()){
         active.setToFrontOf(c->next());
     }else if(isTopLevel()){
@@ -141,7 +141,7 @@ void Controller::selectNextChar() noexcept {
 
 void Controller::selectPrevChar() noexcept{
     if(notAtTextStart()){
-        decrementActiveIndex();
+        decrementActiveGrapheme();
     }else if(Construct* c = active.text->prevConstructInPhrase()){
         active.setToBackOf(c->prev());
     }else if(isTopLevel()){
@@ -333,7 +333,7 @@ void Controller::backspace() noexcept{
         Command* cmd = deleteSelection();
         getModel()->mutate(cmd, *this);
     }else if(notAtTextStart()){
-        decrementActiveIndex();
+        decrementActiveGrapheme();
         anchor = active;
         deleteChar();
     }else if(Construct* c = active.text->prevConstructInPhrase()){
@@ -476,7 +476,7 @@ void Controller::keystroke(const std::string& str){
         if(!sub.empty()){
             insertText(str);
             anchor.index--;
-            anchor.decrementIndex();
+            anchor.decrementCodepoint();
             Command* rm = CommandText::remove(active.text, anchor.index, active.index-anchor.index);
             rm->redo(*this);
             active.index = anchor.index;
@@ -629,12 +629,20 @@ bool Controller::notAtTextStart() const noexcept{
     return active.notAtTextStart();
 }
 
-void Controller::incrementActiveIndex() noexcept{
-    active.incrementIndex();
+void Controller::incrementActiveCodepoint() noexcept{
+    active.incrementCodepoint();
 }
 
-void Controller::decrementActiveIndex() noexcept{
-    active.decrementIndex();
+void Controller::decrementActiveCodepoint() noexcept{
+    active.decrementCodepoint();
+}
+
+void Controller::incrementActiveGrapheme() noexcept{
+    active.incrementGrapheme();
+}
+
+void Controller::decrementActiveGrapheme() noexcept{
+    active.decrementGrapheme();
 }
 
 void Controller::incrementToNextWord() noexcept{
@@ -681,7 +689,7 @@ void Controller::deleteAdditionalChar(Command* cmd){
             m->premutate();
             rm->removeAdditionalChar();
             m->postmutate();
-        }else if(rm->index == active.index+1){
+        }else if(rm->index == active.index+graphemeSize(active.text->str, active.index)){
             Model* m = getModel();
             m->premutate();
             rm->removeCharLeft();

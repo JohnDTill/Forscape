@@ -123,8 +123,10 @@ private:
     bool atTextStart() const noexcept;
     bool notAtTextEnd() const noexcept;
     bool notAtTextStart() const noexcept;
-    void incrementActiveIndex() noexcept;
-    void decrementActiveIndex() noexcept;
+    void incrementActiveCodepoint() noexcept;
+    void decrementActiveCodepoint() noexcept;
+    void incrementActiveGrapheme() noexcept;
+    void decrementActiveGrapheme() noexcept;
     void incrementToNextWord() noexcept;
     void decrementToPrevWord() noexcept;
     void selectLine(const Line* l) noexcept;

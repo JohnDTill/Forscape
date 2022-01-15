@@ -397,14 +397,14 @@ void Model::paintGroupings(Painter& painter, const Marker& loc) const{
     if(open_lookup != parser.open_symbols.end()){
         loc.text->paintGrouping(painter, loc.index);
         Typeset::Marker right = open_lookup->second;
-        right.decrementIndex();
+        right.decrementCodepoint();
         right.text->paintGrouping(painter, right.index);
     }
 
     auto close_lookup = parser.close_symbols.find(loc);
     if(close_lookup != parser.close_symbols.end()){
         Typeset::Marker rstart = loc;
-        rstart.decrementIndex();
+        rstart.decrementCodepoint();
         loc.text->paintGrouping(painter, rstart.index);
         Typeset::Marker left = close_lookup->second;
         left.text->paintGrouping(painter, left.index);
