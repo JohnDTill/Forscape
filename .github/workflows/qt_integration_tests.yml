@@ -4,8 +4,6 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - id: pip
-        run: python -m pip install wcwidth
       - id: Qt
         uses: jurplel/install-qt-action@v2
         with:

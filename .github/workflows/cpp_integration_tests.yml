@@ -5,8 +5,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - id: pip
-        run: python -m pip install wcwidth
       - id: cmake
         run: cd ${GITHUB_WORKSPACE}/test && cmake -B../build_test -S.
       - id: make
