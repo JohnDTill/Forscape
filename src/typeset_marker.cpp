@@ -122,7 +122,7 @@ void Marker::incrementGrapheme() noexcept{
 
     incrementCodepoint();
     size_t backup = index;
-    while(index < text->size() && ZERO_WIDTH_CHARS.find(scanGlyph()) != ZERO_WIDTH_CHARS.end())
+    while(index < text->size() && isZeroWidth(scanGlyph()))
         backup = index;
     index = backup;
 }
@@ -130,7 +130,7 @@ void Marker::incrementGrapheme() noexcept{
 void Marker::decrementGrapheme() noexcept{
     assert(notAtTextStart());
 
-    while(index && ZERO_WIDTH_CHARS.find(codepointLeft()) != ZERO_WIDTH_CHARS.end())
+    while(index && isZeroWidth(codepointLeft()))
         decrementCodepoint();
     if(index) decrementCodepoint();
 }

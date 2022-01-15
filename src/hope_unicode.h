@@ -93,7 +93,7 @@ inline size_t graphemeSize(const std::string& str, size_t index){
     size_t start = index;
     do {
         index += codepointSize(str[index]);
-    } while(index < str.size() && ZERO_WIDTH_CHARS.find(codepointInt(str, index)) != ZERO_WIDTH_CHARS.end());
+    } while(index < str.size() && isZeroWidth(codepointInt(str, index)));
 
     return index - start;
 }
@@ -104,7 +104,7 @@ inline size_t graphemeSizeLeft(const std::string& str, size_t index){
     do {
         assert(index != 0);
         while(isContinuationCharacter(str[--index]));
-    } while( ZERO_WIDTH_CHARS.find(codepointInt(str, index)) != ZERO_WIDTH_CHARS.end() );
+    } while( isZeroWidth(codepointInt(str, index)) );
 
     return end-index;
 }
