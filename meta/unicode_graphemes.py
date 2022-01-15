@@ -21,5 +21,5 @@ def main():
     header_writer.finalize()
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
