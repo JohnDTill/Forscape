@@ -76,7 +76,8 @@ std::vector<Typeset::Selection> SymbolTable::getSuggestions(const Typeset::Marke
             const ScopeSegment& seg = scopes[j];
             for(size_t k = seg.sym_begin; k < seg.sym_end; k++){
                 const Typeset::Selection& candidate = parse_tree.getSelection(symbols[k].flag);
-                if(candidate.startsWith(typed) && candidate.right != loc) suggestions.insert(candidate);
+                if(candidate.startsWith(typed) && candidate.right.precedesInclusive(loc) && candidate.right != loc)
+                    suggestions.insert(candidate);
 
                 //EVENTUALLY: filter suggestions based on type so suggestions are always context appropriate
                 //            don't use a trie or more specialised data structure unless necessary
