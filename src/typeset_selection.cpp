@@ -36,7 +36,7 @@ Selection::Selection(const Marker& left, const Marker& right) noexcept
     : right(right), left(left) {
     //assert(inValidState());
     #ifndef NDEBUG
-    if(!inValidState()) std::cout << "INVALID MARKER STATE" << std::endl;
+    std::cout << "INVALID MARKER" << std::endl; //EVENTUALLY: eliminate invalid markers
     #endif
 }
 
@@ -105,8 +105,15 @@ bool Selection::operator==(const Selection& other) const noexcept{
                 return false;
         }
 
-        assert(false); //DO THIS - finish implementing if necessary
-        return true;
+        Typeset::Text* A_prefix_t = lL->back();
+        Typeset::Selection A_prefix(left, Typeset::Marker(A_prefix_t, A_prefix_t->size()));
+        Typeset::Text* B_prefix_t = other.lL->back();
+        Typeset::Selection B_prefix(other.left, Typeset::Marker(B_prefix_t, B_prefix_t->size()));
+
+        Typeset::Selection A_suffex(Typeset::Marker(lR->front(), 0), right);
+        Typeset::Selection B_suffex(Typeset::Marker(other.lR->front(), 0), other.right);
+
+        return A_prefix == B_prefix && A_suffex == B_suffex;
     }
 }
 
@@ -115,12 +122,43 @@ bool Selection::operator!=(const Selection& other) const noexcept{
 }
 
 bool Selection::startsWith(const Selection& other) const noexcept{
-    if(textSpan() < other.textSpan()) return false;
+    if(other.isTextSelection()){
+        if(isTextSelection()){
+            auto prefix = other.strView();
+            return strView().substr(0, prefix.size()) == prefix;
+        }else{
+            size_t other_start = other.left.index;
+            size_t start = left.index;
+            const std::string& str = left.text->str;
+            const std::string& other_str = other.left.text->str;
+            size_t other_size = other.right.index - other_start;
+            if(other_size > str.size() - start) return false;
+            for(size_t i = 0; i < other_size; i++)
+                if(str[i+start] != other_str[i+other_start]) return false;
+            return true;
+        }
+    }else{
+        assert(other.isPhraseSelection()); //This is not expected to be called for lines
 
-    //DO THIS - improve implementation
-    if(!isTextSelection() || !other.isTextSelection()) return false;
-    auto prefix = other.strView();
-    return strView().substr(0, prefix.size()) == prefix;
+        if(isTextSelection()) return false;
+
+        if(left.strLeft() != other.left.strLeft()) return false;
+        size_t index = left.text->id;
+        size_t other_index = left.text->id;
+        for(;;){
+            Construct* c = phrase()->construct(index);
+            Construct* other_c = other.phrase()->construct(other_index);
+            if(!c->sameContent(other_c)) return false;
+            index++;
+            other_index++;
+            if(other_index < other.right.text->id){
+                if(phrase()->text(index)->str != other.phrase()->text(other_index)->str) return false;
+            }else{
+                std::string_view right_bit = other.right.strLeft();
+                return right_bit == right.strLeft().substr(0, right_bit.size());
+            }
+        }
+    }
 }
 
 size_t Selection::hashDesignedForIdentifiers() const noexcept{

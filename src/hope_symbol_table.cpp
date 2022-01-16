@@ -65,9 +65,6 @@ size_t SymbolTable::containingScope(const Typeset::Marker& m) const noexcept{
 }
 
 std::vector<Typeset::Selection> SymbolTable::getSuggestions(const Typeset::Marker& loc) const{
-    //DO THIS - probably best to choose the data structure for search then filter results,
-    //          instead of populating by iterating over symbol table
-
     std::unordered_set<Typeset::Selection> suggestions;
 
     Typeset::Marker left = loc;
@@ -80,6 +77,9 @@ std::vector<Typeset::Selection> SymbolTable::getSuggestions(const Typeset::Marke
             for(size_t k = seg.sym_begin; k < seg.sym_end; k++){
                 const Typeset::Selection& candidate = parse_tree.getSelection(symbols[k].flag);
                 if(candidate.startsWith(typed) && candidate.right != loc) suggestions.insert(candidate);
+
+                //EVENTUALLY: filter suggestions based on type so suggestions are always context appropriate
+                //            don't use a trie or more specialised data structure unless necessary
             }
         }
     }

@@ -24,18 +24,18 @@ public:
     std::vector<std::pair<Typeset::Marker, Typeset::Marker> > markers;
 
 private:
-    TokenType scanString() noexcept;
-    TokenType forwardSlash() noexcept;
-    TokenType comment() noexcept;
-    TokenType createToken(TokenType type) noexcept;
-    TokenType scanNumber() noexcept;
-    TokenType scanIdentifier() noexcept;
+    TokenType scanString();
+    TokenType forwardSlash();
+    TokenType comment();
+    TokenType createToken(TokenType type);
+    TokenType scanNumber();
+    TokenType scanIdentifier();
     TokenType unrecognizedSymbol();
-    TokenType scanConstruct(TokenType type) noexcept;
-    TokenType close() noexcept;
+    TokenType scanConstruct(TokenType type);
+    TokenType close();
     TokenType error(ErrorCode code);
-    TokenType newline() noexcept;
-    TokenType endOfFile() noexcept;
+    TokenType newline();
+    TokenType endOfFile();
     void incrementScope() noexcept;
     void decrementScope() noexcept;
 

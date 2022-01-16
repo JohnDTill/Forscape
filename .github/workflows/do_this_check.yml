@@ -1,0 +1,14 @@
+name: Finished work
+on:
+  pull_request:
+  push:
+    branches: main
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - id: permissions
+        run: chmod +x "${GITHUB_WORKSPACE}/.github/workflows/do_this_check.sh"
+      - id: check
+        run: ${GITHUB_WORKSPACE}/.github/workflows/do_this_check.sh

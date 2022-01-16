@@ -41,7 +41,6 @@ private:
     void decreaseLexicalDepth(const Typeset::Marker& end);
     void increaseClosureDepth(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode pn);
     void decreaseClosureDepth(const Typeset::Marker& end);
-    void finalize(size_t sym_id);
     void makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable);
     void appendEntry(size_t index, ParseNode pn, size_t prev, bool immutable);
     void resolveStmt(ParseNode pn);
