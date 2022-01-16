@@ -17,6 +17,7 @@ int main(int argc, char* argv[]){
     #ifdef TEST_QT
     QApplication app_is_prequisite_to_using_QFontDatabase(argc, argv);
     QApplication::processEvents();
+    Typeset::Painter::init();
     #endif
 
     bool passing = true;

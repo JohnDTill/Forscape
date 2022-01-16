@@ -2,6 +2,7 @@
 #include "./ui_mainwindow.h"
 
 #include <typeset_model.h>
+#include <typeset_painter.h>
 #include <typeset_view.h>
 #include <hope_scanner.h>
 #include <hope_serial.h>
@@ -35,6 +36,7 @@ MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow){
     ui->setupUi(this);
+    Typeset::Painter::init();
 
     QSplitter* splitter = new QSplitter(Qt::Vertical, this);
     setCentralWidget(splitter);
@@ -75,8 +77,6 @@ MainWindow::MainWindow(QWidget* parent)
     newAct->setShortcuts(QKeySequence::InsertLineSeparator);
     connect(newAct, &QAction::triggered, this, &MainWindow::stop);
     fileToolBar->addAction(newAct);
-
-    resize(width()+1, height()+1);
 
     MathToolbar* toolbar = new MathToolbar(this);
     connect(toolbar, SIGNAL(insertFlatText(QString)), this, SLOT(insertFlatText(const QString&)));

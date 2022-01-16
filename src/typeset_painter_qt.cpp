@@ -6,6 +6,8 @@
 #include <iostream>
 #endif
 
+#include <QDialog>
+#include <QLabel>
 #include <QPainterPath>
 
 namespace Hope {
@@ -23,15 +25,57 @@ uint8_t depthToFontSize(uint8_t depth) noexcept{
     }
 }
 
-static QFont getFont(SemanticType type, uint8_t depth){
-    QString name = QString::fromStdString(font_names[type].data());
-    QString family = QString::fromStdString(font_family[type].data());
-    int point_size = depthToFontSize(depth);
+bool is_init = false;
 
-    QFont font = QFontDatabase().font(name, family, point_size);
-    font.setKerning(false); //Probably can't have kerning and draw overlapping subtext
+static constexpr size_t N_DEPTHS = 3;
+QFont fonts[N_DEPTHS*NUM_SEM_TYPES];
 
-    return font;
+void Painter::init(){
+    is_init = true;
+
+    std::vector<std::string> fonts_not_found;
+
+    for(size_t i = 0; i < NUM_SEM_TYPES; i++){
+        SemanticType type = static_cast<SemanticType>(i);
+        QString name = QString::fromStdString(font_names[type].data());
+        QString family = QString::fromStdString(font_family[type].data());
+        QFont font = QFontDatabase().font(name, family, depthToFontSize(0));
+        font.setKerning(false); //Probably can't have kerning and draw overlapping subtext
+        fonts[N_DEPTHS*i] = font;
+
+        for(uint8_t j = 1; j < N_DEPTHS; j++){
+            font.setPointSize(depthToFontSize(j));
+            fonts[N_DEPTHS*i + j] = font;
+        }
+
+        if(font.family() != name){
+            std::string font_name = name.toStdString() + " - " + family.toStdString();
+            if(std::find(fonts_not_found.begin(), fonts_not_found.end(), font_name) == fonts_not_found.end())
+                fonts_not_found.push_back(font_name);
+        }
+    }
+
+    //EVENTUALLY: remove this warning in favour of installing the fonts
+    if(!fonts_not_found.empty()){
+        QString font_request;
+        for(const std::string& str : fonts_not_found)
+            font_request += "\n* " + QString::fromStdString(str);
+
+        QLabel* label = new QLabel(
+            "At this stage of development,\n"
+            "fonts are not installed automatically.\n\n"
+            "Please install the following:"
+            + font_request
+        );
+
+        label->setAttribute(Qt::WA_DeleteOnClose);
+        label->show();
+    }
+}
+
+static const QFont& getFont(SemanticType type, uint8_t depth){
+    assert(is_init);
+    return fonts[N_DEPTHS*static_cast<size_t>(type) + depth];
 }
 
 static QColor getColor(SemanticType type){
