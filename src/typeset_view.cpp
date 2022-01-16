@@ -623,9 +623,9 @@ void View::keyPressEvent(QKeyEvent* e){
             break;
         case Qt::Key_Return: if(focusWidget() != this) return; if(allow_write) controller.newline(); updateXSetpoint(); restartCursorBlink(); break;
         case Qt::Key_Return|Shift: if(allow_write) controller.newline(); updateXSetpoint(); restartCursorBlink(); break;
-        case Qt::Key_Tab: if(allow_write) controller.tab(); break; //DO THIS - tab dependent on scope
+        case Qt::Key_Tab: if(allow_write) controller.tab(); break;
         #ifdef __EMSCRIPTEN__
-        case Qt::Key_Tab|Shift: if(allow_write) controller.detab(); break; //DO THIS - detab
+        case Qt::Key_Tab|Shift: if(allow_write) controller.detab(); break;
         #else
         case (Qt::Key_Tab|Shift)+1: if(allow_write) controller.detab(); break; //+1 offset glitch
         #endif
@@ -794,7 +794,7 @@ void View::drawLinebox(double yT, double yB){
     QPainter qpainter(this);
     Painter painter(qpainter);
     painter.setZoom(zoom);
-    painter.setOffset(LINEBOX_WIDTH - LINE_NUM_OFFSET, yOrigin() + 3); //DO THIS - stupid hack here
+    painter.setOffset(LINEBOX_WIDTH - LINE_NUM_OFFSET, yOrigin() + 3);
 
     size_t iL;
     size_t iR;

@@ -288,7 +288,6 @@ double Text::xRight() const noexcept{
 }
 
 double Text::getWidth() const noexcept{
-    //DO THIS - assert width is up to date
     return width;
 }
 

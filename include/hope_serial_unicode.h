@@ -231,7 +231,8 @@ private:
     }
 
     void writeFraction(){
-        //DO THIS - need precedence to avoid stupid parenthesis
+        //EVENTUALLY: better conversion with precedence to avoid stupid parenthesis
+        //            e.g. frac{1}{2} should not convert to (1)/(2)
         out += '(';
         char ch;
         while((ch = src[index++]) != CLOSE) out += ch;

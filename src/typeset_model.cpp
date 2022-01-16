@@ -286,7 +286,6 @@ void Model::mutate(Command* cmd, Controller& controller){
     premutate();
     cmd->redo(controller);
     undo_stack.push_back(cmd);
-    //DO THIS - assert integrity of model
     postmutate();
 }
 
@@ -410,7 +409,7 @@ void Model::paintGroupings(Painter& painter, const Marker& loc) const{
         left.text->paintGrouping(painter, left.index);
     }
 
-    //DO THIS - delete me when scope lookup has adequate testing
+    //EVENTUALLY: delete me when scope lookup has adequate testing
     #ifdef DRAW_ACTIVE_SCOPE
     size_t scope = symbol_builder.symbol_table.containingScope(loc);
     const Code::ScopeSegment& seg = symbol_builder.symbol_table.scopes[scope];

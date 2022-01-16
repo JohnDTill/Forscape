@@ -37,12 +37,10 @@ void SymbolTableBuilder::resolveSymbols(){
 
     symbol_table.finalize();
 
-    for(size_t curr = 0; curr != NONE; curr = symbol_table.scopes[curr].next){
-        ScopeSegment& scope = symbol_table.scopes[curr];
-        for(size_t sym_id = scope.sym_begin; sym_id < scope.sym_end; sym_id++){
-            assert(symbol_table.symbols[sym_id].declaration_lexical_depth == lexical_depth);
-            finalize(sym_id);
-        }
+    for(size_t i = 0; i < symbol_table.symbols.size(); i++){
+        //EVENTUALLY: need warnings since some errors are pedantic
+        if(!symbol_table.symbols[i].is_used)
+            errors.push_back(Error(symbol_table.getSel(i), UNUSED_VAR));
     }
 
     for(const Usage& usage : symbol_table.usages){
@@ -540,8 +538,6 @@ void SymbolTableBuilder::decreaseLexicalDepth(const Typeset::Marker& end){
             Symbol& sym = symbol_table.symbols[sym_id];
             assert(sym.declaration_lexical_depth == lexical_depth);
 
-            finalize(sym_id);
-
             if(sym.shadowed_var == NONE){
                 map.erase(sym.sel(parse_tree)); //Much better to erase empty entries than check for them
             }else{
@@ -562,12 +558,6 @@ void SymbolTableBuilder::increaseClosureDepth(const Typeset::Selection& name, co
 void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end){
     closure_depth--;
     decreaseLexicalDepth(end);
-}
-
-void SymbolTableBuilder::finalize(size_t sym_id){
-    //DO THIS - you need warnings, some errors are pedantic
-    if(!symbol_table.symbols[sym_id].is_used)
-        errors.push_back(Error(symbol_table.getSel(sym_id), UNUSED_VAR));
 }
 
 void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable){

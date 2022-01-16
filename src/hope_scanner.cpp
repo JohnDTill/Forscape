@@ -20,8 +20,6 @@ Scanner::Scanner(Typeset::Model* model) :
 }
 
 void Scanner::scanAll(){
-    //DO THIS - Could pre-allocate memory and have no-except
-
     model->clearFormatting();
     tokens.clear();
     markers.clear();
@@ -58,7 +56,7 @@ TokenType Scanner::scanToken(){
     }
 }
 
-TokenType Scanner::scanString() noexcept{
+TokenType Scanner::scanString() {
     if(controller->selectToStringEnd()){
         controller->formatString();
         return createToken(STRING);
@@ -68,12 +66,12 @@ TokenType Scanner::scanString() noexcept{
     }
 }
 
-TokenType Scanner::forwardSlash() noexcept{
+TokenType Scanner::forwardSlash() {
     if(controller->peek('/')) return comment();
     else return createToken(FORWARDSLASH);
 }
 
-TokenType Scanner::comment() noexcept{
+TokenType Scanner::comment() {
     controller->selectEndOfLine();
     controller->formatComment();
     controller->anchor.index += 2;
@@ -81,12 +79,12 @@ TokenType Scanner::comment() noexcept{
     return createToken(COMMENT);
 }
 
-TokenType Scanner::createToken(TokenType type) noexcept{
+TokenType Scanner::createToken(TokenType type) {
     markers.push_back( std::make_pair(controller->getAnchor(), controller->getActive()) );
     return type;
 }
 
-TokenType Scanner::scanNumber() noexcept{
+TokenType Scanner::scanNumber() {
     controller->selectToNumberEnd();
     return createToken(INTEGER);
 }
@@ -95,7 +93,7 @@ const std::unordered_map<std::string_view, TokenType> Scanner::keywords {
     HOPE_KEYWORD_MAP
 };
 
-TokenType Scanner::scanIdentifier() noexcept{
+TokenType Scanner::scanIdentifier() {
     controller->selectToIdentifierEnd();
 
     auto lookup = keywords.find(controller->selectedFlatText());
@@ -112,14 +110,14 @@ TokenType Scanner::unrecognizedSymbol(){
     return error(UNRECOGNIZED_SYMBOL);
 }
 
-TokenType Scanner::scanConstruct(TokenType type) noexcept{
+TokenType Scanner::scanConstruct(TokenType type) {
     TokenType t = createToken(type);
     controller->consolidateToAnchor();
     controller->moveToNextChar();
     return t;
 }
 
-TokenType Scanner::close() noexcept{
+TokenType Scanner::close() {
     markers.push_back( std::make_pair(controller->getAnchor(), controller->getAnchor()) );
     return ARGCLOSE;
 }
@@ -130,12 +128,12 @@ TokenType Scanner::error(ErrorCode code) {
     return type;
 }
 
-TokenType Scanner::newline() noexcept{
+TokenType Scanner::newline() {
     controller->anchorLine()->scope_depth = scope_depth;
     return createToken(NEWLINE);
 }
 
-TokenType Scanner::endOfFile() noexcept{
+TokenType Scanner::endOfFile() {
     controller->anchorLine()->scope_depth = scope_depth;
     return createToken(ENDOFFILE);
 }

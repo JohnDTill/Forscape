@@ -273,8 +273,6 @@ void Controller::paintCursor(Painter& painter) const {
 }
 
 void Controller::paintInsertCursor(Painter& painter) const{
-    //DO THIS: This is such a dumb hack
-
     Controller controller(*this);
     controller.consolidateToActive();
     controller.selectNextChar();
