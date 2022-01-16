@@ -52,6 +52,7 @@ public:
     bool sameContent(const Phrase* other) const noexcept;
     void findCaseInsensitive(const std::string& target, std::vector<Selection>& hits) const;
     bool hasConstructs() const noexcept;
+    size_t nestingDepth() const noexcept;
 
     size_t id;
 

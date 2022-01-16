@@ -22,7 +22,6 @@ const std::unordered_map<std::string_view, Op> SymbolTableBuilder::predef {
     {"ℏ", OP_REDUCED_PLANCK_CONSTANT},
     {"σ", OP_STEFAN_BOLTZMANN_CONSTANT},
     {"I", OP_IDENTITY_AUTOSIZE},
-    //{"Γ", _}, //DO THIS - should have the error function
 };
 
 SymbolTableBuilder::SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model)

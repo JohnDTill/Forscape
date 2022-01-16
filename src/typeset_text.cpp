@@ -99,15 +99,34 @@ void Text::findCaseInsensitive(const std::string& target, std::vector<Selection>
 
 bool Text::precedes(Text* other) const noexcept{
     assert(getModel() == other->getModel());
+    if(parent == other->parent) return id < other->id;
 
-    //DO THIS - this is not entirely accurate
-    #ifndef HOPE_TYPESET_HEADLESS
-    if(y != other->y) return y < other->y;
-    else return x < other->x;
-    #else
-    assert(false); //DO THIS - this should work without geometry
-    return false;
-    #endif
+    size_t depth = parent->nestingDepth();
+    size_t other_depth = other->parent->nestingDepth();
+    while(other_depth > depth){
+        Construct* c = static_cast<Subphrase*>(other->parent)->parent;
+        other = c->parent->text(c->id);
+        other_depth--;
+    }
+    if(other->parent == parent) return id <= other->id;
+    const Text* t = this;
+    while(depth > other_depth){
+        Construct* c = static_cast<Subphrase*>(t->parent)->parent;
+        t = c->parent->text(c->id);
+        depth--;
+    }
+    if(other->parent == t->parent) return t->id < other->id;
+    while(depth){
+        Construct* c = static_cast<Subphrase*>(t->parent)->parent;
+        Construct* other_c = static_cast<Subphrase*>(other->parent)->parent;
+        if(c == other_c) return t->parent->id < other->parent->id;
+        t = c->parent->text(c->id);
+        other = c->parent->text(c->id);
+        if(other->parent == t->parent) return t->id < other->id;
+        depth--;
+    }
+
+    return t->parent->id < other->parent->id;
 }
 
 Phrase* Text::getParent() const noexcept{

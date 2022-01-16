@@ -212,6 +212,16 @@ bool Phrase::hasConstructs() const noexcept{
     return !constructs.empty();
 }
 
+size_t Phrase::nestingDepth() const noexcept{
+    const Phrase* p = this;
+    size_t nesting_depth = 0;
+    while(!p->isLine()){
+        nesting_depth++;
+        p = static_cast<const Subphrase*>(p)->parent->parent;
+    }
+    return nesting_depth;
+}
+
 #ifdef HOPE_SEMANTIC_DEBUGGING
 std::string Phrase::toStringWithSemanticTags() const{
     std::string out = texts[0]->toSerialWithSemanticTags();
