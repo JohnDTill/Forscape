@@ -6,6 +6,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - id: permissions
-        run: chmod +x "${GITHUB_WORKSPACE}/.github/do_this_check.sh"
+        run: chmod +x "${GITHUB_WORKSPACE}/.github/workflows/do_this_check.sh"
       - id: check
-        run: ${GITHUB_WORKSPACE}/.github/do_this_check.sh
+        run: ${GITHUB_WORKSPACE}/.github/workflows/do_this_check.sh
