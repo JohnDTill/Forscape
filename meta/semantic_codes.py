@@ -31,18 +31,20 @@ def main():
 
     header_writer.write("#ifndef HOPE_TYPESET_HEADLESS\n")
 
+    header_writer.write(f"constexpr size_t NUM_SEM_TYPES = {len(entries)};\n\n")
+
     for ch in "rgb":
-        header_writer.write(f"constexpr uint8_t {ch}[{len(entries)}] {{\n")
+        header_writer.write(f"constexpr uint8_t {ch}[NUM_SEM_TYPES] {{\n")
         for e in entries:
             header_writer.write(f"    {getattr(e, ch)},\n")
         header_writer.write("};\n\n")
 
-    header_writer.write(f"constexpr std::string_view font_names[{len(entries)}] {{\n")
+    header_writer.write(f"constexpr std::string_view font_names[NUM_SEM_TYPES] {{\n")
     for e in entries:
         header_writer.write(f"    \"{e.font}\",\n")
     header_writer.write("};\n\n")
 
-    header_writer.write(f"constexpr std::string_view font_family[{len(entries)}] {{\n")
+    header_writer.write(f"constexpr std::string_view font_family[NUM_SEM_TYPES] {{\n")
     for e in entries:
         header_writer.write(f"    \"{e.family}\",\n")
     header_writer.write("};\n\n")

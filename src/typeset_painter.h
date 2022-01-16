@@ -27,6 +27,7 @@ double getUnderCenter(SemanticType type, uint8_t depth);
 
 class Painter {
 public:
+    static void init();
     Painter(WrappedPainter& painter);
     void setZoom(double zoom);
     void setType(SemanticType type);
