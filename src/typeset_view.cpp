@@ -362,6 +362,8 @@ void View::resolveLineDrag(double y) noexcept{
 }
 
 void View::resolveTooltip(double x, double y) noexcept{
+    if(model->is_output) return; //EVENTUALLY: find a better way to have different behaviours
+
     for(const Code::Error& err : model->errors){
         if(err.selection.contains(x, y)){
             setTooltipError(err.message());

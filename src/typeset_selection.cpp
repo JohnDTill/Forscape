@@ -123,19 +123,11 @@ bool Selection::operator!=(const Selection& other) const noexcept{
 
 bool Selection::startsWith(const Selection& other) const noexcept{
     if(other.isTextSelection()){
-        if(isTextSelection()){
-            auto prefix = other.strView();
+        auto prefix = other.strView();
+        if(isTextSelection()){            
             return strView().substr(0, prefix.size()) == prefix;
         }else{
-            size_t other_start = other.left.index;
-            size_t start = left.index;
-            const std::string& str = left.text->str;
-            const std::string& other_str = other.left.text->str;
-            size_t other_size = other.right.index - other_start;
-            if(other_size > str.size() - start) return false;
-            for(size_t i = 0; i < other_size; i++)
-                if(str[i+start] != other_str[i+other_start]) return false;
-            return true;
+            return left.strRight().substr(0, prefix.size()) == prefix;
         }
     }else{
         assert(other.isPhraseSelection()); //This is not expected to be called for lines

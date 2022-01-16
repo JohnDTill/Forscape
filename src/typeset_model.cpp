@@ -526,7 +526,6 @@ void Model::performSemanticFormatting(){
     scanner.scanAll();
     if(!is_output){
         parser.parseAll();
-        if(parser.parse_tree.empty() || !errors.empty()) return;
         symbol_builder.resolveSymbols();
     }
 }
