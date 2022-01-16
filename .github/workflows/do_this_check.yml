@@ -1,5 +1,8 @@
-name: DO_THIS check
-on: push
+name: Finished work
+on:
+  pull_request:
+  push:
+    branches: main
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
