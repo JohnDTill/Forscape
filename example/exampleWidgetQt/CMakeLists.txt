@@ -150,6 +150,8 @@ set(PROJECT_SOURCES
     ${SRC}/hope_symbol_link_pass.h
     ${SRC}/hope_symbol_table.cpp
     ${SRC}/hope_symbol_table.h
+    ${SRC}/hope_type_resolver.cpp
+    ${SRC}/hope_type_resolver.h
     ${SRC}/hope_unicode.h
     ${SRC}/hope_value.h
     ${INCLUDE}/typeset_command.h
