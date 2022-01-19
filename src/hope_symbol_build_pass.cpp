@@ -29,7 +29,7 @@ SymbolTableBuilder::SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* mo
 
 void SymbolTableBuilder::resolveSymbols(){
     reset();
-    if(!parse_tree.empty() && errors.empty()){
+    if(!parse_tree.empty()){ // && errors.empty()){ //DO THIS - make sure symbol resolution works DESPITE parse errors
         ParseNode n = parse_tree.root;
         for(size_t i = 0; i < parse_tree.getNumArgs(n); i++)
             resolveStmt(parse_tree.arg(n, i));
