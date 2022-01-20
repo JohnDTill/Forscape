@@ -7,6 +7,9 @@
 #include <unordered_map>
 #include <vector>
 
+//DO THIS - get the type system working when each function signature must be inferred at declaration
+//DO THIS - get the type system working when functions may be generic, and multiple instantiations are allowed
+
 namespace Hope {
 
 namespace Code {
@@ -16,39 +19,53 @@ class ParseTree;
 class SymbolTable;
 
 class TypeResolver{
-    enum Type {
-        TYPE_NUMERIC,
-        TYPE_STRING,
-        TYPE_BOOLEAN,
-        TYPE_CALLABLE,
-    };
+    static constexpr size_t TYPE_UNKNOWN = std::numeric_limits<size_t>::max();
+    static constexpr size_t TYPE_NUMERIC = std::numeric_limits<size_t>::max()-1;
+    static constexpr size_t TYPE_STRING = std::numeric_limits<size_t>::max()-2;
+    static constexpr size_t TYPE_BOOLEAN = std::numeric_limits<size_t>::max()-3;
+    static constexpr size_t TYPE_VOID = std::numeric_limits<size_t>::max()-4;
+    static constexpr bool isFunction(size_t type) noexcept {
+        return type < TYPE_VOID;
+    }
+
+    static std::vector<size_t> function_type_pool; //DO THIS - is single threaded acceptable?
 
     struct FuncSignature{
-        size_t nargs;
-        std::vector<size_t> default_arg_types;
-    };
+        size_t name;
+        size_t args_begin;
+        size_t args_end;
+        size_t n_default;
 
-    std::vector<FuncSignature> function_signatures;
-    size_t active_signature;
+        size_t numArgs() const noexcept{
+            return args_end - args_begin;
+        }
 
-    struct CallSignature{
-        size_t pn;
-        std::vector<size_t> arg_types; //Could use a small array
+        auto begin() const noexcept{
+            return function_type_pool.data() + args_begin;
+        }
 
-        bool operator==(const CallSignature& other) const noexcept {
-            return pn == other.pn && std::equal(arg_types.begin(), arg_types.end(), other.arg_types.begin());
+        auto end() const noexcept{
+            return function_type_pool.data() + args_end;
+        }
+
+        size_t returnType() const noexcept{
+            return function_type_pool[args_begin];
+        }
+
+        bool operator==(const FuncSignature& other) const noexcept {
+            return name == other.name && std::equal(begin(), end(), other.begin(), other.end());
         }
     };
 
-    struct CallSignatureHash{
-        size_t operator()(const CallSignature& cs) const noexcept {
-            std::size_t seed = cs.pn;
-            for(const auto& i : cs.arg_types) seed ^= i + 0x9e3779b9 + (seed << 12) + (seed >> 4);
+    struct FuncSignatureHash{
+        size_t operator()(const FuncSignature& sig) const noexcept {
+            std::size_t seed = sig.name;
+            for(auto type : sig) seed ^= type + 0x9e3779b9 + (seed << 12) + (seed >> 4);
             return seed;
         }
     };
 
-    std::unordered_map<CallSignature, size_t, CallSignatureHash> instantiated_functions;
+    static std::unordered_map<FuncSignature, size_t, FuncSignatureHash> memoized_signatures;
 
     public:
         TypeResolver(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors) noexcept;
@@ -57,11 +74,10 @@ class TypeResolver{
     private:
         void reset() noexcept;
         void resolveStmt(size_t pn) noexcept;
-        void resolveParams(size_t pn, size_t params) noexcept;
-        size_t resolveExpr(size_t pn) noexcept;
-        size_t callSite(size_t pn) noexcept;
-        size_t implicitMult(size_t pn, size_t start = 0) noexcept;
-        size_t instantiate(const CallSignature& sig) noexcept;
+        size_t resolveFunction(size_t body, size_t params) noexcept;
+        size_t resolveExpr(size_t pn, size_t expected) noexcept;
+        size_t callSite(size_t pn, size_t expected) noexcept;
+        size_t implicitMult(size_t pn, size_t expected, size_t start = 0) noexcept;
         size_t error(size_t pn, ErrorCode code = ErrorCode::TYPE_ERROR) noexcept;
 
         ParseTree& parse_tree;

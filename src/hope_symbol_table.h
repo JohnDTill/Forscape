@@ -25,6 +25,7 @@ struct Symbol{
     size_t declaration_lexical_depth;
     size_t declaration_closure_depth;
     size_t flag;
+    size_t type;
     size_t shadowed_var;
     size_t comment;
     bool is_const;
@@ -96,7 +97,7 @@ public:
     std::vector<Symbol> symbols;
     std::unordered_map<Typeset::Marker, SymbolId> occurence_to_symbol_map;
     std::vector<Usage> usages;
-    const ParseTree& parse_tree;
+    ParseTree& parse_tree;
 
     Typeset::Text global_name;
     Typeset::Text lambda_name;
@@ -107,7 +108,7 @@ public:
     Typeset::Text for_name;
     Typeset::Text big_name;
 
-    SymbolTable(const ParseTree& parse_tree)
+    SymbolTable(ParseTree& parse_tree)
         : parse_tree(parse_tree) {
         global_name.str = "Global";
         lambda_name.str = "lambda";

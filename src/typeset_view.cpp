@@ -376,13 +376,17 @@ void View::resolveTooltip(double x, double y) noexcept{
         setToolTipDuration(std::numeric_limits<int>::max());
         const auto& symbol_table = model->symbol_builder.symbol_table;
         auto lookup = symbol_table.occurence_to_symbol_map.find(c.anchor);
-        assert(lookup != symbol_table.occurence_to_symbol_map.end());
-        const auto& symbol = symbol_table.symbols[lookup->second];
-        QString tooltip = "<b>" + QString::fromStdString(c.selectedText()) + "</b>";
-        if(symbol.comment != Hope::Code::ParseTree::EMPTY)
-            tooltip += "<div style=\"color:green\">" + QString::fromStdString(symbol_table.parse_tree.str(symbol.comment));
-        setToolTip(tooltip);
-        return;
+
+        //DO THIS - why is this broken? (see script_identifiers example)
+        //assert(lookup != symbol_table.occurence_to_symbol_map.end() || model->errors.size());
+        if(lookup != symbol_table.occurence_to_symbol_map.end()){
+            const auto& symbol = symbol_table.symbols[lookup->second];
+            QString tooltip = "<b>" + QString::fromStdString(c.selectedText()) + "</b>";
+            if(symbol.comment != Hope::Code::ParseTree::EMPTY)
+                tooltip += "<div style=\"color:green\">" + QString::fromStdString(symbol_table.parse_tree.str(symbol.comment));
+            setToolTip(tooltip);
+            return;
+        }
     }
 
     clearTooltip();

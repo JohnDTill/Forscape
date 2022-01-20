@@ -48,6 +48,7 @@ bool ScopeSegment::isEndOfScope() const noexcept{
 void SymbolTable::addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed, bool is_const){
     occurence_to_symbol_map[parse_tree.getLeft(pn)] = symbols.size();
     size_t comment = parse_tree.getFlag(pn);
+    parse_tree.setFlag(pn, symbols.size());
     symbols.push_back(Symbol(pn, lexical_depth, closure_depth, shadowed, is_const));
     symbols.back().comment = comment;
 }
