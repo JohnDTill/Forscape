@@ -382,7 +382,7 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
     auto lookup = map.find(sel);
     if(lookup == map.end()){
         makeEntry(sel, name, true);
-        parse_tree.setFlag(pn, NONE); //This is a kludge to tell the interpreter it's not a prototype
+        parse_tree.setFlag(name, NONE); //This is a kludge to tell the interpreter it's not a prototype
     }else{
         size_t index = lookup->second;
         Symbol& sym = symbol_table.symbols[index];

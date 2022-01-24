@@ -52,7 +52,7 @@ Value& Stack::read(size_t offset, std::string intended) noexcept{
 }
 
 Value& Stack::readReturn() noexcept{
-    assert(stack_names.back() == "%RETURN");
+    assert(empty() || stack_names.back() == "%RETURN");
     #ifndef NDEBUG
     stack_names.back() = "%CLEARED_RETURN";
     #endif
@@ -60,7 +60,7 @@ Value& Stack::readReturn() noexcept{
 }
 
 void Stack::trim(size_t sze) noexcept{
-    assert(stack_names.back() != "%RETURN");
+    assert(empty() || stack_names.back() != "%RETURN");
     assert(sze <= size());
 
     if(size() > sze){

@@ -41,6 +41,7 @@ void Parser::registerGrouping(const Typeset::Selection& sel){
 }
 
 void Parser::registerGrouping(const Typeset::Marker& l, const Typeset::Marker& r){
+    if(!noErrors()) return;
     open_symbols[l] = r;
     close_symbols[r] = l;
 }

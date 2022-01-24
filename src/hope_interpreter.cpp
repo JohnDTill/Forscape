@@ -41,6 +41,8 @@ void Interpreter::stop(){
 }
 
 void Interpreter::reset() noexcept {
+    error_code = NO_ERROR;
+    error_node = ParseTree::EMPTY;
     directive = RUN;
     status = NORMAL;
     stack.clear();
@@ -164,7 +166,7 @@ void Interpreter::algorithmStmt(ParseNode pn){
     ParseNode captured = alg.captured(parse_tree);
     ParseNode upvalues = alg.upvalues(parse_tree);
 
-    if(parse_tree.getFlag(pn) == std::numeric_limits<size_t>::max()){
+    if(parse_tree.getFlag(name) == NONE){
         stack.push(alg, parse_tree.str(name));
         list = &std::get<Algorithm>(stack.back()).closure;
     }else{
