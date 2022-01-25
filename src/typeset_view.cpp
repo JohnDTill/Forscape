@@ -377,7 +377,7 @@ void View::resolveTooltip(double x, double y) noexcept{
         const auto& symbol_table = model->symbol_builder.symbol_table;
         auto lookup = symbol_table.occurence_to_symbol_map.find(c.anchor);
 
-        //DO THIS - why is this broken? (see script_identifiers example)
+        //EVENTUALLY enable the assertion when idAt accurately reports identifier
         //assert(lookup != symbol_table.occurence_to_symbol_map.end() || model->errors.size());
         if(lookup != symbol_table.occurence_to_symbol_map.end()){
             const auto& symbol = symbol_table.symbols[lookup->second];
