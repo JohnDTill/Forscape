@@ -504,7 +504,9 @@ Parser::ParseNode Parser::parenGrouping() noexcept{
         Typeset::Selection sel(left, right);
         registerGrouping(sel);
         advance();
-        return parse_tree.addUnary(OP_GROUP_PAREN, sel, nested);
+        return peek(MAPSTO) ?
+                lambda(parse_tree.addUnary(OP_LIST, sel, nested)) :
+                parse_tree.addUnary(OP_GROUP_PAREN, sel, nested);
     }
 
     ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_LIST);
@@ -523,18 +525,7 @@ Parser::ParseNode Parser::parenGrouping() noexcept{
 
     ParseNode list = builder.finalize(sel);
 
-    if(!match(MAPSTO)) return list;
-
-    ParseNode expr = expression();
-    sel.right = rMarkPrev();
-
-    return parse_tree.addTernary(
-                OP_LAMBDA,
-                sel,
-                ParseTree::EMPTY,
-                list,
-                expr
-           );
+    return peek(MAPSTO) ? lambda(list) : list;
 }
 
 Parser::ParseNode Parser::paramList() noexcept{
@@ -682,7 +673,7 @@ ParseNode Parser::identifier() noexcept{
 
     switch (currentType()) {
         case LEFTPAREN: return call(id);
-        case MAPSTO: return lambda(id);
+        case MAPSTO: return lambda(parse_tree.addUnary(OP_LIST, id));
         case TOKEN_SUBSCRIPT:
             if(parse_tree.str(id) == "e"){
                 parse_tree.getSelection(id).format(SEM_PREDEFINEDMAT);
@@ -721,12 +712,30 @@ ParseNode Parser::identifier() noexcept{
 
 Parser::ParseNode Parser::isolatedIdentifier() noexcept{
     if(!peek(IDENTIFIER)) return error(UNRECOGNIZED_SYMBOL);
-    return terminalAndAdvance(OP_IDENTIFIER);
+    ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
+    switch (currentType()) {
+        case TOKEN_SUBSCRIPT:
+            advance();
+            if((match(IDENTIFIER) || match(INTEGER)) && match(ARGCLOSE)){
+                parse_tree.setRight(id, rMarkPrev());
+                return id;
+            }else{
+                return error(INVALID_PARAMETER);
+            }
+        case TOKEN_SUPERSCRIPT:
+            advance();
+            if((match(IDENTIFIER) || match(MULTIPLY)) && match(ARGCLOSE)){
+                parse_tree.setRight(id, rMarkPrev());
+                return id;
+            }else{
+                return error(INVALID_PARAMETER);
+            }
+        default: return id;
+    }
 }
 
 Parser::ParseNode Parser::param() noexcept{
-    if(!peek(IDENTIFIER)) return error(UNRECOGNIZED_SYMBOL);
-    ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
+    ParseNode id = isolatedIdentifier();
     return match(EQUALS) ? parse_tree.addBinary(OP_EQUAL, id, expression()) : id;
 }
 
@@ -753,10 +762,10 @@ ParseNode Parser::call(const ParseNode& id) noexcept{
     return n;
 }
 
-Parser::ParseNode Parser::lambda(const ParseNode& id) noexcept{
+Parser::ParseNode Parser::lambda(const ParseNode& params) noexcept{
     advance();
 
-    Typeset::Marker left = parse_tree.getLeft(id);
+    Typeset::Marker left = parse_tree.getLeft(params);
 
     ParseNode capture_list = ParseTree::EMPTY;
     ParseNode referenced_upvalues = ParseTree::EMPTY;
@@ -770,7 +779,7 @@ Parser::ParseNode Parser::lambda(const ParseNode& id) noexcept{
                 sel,
                 capture_list,
                 referenced_upvalues,
-                parse_tree.addUnary(OP_LIST, id),
+                params,
                 e
            );
 }

@@ -10,6 +10,7 @@ CONSUME,y,Unexpected token
 TRAILING_DOT,,Decimal number must have trailing digits
 LEADING_ZEROES,,Number cannot have leading zeros
 REASSIGN_CONSTANT,y,Reassigning to constant
+REDEFINE_PARAMETER,y,Parameter is already defined
 MUTABLE_CONST_ASSIGN,y,Assigning constant to pre-existing mutable var
 BAD_READ,y,Undeclared variable
 BAD_READ_OR_SUBSCRIPT,,Undeclared variable (subscript not suitable for implicit loop assignment)
