@@ -54,6 +54,7 @@ public:
 
     #ifndef HOPE_TYPESET_HEADLESS
     bool contains(double x, double y) const noexcept;
+    bool containsWithEmptyMargin(double x, double y) const noexcept;
     bool containsText(double x, double y) const noexcept;
     bool containsPhrase(double x, double y) const noexcept;
     bool containsLine(double x, double y) const noexcept;
@@ -71,6 +72,8 @@ public:
     void paintHighlight(Painter& painter) const;
     void paintHighlightText(Painter& painter) const;
     void paintHighlightPhrase(Painter& painter) const;
+
+    static constexpr double EMPTY_SUBPHRASE_MARGIN = 6;
     #endif
 
     #ifndef NDEBUG

@@ -243,15 +243,18 @@ void Painter::drawError(double x, double y, double w, double h){
 void Painter::drawEmptySubphrase(double x, double y, double w, double h){
     x += x_offset;
 
-    QPen pen = painter.pen();
+    const QPen old_pen = painter.pen();
+    const QBrush old_brush = painter.brush();
+    QPen pen = old_pen;
     pen.setStyle(Qt::DotLine);
     pen.setWidthF(0.4);
     painter.setBrush(QColor(0,0,0,0));
     painter.setPen(pen);
+
     painter.drawRect(x, y, w, h);
 
-    painter.setPen(View::text_cursor_color);
-    painter.setBrush(View::text_cursor_color);
+    painter.setPen(old_pen);
+    painter.setBrush(old_brush);
 }
 
 void Painter::drawHighlight(double x, double y, double w, double h){

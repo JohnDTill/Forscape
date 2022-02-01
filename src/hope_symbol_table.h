@@ -125,7 +125,7 @@ public:
     size_t containingScope(const Typeset::Marker& m) const noexcept;
     std::vector<Typeset::Selection> getSuggestions(const Typeset::Marker& loc) const;
     const Typeset::Selection& getSel(size_t sym_index) const noexcept;
-    void findHighlightedWords(const Typeset::Marker& loc, std::vector<Typeset::Selection>& found) const;
+    void getSymbolOccurences(const Typeset::Marker& loc, std::vector<Typeset::Selection>& found) const;
 
     Typeset::Selection global() noexcept{
         return Typeset::Selection(&global_name, 0, 6);

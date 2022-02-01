@@ -365,7 +365,7 @@ void View::resolveTooltip(double x, double y) noexcept{
     if(model->is_output) return; //EVENTUALLY: find a better way to have different behaviours
 
     for(const Code::Error& err : model->errors){
-        if(err.selection.contains(x, y)){
+        if(err.selection.containsWithEmptyMargin(x, y)){
             setTooltipError(err.message());
             return;
         }
@@ -465,7 +465,7 @@ void View::updateHighlighting(){
     Controller c = model->idAt(controller.active);
     if(c.hasSelection()){
         auto& symbol_table = model->symbol_builder.symbol_table;
-        symbol_table.findHighlightedWords(c.getAnchor(), highlighted_words);
+        symbol_table.getSymbolOccurences(c.getAnchor(), highlighted_words);
     }
 }
 
@@ -918,7 +918,7 @@ void View::rename(){
 
     auto& symbol_table = model->symbol_builder.symbol_table;
     std::vector<Typeset::Selection> occurences;
-    symbol_table.findHighlightedWords(c.getAnchor(), occurences);
+    symbol_table.getSymbolOccurences(c.getAnchor(), occurences);
     rename(occurences, name);
 }
 
@@ -944,7 +944,7 @@ void View::findUsages(){
 
     auto& symbol_table = model->symbol_builder.symbol_table;
     std::vector<Typeset::Selection> occurences;
-    symbol_table.findHighlightedWords(c.getAnchor(), occurences);
+    symbol_table.getSymbolOccurences(c.getAnchor(), occurences);
 
     Model* m = new Model();
     m->is_output = true;

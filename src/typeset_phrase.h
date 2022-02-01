@@ -53,6 +53,7 @@ public:
     void findCaseInsensitive(const std::string& target, std::vector<Selection>& hits) const;
     bool hasConstructs() const noexcept;
     size_t nestingDepth() const noexcept;
+    bool empty() const noexcept;
 
     size_t id;
 

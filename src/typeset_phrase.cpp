@@ -222,6 +222,10 @@ size_t Phrase::nestingDepth() const noexcept{
     return nesting_depth;
 }
 
+bool Phrase::empty() const noexcept{
+    return texts.size() == 1 && front()->empty();
+}
+
 #ifdef HOPE_SEMANTIC_DEBUGGING
 std::string Phrase::toStringWithSemanticTags() const{
     std::string out = texts[0]->toSerialWithSemanticTags();

@@ -489,6 +489,8 @@ ParseNode Parser::primary() noexcept{
         case ERRORFUNCTION: return oneArg(OP_ERROR_FUNCTION);
         case COMPERRFUNC: return oneArg(OP_COMP_ERR_FUNC);
 
+        case ARGCLOSE: return error(EXPECTED_PRIMARY, Typeset::Selection(lMark(), lMark()));
+
         default:
             return error(EXPECTED_PRIMARY);
     }
@@ -1070,7 +1072,7 @@ Parser::ParseNode Parser::twoArgs(Op type) noexcept{
 
 Parser::ParseNode Parser::big(Op type) noexcept{
     const Typeset::Marker& left = lMark();
-    Typeset::Selection err_sel(left, rMark());
+    Typeset::Selection err_sel = selection();
     advance();
     ParseNode end = expression();
     consume(ARGCLOSE);
@@ -1080,6 +1082,7 @@ Parser::ParseNode Parser::big(Op type) noexcept{
     ParseNode start = expression();
     ParseNode assign = parse_tree.addBinary(OP_ASSIGN, id, start);
     consume(ARGCLOSE);
+    if(!noErrors()) return error_node;
     ParseNode body = expression();
     if(!noErrors()) return error_node;
     const Typeset::Marker& right = rMarkPrev();
@@ -1089,7 +1092,7 @@ Parser::ParseNode Parser::big(Op type) noexcept{
 }
 
 Parser::ParseNode Parser::oneArgConstruct(Op type) noexcept{
-    Typeset::Selection sel(lMark(), rMark());
+    Typeset::Selection sel = selection();
     advance();
     ParseNode child = disjunction();
     consume(ARGCLOSE);

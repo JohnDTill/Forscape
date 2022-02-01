@@ -105,7 +105,7 @@ const Typeset::Selection& SymbolTable::getSel(size_t sym_index) const noexcept{
     return symbols[sym_index].sel(parse_tree);
 }
 
-void SymbolTable::findHighlightedWords(const Typeset::Marker& loc, std::vector<Typeset::Selection>& found) const{
+void SymbolTable::getSymbolOccurences(const Typeset::Marker& loc, std::vector<Typeset::Selection>& found) const{
     found.clear();
     auto lookup = occurence_to_symbol_map.find(loc);
     if(lookup == occurence_to_symbol_map.end()) return;
