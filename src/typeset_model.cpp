@@ -530,7 +530,6 @@ void Model::performSemanticFormatting(){
     if(!is_output){
         parser.parseAll();
         symbol_builder.resolveSymbols();
-        //if(errors.empty()) type_resolver.resolve(); //DO THIS - get type resolution working
     }
 }
 

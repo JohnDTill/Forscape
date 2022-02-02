@@ -9,7 +9,6 @@
 #include "hope_scanner.h"
 #include "hope_parser.h"
 #include "hope_symbol_build_pass.h"
-#include "hope_type_resolver.h"
 #include "hope_interpreter.h"
 
 namespace Hope {
@@ -29,7 +28,6 @@ public:
     Code::Scanner scanner = Code::Scanner(this);
     Code::Parser parser = Code::Parser(scanner, this);
     Code::SymbolTableBuilder symbol_builder = Code::SymbolTableBuilder(parser.parse_tree, this);
-    Code::TypeResolver type_resolver = Code::TypeResolver(parser.parse_tree, symbol_builder.symbol_table, errors);
     Code::Interpreter interpreter;
     std::vector<Code::Error> errors;
 
