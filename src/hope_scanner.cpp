@@ -118,7 +118,8 @@ TokenType Scanner::scanConstruct(TokenType type) {
 }
 
 TokenType Scanner::close() {
-    markers.push_back( std::make_pair(controller->getAnchor(), controller->getAnchor()) );
+    markers.push_back( std::make_pair(controller->getAnchor(), controller->getActive()) );
+    controller->consolidateToActive();
     return ARGCLOSE;
 }
 

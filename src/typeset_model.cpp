@@ -456,6 +456,9 @@ std::string Model::parseTreeDot() const{
 #endif
 
 Selection Model::idAt(const Marker& marker) noexcept{
+    //EVENTUALLY this is broken for subscripts.
+    //You need to fundamentally rethink how you find this, perhaps a binary search.
+
     for(size_t i = marker.text->tags.size(); i-->0;){
         const SemanticTag& tag = marker.text->tags[i];
         if(tag.index == marker.index){

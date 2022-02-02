@@ -1,6 +1,7 @@
-incr ← 0
-decr ← 0
-get ← 0
+alg void(){}
+incr ← void
+decr ← void
+get ← void
 alg initFuncs(){
     x ← 0
     alg incrX(){

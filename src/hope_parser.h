@@ -65,7 +65,7 @@ private:
     ParseNode isolatedIdentifier() noexcept;
     ParseNode param() noexcept;
     ParseNode call(const ParseNode& id) noexcept;
-    ParseNode lambda(const ParseNode& id) noexcept;
+    ParseNode lambda(const ParseNode& params) noexcept;
     ParseNode fraction() noexcept;
     ParseNode binomial() noexcept;
     ParseNode superscript(const ParseNode& lhs) noexcept;

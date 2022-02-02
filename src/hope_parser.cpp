@@ -41,6 +41,7 @@ void Parser::registerGrouping(const Typeset::Selection& sel){
 }
 
 void Parser::registerGrouping(const Typeset::Marker& l, const Typeset::Marker& r){
+    if(!noErrors()) return;
     open_symbols[l] = r;
     close_symbols[r] = l;
 }
@@ -488,6 +489,8 @@ ParseNode Parser::primary() noexcept{
         case ERRORFUNCTION: return oneArg(OP_ERROR_FUNCTION);
         case COMPERRFUNC: return oneArg(OP_COMP_ERR_FUNC);
 
+        case ARGCLOSE: return error(EXPECTED_PRIMARY, Typeset::Selection(lMark(), lMark()));
+
         default:
             return error(EXPECTED_PRIMARY);
     }
@@ -503,7 +506,9 @@ Parser::ParseNode Parser::parenGrouping() noexcept{
         Typeset::Selection sel(left, right);
         registerGrouping(sel);
         advance();
-        return parse_tree.addUnary(OP_GROUP_PAREN, sel, nested);
+        return peek(MAPSTO) ?
+                lambda(parse_tree.addUnary(OP_LIST, sel, nested)) :
+                parse_tree.addUnary(OP_GROUP_PAREN, sel, nested);
     }
 
     ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_LIST);
@@ -522,18 +527,7 @@ Parser::ParseNode Parser::parenGrouping() noexcept{
 
     ParseNode list = builder.finalize(sel);
 
-    if(!match(MAPSTO)) return list;
-
-    ParseNode expr = expression();
-    sel.right = rMarkPrev();
-
-    return parse_tree.addTernary(
-                OP_LAMBDA,
-                sel,
-                ParseTree::EMPTY,
-                list,
-                expr
-           );
+    return peek(MAPSTO) ? lambda(list) : list;
 }
 
 Parser::ParseNode Parser::paramList() noexcept{
@@ -681,7 +675,7 @@ ParseNode Parser::identifier() noexcept{
 
     switch (currentType()) {
         case LEFTPAREN: return call(id);
-        case MAPSTO: return lambda(id);
+        case MAPSTO: return lambda(parse_tree.addUnary(OP_LIST, id));
         case TOKEN_SUBSCRIPT:
             if(parse_tree.str(id) == "e"){
                 parse_tree.getSelection(id).format(SEM_PREDEFINEDMAT);
@@ -720,12 +714,30 @@ ParseNode Parser::identifier() noexcept{
 
 Parser::ParseNode Parser::isolatedIdentifier() noexcept{
     if(!peek(IDENTIFIER)) return error(UNRECOGNIZED_SYMBOL);
-    return terminalAndAdvance(OP_IDENTIFIER);
+    ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
+    switch (currentType()) {
+        case TOKEN_SUBSCRIPT:
+            advance();
+            if((match(IDENTIFIER) || match(INTEGER)) && match(ARGCLOSE)){
+                parse_tree.setRight(id, rMarkPrev());
+                return id;
+            }else{
+                return error(INVALID_PARAMETER);
+            }
+        case TOKEN_SUPERSCRIPT:
+            advance();
+            if((match(IDENTIFIER) || match(MULTIPLY)) && match(ARGCLOSE)){
+                parse_tree.setRight(id, rMarkPrev());
+                return id;
+            }else{
+                return error(INVALID_PARAMETER);
+            }
+        default: return id;
+    }
 }
 
 Parser::ParseNode Parser::param() noexcept{
-    if(!peek(IDENTIFIER)) return error(UNRECOGNIZED_SYMBOL);
-    ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
+    ParseNode id = isolatedIdentifier();
     return match(EQUALS) ? parse_tree.addBinary(OP_EQUAL, id, expression()) : id;
 }
 
@@ -752,10 +764,10 @@ ParseNode Parser::call(const ParseNode& id) noexcept{
     return n;
 }
 
-Parser::ParseNode Parser::lambda(const ParseNode& id) noexcept{
+Parser::ParseNode Parser::lambda(const ParseNode& params) noexcept{
     advance();
 
-    Typeset::Marker left = parse_tree.getLeft(id);
+    Typeset::Marker left = parse_tree.getLeft(params);
 
     ParseNode capture_list = ParseTree::EMPTY;
     ParseNode referenced_upvalues = ParseTree::EMPTY;
@@ -769,7 +781,7 @@ Parser::ParseNode Parser::lambda(const ParseNode& id) noexcept{
                 sel,
                 capture_list,
                 referenced_upvalues,
-                parse_tree.addUnary(OP_LIST, id),
+                params,
                 e
            );
 }
@@ -1060,7 +1072,7 @@ Parser::ParseNode Parser::twoArgs(Op type) noexcept{
 
 Parser::ParseNode Parser::big(Op type) noexcept{
     const Typeset::Marker& left = lMark();
-    Typeset::Selection err_sel(left, rMark());
+    Typeset::Selection err_sel = selection();
     advance();
     ParseNode end = expression();
     consume(ARGCLOSE);
@@ -1070,6 +1082,7 @@ Parser::ParseNode Parser::big(Op type) noexcept{
     ParseNode start = expression();
     ParseNode assign = parse_tree.addBinary(OP_ASSIGN, id, start);
     consume(ARGCLOSE);
+    if(!noErrors()) return error_node;
     ParseNode body = expression();
     if(!noErrors()) return error_node;
     const Typeset::Marker& right = rMarkPrev();
@@ -1079,7 +1092,7 @@ Parser::ParseNode Parser::big(Op type) noexcept{
 }
 
 Parser::ParseNode Parser::oneArgConstruct(Op type) noexcept{
-    Typeset::Selection sel(lMark(), rMark());
+    Typeset::Selection sel = selection();
     advance();
     ParseNode child = disjunction();
     consume(ARGCLOSE);

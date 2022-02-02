@@ -48,6 +48,7 @@ bool ScopeSegment::isEndOfScope() const noexcept{
 void SymbolTable::addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed, bool is_const){
     occurence_to_symbol_map[parse_tree.getLeft(pn)] = symbols.size();
     size_t comment = parse_tree.getFlag(pn);
+    parse_tree.setFlag(pn, symbols.size());
     symbols.push_back(Symbol(pn, lexical_depth, closure_depth, shadowed, is_const));
     symbols.back().comment = comment;
 }
@@ -68,6 +69,11 @@ std::vector<Typeset::Selection> SymbolTable::getSuggestions(const Typeset::Marke
     std::unordered_set<Typeset::Selection> suggestions;
 
     Typeset::Marker left = loc;
+    while(left.atTextStart()){
+        if(left.atFirstTextInPhrase()) return std::vector<Typeset::Selection>();
+        left.text = loc.text->prevTextAsserted();
+        left.index = left.text->size();
+    }
     left.decrementToPrevWord();
     Typeset::Selection typed(left, loc);
 
@@ -99,7 +105,7 @@ const Typeset::Selection& SymbolTable::getSel(size_t sym_index) const noexcept{
     return symbols[sym_index].sel(parse_tree);
 }
 
-void SymbolTable::findHighlightedWords(const Typeset::Marker& loc, std::vector<Typeset::Selection>& found) const{
+void SymbolTable::getSymbolOccurences(const Typeset::Marker& loc, std::vector<Typeset::Selection>& found) const{
     found.clear();
     auto lookup = occurence_to_symbol_map.find(loc);
     if(lookup == occurence_to_symbol_map.end()) return;

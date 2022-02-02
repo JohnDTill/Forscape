@@ -29,7 +29,7 @@ SymbolTableBuilder::SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* mo
 
 void SymbolTableBuilder::resolveSymbols(){
     reset();
-    if(!parse_tree.empty() && errors.empty()){
+    if(!parse_tree.empty()){ // Note: symbol resolution runs DESPITE parse errors, because the editor needs it
         ParseNode n = parse_tree.root;
         for(size_t i = 0; i < parse_tree.getNumArgs(n); i++)
             resolveStmt(parse_tree.arg(n, i));
@@ -37,10 +37,12 @@ void SymbolTableBuilder::resolveSymbols(){
 
     symbol_table.finalize();
 
-    for(size_t i = 0; i < symbol_table.symbols.size(); i++){
-        //EVENTUALLY: need warnings since some errors are pedantic
-        if(!symbol_table.symbols[i].is_used)
-            errors.push_back(Error(symbol_table.getSel(i), UNUSED_VAR));
+    if(errors.empty()){
+        for(size_t i = 0; i < symbol_table.symbols.size(); i++){
+            //EVENTUALLY: need warnings since some errors are pedantic
+            //if(!symbol_table.symbols[i].is_used)
+            //    errors.push_back(Error(symbol_table.getSel(i), UNUSED_VAR));
+        }
     }
 
     for(const Usage& usage : symbol_table.usages){
@@ -267,7 +269,8 @@ bool SymbolTableBuilder::resolvePotentialIdSub(ParseNode pn){
     ParseNode id = parse_tree.lhs(pn);
     ParseNode sub = parse_tree.rhs(pn);
 
-    if(parse_tree.getOp(id) != OP_IDENTIFIER || parse_tree.getOp(sub) != OP_IDENTIFIER)
+    if(parse_tree.getOp(id) != OP_IDENTIFIER ||
+            (parse_tree.getOp(sub) != OP_IDENTIFIER && parse_tree.getOp(sub) != OP_INTEGER_LITERAL))
         return false;
 
     const Typeset::Selection& id_sel = parse_tree.getSelection(id);
@@ -382,7 +385,7 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
     auto lookup = map.find(sel);
     if(lookup == map.end()){
         makeEntry(sel, name, true);
-        parse_tree.setStackOffset(name, NONE); //This is a kludge to tell the interpreter it's not a prototype
+        parse_tree.setFlag(name, NONE); //This is a kludge to tell the interpreter it's not a prototype
     }else{
         size_t index = lookup->second;
         Symbol& sym = symbol_table.symbols[index];
@@ -420,29 +423,34 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
         }
     }
 
-    size_t params_start = symbol_table.symbols.size();
+    bool expect_default = false;
     for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
         ParseNode param = parse_tree.arg(params, i);
         if(parse_tree.getOp(param) == OP_EQUAL){
             resolveExpr(parse_tree.rhs(param));
             param = parse_tree.lhs(param);
-        }
-        bool success = defineLocalScope( param, false );
-        assert(success);
-    }
-    resolveStmt(body);
-
-    bool expect_default = false;
-    for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
-        ParseNode n = parse_tree.arg(params, i);
-        if(parse_tree.getOp(n) == OP_EQUAL){
             expect_default = true;
         }else if(expect_default){
-            errors.push_back(Error(parse_tree.getSelection(n), EXPECT_DEFAULT_ARG));
+            errors.push_back(Error(parse_tree.getSelection(param), EXPECT_DEFAULT_ARG));
         }
 
-        Symbol& sym = symbol_table.symbols[params_start + i];
-        sym.is_const = !sym.is_reassigned;
+        bool success = defineLocalScope( param, false );
+        if(!success){
+            errors.pop_back();
+            errors.push_back(Error(parse_tree.getSelection(param), REDEFINE_PARAMETER));
+            parse_tree.setFlag(param, NONE);
+        }
+    }
+
+    resolveStmt(body);
+
+    for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
+        ParseNode param = parse_tree.arg(params, i);
+        size_t sym_id = parse_tree.getFlag(param);
+        if(sym_id != NONE){
+            Symbol& sym = symbol_table.symbols[sym_id];
+            sym.is_const = !sym.is_reassigned;
+        }
     }
 
     decreaseClosureDepth(parse_tree.getRight(body));
@@ -459,7 +467,8 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn){
     ParseNode id = parse_tree.lhs(pn);
     ParseNode rhs = parse_tree.rhs(pn);
 
-    if(parse_tree.getOp(id) != OP_IDENTIFIER || parse_tree.getOp(rhs) != OP_IDENTIFIER){
+    if(parse_tree.getOp(id) != OP_IDENTIFIER ||
+            (parse_tree.getOp(rhs) != OP_IDENTIFIER && parse_tree.getOp(rhs) != OP_INTEGER_LITERAL)){
         resolveDefault(pn);
         return;
     }
@@ -467,7 +476,8 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn){
     const Typeset::Selection& id_sel = parse_tree.getSelection(id);
     const Typeset::Selection& rhs_sel = parse_tree.getSelection(rhs);
 
-    if(map.find(id_sel) == map.end() || map.find(rhs_sel) == map.end()){
+    if(map.find(id_sel) == map.end() ||
+            (parse_tree.getOp(rhs) == OP_IDENTIFIER && map.find(rhs_sel) == map.end())){
         parse_tree.setOp(pn, OP_IDENTIFIER);
         resolveReference(pn);
     }else{

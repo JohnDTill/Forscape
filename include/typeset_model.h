@@ -98,10 +98,6 @@ private:
     friend Controller;
     friend Line;
     friend View;
-    friend Code::Scanner;
-    friend Code::Parser;
-    friend Code::SymbolTableBuilder;
-    friend Code::Interpreter;
 
     std::vector<Command*> undo_stack;
     std::vector<Command*> redo_stack;

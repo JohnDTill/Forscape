@@ -36,7 +36,7 @@ Selection::Selection(const Marker& left, const Marker& right) noexcept
     : right(right), left(left) {
     //assert(inValidState());
     #ifndef NDEBUG
-    std::cout << "INVALID MARKER" << std::endl; //EVENTUALLY: eliminate invalid markers
+    if(!inValidState()) std::cout << "INVALID SELECTION" << std::endl; //EVENTUALLY: eliminate invalid markers
     #endif
 }
 
@@ -530,6 +530,15 @@ bool Selection::contains(double x, double y) const noexcept{
     else return containsLine(x, y);
 }
 
+bool Selection::containsWithEmptyMargin(double x, double y) const noexcept{
+    if(right == left){
+        double x_sel = left.x();
+        return tR->containsY(y) && x >= x_sel && x <= x_sel + EMPTY_SUBPHRASE_MARGIN;
+    }else{
+        return contains(x, y);
+    }
+}
+
 bool Selection::containsText(double x, double y) const noexcept{
     return tR->containsY(y) && tR->containsXInBounds(x, iL, iR);
 }
@@ -643,7 +652,7 @@ void Selection::paintError(Painter& painter) const{
 }
 
 void Selection::paintErrorSelectionless(Painter& painter) const{
-    painter.drawError(xR, tL->y, 6, tR->height());
+    painter.drawError(xR, tL->y, EMPTY_SUBPHRASE_MARGIN, tR->height());
 }
 
 void Selection::paintErrorText(Painter& painter) const{
@@ -687,8 +696,10 @@ void Selection::paintErrorLines(Painter& painter) const{
     w = x_right - x;
     h = lR->height();
 
-    painter.drawError(x, y, w, h);
-    lR->paintUntil(painter, tR, iR);
+    if(!(right.atFirstTextInPhrase() && right.atTextStart())){
+        painter.drawError(x, y, w, h);
+        lR->paintUntil(painter, tR, iR);
+    }
 }
 
 void Selection::paintHighlight(Painter& painter) const{

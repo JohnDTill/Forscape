@@ -20,7 +20,15 @@ public:
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }
     double symbol_width;
 
-virtual void updateSizeSpecific() noexcept override {
+    virtual Text* textUp(const Subphrase* caller, double x) const noexcept override {
+        return caller->id==1 ? first()->textLeftOf(x) : prev();
+    }
+
+    virtual Text* textDown(const Subphrase* caller, double x) const noexcept override {
+        return caller->id==0 ? second()->textLeftOf(x) : next();
+    }
+
+    virtual void updateSizeSpecific() noexcept override {
         symbol_width = 1*getWidth(SEM_DEFAULT, parent->script_level, "∑");
         width = std::max(symbol_width, std::max(first()->width, second()->width));
         above_center = getAboveCenter(SEM_DEFAULT, parent->script_level) + first()->height();

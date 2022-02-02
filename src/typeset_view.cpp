@@ -365,7 +365,7 @@ void View::resolveTooltip(double x, double y) noexcept{
     if(model->is_output) return; //EVENTUALLY: find a better way to have different behaviours
 
     for(const Code::Error& err : model->errors){
-        if(err.selection.contains(x, y)){
+        if(err.selection.containsWithEmptyMargin(x, y)){
             setTooltipError(err.message());
             return;
         }
@@ -376,13 +376,17 @@ void View::resolveTooltip(double x, double y) noexcept{
         setToolTipDuration(std::numeric_limits<int>::max());
         const auto& symbol_table = model->symbol_builder.symbol_table;
         auto lookup = symbol_table.occurence_to_symbol_map.find(c.anchor);
-        assert(lookup != symbol_table.occurence_to_symbol_map.end());
-        const auto& symbol = symbol_table.symbols[lookup->second];
-        QString tooltip = "<b>" + QString::fromStdString(c.selectedText()) + "</b>";
-        if(symbol.comment != Hope::Code::ParseTree::EMPTY)
-            tooltip += "<div style=\"color:green\">" + QString::fromStdString(symbol_table.parse_tree.str(symbol.comment));
-        setToolTip(tooltip);
-        return;
+
+        //EVENTUALLY enable the assertion when idAt accurately reports identifier
+        //assert(lookup != symbol_table.occurence_to_symbol_map.end() || model->errors.size());
+        if(lookup != symbol_table.occurence_to_symbol_map.end()){
+            const auto& symbol = symbol_table.symbols[lookup->second];
+            QString tooltip = "<b>" + QString::fromStdString(c.selectedText()) + "</b>";
+            if(symbol.comment != Hope::Code::ParseTree::EMPTY)
+                tooltip += "<div style=\"color:green\">" + QString::fromStdString(symbol_table.parse_tree.str(symbol.comment));
+            setToolTip(tooltip);
+            return;
+        }
     }
 
     clearTooltip();
@@ -461,7 +465,7 @@ void View::updateHighlighting(){
     Controller c = model->idAt(controller.active);
     if(c.hasSelection()){
         auto& symbol_table = model->symbol_builder.symbol_table;
-        symbol_table.findHighlightedWords(c.getAnchor(), highlighted_words);
+        symbol_table.getSymbolOccurences(c.getAnchor(), highlighted_words);
     }
 }
 
@@ -884,10 +888,16 @@ void View::clearTooltip(){
 
 void View::undo(){
     model->undo(controller);
+    updateHighlighting();
+    recommender->hide();
+    repaint();
 }
 
 void View::redo(){
     model->redo(controller);
+    updateHighlighting();
+    recommender->hide();
+    repaint();
 }
 
 void View::selectAll() noexcept{
@@ -914,7 +924,7 @@ void View::rename(){
 
     auto& symbol_table = model->symbol_builder.symbol_table;
     std::vector<Typeset::Selection> occurences;
-    symbol_table.findHighlightedWords(c.getAnchor(), occurences);
+    symbol_table.getSymbolOccurences(c.getAnchor(), occurences);
     rename(occurences, name);
 }
 
@@ -940,7 +950,7 @@ void View::findUsages(){
 
     auto& symbol_table = model->symbol_builder.symbol_table;
     std::vector<Typeset::Selection> occurences;
-    symbol_table.findHighlightedWords(c.getAnchor(), occurences);
+    symbol_table.getSymbolOccurences(c.getAnchor(), occurences);
 
     Model* m = new Model();
     m->is_output = true;

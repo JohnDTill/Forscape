@@ -1,0 +1,11 @@
+//This function is hard to type without annotations
+alg ambiguousCall(f, a, b) print(f(a + b), "\n")
+
+//An implicit mult f ∈ ℝ
+ambiguousCall(3, 2, 2)
+
+//A call f : ℝ → ℝ
+ambiguousCall(x ↦ cos(x), π, π)
+
+//A string join and call f : 𝕊 → 𝕊
+ambiguousCall(x ↦ x + ", goodnight moon", "Hello ", "world")
