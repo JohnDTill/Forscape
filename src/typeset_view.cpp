@@ -888,10 +888,16 @@ void View::clearTooltip(){
 
 void View::undo(){
     model->undo(controller);
+    updateHighlighting();
+    recommender->hide();
+    repaint();
 }
 
 void View::redo(){
     model->redo(controller);
+    updateHighlighting();
+    recommender->hide();
+    repaint();
 }
 
 void View::selectAll() noexcept{
