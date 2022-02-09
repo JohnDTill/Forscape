@@ -1,0 +1,49 @@
+Every expression corresponds to a set of possible functions which could be the result of evaluation.
+We denote this set of abstract functions 𝔽
+Every call has a list of parameter types, ℙ
+Based on ℙ, we must instantiate every member of 𝔽 so that there is a set ℂ of concrete functions
+This forms the basis of static type checking.
+Before making the call, we need a way to map the members of 𝔽 to the members of ℂ.
+This is trivial where 𝔽 and ℂ have 1 member, which will be the vast majority of function calls.
+In other cases, you would need a dynamic map.
+I think it is okay if there is inherent dynamism which is usually optimised.
+
+This will limit/challenge compilation.
+alg echo(x) print(x)
+alg doCall(f){
+    f(1)
+    f("2nd instantiation of f within the same body!")
+}
+doCall(echo)
+f is passed once, but refers to two instantiations. This won't translate to most statically typed languages.
+However, I like this idea of statically typed, dynamically mapped. It's interesting if nothing else.
+
+For any function taking function arguments, you cannot be sure if it is already instantiated, as 𝔽 is not exactly a type
+The simplest thing is to always reinstantiate
+This is potentially wasteful since you are effectively currying any function taking function inputs
+Practically, I don't think it will be bad
+
+This should "just work" with closures - they are already set up in the abstract functions, and will be copied to instantiations
+
+Recursion is a bit tricky
+alg f(x){
+    return h(x)
+}
+alg h(x){
+    if(x > 0) return x + f(x-1)
+    else return 0
+}
+h(3)
+We need to take care we don't have instantiation cycles, but...
+We will see that an instantiation of h is in progress and give up on instantiating f.
+We shouldn't let this derail us.
+Perhaps at each level, we should track the functions we tried to instantiate and failed.
+Then when the return type is known, give type checking another go (error if return type is unknown).
+
+What about returning functions? Then the function return type is 𝔽, the set of all possible returned functions.
+The type checking will occur at any callsites.
+
+I think this idea is reasonable for the current system.
+What happens when you add integers and number types belong to a tree hierarchy?
+
+DO THIS - implement and remove note

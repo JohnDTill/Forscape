@@ -1,0 +1,9 @@
+alg h
+alg f(x){
+    return h(x)
+}
+alg h(x){
+    if(x > 0) return x + f(x-1)
+    else return 0
+}
+print(h(3))
