@@ -43,7 +43,25 @@ Then when the return type is known, give type checking another go (error if retu
 What about returning functions? Then the function return type is 𝔽, the set of all possible returned functions.
 The type checking will occur at any callsites.
 
-I think this idea is reasonable for the current system.
+This isn't niche. Actually, one of the main language features is second-order operators like differentiation.
+We need to calculate J(x) = ∂f/∂x. That is, partial differentiation takes a function input and returns a function output.
+It is similar to the following:
+alg funDecorator(f){
+    alg decorated(){
+        return 1 + f()
+    }
+    return decorated
+}
+alg f() return 1
+dec = funDecorator(funDecorator(f))
+print(dec())
+First, you instantiate the inner call to funDecorator, then the outer call.
+You'll instantiate instantiate decorated for the dec call, during which you'll instantiate f.
+from funDecorated being instantiated twice, there are two abstract implementations of decorated
+The case is a bit different with partial differentiation; you do want to differentiate at compile time.
+You instantiate derivative funcs for each member of 𝔽
+The process is complicated... maybe it is sound.
+
 What happens when you add integers and number types belong to a tree hierarchy?
 
 DO THIS - implement and remove note

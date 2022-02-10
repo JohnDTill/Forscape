@@ -1,0 +1,9 @@
+alg funDecorator(f){
+    alg decorated(){
+        return 1 + f()
+    }
+    return decorated
+}
+alg f() return 1
+dec = funDecorator(funDecorator(f))
+print(dec())
