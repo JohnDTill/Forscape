@@ -91,7 +91,7 @@ private:
     Value anonFun(ParseNode pn);
     Value call(ParseNode pn);
     void callStmt(ParseNode pn);
-    void callAlg(Algorithm &alg, ParseNode call);
+    Value innerCall(ParseNode call, ParseNode params, Closure& closure, ParseNode captured, ParseNode upvalues, ParseNode body, bool expect, bool is_lambda);
     Value elementAccess(ParseNode pn);
     typedef Eigen::ArithmeticSequence<Eigen::Index, Eigen::Index, Eigen::Index> Slice;
     Slice readSubscript(ParseNode pn, Eigen::Index max);
