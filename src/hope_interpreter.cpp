@@ -715,50 +715,14 @@ Value Interpreter::call(ParseNode call) {
                 error(INVALID_ARGS, call);
                 return NIL;
             }
-            size_t stack_size = stack.size();
-            Closure* old = active_closure;
-            active_closure = &f.closure;
             std::vector<std::pair<Value, std::string>> stack_vals;
-            for(size_t i = 0; i < nargs && status == NORMAL; i++){
-                ParseNode param = parse_tree.arg(params, i);
-                if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
-                Value v = interpretExpr(parse_tree.arg(call, i+1));
-                if(parse_tree.getOp(param) == OP_READ_UPVALUE){
-                    readUpvalue(param) = v;
-                }else{
-                    stack_vals.push_back({v, parse_tree.str(param)});
-                }
-            }
-            for(const auto& entry : stack_vals)
-                stack.push(entry.first, entry.second);
-
-            Value ans = interpretExpr(f.expr(parse_tree));
-            stack.trim(stack_size);
-            active_closure = old;
-            return ans;
-        }
-
-        case Algorithm_index:{
-            Algorithm& alg = std::get<Algorithm>(v);
-            breakLocalClosureLinks(alg.closure, alg.captured(parse_tree), alg.upvalues(parse_tree));
-            frames.push_back(stack.size());
-            size_t nargs = parse_tree.getNumArgs(call)-1;
-            ParseNode params = alg.params(parse_tree);
-            size_t nparams = parse_tree.getNumArgs(params);
-            if(nargs > nparams){
-                frames.pop_back();
-                error(INVALID_ARGS, call);
-                return NIL;
-            }
-            Closure* old = active_closure;
-            active_closure = &alg.closure;
-            std::vector<std::pair<Value, std::string>> stack_vals;
+            std::vector<std::pair<ParseNode, Value>> closure_vals;
             for(size_t i = 0; (i < nargs) & (status == NORMAL); i++){
                 ParseNode param = parse_tree.arg(params, i);
                 if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
                 Value v = interpretExpr(parse_tree.arg(call, i+1));
                 if(parse_tree.getOp(param) == OP_READ_UPVALUE){
-                    readUpvalue(param) = v;
+                    closure_vals.push_back({param, v});
                 }else{
                     stack_vals.push_back({v, parse_tree.str(param)});
                 }
@@ -776,13 +740,78 @@ Value Interpreter::call(ParseNode call) {
                 if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
                 Value v = interpretExpr(parse_tree.rhs(defnode));
                 if(parse_tree.getOp(param) == OP_READ_UPVALUE){
-                    readUpvalue(param) = v;
+                    closure_vals.push_back({param, v});
                 }else{
                     stack_vals.push_back({v, parse_tree.str(param)});
                 }
             }
+
+            breakLocalClosureLinks(f.closure, f.captured(parse_tree), f.upvalues(parse_tree));
+            size_t stack_size = stack.size();
+            Closure* old = active_closure;
+            active_closure = &f.closure;
+
             for(const auto& entry : stack_vals)
                 stack.push(entry.first, entry.second);
+            for(const auto& entry : closure_vals)
+                readUpvalue(entry.first) = entry.second;
+
+            Value ans = interpretExpr(f.expr(parse_tree));
+            stack.trim(stack_size);
+            active_closure = old;
+            return ans;
+        }
+
+        case Algorithm_index:{
+            Algorithm& alg = std::get<Algorithm>(v);
+            size_t nargs = parse_tree.getNumArgs(call)-1;
+            ParseNode params = alg.params(parse_tree);
+            size_t nparams = parse_tree.getNumArgs(params);
+            if(nargs > nparams){
+                error(INVALID_ARGS, call);
+                return NIL;
+            }
+            std::vector<std::pair<Value, std::string>> stack_vals;
+            std::vector<std::pair<ParseNode, Value>> closure_vals;
+            for(size_t i = 0; (i < nargs) & (status == NORMAL); i++){
+                ParseNode param = parse_tree.arg(params, i);
+                if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
+                Value v = interpretExpr(parse_tree.arg(call, i+1));
+                if(parse_tree.getOp(param) == OP_READ_UPVALUE){
+                    closure_vals.push_back({param, v});
+                }else{
+                    stack_vals.push_back({v, parse_tree.str(param)});
+                }
+            }
+            for(size_t i = nargs; (i < nparams)  & (status == NORMAL); i++){
+                ParseNode defnode = parse_tree.arg(params, i);
+                if(parse_tree.getOp(defnode) != OP_EQUAL){
+                    stack.trim(frames.back());
+                    frames.pop_back();
+
+                    error(INVALID_ARGS, call);
+                    return NIL;
+                }
+                ParseNode param = parse_tree.arg(params, i);
+                if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
+                Value v = interpretExpr(parse_tree.rhs(defnode));
+                if(parse_tree.getOp(param) == OP_READ_UPVALUE){
+                    closure_vals.push_back({param, v});
+                }else{
+                    stack_vals.push_back({v, parse_tree.str(param)});
+                }
+            }
+
+            breakLocalClosureLinks(alg.closure, alg.captured(parse_tree), alg.upvalues(parse_tree));
+            frames.push_back(stack.size());
+            Closure* old = active_closure;
+            active_closure = &alg.closure;
+
+            for(const auto& entry : stack_vals)
+                stack.push(entry.first, entry.second);
+            for(const auto& entry : closure_vals)
+                readUpvalue(entry.first) = entry.second;
+
             interpretStmt(alg.body(parse_tree));
             active_closure = old;
 
@@ -842,7 +871,6 @@ void Interpreter::callStmt(ParseNode pn){
 
         case Algorithm_index:{
             Algorithm& alg = std::get<Algorithm>(v);
-            breakLocalClosureLinks(alg.closure, alg.captured(parse_tree), alg.upvalues(parse_tree));
             size_t stack_size = stack.size();
             callAlg(alg, pn);
             if(status == RETURN) status = NORMAL;
@@ -855,7 +883,6 @@ void Interpreter::callStmt(ParseNode pn){
 }
 
 void Interpreter::callAlg(Algorithm& alg, ParseNode call){
-    frames.push_back(stack.size());
     size_t nargs = parse_tree.getNumArgs(call)-1;
     ParseNode params = alg.params(parse_tree);
     size_t nparams = parse_tree.getNumArgs(params);
@@ -863,15 +890,14 @@ void Interpreter::callAlg(Algorithm& alg, ParseNode call){
         error(INVALID_ARGS, call);
         return;
     }
-    Closure* old = active_closure;
-    active_closure = &alg.closure;
     std::vector<std::pair<Value, std::string>> stack_vals;
+    std::vector<std::pair<ParseNode, Value>> closure_vals;
     for(size_t i = 0; (i < nargs) & (status == NORMAL); i++){
         ParseNode param = parse_tree.arg(params, i);
         if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
         Value v = interpretExpr(parse_tree.arg(call, i+1));
         if(parse_tree.getOp(param) == OP_READ_UPVALUE){
-            readUpvalue(param) = v;
+            closure_vals.push_back({param, v});
         }else{
             stack_vals.push_back({v, parse_tree.str(param)});
         }
@@ -879,20 +905,31 @@ void Interpreter::callAlg(Algorithm& alg, ParseNode call){
     for(size_t i = nargs; (i < nparams)  & (status == NORMAL); i++){
         ParseNode defnode = parse_tree.arg(params, i);
         if(parse_tree.getOp(defnode) != OP_EQUAL){
+            stack.trim(frames.back());
+            frames.pop_back();
+
             error(INVALID_ARGS, call);
-            break;
+            return;
         }
         ParseNode param = parse_tree.arg(params, i);
         if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
         Value v = interpretExpr(parse_tree.rhs(defnode));
         if(parse_tree.getOp(param) == OP_READ_UPVALUE){
-            readUpvalue(param) = v;
+            closure_vals.push_back({param, v});
         }else{
             stack_vals.push_back({v, parse_tree.str(param)});
         }
     }
+
+    breakLocalClosureLinks(alg.closure, alg.captured(parse_tree), alg.upvalues(parse_tree));
+    frames.push_back(stack.size());
+    Closure* old = active_closure;
+    active_closure = &alg.closure;
+
     for(const auto& entry : stack_vals)
         stack.push(entry.first, entry.second);
+    for(const auto& entry : closure_vals)
+        readUpvalue(entry.first) = entry.second;
 
     interpretStmt(alg.body(parse_tree));
     active_closure = old;
