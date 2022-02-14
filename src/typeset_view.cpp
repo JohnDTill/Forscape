@@ -381,7 +381,8 @@ void View::resolveTooltip(double x, double y) noexcept{
         //assert(lookup != symbol_table.occurence_to_symbol_map.end() || model->errors.size());
         if(lookup != symbol_table.occurence_to_symbol_map.end()){
             const auto& symbol = symbol_table.symbols[lookup->second];
-            QString tooltip = "<b>" + QString::fromStdString(c.selectedText()) + "</b>";
+            QString tooltip = "<b>" + QString::fromStdString(c.selectedText()) + "</b> : "
+                    + QString::number(symbol.type); //DO THIS - convert type id to string
             if(symbol.comment != Hope::Code::ParseTree::EMPTY)
                 tooltip += "<div style=\"color:green\">" + QString::fromStdString(symbol_table.parse_tree.str(symbol.comment));
             setToolTip(tooltip);

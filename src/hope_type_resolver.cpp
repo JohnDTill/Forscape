@@ -32,12 +32,19 @@ void TypeResolver::reset() noexcept{
 void TypeResolver::resolveStmt(size_t pn) noexcept{
     assert(pn != ParseTree::EMPTY);
 
+    #define EXPECT(node, expected) \
+        if(resolveExpr(node) == TYPE_UNKNOWN){} /*DO THIS: DELETE THIS LINE*/ else \
+        if(resolveExpr(node) != expected){ \
+            error(node); \
+            return; \
+        }
+
     switch (parse_tree.getOp(pn)) {
         case OP_ASSIGN:
         case OP_EQUAL:{
             size_t sym_id = parse_tree.getFlag(parse_tree.lhs(pn));
             Symbol& sym = symbol_table.symbols[sym_id];
-            sym.type = resolveExpr(parse_tree.rhs(pn), TYPE_UNKNOWN);
+            sym.type = resolveExpr(parse_tree.rhs(pn));
             break;
         }
         case OP_REASSIGN:{
@@ -46,17 +53,12 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
             ParseNode lhs = parse_tree.lhs(pn);
             if(parse_tree.getOp(lhs) == OP_SUBSCRIPT_ACCESS){
                 for(size_t i = 0; i < parse_tree.getNumArgs(lhs); i++)
-                    if(resolveExpr(parse_tree.arg(lhs, i), TYPE_NUMERIC) != TYPE_NUMERIC)
-                        error(parse_tree.arg(lhs, i));
-                if(resolveExpr(parse_tree.rhs(pn), TYPE_NUMERIC) != TYPE_NUMERIC)
-                    error(parse_tree.rhs(pn));
+                    EXPECT(parse_tree.arg(lhs, i), TYPE_NUMERIC)
+                EXPECT(parse_tree.rhs(pn), TYPE_NUMERIC)
             }else{
                 size_t sym_id = parse_tree.getFlag(parse_tree.getFlag(parse_tree.lhs(pn)));
                 Symbol& sym = symbol_table.symbols[sym_id];
-                if(sym.type == TYPE_UNKNOWN)
-                    sym.type = resolveExpr(parse_tree.rhs(pn), TYPE_UNKNOWN);
-                else if(resolveExpr(parse_tree.rhs(pn), sym.type) != sym.type)
-                    error(parse_tree.rhs(pn));
+                EXPECT(parse_tree.rhs(pn), sym.type)
             }
             break;
         }
@@ -66,12 +68,10 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
 
             assert(!return_types.empty());
             size_t expected = return_types.top();
-            if(expected == TYPE_VOID){
-                error(parse_tree.child(pn));
-            }else if(expected == TYPE_UNKNOWN){
-                return_types.top() = resolveExpr(parse_tree.child(pn), TYPE_UNKNOWN);
-            }else if(resolveExpr(parse_tree.child(pn), expected) != expected){
-                error(parse_tree.child(pn));
+            if(expected == TYPE_UNKNOWN){
+                return_types.top() = resolveExpr(parse_tree.child(pn));
+            }else{
+                EXPECT(parse_tree.child(pn), expected)
             }
             break;
         }
@@ -88,7 +88,7 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
 
         case OP_ELEMENTWISE_ASSIGNMENT:{
             ParseNode lhs = parse_tree.lhs(pn);
-            if(resolveExpr(parse_tree.arg(lhs, 0), TYPE_NUMERIC) != TYPE_NUMERIC) error(parse_tree.arg(lhs, 0));
+            EXPECT(parse_tree.arg(lhs, 0), TYPE_NUMERIC)
 
             for(size_t i = 1; i < parse_tree.getNumArgs(lhs); i++){
                 ParseNode sub = parse_tree.arg(lhs, i);
@@ -96,46 +96,52 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
                     size_t sym_id = parse_tree.getFlag(sub);
                     Symbol& sym = symbol_table.symbols[sym_id];
                     sym.type = TYPE_NUMERIC;
-                }else if(resolveExpr(sub, TYPE_NUMERIC) != TYPE_NUMERIC){
-                    error(sub);
+                }else{
+                    EXPECT(sub, TYPE_NUMERIC)
                 }
             }
 
-            if(resolveExpr(parse_tree.rhs(pn), TYPE_NUMERIC) != TYPE_NUMERIC) error(parse_tree.rhs(pn));
+            EXPECT(parse_tree.rhs(pn), TYPE_NUMERIC)
             break;
         }
 
         case OP_IF:
         case OP_WHILE:
-            if(resolveExpr(parse_tree.lhs(pn), TYPE_BOOLEAN) != TYPE_BOOLEAN)
-                error(parse_tree.lhs(pn));
+            EXPECT(parse_tree.lhs(pn), TYPE_BOOLEAN)
             resolveStmt(parse_tree.rhs(pn));
             break;
 
         case OP_IF_ELSE:
-            if(resolveExpr(parse_tree.arg(pn, 0), TYPE_BOOLEAN) != TYPE_BOOLEAN)
-                error(parse_tree.arg(pn, 0));
+            EXPECT(parse_tree.arg(pn, 0), TYPE_BOOLEAN)
             resolveStmt(parse_tree.arg(pn, 1));
             resolveStmt(parse_tree.arg(pn, 2));
             break;
 
         case OP_FOR:
             resolveStmt(parse_tree.arg(pn, 0));
-            if(resolveExpr(parse_tree.arg(pn, 1), TYPE_BOOLEAN) != TYPE_BOOLEAN) error(parse_tree.arg(pn, 1));
+            EXPECT(parse_tree.arg(pn, 1), TYPE_BOOLEAN)
             resolveStmt(parse_tree.arg(pn, 2));
             resolveStmt(parse_tree.arg(pn, 3));
             break;
 
         case OP_EXPR_STMT:
-            resolveExpr(parse_tree.child(pn), TYPE_UNKNOWN);
+            resolveExpr(parse_tree.child(pn));
             break;
 
         case OP_ALGORITHM:{
+            size_t sym_id = parse_tree.getFlag(parse_tree.arg(pn, 0));
+            //DO THIS - SymbolTableBuilder::resolveAlgorithm sets the flag and should do something else
+            //symbol_table.symbols[sym_id].type = FUNCTION_PLACEHOLDER;
+
+            //DO THIS: type check default args
+            //DO THIS: type check captured vars
             //DO THIS: type is a function pool
 
-            //size_t type = resolveFunction(parse_tree.arg(pn, 4), parse_tree.arg(pn, 3), false);
-            //size_t sym_id = parse_tree.getFlag(parse_tree.arg(pn, 0));
-            //symbol_table.symbols[sym_id].type = type;
+            break;
+        }
+
+        case OP_PROTOTYPE_ALG:{
+            //DO THIS
             break;
         }
 
@@ -144,20 +150,22 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
             break;
 
         case OP_PRINT:
-            for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++) resolveExpr(parse_tree.arg(pn, i), TYPE_UNKNOWN);
+            for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++) resolveExpr(parse_tree.arg(pn, i));
             break;
 
         case OP_ASSERT:
-            if(resolveExpr(parse_tree.child(pn), TYPE_BOOLEAN) != TYPE_BOOLEAN)
-                error(parse_tree.child(pn));
+            EXPECT(parse_tree.child(pn), TYPE_BOOLEAN)
             break;
 
         default:
             assert(false);
     }
+
+    #undef EXPECT
 }
 
 size_t TypeResolver::instantiateFunc(size_t body, size_t params, bool is_lambda) noexcept{
+    /*
     //Resolve default params
     FuncSignature sig;
 
@@ -202,50 +210,54 @@ size_t TypeResolver::instantiateFunc(size_t body, size_t params, bool is_lambda)
     sig.args_end = function_type_pool.size();
 
     return getMemoizedType(sig);
+    */
+
+    //DO THIS
+    return TYPE_UNKNOWN;
 }
 
-size_t TypeResolver::resolveExpr(size_t pn, size_t expected) noexcept{
+size_t TypeResolver::resolveExpr(size_t pn) noexcept{
     assert(pn != ParseTree::EMPTY);
+
+    #define EXPECT_OR(node, expected, code) \
+        if(resolveExpr(node) == TYPE_UNKNOWN) return TYPE_UNKNOWN; /*DO THIS: DELETE THIS LINE*/ else \
+        if(resolveExpr(node) != expected) return error(node, code);
+
+    #define EXPECT(node, expected) \
+        if(resolveExpr(node) == TYPE_UNKNOWN) return TYPE_UNKNOWN; /*DO THIS: DELETE THIS LINE*/ else \
+        if(resolveExpr(node) != expected) return error(node);
 
     switch (parse_tree.getOp(pn)) {
         case OP_LAMBDA:
             //DO THIS - type is a function pool
-            break;
+            return FUNCTION_PLACEHOLDER;
             //return resolveFunction(parse_tree.arg(pn, 3), parse_tree.arg(pn, 2), true);
         case OP_IDENTIFIER:
         case OP_READ_GLOBAL:
         case OP_READ_UPVALUE:{
             ParseNode var = parse_tree.getFlag(pn);
             size_t sym_id = parse_tree.getFlag(var);
+            if(sym_id == ParseTree::EMPTY) return TYPE_UNKNOWN; //DO THIS: delete after fixing prototypes
             Symbol& sym = symbol_table.symbols[sym_id];
-            if(sym.type != TYPE_UNKNOWN){
-                return sym.type;
-            }else{
-                sym.type = expected;
-                return expected;
-            }
+
+            return sym.type;
         }
         case OP_CALL:
-            return callSite(pn, expected);
+            return callSite(pn);
         case OP_IMPLICIT_MULTIPLY:
-            return implicitMult(pn, expected);
+            return implicitMult(pn);
         case OP_ADDITION:{
-            for(size_t i = 0; i < parse_tree.getNumArgs(pn) && expected == TYPE_UNKNOWN; i++)
-                expected = resolveExpr(parse_tree.arg(pn, i), TYPE_UNKNOWN);
+            size_t expected = resolveExpr(parse_tree.arg(pn, 0));
+            if(expected != TYPE_NUMERIC && expected != TYPE_STRING) return error(parse_tree.arg(pn, 0), TYPE_NOT_ADDABLE);
 
-            if(expected == TYPE_UNKNOWN) return TYPE_UNKNOWN;
-            else if(expected != TYPE_NUMERIC && expected != TYPE_STRING) return error(parse_tree.arg(pn, 0), TYPE_NOT_ADDABLE);
-
-            for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
-                if(resolveExpr(parse_tree.arg(pn, i), expected) != expected)
-                    return error(parse_tree.arg(pn, i), TYPE_NOT_ADDABLE);
+            for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++)
+                EXPECT(parse_tree.arg(pn, i), expected)
 
             return expected;
         }
         case OP_SLICE:
             for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
-                if(resolveExpr(parse_tree.arg(pn, i), TYPE_NUMERIC) != TYPE_NUMERIC)
-                    return error(parse_tree.arg(pn, i), BAD_READ_OR_SUBSCRIPT);
+                EXPECT_OR(parse_tree.arg(pn, i), TYPE_NUMERIC, BAD_READ_OR_SUBSCRIPT);
             return TYPE_NUMERIC;
         case OP_SLICE_ALL:
             return TYPE_NUMERIC;
@@ -255,12 +267,11 @@ size_t TypeResolver::resolveExpr(size_t pn, size_t expected) noexcept{
         case OP_ELEMENTWISE_ASSIGNMENT: //DO THIS - you need to distinguish between ewise assignment and normal var subscripts
         case OP_UNIT_VECTOR:
             for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
-                if(resolveExpr(parse_tree.arg(pn, i), TYPE_NUMERIC) != TYPE_NUMERIC)
-                    return error(parse_tree.arg(pn, i));
+                EXPECT(parse_tree.arg(pn, i), TYPE_NUMERIC)
             return TYPE_NUMERIC;
         case OP_GROUP_BRACKET:
         case OP_GROUP_PAREN:
-            return resolveExpr(parse_tree.child(pn), expected);
+            return resolveExpr(parse_tree.child(pn));
         case OP_SUBTRACTION:
         case OP_DIVIDE:
         case OP_FRACTION:
@@ -277,11 +288,11 @@ size_t TypeResolver::resolveExpr(size_t pn, size_t expected) noexcept{
         case OP_NORM_p:
         case OP_POWER:
         case OP_ROOT:
-            if(resolveExpr(parse_tree.lhs(pn), TYPE_NUMERIC) != TYPE_NUMERIC) return error(parse_tree.lhs(pn));
-            if(resolveExpr(parse_tree.rhs(pn), TYPE_NUMERIC) != TYPE_NUMERIC) return error(parse_tree.rhs(pn));
+            EXPECT(parse_tree.lhs(pn), TYPE_NUMERIC)
+            EXPECT(parse_tree.rhs(pn), TYPE_NUMERIC)
             return TYPE_NUMERIC;
         case OP_LENGTH:
-            if(resolveExpr(parse_tree.child(pn), TYPE_NUMERIC) != TYPE_NUMERIC) return error(parse_tree.child(pn));
+            EXPECT(parse_tree.child(pn), TYPE_NUMERIC)
             return TYPE_NUMERIC;
         case OP_ARCCOSINE:
         case OP_ARCCOTANGENT:
@@ -308,60 +319,47 @@ size_t TypeResolver::resolveExpr(size_t pn, size_t expected) noexcept{
         case OP_TANGENT:
         case OP_TRANSPOSE:
         case OP_UNARY_MINUS:
-            if(resolveExpr(parse_tree.child(pn), TYPE_NUMERIC) != TYPE_NUMERIC) return error(parse_tree.child(pn));
+            EXPECT(parse_tree.child(pn), TYPE_NUMERIC)
             return TYPE_NUMERIC;
         case OP_SUMMATION:
         case OP_PRODUCT:{
             ParseNode asgn = parse_tree.arg(pn, 0);
             assert(parse_tree.getOp(asgn) == OP_ASSIGN);
             symbol_table.symbols[parse_tree.getFlag(parse_tree.lhs(asgn))].type = TYPE_NUMERIC;
-            if(resolveExpr(parse_tree.rhs(asgn), TYPE_NUMERIC) != TYPE_NUMERIC) return error(parse_tree.rhs(asgn));
-            if(resolveExpr(parse_tree.arg(pn, 1), TYPE_NUMERIC) != TYPE_NUMERIC) return error(parse_tree.arg(pn, 1));
-            if(resolveExpr(parse_tree.arg(pn, 2), TYPE_NUMERIC) != TYPE_NUMERIC) return error(parse_tree.arg(pn, 2));
+            EXPECT(parse_tree.rhs(asgn), TYPE_NUMERIC)
+            EXPECT(parse_tree.arg(pn, 1), TYPE_NUMERIC)
+            EXPECT(parse_tree.arg(pn, 2), TYPE_NUMERIC)
             return TYPE_NUMERIC;
         }
         case OP_LOGICAL_NOT:
-            if(resolveExpr(parse_tree.child(pn), TYPE_NUMERIC) != TYPE_BOOLEAN) return error(parse_tree.child(pn));
+            EXPECT(parse_tree.child(pn), TYPE_BOOLEAN)
             return TYPE_BOOLEAN;
         case OP_LOGICAL_AND:
         case OP_LOGICAL_OR:
-            if(resolveExpr(parse_tree.lhs(pn), TYPE_BOOLEAN) != TYPE_BOOLEAN) return error(parse_tree.lhs(pn));
-            if(resolveExpr(parse_tree.rhs(pn), TYPE_BOOLEAN) != TYPE_BOOLEAN) return error(parse_tree.rhs(pn));
+            EXPECT(parse_tree.lhs(pn), TYPE_BOOLEAN)
+            EXPECT(parse_tree.rhs(pn), TYPE_BOOLEAN)
             return TYPE_BOOLEAN;
         case OP_GREATER:
         case OP_GREATER_EQUAL:
         case OP_LESS:
         case OP_LESS_EQUAL:
-            if(resolveExpr(parse_tree.lhs(pn), TYPE_NUMERIC) != TYPE_NUMERIC) return error(parse_tree.lhs(pn));
-            if(resolveExpr(parse_tree.rhs(pn), TYPE_NUMERIC) != TYPE_NUMERIC) return error(parse_tree.rhs(pn));
+            EXPECT(parse_tree.lhs(pn), TYPE_NUMERIC)
+            EXPECT(parse_tree.rhs(pn), TYPE_NUMERIC)
             return TYPE_BOOLEAN;
         case OP_CASES:{
             //DO THIS - function groups can accumulate here
 
             for(size_t i = 1; i < parse_tree.getNumArgs(pn); i+=2)
-                if(resolveExpr(parse_tree.arg(pn, i), TYPE_BOOLEAN) != TYPE_BOOLEAN) return error(parse_tree.arg(pn, i));
+                EXPECT(parse_tree.arg(pn, i), TYPE_BOOLEAN)
 
-            for(size_t i = 0; i < parse_tree.getNumArgs(pn) && expected == TYPE_UNKNOWN; i+=2)
-                expected = resolveExpr(parse_tree.arg(pn, i), TYPE_UNKNOWN);
-
-            if(expected == TYPE_UNKNOWN) return TYPE_UNKNOWN;
-
-            for(size_t i = 0; i < parse_tree.getNumArgs(pn); i+=2)
-                if(resolveExpr(parse_tree.arg(pn, i), expected) != expected)
-                    return error(parse_tree.arg(pn, i));
-
+            size_t expected = resolveExpr(parse_tree.arg(pn, 0));
+            for(size_t i = 2; i < parse_tree.getNumArgs(pn); i+=2)
+                EXPECT(parse_tree.arg(pn, i), expected)
             return expected;
         }
         case OP_EQUAL:
         case OP_NOT_EQUAL:{
-            size_t type = resolveExpr(parse_tree.lhs(pn), TYPE_UNKNOWN);
-            if(type == TYPE_UNKNOWN){
-                type = resolveExpr(parse_tree.rhs(pn), TYPE_UNKNOWN);
-                if(resolveExpr(parse_tree.lhs(pn), type) != type) return error(pn);
-            }else if(resolveExpr(parse_tree.rhs(pn), type) != type){
-                return error(pn);
-            }
-
+            EXPECT(parse_tree.rhs(pn), resolveExpr(parse_tree.lhs(pn)))
             return TYPE_BOOLEAN;
         }
         case OP_DECIMAL_LITERAL:
@@ -386,17 +384,19 @@ size_t TypeResolver::resolveExpr(size_t pn, size_t expected) noexcept{
     }
 }
 
-size_t TypeResolver::callSite(size_t pn, size_t expected) noexcept{
+size_t TypeResolver::callSite(size_t pn) noexcept{
     ParseNode call_expr = parse_tree.arg(pn, 0);
     size_t node_size = parse_tree.getNumArgs(pn);
-    size_t callable_type = resolveExpr(call_expr, TYPE_UNKNOWN);
+    size_t callable_type = resolveExpr(call_expr);
 
     if(callable_type == TYPE_NUMERIC){
-        bool is_mult = (node_size == 2 && resolveExpr(parse_tree.rhs(pn), TYPE_NUMERIC) == TYPE_NUMERIC);
+        bool is_mult = (node_size == 2 && resolveExpr(parse_tree.rhs(pn)) == TYPE_NUMERIC);
         return is_mult ? TYPE_NUMERIC : error(pn, NOT_CALLABLE);
     }else if(!isAbstractFunctionGroup(callable_type)){
         return error(parse_tree.arg(pn, 0), NOT_CALLABLE);
     }
+
+    return TYPE_UNKNOWN;
 
     //DO THIS - instantiate all the functions out of the pool
     //          make sure they have the same return type and no conflicts
@@ -418,19 +418,24 @@ size_t TypeResolver::callSite(size_t pn, size_t expected) noexcept{
     */
 }
 
-size_t TypeResolver::implicitMult(size_t pn, size_t expected, size_t start) noexcept{
+size_t TypeResolver::implicitMult(size_t pn, size_t start) noexcept{
     ParseNode lhs = parse_tree.arg(pn, start);
-    size_t tl = resolveExpr(lhs, expected);
+    size_t tl = resolveExpr(lhs);
     if(start == parse_tree.getNumArgs(pn)-1) return tl;
     else if(tl == TYPE_NUMERIC){
-        if(implicitMult(pn, TYPE_NUMERIC, start+1) != TYPE_NUMERIC) return error(parse_tree.arg(pn, start+1));
+        if(implicitMult(pn, start+1) != TYPE_NUMERIC) return error(parse_tree.arg(pn, start+1));
         return TYPE_NUMERIC;
     }else if(!isAbstractFunctionGroup(tl)){
         return error(lhs, NOT_CALLABLE);
     }
 
+    return TYPE_UNKNOWN;
+    //DO THIS
+
     const FuncSignature& fun = function_sig_pool[tl];
     if(fun.numParams() != 1) return error(pn);
+
+    return TYPE_UNKNOWN;
 
     //DO THIS - instantiate the functions from the pool
 
@@ -441,7 +446,7 @@ size_t TypeResolver::implicitMult(size_t pn, size_t expected, size_t start) noex
 
 size_t TypeResolver::error(size_t pn, ErrorCode code) noexcept{
     errors.push_back(Error(parse_tree.getSelection(pn), code));
-    return TYPE_UNKNOWN;
+    return TYPE_FAILURE;
 }
 
 }

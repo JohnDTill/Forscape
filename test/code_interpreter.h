@@ -44,6 +44,8 @@ inline bool testCase(const std::string& name){
     std::string in = readFile(base_test_path + "/in/" + name + ".txt");
     std::string out = readFile(base_test_path + "/out/" + name + ".txt");
 
+    std::cout << name << std::endl;
+
     Typeset::Model* input = Typeset::Model::fromSerial(in);
     std::string str = input->run();
 

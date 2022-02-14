@@ -32,7 +32,8 @@ class TypeResolver{
     static constexpr size_t TYPE_FAILURE = std::numeric_limits<size_t>::max()-4;
     static constexpr size_t TYPE_VOID = std::numeric_limits<size_t>::max()-5;
     static constexpr bool isAbstractFunctionGroup(size_t type) noexcept {
-        return type < TYPE_VOID;
+        return type < TYPE_VOID
+                || type == TYPE_UNKNOWN; //DO THIS: DELETE THIS LINE
     }
 
     typedef std::set<size_t> AbstractFunctionPool;
@@ -102,17 +103,16 @@ class TypeResolver{
 
     static std::unordered_set<size_t, FuncSignatureHash, FuncSignatureEqual> memoized_signatures;
 
+    static constexpr size_t FUNCTION_PLACEHOLDER = 0;
+
     static size_t getMemoizedType(const FuncSignature& sig){
         size_t index = function_sig_pool.size();
         function_sig_pool.push_back(sig);
 
         auto lookup = memoized_signatures.insert(index);
         if(lookup.second){
-            std::cout << "Memoized, returning " << index << std::endl;
             return index;
         }
-
-        std::cout << "Found, returning " << (*lookup.first) << std::endl;
 
         function_type_pool.resize(function_type_pool.size() - sig.numTypes());
         return *lookup.first;
@@ -126,9 +126,9 @@ class TypeResolver{
         void reset() noexcept;
         void resolveStmt(size_t pn) noexcept;
         size_t instantiateFunc(size_t body, size_t params, bool is_lambda) noexcept;
-        size_t resolveExpr(size_t pn, size_t expected) noexcept;
-        size_t callSite(size_t pn, size_t expected) noexcept;
-        size_t implicitMult(size_t pn, size_t expected, size_t start = 0) noexcept;
+        size_t resolveExpr(size_t pn) noexcept;
+        size_t callSite(size_t pn) noexcept;
+        size_t implicitMult(size_t pn, size_t start = 0) noexcept;
         size_t error(size_t pn, ErrorCode code = ErrorCode::TYPE_ERROR) noexcept;
 
         ParseTree& parse_tree;
