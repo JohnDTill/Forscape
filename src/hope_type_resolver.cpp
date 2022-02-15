@@ -130,8 +130,7 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
 
         case OP_ALGORITHM:{
             size_t sym_id = parse_tree.getFlag(parse_tree.arg(pn, 0));
-            //DO THIS - SymbolTableBuilder::resolveAlgorithm sets the flag and should do something else
-            //symbol_table.symbols[sym_id].type = FUNCTION_PLACEHOLDER;
+            symbol_table.symbols[sym_id].type = FUNCTION_PLACEHOLDER;
 
             //DO THIS: type check default args
             //DO THIS: type check captured vars
@@ -237,7 +236,6 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
         case OP_READ_UPVALUE:{
             ParseNode var = parse_tree.getFlag(pn);
             size_t sym_id = parse_tree.getFlag(var);
-            if(sym_id == ParseTree::EMPTY) return TYPE_UNKNOWN; //DO THIS: delete after fixing prototypes
             Symbol& sym = symbol_table.symbols[sym_id];
 
             return sym.type;
