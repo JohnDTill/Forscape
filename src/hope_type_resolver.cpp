@@ -12,10 +12,6 @@ namespace Hope {
 
 namespace Code {
 
-std::vector<size_t> TypeResolver::function_type_pool;
-std::vector<TypeResolver::FuncSignature> TypeResolver::function_sig_pool;
-std::unordered_set<size_t, TypeResolver::FuncSignatureHash, TypeResolver::FuncSignatureEqual> TypeResolver::memoized_signatures;
-
 TypeResolver::TypeResolver(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors) noexcept
     : parse_tree(parse_tree), symbol_table(symbol_table), errors(errors) {}
 
@@ -25,15 +21,17 @@ void TypeResolver::resolve(){
 }
 
 void TypeResolver::reset() noexcept{
+    ts.reset();
+
     for(Symbol& sym : symbol_table.symbols)
-        sym.type = TYPE_UNKNOWN;
+        sym.type = TypeSystem::UNKNOWN;
 }
 
 void TypeResolver::resolveStmt(size_t pn) noexcept{
     assert(pn != ParseTree::EMPTY);
 
     #define EXPECT(node, expected) \
-        if(resolveExpr(node) == TYPE_UNKNOWN){} /*DO THIS: DELETE THIS LINE*/ else \
+        if(resolveExpr(node) == TypeSystem::UNKNOWN){} /*DO THIS: DELETE THIS LINE*/ else \
         if(resolveExpr(node) != expected){ \
             error(node); \
             return; \
@@ -48,17 +46,22 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
             break;
         }
         case OP_REASSIGN:{
-            //DO THIS - function groups can accumulate here
-
             ParseNode lhs = parse_tree.lhs(pn);
             if(parse_tree.getOp(lhs) == OP_SUBSCRIPT_ACCESS){
                 for(size_t i = 0; i < parse_tree.getNumArgs(lhs); i++)
-                    EXPECT(parse_tree.arg(lhs, i), TYPE_NUMERIC)
-                EXPECT(parse_tree.rhs(pn), TYPE_NUMERIC)
+                    EXPECT(parse_tree.arg(lhs, i), TypeSystem::NUMERIC)
+                EXPECT(parse_tree.rhs(pn), TypeSystem::NUMERIC)
             }else{
                 size_t sym_id = parse_tree.getFlag(parse_tree.getFlag(parse_tree.lhs(pn)));
                 Symbol& sym = symbol_table.symbols[sym_id];
-                EXPECT(parse_tree.rhs(pn), sym.type)
+                if(TypeSystem::isAbstractFunctionGroup(sym.type)){
+                    Type t = resolveExpr(parse_tree.rhs(pn));
+                    if(!TypeSystem::isAbstractFunctionGroup(t)){
+                        error(parse_tree.rhs(pn));
+                    }else{
+                        sym.type = ts.functionSetUnion(sym.type, t);
+                    }
+                }else EXPECT(parse_tree.rhs(pn), sym.type)
             }
             break;
         }
@@ -68,8 +71,15 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
 
             assert(!return_types.empty());
             size_t expected = return_types.top();
-            if(expected == TYPE_UNKNOWN){
+            if(expected == TypeSystem::UNKNOWN){
                 return_types.top() = resolveExpr(parse_tree.child(pn));
+            }else if(TypeSystem::isAbstractFunctionGroup(expected)){
+                Type t = resolveExpr(parse_tree.child(pn));
+                if(!TypeSystem::isAbstractFunctionGroup(t)){
+                    error(parse_tree.child(pn));
+                }else{
+                    return_types.top() = ts.functionSetUnion(return_types.top(), t); //DO THIS - inefficient
+                }
             }else{
                 EXPECT(parse_tree.child(pn), expected)
             }
@@ -78,9 +88,9 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
 
         case OP_RETURN_EMPTY:{
             assert(!return_types.empty());
-            if(return_types.top() == TYPE_UNKNOWN){
-                return_types.top() = TYPE_VOID;
-            }else if(return_types.top() != TYPE_VOID){
+            if(return_types.top() == TypeSystem::UNKNOWN){
+                return_types.top() = TypeSystem::VOID;
+            }else if(return_types.top() != TypeSystem::VOID){
                 error(pn);
             }
             break;
@@ -88,38 +98,38 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
 
         case OP_ELEMENTWISE_ASSIGNMENT:{
             ParseNode lhs = parse_tree.lhs(pn);
-            EXPECT(parse_tree.arg(lhs, 0), TYPE_NUMERIC)
+            EXPECT(parse_tree.arg(lhs, 0), TypeSystem::NUMERIC)
 
             for(size_t i = 1; i < parse_tree.getNumArgs(lhs); i++){
                 ParseNode sub = parse_tree.arg(lhs, i);
                 if(parse_tree.getOp(sub) == OP_IDENTIFIER){
                     size_t sym_id = parse_tree.getFlag(sub);
                     Symbol& sym = symbol_table.symbols[sym_id];
-                    sym.type = TYPE_NUMERIC;
+                    sym.type = TypeSystem::NUMERIC;
                 }else{
-                    EXPECT(sub, TYPE_NUMERIC)
+                    EXPECT(sub, TypeSystem::NUMERIC)
                 }
             }
 
-            EXPECT(parse_tree.rhs(pn), TYPE_NUMERIC)
+            EXPECT(parse_tree.rhs(pn), TypeSystem::NUMERIC)
             break;
         }
 
         case OP_IF:
         case OP_WHILE:
-            EXPECT(parse_tree.lhs(pn), TYPE_BOOLEAN)
+            EXPECT(parse_tree.lhs(pn), TypeSystem::BOOLEAN)
             resolveStmt(parse_tree.rhs(pn));
             break;
 
         case OP_IF_ELSE:
-            EXPECT(parse_tree.arg(pn, 0), TYPE_BOOLEAN)
+            EXPECT(parse_tree.arg(pn, 0), TypeSystem::BOOLEAN)
             resolveStmt(parse_tree.arg(pn, 1));
             resolveStmt(parse_tree.arg(pn, 2));
             break;
 
         case OP_FOR:
             resolveStmt(parse_tree.arg(pn, 0));
-            EXPECT(parse_tree.arg(pn, 1), TYPE_BOOLEAN)
+            EXPECT(parse_tree.arg(pn, 1), TypeSystem::BOOLEAN)
             resolveStmt(parse_tree.arg(pn, 2));
             resolveStmt(parse_tree.arg(pn, 3));
             break;
@@ -130,17 +140,17 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
 
         case OP_ALGORITHM:{
             size_t sym_id = parse_tree.getFlag(parse_tree.arg(pn, 0));
-            symbol_table.symbols[sym_id].type = FUNCTION_PLACEHOLDER;
+            symbol_table.symbols[sym_id].type = ts.makeFunctionSet(pn);
 
             //DO THIS: type check default args
-            //DO THIS: type check captured vars
-            //DO THIS: type is a function pool
+            //DO THIS: set types of captured vars
 
             break;
         }
 
         case OP_PROTOTYPE_ALG:{
-            //DO THIS
+            size_t sym_id = parse_tree.getFlag(parse_tree.arg(pn, 0));
+            symbol_table.symbols[sym_id].type = ts.makeFunctionSet(pn);
             break;
         }
 
@@ -153,7 +163,7 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
             break;
 
         case OP_ASSERT:
-            EXPECT(parse_tree.child(pn), TYPE_BOOLEAN)
+            EXPECT(parse_tree.child(pn), TypeSystem::BOOLEAN)
             break;
 
         default:
@@ -172,7 +182,7 @@ size_t TypeResolver::instantiateFunc(size_t body, size_t params, bool is_lambda)
         ParseNode param = parse_tree.arg(params, i);
         if(parse_tree.getOp(param) == OP_EQUAL){
             sig.n_default++;
-            size_t type = resolveExpr(parse_tree.rhs(param), TYPE_UNKNOWN);
+            size_t type = resolveExpr(parse_tree.rhs(param), TypeSystem::UNKNOWN);
             size_t sym_id = parse_tree.getFlag(parse_tree.lhs(param));
             symbol_table.symbols[sym_id].type = type;
         }
@@ -181,15 +191,15 @@ size_t TypeResolver::instantiateFunc(size_t body, size_t params, bool is_lambda)
     //Resolve body
     size_t return_type;
     if(is_lambda){
-        return_type = resolveExpr(body, TYPE_UNKNOWN);
+        return_type = resolveExpr(body, TypeSystem::UNKNOWN);
     }else{
-        return_types.push(TYPE_UNKNOWN);
+        return_types.push(TypeSystem::UNKNOWN);
         resolveStmt(body);
 
         //Handle return type
         size_t return_type = return_types.top();
         return_types.pop();
-        if(return_type == TYPE_UNKNOWN) return_type = TYPE_VOID; //DO THIS - perhaps you failed to deduce the value of a return expr
+        if(return_type == TypeSystem::UNKNOWN) return_type = TypeSystem::VOID; //DO THIS - perhaps you failed to deduce the value of a return expr
     }
     sig.args_begin = function_type_pool.size();
     function_type_pool.push_back(return_type);
@@ -200,7 +210,7 @@ size_t TypeResolver::instantiateFunc(size_t body, size_t params, bool is_lambda)
     for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
         ParseNode arg = parse_tree.arg(params, i);
         Symbol& sym = symbol_table.symbols[parse_tree.getFlag(arg)];
-        if(sym.type == TYPE_UNKNOWN) return error(arg); //Failed to deduce type
+        if(sym.type == TypeSystem::UNKNOWN) return error(arg); //Failed to deduce type
         else function_type_pool.push_back(sym.type);
     }
 
@@ -212,25 +222,25 @@ size_t TypeResolver::instantiateFunc(size_t body, size_t params, bool is_lambda)
     */
 
     //DO THIS
-    return TYPE_UNKNOWN;
+    return TypeSystem::UNKNOWN;
 }
 
 size_t TypeResolver::resolveExpr(size_t pn) noexcept{
     assert(pn != ParseTree::EMPTY);
 
     #define EXPECT_OR(node, expected, code) \
-        if(resolveExpr(node) == TYPE_UNKNOWN) return TYPE_UNKNOWN; /*DO THIS: DELETE THIS LINE*/ else \
+        if(resolveExpr(node) == TypeSystem::UNKNOWN) return TypeSystem::UNKNOWN; /*DO THIS: DELETE THIS LINE*/ else \
         if(resolveExpr(node) != expected) return error(node, code);
 
     #define EXPECT(node, expected) \
-        if(resolveExpr(node) == TYPE_UNKNOWN) return TYPE_UNKNOWN; /*DO THIS: DELETE THIS LINE*/ else \
+        if(resolveExpr(node) == TypeSystem::UNKNOWN) return TypeSystem::UNKNOWN; /*DO THIS: DELETE THIS LINE*/ else \
         if(resolveExpr(node) != expected) return error(node);
 
     switch (parse_tree.getOp(pn)) {
         case OP_LAMBDA:
-            //DO THIS - type is a function pool
-            return FUNCTION_PLACEHOLDER;
-            //return resolveFunction(parse_tree.arg(pn, 3), parse_tree.arg(pn, 2), true);
+            //DO THIS: type check default args
+            //DO THIS: set types of captured vars
+            return ts.makeFunctionSet(pn);
         case OP_IDENTIFIER:
         case OP_READ_GLOBAL:
         case OP_READ_UPVALUE:{
@@ -246,7 +256,7 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
             return implicitMult(pn);
         case OP_ADDITION:{
             size_t expected = resolveExpr(parse_tree.arg(pn, 0));
-            if(expected != TYPE_NUMERIC && expected != TYPE_STRING) return error(parse_tree.arg(pn, 0), TYPE_NOT_ADDABLE);
+            if(expected != TypeSystem::NUMERIC && expected != TypeSystem::STRING) return error(parse_tree.arg(pn, 0), TYPE_NOT_ADDABLE);
 
             for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++)
                 EXPECT(parse_tree.arg(pn, i), expected)
@@ -255,18 +265,18 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
         }
         case OP_SLICE:
             for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
-                EXPECT_OR(parse_tree.arg(pn, i), TYPE_NUMERIC, BAD_READ_OR_SUBSCRIPT);
-            return TYPE_NUMERIC;
+                EXPECT_OR(parse_tree.arg(pn, i), TypeSystem::NUMERIC, BAD_READ_OR_SUBSCRIPT);
+            return TypeSystem::NUMERIC;
         case OP_SLICE_ALL:
-            return TYPE_NUMERIC;
+            return TypeSystem::NUMERIC;
         case OP_MULTIPLICATION:
         case OP_MATRIX:
         case OP_SUBSCRIPT_ACCESS:
         case OP_ELEMENTWISE_ASSIGNMENT: //DO THIS - you need to distinguish between ewise assignment and normal var subscripts
         case OP_UNIT_VECTOR:
             for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
-                EXPECT(parse_tree.arg(pn, i), TYPE_NUMERIC)
-            return TYPE_NUMERIC;
+                EXPECT(parse_tree.arg(pn, i), TypeSystem::NUMERIC)
+            return TypeSystem::NUMERIC;
         case OP_GROUP_BRACKET:
         case OP_GROUP_PAREN:
             return resolveExpr(parse_tree.child(pn));
@@ -286,12 +296,12 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
         case OP_NORM_p:
         case OP_POWER:
         case OP_ROOT:
-            EXPECT(parse_tree.lhs(pn), TYPE_NUMERIC)
-            EXPECT(parse_tree.rhs(pn), TYPE_NUMERIC)
-            return TYPE_NUMERIC;
+            EXPECT(parse_tree.lhs(pn), TypeSystem::NUMERIC)
+            EXPECT(parse_tree.rhs(pn), TypeSystem::NUMERIC)
+            return TypeSystem::NUMERIC;
         case OP_LENGTH:
-            EXPECT(parse_tree.child(pn), TYPE_NUMERIC)
-            return TYPE_NUMERIC;
+            EXPECT(parse_tree.child(pn), TypeSystem::NUMERIC)
+            return TypeSystem::NUMERIC;
         case OP_ARCCOSINE:
         case OP_ARCCOTANGENT:
         case OP_ARCSINE:
@@ -317,48 +327,53 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
         case OP_TANGENT:
         case OP_TRANSPOSE:
         case OP_UNARY_MINUS:
-            EXPECT(parse_tree.child(pn), TYPE_NUMERIC)
-            return TYPE_NUMERIC;
+            EXPECT(parse_tree.child(pn), TypeSystem::NUMERIC)
+            return TypeSystem::NUMERIC;
         case OP_SUMMATION:
         case OP_PRODUCT:{
             ParseNode asgn = parse_tree.arg(pn, 0);
             assert(parse_tree.getOp(asgn) == OP_ASSIGN);
-            symbol_table.symbols[parse_tree.getFlag(parse_tree.lhs(asgn))].type = TYPE_NUMERIC;
-            EXPECT(parse_tree.rhs(asgn), TYPE_NUMERIC)
-            EXPECT(parse_tree.arg(pn, 1), TYPE_NUMERIC)
-            EXPECT(parse_tree.arg(pn, 2), TYPE_NUMERIC)
-            return TYPE_NUMERIC;
+            symbol_table.symbols[parse_tree.getFlag(parse_tree.lhs(asgn))].type = TypeSystem::NUMERIC;
+            EXPECT(parse_tree.rhs(asgn), TypeSystem::NUMERIC)
+            EXPECT(parse_tree.arg(pn, 1), TypeSystem::NUMERIC)
+            EXPECT(parse_tree.arg(pn, 2), TypeSystem::NUMERIC)
+            return TypeSystem::NUMERIC;
         }
         case OP_LOGICAL_NOT:
-            EXPECT(parse_tree.child(pn), TYPE_BOOLEAN)
-            return TYPE_BOOLEAN;
+            EXPECT(parse_tree.child(pn), TypeSystem::BOOLEAN)
+            return TypeSystem::BOOLEAN;
         case OP_LOGICAL_AND:
         case OP_LOGICAL_OR:
-            EXPECT(parse_tree.lhs(pn), TYPE_BOOLEAN)
-            EXPECT(parse_tree.rhs(pn), TYPE_BOOLEAN)
-            return TYPE_BOOLEAN;
+            EXPECT(parse_tree.lhs(pn), TypeSystem::BOOLEAN)
+            EXPECT(parse_tree.rhs(pn), TypeSystem::BOOLEAN)
+            return TypeSystem::BOOLEAN;
         case OP_GREATER:
         case OP_GREATER_EQUAL:
         case OP_LESS:
         case OP_LESS_EQUAL:
-            EXPECT(parse_tree.lhs(pn), TYPE_NUMERIC)
-            EXPECT(parse_tree.rhs(pn), TYPE_NUMERIC)
-            return TYPE_BOOLEAN;
+            EXPECT(parse_tree.lhs(pn), TypeSystem::NUMERIC)
+            EXPECT(parse_tree.rhs(pn), TypeSystem::NUMERIC)
+            return TypeSystem::BOOLEAN;
         case OP_CASES:{
-            //DO THIS - function groups can accumulate here
-
             for(size_t i = 1; i < parse_tree.getNumArgs(pn); i+=2)
-                EXPECT(parse_tree.arg(pn, i), TYPE_BOOLEAN)
+                EXPECT(parse_tree.arg(pn, i), TypeSystem::BOOLEAN)
 
             size_t expected = resolveExpr(parse_tree.arg(pn, 0));
-            for(size_t i = 2; i < parse_tree.getNumArgs(pn); i+=2)
-                EXPECT(parse_tree.arg(pn, i), expected)
+            if(TypeSystem::isAbstractFunctionGroup(expected))
+                for(size_t i = 2; i < parse_tree.getNumArgs(pn); i+=2){
+                    Type t = resolveExpr(parse_tree.arg(pn, i));
+                    if(!TypeSystem::isAbstractFunctionGroup(t)) return error(parse_tree.arg(pn, i));
+                    expected = ts.functionSetUnion(expected, t); //DO THIS - terribly inefficient
+                }
+            else
+                for(size_t i = 2; i < parse_tree.getNumArgs(pn); i+=2)
+                    EXPECT(parse_tree.arg(pn, i), expected)
             return expected;
         }
         case OP_EQUAL:
         case OP_NOT_EQUAL:{
             EXPECT(parse_tree.rhs(pn), resolveExpr(parse_tree.lhs(pn)))
-            return TYPE_BOOLEAN;
+            return TypeSystem::BOOLEAN;
         }
         case OP_DECIMAL_LITERAL:
         case OP_INTEGER_LITERAL:
@@ -370,15 +385,16 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
         case OP_REDUCED_PLANCK_CONSTANT:
         case OP_STEFAN_BOLTZMANN_CONSTANT:
         case OP_IDENTITY_AUTOSIZE:
-            return TYPE_NUMERIC;
+        case OP_GRAVITY:
+            return TypeSystem::NUMERIC;
         case OP_FALSE:
         case OP_TRUE:
-            return TYPE_BOOLEAN;
+            return TypeSystem::BOOLEAN;
         case OP_STRING:
-            return TYPE_STRING;
+            return TypeSystem::STRING;
         default:
             assert(false);
-            return TYPE_BOOLEAN;
+            return TypeSystem::BOOLEAN;
     }
 }
 
@@ -387,14 +403,16 @@ size_t TypeResolver::callSite(size_t pn) noexcept{
     size_t node_size = parse_tree.getNumArgs(pn);
     size_t callable_type = resolveExpr(call_expr);
 
-    if(callable_type == TYPE_NUMERIC){
-        bool is_mult = (node_size == 2 && resolveExpr(parse_tree.rhs(pn)) == TYPE_NUMERIC);
-        return is_mult ? TYPE_NUMERIC : error(pn, NOT_CALLABLE);
-    }else if(!isAbstractFunctionGroup(callable_type)){
+    if(callable_type == TypeSystem::NUMERIC){
+        bool is_mult = (node_size == 2 && resolveExpr(parse_tree.rhs(pn)) == TypeSystem::NUMERIC);
+        return is_mult ? TypeSystem::NUMERIC : error(pn, NOT_CALLABLE);
+    }else if(!TypeSystem::isAbstractFunctionGroup(callable_type)
+             && callable_type != TypeSystem::UNKNOWN //DO THIS: DELETE THIS LINE
+             ){
         return error(parse_tree.arg(pn, 0), NOT_CALLABLE);
     }
 
-    return TYPE_UNKNOWN;
+    return TypeSystem::UNKNOWN;
 
     //DO THIS - instantiate all the functions out of the pool
     //          make sure they have the same return type and no conflicts
@@ -420,21 +438,16 @@ size_t TypeResolver::implicitMult(size_t pn, size_t start) noexcept{
     ParseNode lhs = parse_tree.arg(pn, start);
     size_t tl = resolveExpr(lhs);
     if(start == parse_tree.getNumArgs(pn)-1) return tl;
-    else if(tl == TYPE_NUMERIC){
-        if(implicitMult(pn, start+1) != TYPE_NUMERIC) return error(parse_tree.arg(pn, start+1));
-        return TYPE_NUMERIC;
-    }else if(!isAbstractFunctionGroup(tl)){
+    else if(tl == TypeSystem::NUMERIC){
+        if(implicitMult(pn, start+1) != TypeSystem::NUMERIC) return error(parse_tree.arg(pn, start+1));
+        return TypeSystem::NUMERIC;
+    }else if(!TypeSystem::isAbstractFunctionGroup(tl)
+             && tl != TypeSystem::UNKNOWN //DO THIS: DELETE THIS LINE
+             ){
         return error(lhs, NOT_CALLABLE);
     }
 
-    return TYPE_UNKNOWN;
-    //DO THIS
-
-    const FuncSignature& fun = function_sig_pool[tl];
-    if(fun.numParams() != 1) return error(pn);
-
-    return TYPE_UNKNOWN;
-
+    return TypeSystem::UNKNOWN;
     //DO THIS - instantiate the functions from the pool
 
     //expected = fun.paramType();
@@ -444,7 +457,7 @@ size_t TypeResolver::implicitMult(size_t pn, size_t start) noexcept{
 
 size_t TypeResolver::error(size_t pn, ErrorCode code) noexcept{
     errors.push_back(Error(parse_tree.getSelection(pn), code));
-    return TYPE_FAILURE;
+    return TypeSystem::FAILURE;
 }
 
 }

@@ -1,6 +1,7 @@
 #ifndef HOPE_TYPE_RESOLVER_H
 #define HOPE_TYPE_RESOLVER_H
 
+#include "hope_type_system.h"
 #include <algorithm>
 #include <code_error_types.h>
 #include <limits>
@@ -25,98 +26,11 @@ class ParseTree;
 class SymbolTable;
 
 class TypeResolver{
-    static constexpr size_t TYPE_UNKNOWN = std::numeric_limits<size_t>::max();
-    static constexpr size_t TYPE_NUMERIC = std::numeric_limits<size_t>::max()-1;
-    static constexpr size_t TYPE_STRING = std::numeric_limits<size_t>::max()-2;
-    static constexpr size_t TYPE_BOOLEAN = std::numeric_limits<size_t>::max()-3;
-    static constexpr size_t TYPE_FAILURE = std::numeric_limits<size_t>::max()-4;
-    static constexpr size_t TYPE_VOID = std::numeric_limits<size_t>::max()-5;
-    static constexpr bool isAbstractFunctionGroup(size_t type) noexcept {
-        return type < TYPE_VOID
-                || type == TYPE_UNKNOWN; //DO THIS: DELETE THIS LINE
-    }
+    public:
+        TypeSystem ts;
 
-    typedef std::set<size_t> AbstractFunctionPool;
-
-    std::stack<size_t> return_types;
-
-    static std::vector<size_t> function_type_pool; //DO THIS - is single threaded acceptable?
-    //DO THIS - is memoizing even worth it? (yes, it's needed to nest complicated types)
-
-
-    struct FuncSignature{
-        size_t args_begin;
-        size_t args_end;
-        size_t n_default = 0;
-
-        size_t numTypes() const noexcept{
-            return args_end - args_begin;
-        }
-
-        size_t numParams() const noexcept{
-            return numTypes()-1;
-        }
-
-        auto begin() const noexcept{
-            return function_type_pool.data() + args_begin;
-        }
-
-        auto end() const noexcept{
-            return function_type_pool.data() + args_end;
-        }
-
-        size_t returnType() const noexcept{
-            return function_type_pool[args_begin];
-        }
-
-        size_t paramType() const noexcept{
-            assert(numParams() == 1);
-            return function_type_pool[args_begin+1];
-        }
-
-        size_t paramType(size_t index) const noexcept{
-            assert(index < numParams());
-            return function_type_pool[args_begin+1+index];
-        }
-
-        bool operator==(const FuncSignature& other) const noexcept {
-            return std::equal(begin(), end(), other.begin(), other.end());
-        }
-    };
-
-    static std::vector<FuncSignature> function_sig_pool;
-
-    struct FuncSignatureHash{
-        size_t operator()(size_t index) const noexcept {
-            const FuncSignature& sig = function_sig_pool[index];
-            std::size_t seed = sig.numTypes();
-            for(auto type : sig) seed ^= type + 0x9e3779b9 + (seed << 12) + (seed >> 4);
-            return seed;
-        }
-    };
-
-    struct FuncSignatureEqual {
-        bool operator()(size_t a, size_t b) const {
-            return function_sig_pool[a] == function_sig_pool[b];
-        }
-    };
-
-    static std::unordered_set<size_t, FuncSignatureHash, FuncSignatureEqual> memoized_signatures;
-
-    static constexpr size_t FUNCTION_PLACEHOLDER = 0;
-
-    static size_t getMemoizedType(const FuncSignature& sig){
-        size_t index = function_sig_pool.size();
-        function_sig_pool.push_back(sig);
-
-        auto lookup = memoized_signatures.insert(index);
-        if(lookup.second){
-            return index;
-        }
-
-        function_type_pool.resize(function_type_pool.size() - sig.numTypes());
-        return *lookup.first;
-    }
+    private:
+        std::stack<Type> return_types;
 
     public:
         TypeResolver(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors) noexcept;
