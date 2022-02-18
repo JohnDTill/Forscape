@@ -29,15 +29,8 @@ public:
     void reset() noexcept;
     Type makeFunctionSet(ParseNode fn) noexcept;
     Type functionSetUnion(Type a, Type b);
-
-private:
-    typedef size_t ParentType;
-    static constexpr ParentType TYPE_FUNCTION_SET = 0;
-    size_t v(size_t index) const noexcept;
     size_t numElements(size_t index) const noexcept;
-    size_t first(size_t index) const noexcept;
-    size_t last(size_t index) const noexcept;
-    std::string abstractFunctionSetString(Type t) const;
+    ParseNode arg(size_t index, size_t n) const noexcept;
 
     struct vectorOfIntHash{
         std::size_t operator()(const std::vector<size_t>& vec) const noexcept {
@@ -46,6 +39,14 @@ private:
             return seed;
         }
     };
+
+private:
+    typedef size_t ParentType;
+    static constexpr ParentType TYPE_FUNCTION_SET = 0;
+    size_t v(size_t index) const noexcept;
+    size_t first(size_t index) const noexcept;
+    size_t last(size_t index) const noexcept;
+    std::string abstractFunctionSetString(Type t) const;
 
     std::unordered_map<std::vector<ParseNode>, Type, vectorOfIntHash> memoized_abstract_function_groups;
 };

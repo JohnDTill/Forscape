@@ -32,6 +32,13 @@ class TypeResolver{
     private:
         std::stack<Type> return_types;
 
+        struct InstantiatedFunction{
+            size_t pn;
+            Type return_type;
+        };
+
+        std::unordered_map<std::vector<size_t>, InstantiatedFunction, TypeSystem::vectorOfIntHash> instantiated;
+
     public:
         TypeResolver(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors) noexcept;
         void resolve();
@@ -40,6 +47,7 @@ class TypeResolver{
         void reset() noexcept;
         void resolveStmt(size_t pn) noexcept;
         size_t instantiateFunc(size_t body, size_t params, bool is_lambda) noexcept;
+        Type instantiate(std::vector<size_t> sig);
         size_t resolveExpr(size_t pn) noexcept;
         size_t callSite(size_t pn) noexcept;
         size_t implicitMult(size_t pn, size_t start = 0) noexcept;

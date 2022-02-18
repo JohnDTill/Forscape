@@ -22,6 +22,7 @@ void TypeResolver::resolve(){
 
 void TypeResolver::reset() noexcept{
     ts.reset();
+    instantiated.clear();
 
     for(Symbol& sym : symbol_table.symbols)
         sym.type = TypeSystem::UNKNOWN;
@@ -142,8 +143,17 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
             size_t sym_id = parse_tree.getFlag(parse_tree.arg(pn, 0));
             symbol_table.symbols[sym_id].type = ts.makeFunctionSet(pn);
 
-            //DO THIS: type check default args
-            //DO THIS: set types of captured vars
+            ParseNode capture_list = parse_tree.arg(pn, 1);
+            if(capture_list != ParseTree::EMPTY)
+                for(size_t i = 0; i < parse_tree.getNumArgs(capture_list); i++){
+                    //DO THIS - do you need to set the type of captured vars?
+                }
+
+            ParseNode params = parse_tree.arg(pn, 3);
+            for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
+                ParseNode param = parse_tree.arg(params, i);
+                if(parse_tree.getOp(param) == OP_EQUAL) resolveStmt(param);
+            }
 
             break;
         }
@@ -225,6 +235,37 @@ size_t TypeResolver::instantiateFunc(size_t body, size_t params, bool is_lambda)
     return TypeSystem::UNKNOWN;
 }
 
+Type TypeResolver::instantiate(std::vector<size_t> sig){
+    ParseNode fn = sig.front();
+
+    ParseNode params = parse_tree.getOp(fn) == OP_ALGORITHM ?
+                       parse_tree.arg(fn, 3) :
+                       parse_tree.arg(fn, 2);
+
+    size_t n_params = parse_tree.getNumArgs(params);
+    size_t n_args = sig.size()-1;
+    if(n_args > n_params) return error(fn); //Too many args
+
+    //Resolve default args
+    for(size_t i = n_args; i < n_params; i++){
+        ParseNode param = parse_tree.arg(params, i);
+        if(parse_tree.getOp(param) != OP_EQUAL) return error(param); //Too few args
+        ParseNode default_var = parse_tree.lhs(param);
+        size_t sym_id = parse_tree.getFlag(default_var);
+        Type t = symbol_table.symbols[sym_id].type;
+        sig.push_back(t);
+    }
+
+    auto lookup = instantiated.find(sig);
+    if(lookup != instantiated.end()) return lookup->second.return_type;
+
+    //DO THIS - instantiate the function
+    //create a copy for this specific type signature
+    //make sure your scheme handles capture variables
+
+    return TypeSystem::UNKNOWN;
+}
+
 size_t TypeResolver::resolveExpr(size_t pn) noexcept{
     assert(pn != ParseTree::EMPTY);
 
@@ -237,10 +278,14 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
         if(resolveExpr(node) != expected) return error(node);
 
     switch (parse_tree.getOp(pn)) {
-        case OP_LAMBDA:
-            //DO THIS: type check default args
-            //DO THIS: set types of captured vars
+        case OP_LAMBDA:{
+            ParseNode params = parse_tree.arg(pn, 2);
+            for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
+                ParseNode param = parse_tree.arg(params, i);
+                if(parse_tree.getOp(param) == OP_EQUAL) resolveStmt(param);
+            }
             return ts.makeFunctionSet(pn);
+        }
         case OP_IDENTIFIER:
         case OP_READ_GLOBAL:
         case OP_READ_UPVALUE:{
@@ -403,56 +448,63 @@ size_t TypeResolver::callSite(size_t pn) noexcept{
     size_t node_size = parse_tree.getNumArgs(pn);
     size_t callable_type = resolveExpr(call_expr);
 
+    if(callable_type == TypeSystem::UNKNOWN) return TypeSystem::UNKNOWN; //DO THIS: DELETE THIS LINE
+
     if(callable_type == TypeSystem::NUMERIC){
         bool is_mult = (node_size == 2 && resolveExpr(parse_tree.rhs(pn)) == TypeSystem::NUMERIC);
         return is_mult ? TypeSystem::NUMERIC : error(pn, NOT_CALLABLE);
-    }else if(!TypeSystem::isAbstractFunctionGroup(callable_type)
-             && callable_type != TypeSystem::UNKNOWN //DO THIS: DELETE THIS LINE
-             ){
+    }else if(!TypeSystem::isAbstractFunctionGroup(callable_type)){
         return error(parse_tree.arg(pn, 0), NOT_CALLABLE);
     }
 
-    return TypeSystem::UNKNOWN;
+    std::vector<size_t> sig;
+    assert(ts.numElements(callable_type));
+    sig.push_back(ts.arg(callable_type, 0));
 
-    //DO THIS - instantiate all the functions out of the pool
-    //          make sure they have the same return type and no conflicts
-
-    /*
-    const FuncSignature& fun = function_sig_pool[callable_type];
-    size_t n_params = fun.numParams();
-    size_t n_args = node_size-1;
-
-    if(n_args > n_params || n_args + fun.n_default < n_params) return error(pn);
-
-    for(size_t i = 0; i < n_args; i++){
-        size_t param_type = fun.paramType(i);
-        ParseNode arg = parse_tree.arg(pn, 1+i);
-        if(resolveExpr(arg, param_type) != param_type) return error(arg);
+    for(size_t i = 1; i < node_size; i++){
+        ParseNode arg = parse_tree.arg(pn, i);
+        sig.push_back(resolveExpr(arg));
     }
 
-    return fun.returnType();
-    */
+    Type expected = instantiate(sig);
+    for(size_t i = 1; i < ts.numElements(callable_type); i++){
+        sig[0] = ts.arg(callable_type, i);
+        if(instantiate(sig) != expected) return error(callable_type);
+    }
+
+    return expected;
 }
 
 size_t TypeResolver::implicitMult(size_t pn, size_t start) noexcept{
     ParseNode lhs = parse_tree.arg(pn, start);
     size_t tl = resolveExpr(lhs);
+
+    if(tl == TypeSystem::UNKNOWN) return TypeSystem::UNKNOWN; //DO THIS: DELETE THIS LINE
+
     if(start == parse_tree.getNumArgs(pn)-1) return tl;
     else if(tl == TypeSystem::NUMERIC){
         if(implicitMult(pn, start+1) != TypeSystem::NUMERIC) return error(parse_tree.arg(pn, start+1));
         return TypeSystem::NUMERIC;
-    }else if(!TypeSystem::isAbstractFunctionGroup(tl)
-             && tl != TypeSystem::UNKNOWN //DO THIS: DELETE THIS LINE
-             ){
+    }else if(!TypeSystem::isAbstractFunctionGroup(tl)){
         return error(lhs, NOT_CALLABLE);
     }
 
-    return TypeSystem::UNKNOWN;
-    //DO THIS - instantiate the functions from the pool
+    std::vector<size_t> sig;
+    assert(ts.numElements(tl));
+    sig.push_back(ts.arg(tl, 0));
 
-    //expected = fun.paramType();
-    //if(implicitMult(pn, expected, start+1) != expected) return error(parse_tree.arg(pn, start+1));
-    //return fun.returnType();
+    Type tr = implicitMult(pn, start+1);
+    sig.push_back(tr);
+
+    Type expected = instantiate(sig);
+    for(size_t i = 1; i < ts.numElements(tl); i++){
+        //DO THIS - use default args when params list is less
+
+        sig[0] = ts.arg(tl, i);
+        if(instantiate(sig) != expected) return error(pn);
+    }
+
+    return expected;
 }
 
 size_t TypeResolver::error(size_t pn, ErrorCode code) noexcept{

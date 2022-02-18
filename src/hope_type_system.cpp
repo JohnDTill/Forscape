@@ -96,14 +96,19 @@ Type TypeSystem::functionSetUnion(Type a, Type b){
     return lookup.first->second;
 }
 
-size_t TypeSystem::v(size_t index) const noexcept{
-    return operator[](index);
-}
-
 size_t TypeSystem::numElements(size_t index) const noexcept{
     assert(v(index) == TYPE_FUNCTION_SET);
 
     return v(index+1);
+}
+
+TypeSystem::ParseNode TypeSystem::arg(size_t index, size_t n) const noexcept{
+    assert(n < numElements(index));
+    return v(index + 2 + n);
+}
+
+size_t TypeSystem::v(size_t index) const noexcept{
+    return operator[](index);
 }
 
 size_t TypeSystem::first(size_t index) const noexcept{
