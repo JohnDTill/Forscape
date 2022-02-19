@@ -262,6 +262,7 @@ Type TypeResolver::instantiate(std::vector<size_t> sig){
     //DO THIS - instantiate the function
     //create a copy for this specific type signature
     //make sure your scheme handles capture variables
+    //Probably, captured variables need to be part of the signature
 
     return TypeSystem::UNKNOWN;
 }

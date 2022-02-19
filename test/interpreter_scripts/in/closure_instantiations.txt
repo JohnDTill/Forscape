@@ -1,0 +1,19 @@
+alg make(x, y){
+    alg echo(z) print(x, "\n", y, "\n", z, "\n")
+    return echo
+}
+a = make(1, 2)
+a(3)
+b = make("Stand", "by")
+b("me")
+
+//Steps:
+//Declare make[]
+//Call on line 5 instantiates {make[](ℝ, ℝ)}
+//During instantiation, declare echo[ℝ, ℝ]
+//Return type is {echo[ℝ, ℝ]}
+//Call on line instantiates {echo[ℝ, ℝ](ℝ)}
+//Call on line 7 instantiates {make[](𝕊, 𝕊)}
+//During instantiation, declare echo[𝕊, 𝕊]
+//Return type is {echo[𝕊, 𝕊]}
+//Call on line instantiates {echo[𝕊, 𝕊](𝕊)}
