@@ -575,6 +575,7 @@ Parser::ParseNode Parser::captureList() noexcept{
         ParseNode list = builder.finalize(sel);
         return list;
     }else{
+        builder.finalize(sel);
         return parse_tree.addTerminal(OP_LIST, sel);
     }
 }

@@ -1,5 +1,5 @@
 alg make(x, y){
-    alg echo(z) print(x, "\n", y, "\n", z, "\n")
+    alg echo[x](z) print(x, "\n", y, "\n", z, "\n")
     return echo
 }
 a = make(1, 2)

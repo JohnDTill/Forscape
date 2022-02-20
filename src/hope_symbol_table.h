@@ -34,7 +34,7 @@ struct Symbol{
     bool is_closure_nested = false;
     bool is_prototype = false;
     bool is_ewise_index = false;
-    bool is_captured = false;
+    bool is_captured_by_value = false;
 
     Symbol();
 
@@ -68,7 +68,7 @@ struct Usage{
 struct ScopeSegment{
     Typeset::Selection name;
     Typeset::Marker start;
-    ParseNode closure;
+    ParseNode fn;
     ScopeId parent;
     ScopeId prev;
     SymbolId sym_begin;

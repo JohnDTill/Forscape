@@ -15,9 +15,19 @@ void SymbolTableLinker::link(){
 
     for(ScopeSegment& scope : symbol_table.scopes){
         if(scope.isStartOfScope()){
-            if(scope.closure != NONE){
+            if(scope.fn != NONE){
                 closures.push_back(std::unordered_map<size_t, size_t>());
                 closure_size.push_back(0);
+
+                bool is_alg = (parse_tree.getOp(scope.fn) != OP_LAMBDA);
+                ParseNode cap_list = parse_tree.arg(scope.fn, is_alg);
+
+                if(cap_list != NONE){
+                    for(size_t i = 0; i < parse_tree.getNumArgs(cap_list); i++){
+                        size_t var_id = scope.sym_begin+i;
+                        closures.back()[var_id] = closure_size.back()++;
+                    }
+                }
             }
 
             stack_frame.push_back(stack_size);
@@ -30,13 +40,13 @@ void SymbolTableLinker::link(){
             ParseNode pn = usage.pn;
 
             if(usage.type == DECLARE){
-                if(sym.is_closure_nested && !sym.is_captured){
+                if(sym.is_closure_nested && !sym.is_captured_by_value){
                     assert(sym.declaration_closure_depth <= closures.size());
 
                     parse_tree.setOp(pn, OP_READ_UPVALUE);
                     parse_tree.setClosureIndex(pn, closure_size.back());
                     closures.back()[usage.var_id] = closure_size.back()++;
-                }else{
+                }else if(!sym.is_captured_by_value){
                     sym.flag = stack_size++;
                 }
             }else{
@@ -60,8 +70,8 @@ void SymbolTableLinker::link(){
         }
 
         if(scope.isEndOfScope()){
-            if(scope.closure != NONE){
-                ParseNode fn = scope.closure;
+            if(scope.fn != NONE){
+                ParseNode fn = scope.fn;
 
                 ParseTree::NaryBuilder upvalue_builder = parse_tree.naryBuilder(OP_LIST);
                 for(const auto& entry : closures.back()){
@@ -69,10 +79,17 @@ void SymbolTableLinker::link(){
                     const Symbol& sym = symbol_table.symbols[symbol_index];
                     ParseNode n = parse_tree.addTerminal(OP_IDENTIFIER, sym.sel(parse_tree));
 
-                    parse_tree.setFlag(n, entry.second);
-
-                    if(sym.declaration_closure_depth != closures.size())
+                    if(sym.declaration_closure_depth != closures.size()){
                         parse_tree.setOp(n, OP_READ_UPVALUE);
+                        const auto& outer_closure = closures[closures.size()-2];
+                        auto lookup = outer_closure.find(entry.first);
+                        assert(lookup != outer_closure.end());
+                        parse_tree.setFlag(n, lookup->second);
+                    }else if(sym.is_captured_by_value){
+                        continue;
+                    }else{
+                        parse_tree.setFlag(n, entry.second);
+                    }
 
                     upvalue_builder.addNaryChild(n);
                 }

@@ -51,7 +51,7 @@ void SymbolTableBuilder::resolveSymbols(){
         SemanticType fmt = SEM_ID;
         if(sym.is_ewise_index){
             fmt = SEM_ID_EWISE_INDEX;
-        }else if(sym.is_closure_nested | sym.is_captured){
+        }else if(sym.is_closure_nested | sym.is_captured_by_value){
             fmt = SEM_LINK;
         }else if(!sym.is_const){
             fmt = SEM_ID_FUN_IMPURE;
@@ -83,7 +83,7 @@ void SymbolTableBuilder::addScope(const Typeset::Selection& name, const Typeset:
     active_scope_id++;
     symbol_table.scopes[active_scope_id].sym_begin = sze;
     symbol_table.scopes[active_scope_id].usage_begin = n_usages;
-    symbol_table.scopes[active_scope_id].closure = closure;
+    symbol_table.scopes[active_scope_id].fn = closure;
 }
 
 void SymbolTableBuilder::closeScope(const Typeset::Marker& end) noexcept{
@@ -419,7 +419,7 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
         for(size_t i = 0; i < N; i++){
             ParseNode capture = parse_tree.arg(captured, i);
             defineLocalScope(capture, false);
-            symbol_table.symbols.back().is_captured = true;
+            symbol_table.symbols.back().is_captured_by_value = true;
             symbol_table.symbols.back().is_closure_nested = true;
         }
     }

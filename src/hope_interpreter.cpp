@@ -194,6 +194,7 @@ void Interpreter::initClosure(Closure& closure, ParseNode captured, ParseNode up
 
     for(size_t i = 0; i < parse_tree.getNumArgs(upvalues); i++){
         ParseNode up = parse_tree.arg(upvalues, i);
+
         switch (parse_tree.getOp(up)) {
             case OP_IDENTIFIER:{ //Place on heap
                 Value* v = new Value();
@@ -204,6 +205,7 @@ void Interpreter::initClosure(Closure& closure, ParseNode captured, ParseNode up
             case OP_READ_UPVALUE:{ //Get existing
                 assert(active_closure);
                 size_t index = parse_tree.getClosureIndex(up);
+                assert(index < active_closure->size());
                 closure.push_back( active_closure->at(index) );
                 break;
             }
@@ -606,6 +608,7 @@ Value& Interpreter::readGlobal(ParseNode pn){
 
 Value& Interpreter::readUpvalue(ParseNode pn){
     size_t upvalue_offset = parse_tree.getClosureIndex(pn);
+    assert(upvalue_offset < active_closure->size());
     return conv(active_closure->at(upvalue_offset));
 }
 
