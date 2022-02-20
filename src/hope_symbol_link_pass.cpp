@@ -72,6 +72,12 @@ void SymbolTableLinker::link(){
         if(scope.isEndOfScope()){
             if(scope.fn != NONE){
                 ParseNode fn = scope.fn;
+                bool is_alg = (parse_tree.getOp(scope.fn) != OP_LAMBDA);
+                ParseNode cap_list = parse_tree.arg(scope.fn, is_alg);
+                size_t N_cap = cap_list == ParseTree::EMPTY ? 0 : parse_tree.getNumArgs(cap_list);
+
+                std::vector<ParseNode> reference_captures;
+                reference_captures.resize(closures.back().size() - N_cap);
 
                 ParseTree::NaryBuilder upvalue_builder = parse_tree.naryBuilder(OP_LIST);
                 for(const auto& entry : closures.back()){
@@ -91,8 +97,11 @@ void SymbolTableLinker::link(){
                         parse_tree.setFlag(n, entry.second);
                     }
 
-                    upvalue_builder.addNaryChild(n);
+                    reference_captures[entry.second - N_cap] = n;
                 }
+
+                for(ParseNode pn : reference_captures)
+                    upvalue_builder.addNaryChild(pn);
 
                 ParseNode upvalue_list = upvalue_builder.finalize(parse_tree.getSelection(fn));
 
