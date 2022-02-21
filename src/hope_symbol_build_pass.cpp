@@ -405,6 +405,7 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
     }
 
     if(captured != ParseTree::EMPTY){
+        parse_tree.setFlag(captured, symbol_table.scopes.size());
         for(size_t i = 0; i < parse_tree.getNumArgs(captured); i++){
             ParseNode capture = parse_tree.arg(captured, i);
             resolveReference(capture);

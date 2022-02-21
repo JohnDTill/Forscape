@@ -4,7 +4,7 @@
 
 #include "hope_type_resolver.h"
 
-SymbolTreeView::SymbolTreeView(const Hope::Code::SymbolTable& symbol_table, const Hope::Code::TypeSystem& ts){
+SymbolTreeView::SymbolTreeView(const Hope::Code::SymbolTable& symbol_table, const Hope::Code::TypeResolver& ts){
     setWindowTitle("Symbol Table");
     constexpr size_t N_FIELDS = 4;
     setHeaderLabels({"Name", "Type", "Const", "Description"});

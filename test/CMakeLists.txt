@@ -136,8 +136,6 @@ set(SOURCES
     ${SRC}/hope_symbol_table.h
     ${SRC}/hope_type_resolver.cpp
     ${SRC}/hope_type_resolver.h
-    ${SRC}/hope_type_system.cpp
-    ${SRC}/hope_type_system.h
     ${SRC}/hope_unicode.h
     ${INCLUDE}/typeset_command.h
     ${SRC}/typeset_construct.cpp
