@@ -20,7 +20,7 @@ inline bool testExpression(const std::string& in, const std::string& expect){
     #ifndef NDEBUG
     input->parseTreeDot(); //Make sure dot generation doesn't crash
     #ifndef HOPE_TYPESET_HEADLESS
-    SymbolTreeView view(input->symbol_builder.symbol_table, input->type_resolver.ts);
+    SymbolTreeView view(input->symbol_builder.symbol_table, input->type_resolver);
     #endif
     #endif
 
@@ -50,7 +50,7 @@ inline bool testCase(const std::string& name){
     #ifndef NDEBUG
     input->parseTreeDot(); //Make sure dot generation doesn't crash
     #ifndef HOPE_TYPESET_HEADLESS
-    SymbolTreeView view(input->symbol_builder.symbol_table, input->type_resolver.ts); //Make sure symbol table view doesn't crash
+    SymbolTreeView view(input->symbol_builder.symbol_table, input->type_resolver); //Make sure symbol table view doesn't crash
     #endif
     #endif
 
