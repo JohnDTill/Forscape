@@ -73,8 +73,6 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
         }
 
         case OP_RETURN:{
-            //DO THIS - function groups can accumulate here
-
             assert(!return_types.empty());
             size_t expected = return_types.top();
             if(expected == TypeResolver::UNKNOWN){
@@ -167,8 +165,6 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
                 }
             }
 
-            //DO THIS - reference_list isn't created yet!
-            /*
             ParseNode reference_list = parse_tree.arg(pn, 2);
             for(size_t i = 0; i < parse_tree.getNumArgs(reference_list); i++){
                 ParseNode ref = parse_tree.arg(reference_list, i);
@@ -176,7 +172,6 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
                 Type t = symbol_table.symbols[sym_id].type;
                 sig.push_back(t);
             }
-            */
 
             Type t = declare(sig);
 
@@ -272,8 +267,6 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
                 }
             }
 
-            //DO THIS - reference_list isn't created yet!
-            /*
             ParseNode reference_list = parse_tree.arg(pn, 1);
             for(size_t i = 0; i < parse_tree.getNumArgs(reference_list); i++){
                 ParseNode ref = parse_tree.arg(reference_list, i);
@@ -281,7 +274,6 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
                 Type t = symbol_table.symbols[sym_id].type;
                 sig.push_back(t);
             }
-            */
 
             Type t = declare(sig);
 
@@ -569,14 +561,11 @@ Type TypeResolver::instantiate(const CallSignature& fn){
         }
     }
 
-    //DO THIS - reference_list isn't created yet!
-    /*
     for(size_t i = 0; i < parse_tree.getNumArgs(ref_list); i++){
         ParseNode ref = parse_tree.arg(ref_list, i);
         size_t sym_id = parse_tree.getFlag(ref);
         symbol_table.symbols[sym_id].type = dec[1+N_vals+i];
     }
-    */
 
     for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
         ParseNode param = parse_tree.arg(params, i);

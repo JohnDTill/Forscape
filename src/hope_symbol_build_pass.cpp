@@ -64,6 +64,7 @@ void SymbolTableBuilder::resolveSymbols(){
 void SymbolTableBuilder::reset() noexcept{
     symbol_table.reset(parse_tree.getLeft(parse_tree.root));
     map.clear();
+    assert(ref_list_sets.empty());
     lexical_depth = GLOBAL_DEPTH;
     closure_depth = 0;
     active_scope_id = 0;
@@ -562,14 +563,63 @@ void SymbolTableBuilder::decreaseLexicalDepth(const Typeset::Marker& end){
 }
 
 void SymbolTableBuilder::increaseClosureDepth(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode pn){
+    ref_list_sets.push_back(std::unordered_set<ParseNode>());
+
     closure_depth++;
     lexical_depth++;
     addScope(name, begin, pn);
 }
 
 void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end){
-    closure_depth--;
+    ParseNode fn = symbol_table.scopes.back().fn;
+
     decreaseLexicalDepth(end);
+    closure_depth--;
+
+    std::unordered_set<size_t>& closed_refs = ref_list_sets.back();
+
+    for(size_t seg_index = symbol_table.scopes.size()-2; seg_index != NONE; seg_index = symbol_table.scopes[seg_index].prev){
+        ScopeSegment& closed_seg = symbol_table.scopes[seg_index];
+        for(size_t i = closed_seg.usage_begin; i < closed_seg.usage_end; i++){
+            const Usage& usage = symbol_table.usages[i];
+            const Symbol& sym = symbol_table.symbols[usage.var_id];
+            if(usage.type != UsageType::DECLARE &&
+               sym.is_closure_nested &&
+               (!sym.is_captured_by_value || sym.declaration_closure_depth <= closure_depth))
+                closed_refs.insert(usage.var_id);
+        }
+    }
+
+    bool fn_is_alg = (parse_tree.getOp(fn) != OP_LAMBDA);
+    if(!closed_refs.empty()){
+        if(ref_list_sets.size() >= 2){
+            std::unordered_set<size_t>& returning_refs = ref_list_sets[ref_list_sets.size()-2];
+            for(size_t sym_id : closed_refs){
+                const Symbol& sym = symbol_table.symbols[sym_id];
+                if(sym.declaration_closure_depth <= (closure_depth - sym.is_captured_by_value))
+                    returning_refs.insert(sym_id);
+            }
+        }
+
+        ParseTree::NaryBuilder ref_builder = parse_tree.naryBuilder(OP_LIST);
+        for(size_t sym_id : closed_refs){
+            Op op = symbol_table.symbols[sym_id].declaration_closure_depth < closure_depth ?
+                    OP_READ_UPVALUE :
+                    OP_IDENTIFIER;
+            Typeset::Selection sel = symbol_table.getSel(sym_id);
+            assert(sel.left != sel.right);
+            ParseNode n = parse_tree.addTerminal(op, sel);
+            assert(parse_tree.getSelection(n) == sel);
+            parse_tree.setFlag(n, sym_id);
+            ref_builder.addNaryChild(n);
+        }
+        ParseNode list = ref_builder.finalize(parse_tree.getSelection(fn));
+        parse_tree.setArg(fn, 1+fn_is_alg, list);
+    }else{
+        parse_tree.setArg(fn, 1+fn_is_alg, parse_tree.addTerminal(OP_LIST, parse_tree.getSelection(fn)));
+    }
+
+    ref_list_sets.pop_back();
 }
 
 void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable){
