@@ -28,16 +28,18 @@ void TypeResolver::reset() noexcept{
     called_funcs.clear();
     called_func_map.clear();
     assert(return_types.empty());
+    assert(retry_at_recursion == false);
+    assert(first_attempt == true);
+    assert(recursion_fallback == nullptr);
 
     for(Symbol& sym : symbol_table.symbols)
-        sym.type = TypeResolver::UNKNOWN;
+        sym.type = TypeResolver::UNINITIALISED;
 }
 
 void TypeResolver::resolveStmt(size_t pn) noexcept{
     assert(pn != ParseTree::EMPTY);
 
     #define EXPECT(node, expected) \
-        if(resolveExpr(node) == TypeResolver::UNKNOWN){} /*DO THIS: DELETE THIS LINE*/ else \
         if(resolveExpr(node) != expected){ \
             error(node); \
             return; \
@@ -75,7 +77,7 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
         case OP_RETURN:{
             assert(!return_types.empty());
             size_t expected = return_types.top();
-            if(expected == TypeResolver::UNKNOWN){
+            if(expected == UNINITIALISED || expected == RECURSIVE_CYCLE){
                 return_types.top() = resolveExpr(parse_tree.child(pn));
             }else if(TypeResolver::isAbstractFunctionGroup(expected)){
                 Type t = resolveExpr(parse_tree.child(pn));
@@ -92,9 +94,9 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
 
         case OP_RETURN_EMPTY:{
             assert(!return_types.empty());
-            if(return_types.top() == TypeResolver::UNKNOWN){
-                return_types.top() = TypeResolver::VOID;
-            }else if(return_types.top() != TypeResolver::VOID){
+            if(return_types.top() == UNINITIALISED){
+                return_types.top() = VOID;
+            }else if(return_types.top() != VOID){
                 error(pn);
             }
             break;
@@ -187,7 +189,7 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
             //before it is defined, which is what the interpreter already did
 
             size_t sym_id = parse_tree.getFlag(parse_tree.arg(pn, 0));
-            symbol_table.symbols[sym_id].type = TypeResolver::UNKNOWN;
+            symbol_table.symbols[sym_id].type = UNINITIALISED;
             break;
         }
 
@@ -239,11 +241,9 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
     assert(pn != ParseTree::EMPTY);
 
     #define EXPECT_OR(node, expected, code) \
-        if(resolveExpr(node) == TypeResolver::UNKNOWN) return TypeResolver::UNKNOWN; /*DO THIS: DELETE THIS LINE*/ else \
         if(resolveExpr(node) != expected) return error(node, code);
 
     #define EXPECT(node, expected) \
-        if(resolveExpr(node) == TypeResolver::UNKNOWN) return TypeResolver::UNKNOWN; /*DO THIS: DELETE THIS LINE*/ else \
         if(resolveExpr(node) != expected) return error(node);
 
     switch (parse_tree.getOp(pn)) {
@@ -294,7 +294,6 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
             return implicitMult(pn);
         case OP_ADDITION:{
             size_t expected = resolveExpr(parse_tree.arg(pn, 0));
-            if(expected == UNKNOWN) return UNKNOWN; //DO THIS - delete
             if(expected != TypeResolver::NUMERIC && expected != TypeResolver::STRING) return error(parse_tree.arg(pn, 0), TYPE_NOT_ADDABLE);
 
             for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++)
@@ -443,8 +442,6 @@ size_t TypeResolver::callSite(size_t pn) noexcept{
     size_t node_size = parse_tree.getNumArgs(pn);
     size_t callable_type = resolveExpr(call_expr);
 
-    if(callable_type == TypeResolver::UNKNOWN) return TypeResolver::UNKNOWN; //DO THIS: DELETE THIS LINE
-
     if(callable_type == TypeResolver::NUMERIC){
         bool is_mult = (node_size == 2 && resolveExpr(parse_tree.rhs(pn)) == TypeResolver::NUMERIC);
         return is_mult ? TypeResolver::NUMERIC : error(pn, NOT_CALLABLE);
@@ -466,7 +463,6 @@ size_t TypeResolver::callSite(size_t pn) noexcept{
         for(size_t i = 1; i < numElements(callable_type); i++){
             sig[0] = arg(callable_type, i);
             Type evaluated = fillDefaultsAndInstantiate(sig);
-            if(evaluated == UNKNOWN) continue; //DO THIS - delete
             if(!isAbstractFunctionGroup(evaluated)) return error(callable_type);
             expected = functionSetUnion(expected, evaluated);
         }
@@ -474,7 +470,6 @@ size_t TypeResolver::callSite(size_t pn) noexcept{
         for(size_t i = 1; i < numElements(callable_type); i++){
             sig[0] = arg(callable_type, i);
             Type evaluated = fillDefaultsAndInstantiate(sig);
-            if(expected == UNKNOWN || evaluated == UNKNOWN) continue; //DO THIS - delete
             if(evaluated != expected) return error(callable_type);
         }
     }
@@ -485,8 +480,6 @@ size_t TypeResolver::callSite(size_t pn) noexcept{
 size_t TypeResolver::implicitMult(size_t pn, size_t start) noexcept{
     ParseNode lhs = parse_tree.arg(pn, start);
     size_t tl = resolveExpr(lhs);
-
-    if(tl == TypeResolver::UNKNOWN) return TypeResolver::UNKNOWN; //DO THIS: DELETE THIS LINE
 
     if(start == parse_tree.getNumArgs(pn)-1) return tl;
     else if(tl == TypeResolver::NUMERIC){
@@ -513,6 +506,8 @@ size_t TypeResolver::implicitMult(size_t pn, size_t start) noexcept{
 }
 
 size_t TypeResolver::error(size_t pn, ErrorCode code) noexcept{
+    if(retry_at_recursion) return RECURSIVE_CYCLE;
+
     errors.push_back(Error(parse_tree.getSelection(pn), code));
     return TypeResolver::FAILURE;
 }
@@ -530,7 +525,14 @@ Type TypeResolver::declare(const DeclareSignature& fn){
 
 Type TypeResolver::instantiate(const CallSignature& fn){
     auto lookup = called_func_map.find(fn);
-    if(lookup != called_func_map.end()) return lookup->second;
+    if(lookup != called_func_map.end()){
+        Type return_type = lookup->second;
+        retry_at_recursion |= (return_type == RECURSIVE_CYCLE && first_attempt); //revisited in process of instantiation
+        return return_type;
+    }
+
+    if(recursion_fallback == nullptr)
+        recursion_fallback = &fn;
 
     //DO THIS - eliminate nested allocation
     std::vector<Type> old_val_cap;
@@ -542,13 +544,12 @@ Type TypeResolver::instantiate(const CallSignature& fn){
     //and you probably shouldn't just give the editor the final instantiation of multiple!
     called_funcs.push_back(fn);
 
-    called_func_map[fn] = UNKNOWN; //DO THIS - handle recursion with dignity
+    called_func_map[fn] = RECURSIVE_CYCLE;
 
     const DeclareSignature& dec = declared(fn[0]);
     ParseNode pn = dec[0];
 
     bool is_alg = parse_tree.getOp(pn) != OP_LAMBDA;
-    if(is_alg) return_types.push(UNKNOWN);
     ParseNode value_list = parse_tree.arg(pn, is_alg);
     ParseNode ref_list = parse_tree.arg(pn, 1+is_alg);
     ParseNode params = parse_tree.arg(pn, 2+is_alg);
@@ -588,14 +589,41 @@ Type TypeResolver::instantiate(const CallSignature& fn){
     Type return_type;
 
     if(is_alg){
+        return_types.push(UNINITIALISED);
         resolveStmt(body);
         return_type = return_types.top();
+        if(return_type == UNINITIALISED) return_type = VOID; //Function with no return statement
         return_types.pop();
     }else{
         return_type = resolveExpr(body);
     }
 
     called_func_map[fn] = return_type;
+
+    if(recursion_fallback == &fn){
+        if(retry_at_recursion){
+            retry_at_recursion = false;
+            first_attempt = false;
+
+            if(is_alg){
+                return_types.push(UNINITIALISED);
+                resolveStmt(body);
+                return_type = return_types.top();
+                if(return_type == UNINITIALISED) return_type = VOID; //Function with no return statement
+                return_types.pop();
+            }else{
+                return_type = resolveExpr(body);
+            }
+
+            first_attempt = true;
+            called_func_map[fn] = return_type;
+        }
+
+        recursion_fallback = nullptr;
+    }else if(first_attempt && return_type == RECURSIVE_CYCLE){
+        //Didn't work, be sure to try instantiation again
+        called_func_map.erase(fn);
+    }
 
     for(size_t i = 0; i < old_val_cap.size(); i++){
         ParseNode val = parse_tree.arg(value_list, i);
@@ -624,6 +652,7 @@ Type TypeResolver::instantiate(const CallSignature& fn){
 
 static constexpr std::string_view type_strs[] = {
     "Failure",
+    "Recursive-Cycle",
     "Void",
     "Boolean",
     "String",
@@ -757,6 +786,23 @@ std::string TypeResolver::declFunctionString(size_t i) const{
     }
 
     str += ']';
+
+    return str;
+}
+
+std::string TypeResolver::instFunctionString(const CallSignature& sig) const{
+    std::string str = declFunctionString(sig[0]);
+    str += "(";
+
+    if(sig.size() >= 2){
+        str += typeString(sig[1]);
+        for(size_t i = 2; i < sig.size(); i++){
+            str += ", ";
+            str += typeString(sig[i]);
+        }
+    }
+
+    str += ')';
 
     return str;
 }

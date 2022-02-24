@@ -25,17 +25,21 @@ typedef size_t Type;
 class TypeResolver : private std::vector<size_t>{
 public:
     typedef size_t ParseNode;
-    static constexpr Type UNKNOWN = std::numeric_limits<size_t>::max();
-    static constexpr Type NUMERIC = UNKNOWN-1;
-    static constexpr Type STRING = UNKNOWN-2;
-    static constexpr Type BOOLEAN = UNKNOWN-3;
-    static constexpr Type VOID = UNKNOWN-4;
-    static constexpr Type FAILURE = UNKNOWN-5;
-    static constexpr bool isAbstractFunctionGroup(size_t type) noexcept;
-
     typedef std::vector<size_t> DeclareSignature;
-    Type declare(const DeclareSignature& fn);
     typedef std::vector<size_t> CallSignature;
+    static constexpr Type UNINITIALISED = std::numeric_limits<size_t>::max();
+    static constexpr Type NUMERIC = UNINITIALISED-1;
+    static constexpr Type STRING = UNINITIALISED-2;
+    static constexpr Type BOOLEAN = UNINITIALISED-3;
+    static constexpr Type VOID = UNINITIALISED-4;
+    static constexpr Type RECURSIVE_CYCLE = UNINITIALISED-5;
+    static constexpr Type FAILURE = UNINITIALISED-6;
+    static constexpr bool isAbstractFunctionGroup(size_t type) noexcept;
+    bool retry_at_recursion = false;
+    bool first_attempt = true;
+    const CallSignature* recursion_fallback = nullptr;
+
+    Type declare(const DeclareSignature& fn);
     Type instantiate(const CallSignature& fn);
 
     std::string typeString(Type t) const;
@@ -70,6 +74,7 @@ private:
     std::unordered_map<CallSignature, size_t, vectorOfIntHash> called_func_map;
 
     std::string declFunctionString(size_t i) const;
+    std::string instFunctionString(const CallSignature& sig) const;
 
     std::unordered_map<std::vector<ParseNode>, Type, vectorOfIntHash> memoized_abstract_function_groups;
 
