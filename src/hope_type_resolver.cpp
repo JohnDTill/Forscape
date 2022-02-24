@@ -532,6 +532,11 @@ Type TypeResolver::instantiate(const CallSignature& fn){
     auto lookup = called_func_map.find(fn);
     if(lookup != called_func_map.end()) return lookup->second;
 
+    //DO THIS - eliminate nested allocation
+    std::vector<Type> old_val_cap;
+    std::vector<Type> old_ref_cap;
+    std::vector<Type> old_args;
+
     //Instantiate
     //DO THIS - you're checking, but you should be actually cloning the function for type-specific operations
     //and you probably shouldn't just give the editor the final instantiation of multiple!
@@ -557,21 +562,27 @@ Type TypeResolver::instantiate(const CallSignature& fn){
         const ScopeSegment& scope = symbol_table.scopes[scope_index];
         for(size_t i = 0; i < N_vals; i++){
             size_t sym_id = scope.sym_begin + i;
-            symbol_table.symbols[sym_id].type = dec[1+i];
+            Symbol& sym = symbol_table.symbols[sym_id];
+            old_val_cap.push_back(sym.type);
+            sym.type = dec[1+i];
         }
     }
 
     for(size_t i = 0; i < parse_tree.getNumArgs(ref_list); i++){
         ParseNode ref = parse_tree.arg(ref_list, i);
         size_t sym_id = parse_tree.getFlag(ref);
-        symbol_table.symbols[sym_id].type = dec[1+N_vals+i];
+        Symbol& sym = symbol_table.symbols[sym_id];
+        old_ref_cap.push_back(sym.type);
+        sym.type = dec[1+N_vals+i];
     }
 
     for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
         ParseNode param = parse_tree.arg(params, i);
         if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
         size_t sym_id = parse_tree.getFlag(param);
-        symbol_table.symbols[sym_id].type = fn[1+i];
+        Symbol& sym = symbol_table.symbols[sym_id];
+        old_args.push_back(sym.type);
+        sym.type = fn[1+i];
     }
 
     Type return_type;
@@ -585,6 +596,28 @@ Type TypeResolver::instantiate(const CallSignature& fn){
     }
 
     called_func_map[fn] = return_type;
+
+    for(size_t i = 0; i < old_val_cap.size(); i++){
+        ParseNode val = parse_tree.arg(value_list, i);
+        size_t sym_id = parse_tree.getFlag(val);
+        Symbol& sym = symbol_table.symbols[sym_id];
+        sym.type = old_val_cap[i];
+    }
+
+    for(size_t i = 0; i < parse_tree.getNumArgs(ref_list); i++){
+        ParseNode ref = parse_tree.arg(ref_list, i);
+        size_t sym_id = parse_tree.getFlag(ref);
+        Symbol& sym = symbol_table.symbols[sym_id];
+        sym.type = old_ref_cap[i];
+    }
+
+    for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
+        ParseNode param = parse_tree.arg(params, i);
+        if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
+        size_t sym_id = parse_tree.getFlag(param);
+        Symbol& sym = symbol_table.symbols[sym_id];
+        sym.type = old_args[i];
+    }
 
     return return_type;
 }
