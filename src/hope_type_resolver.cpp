@@ -18,6 +18,12 @@ TypeResolver::TypeResolver(ParseTree& parse_tree, SymbolTable& symbol_table, std
 void TypeResolver::resolve(){
     reset();
     resolveStmt(parse_tree.root);
+
+    //DO THIS - not sure this is necessary
+    if(errors.empty())
+        for(const auto& entry : called_func_map)
+            if(entry.second == RECURSIVE_CYCLE)
+                error(parse_tree.root);
 }
 
 void TypeResolver::reset() noexcept{
@@ -458,23 +464,7 @@ size_t TypeResolver::callSite(size_t pn) noexcept{
         sig.push_back(resolveExpr(arg));
     }
 
-    Type expected = fillDefaultsAndInstantiate(sig);
-    if(isAbstractFunctionGroup(expected)){
-        for(size_t i = 1; i < numElements(callable_type); i++){
-            sig[0] = arg(callable_type, i);
-            Type evaluated = fillDefaultsAndInstantiate(sig);
-            if(!isAbstractFunctionGroup(evaluated)) return error(callable_type);
-            expected = functionSetUnion(expected, evaluated);
-        }
-    }else{
-        for(size_t i = 1; i < numElements(callable_type); i++){
-            sig[0] = arg(callable_type, i);
-            Type evaluated = fillDefaultsAndInstantiate(sig);
-            if(evaluated != expected) return error(callable_type);
-        }
-    }
-
-    return expected;
+    return instantiateSetOfFuncs(pn, callable_type, sig);
 }
 
 size_t TypeResolver::implicitMult(size_t pn, size_t start) noexcept{
@@ -496,10 +486,50 @@ size_t TypeResolver::implicitMult(size_t pn, size_t start) noexcept{
     Type tr = implicitMult(pn, start+1);
     sig.push_back(tr);
 
-    Type expected = fillDefaultsAndInstantiate(sig);
-    for(size_t i = 1; i < numElements(tl); i++){
-        sig[0] = arg(tl, i);
-        if(fillDefaultsAndInstantiate(sig) != expected) return error(pn);
+    return instantiateSetOfFuncs(pn, tl, sig);
+}
+
+size_t TypeResolver::instantiateSetOfFuncs(ParseNode call_node, Type fun_group, CallSignature& sig){
+    //DO THIS - make sure there isn't an exploitable bad assumption here
+
+    Type expected = RECURSIVE_CYCLE;
+    size_t expected_index;
+
+    for(expected_index = 0; expected_index < numElements(fun_group) && expected == RECURSIVE_CYCLE; expected_index++){
+        sig[0] = arg(fun_group, expected_index);
+        expected = fillDefaultsAndInstantiate(sig);
+    }
+
+    if(expected == RECURSIVE_CYCLE) return error(call_node);
+
+    if(isAbstractFunctionGroup(expected)){
+        for(size_t i = expected_index+1; i < numElements(fun_group); i++){
+            sig[0] = arg(fun_group, i);
+            Type evaluated = fillDefaultsAndInstantiate(sig);
+            if(evaluated == RECURSIVE_CYCLE) continue;
+            if(!isAbstractFunctionGroup(evaluated)) return error(call_node);
+            expected = functionSetUnion(expected, evaluated);
+        }
+        for(size_t i = expected_index; i-->0;){
+            sig[0] = arg(fun_group, i);
+            Type evaluated = fillDefaultsAndInstantiate(sig);
+            if(evaluated == RECURSIVE_CYCLE) continue;
+            if(!isAbstractFunctionGroup(evaluated)) return error(call_node);
+            expected = functionSetUnion(expected, evaluated);
+        }
+    }else{
+        for(size_t i = expected_index+1; i < numElements(fun_group); i++){
+            sig[0] = arg(fun_group, i);
+            Type evaluated = fillDefaultsAndInstantiate(sig);
+            if(evaluated == RECURSIVE_CYCLE) continue;
+            if(evaluated != expected) return error(call_node);
+        }
+        for(size_t i = expected_index; i-->0;){
+            sig[0] = arg(fun_group, i);
+            Type evaluated = fillDefaultsAndInstantiate(sig);
+            if(evaluated == RECURSIVE_CYCLE) continue;
+            if(evaluated != expected) return error(call_node);
+        }
     }
 
     return expected;
