@@ -93,10 +93,15 @@ private:
         size_t implicitMult(size_t pn, size_t start = 0) noexcept;
         size_t instantiateSetOfFuncs(ParseNode call_node, Type fun_group, CallSignature& sig);
         size_t error(size_t pn, ErrorCode code = ErrorCode::TYPE_ERROR) noexcept;
+        ParseNode getFuncFromCallSig(const CallSignature& sig) const noexcept;
+        ParseNode getFuncFromDeclSig(const DeclareSignature& sig) const noexcept;
 
         ParseTree& parse_tree;
         SymbolTable& symbol_table;
         std::vector<Code::Error>& errors;
+        std::vector<Type> old_val_cap;
+        std::vector<Type> old_ref_cap;
+        std::vector<Type> old_args;
 };
 
 }
