@@ -35,7 +35,7 @@ Usage::Usage(size_t var_id, ParseNode pn, UsageType type)
     : var_id(var_id), pn(pn), type(type) {}
 
 ScopeSegment::ScopeSegment(const Typeset::Selection &name, const Typeset::Marker &start, ParseNode closure, ScopeId parent, ScopeId prev, SymbolId sym_begin, size_t usage_begin)
-    : name(name), start(start), closure(closure), parent(parent), prev(prev), sym_begin(sym_begin), usage_begin(usage_begin) {}
+    : name(name), start(start), fn(closure), parent(parent), prev(prev), sym_begin(sym_begin), usage_begin(usage_begin) {}
 
 bool ScopeSegment::isStartOfScope() const noexcept{
     return prev == NONE;
@@ -152,7 +152,7 @@ void SymbolTable::closeScope(const Typeset::Marker &stop){
     ScopeSegment& prev_scope = scopes[prev_index];
     prev_scope.next = scopes.size();
 
-    scopes.push_back(ScopeSegment(prev_scope.name, stop, prev_scope.closure, prev_scope.parent, prev_index, symbols.size(), usages.size()));
+    scopes.push_back(ScopeSegment(prev_scope.name, stop, prev_scope.fn, prev_scope.parent, prev_index, symbols.size(), usages.size()));
 }
 
 void SymbolTable::finalize(){

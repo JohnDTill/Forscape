@@ -26,7 +26,7 @@ NON_SCALAR_TYPE,,Scalar operation with non-scalar type
 STRING_CONVERSION,,Cannot convert to string
 IMAGINARY_RESULT,,Result is imaginary
 EIGEN_UNSUPPORTED,,Not compiled with Eigen unsupported features
-TYPE_ERROR,,Interpreter type error
+TYPE_ERROR,,Type error
 DIV_BY_ZERO,,Divided by zero
 INDEX_OUT_OF_RANGE,y,Index out of range
 UNUSED_VAR,,Variable is unused
@@ -60,3 +60,7 @@ EXPECT_RPAREN,,Expected ‘)’
 EXPECT_RBRACE,,Expected ‘]’
 EXPECT_DOUBLEBAR,,Expected ‘‖’
 EXPECT_RANGLE,,Expected ‘⟩’
+RECURSIVE_TYPE,,Type cannot be deduced due to recursion
+CALL_BEFORE_DEFINE,,Algorithm called before being defined
+TOO_MANY_ARGS,,Too many arguments at call site
+TOO_FEW_ARGS,,Too few arguments at call site

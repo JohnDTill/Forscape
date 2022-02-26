@@ -1,7 +1,8 @@
 alg void(){}
+alg zero() return 0
 incr ← void
 decr ← void
-get ← void
+get ← zero
 alg initFuncs(){
     x ← 0
     alg incrX(){

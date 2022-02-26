@@ -92,9 +92,7 @@ void Interpreter::printStmt(ParseNode pn){
 
 void Interpreter::assertStmt(ParseNode pn){
     ParseNode child = parse_tree.child(pn);
-    Value v = interpretExpr(child);
-    if(v.index() != bool_index || !std::get<bool>(v))
-        error(ASSERT_FAIL, child);
+    if(!evaluateCondition(child)) error(ASSERT_FAIL, child);
 }
 
 void Interpreter::assignStmt(ParseNode pn){
@@ -166,7 +164,7 @@ void Interpreter::algorithmStmt(ParseNode pn){
     ParseNode captured = alg.captured(parse_tree);
     ParseNode upvalues = alg.upvalues(parse_tree);
 
-    if(parse_tree.getFlag(name) == NONE){
+    if(parse_tree.getFlag(pn) == NONE){
         stack.push(alg, parse_tree.str(name));
         list = &std::get<Algorithm>(stack.back()).closure;
     }else{
@@ -194,6 +192,7 @@ void Interpreter::initClosure(Closure& closure, ParseNode captured, ParseNode up
 
     for(size_t i = 0; i < parse_tree.getNumArgs(upvalues); i++){
         ParseNode up = parse_tree.arg(upvalues, i);
+
         switch (parse_tree.getOp(up)) {
             case OP_IDENTIFIER:{ //Place on heap
                 Value* v = new Value();
@@ -204,6 +203,7 @@ void Interpreter::initClosure(Closure& closure, ParseNode captured, ParseNode up
             case OP_READ_UPVALUE:{ //Get existing
                 assert(active_closure);
                 size_t index = parse_tree.getClosureIndex(up);
+                assert(index < active_closure->size());
                 closure.push_back( active_closure->at(index) );
                 break;
             }
@@ -320,15 +320,9 @@ Value Interpreter::big(ParseNode pn, Op type){
 }
 
 Value Interpreter::cases(ParseNode pn){
-    for(size_t i = 0; i < parse_tree.getNumArgs(pn) && status < ERROR; i+=2){
-        ParseNode condition = parse_tree.arg(pn, i+1);
-        Value v = interpretExpr(condition);
-        if(v.index() != bool_index){
-            error(TYPE_ERROR, condition);
-            return NIL;
-        }
-        else if(std::get<bool>(v)) return interpretExpr(parse_tree.arg(pn, i));
-    }
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn) && status < ERROR; i+=2)
+        if(evaluateCondition(parse_tree.arg(pn, i+1)))
+            return interpretExpr(parse_tree.arg(pn, i));
 
     error(EMPTY_CASES, pn);
     return NIL;
@@ -336,12 +330,9 @@ Value Interpreter::cases(ParseNode pn){
 
 bool Interpreter::evaluateCondition(ParseNode pn){
     Value v = interpretExpr(pn);
-    if(v.index() != bool_index){
-        error(TYPE_ERROR, pn);
-        return false;
-    }else{
-        return std::get<bool>(v);
-    }
+    assert(v.index() == bool_index);
+
+    return std::get<bool>(v);
 }
 
 void Interpreter::reassign(ParseNode lhs, ParseNode rhs){
@@ -368,7 +359,8 @@ void Interpreter::reassign(ParseNode lhs, ParseNode rhs){
             reassignSubscript(lhs, rhs);
             break;
 
-        default: error(NON_LVALUE, lhs);
+        default:
+            assert(false);
     }
 }
 
@@ -400,11 +392,9 @@ void Interpreter::reassignSubscript(ParseNode lhs, ParseNode rhs){
             if(rvalue.index() == double_index){
                 rmat.resize(1,1);
                 rmat(0,0) = std::get<double>(rvalue);
-            }else if(rvalue.index() == MatrixXd_index){
-                rmat = std::get<Eigen::MatrixXd>(rvalue);
             }else{
-                error(TYPE_ERROR, rhs);
-                return;
+                assert(rvalue.index() == MatrixXd_index);
+                rmat = std::get<Eigen::MatrixXd>(rvalue);
             }
 
             if(num_indices == 1){
@@ -441,7 +431,7 @@ void Interpreter::reassignSubscript(ParseNode lhs, ParseNode rhs){
         }
 
         default:
-            error(TYPE_ERROR, lvalue_node);
+            assert(false);
     }
 }
 
@@ -465,10 +455,9 @@ void Interpreter::elementWiseAssignment(ParseNode pn){
         if(use_first & use_second) stack.pop();
         read(lvalue_node) = rvalue;
         return;
-    }else if(lvalue.index() != MatrixXd_index){
-        error(TYPE_ERROR, lvalue_node);
-        return;
     }
+
+    assert(lvalue.index() == MatrixXd_index);
 
     Eigen::MatrixXd lmat = std::get<Eigen::MatrixXd>(lvalue);
 
@@ -606,6 +595,7 @@ Value& Interpreter::readGlobal(ParseNode pn){
 
 Value& Interpreter::readUpvalue(ParseNode pn){
     size_t upvalue_offset = parse_tree.getClosureIndex(pn);
+    assert(upvalue_offset < active_closure->size());
     return conv(active_closure->at(upvalue_offset));
 }
 
@@ -616,6 +606,7 @@ Value Interpreter::matrix(ParseNode pn){
     size_t typeset_cols = nargs/typeset_rows;
     assert(typeset_cols*typeset_rows == nargs);
 
+    //EVENTUALLY: break nested allocation
     std::vector<size_t> elem_cols; elem_cols.resize(typeset_cols);
     std::vector<size_t> elem_rows; elem_rows.resize(typeset_rows);
     std::vector<Value> elements; elements.resize(nargs);
@@ -627,24 +618,18 @@ Value Interpreter::matrix(ParseNode pn){
             elements[curr] = interpretExpr(arg);
             const Value& e = elements[curr++];
 
-            switch (e.index()) {
-                case double_index:
-                    if(i==0) elem_cols[j] = 1;
-                    else if(elem_cols[j] != 1) return error(ErrorCode::DIMENSION_MISMATCH, pn);
-                    if(j==0) elem_rows[i] = 1;
-                    else if(elem_rows[i] != 1) return error(ErrorCode::DIMENSION_MISMATCH, pn);
-                    break;
-
-                case MatrixXd_index:{
-                    const Eigen::MatrixXd& e_mat = std::get<Eigen::MatrixXd>(e);
-                    if(i==0) elem_cols[j] = e_mat.cols();
-                    else if(elem_cols[j] != e_mat.cols()) return error(ErrorCode::DIMENSION_MISMATCH, pn);
-                    if(j==0) elem_rows[i] = e_mat.rows();
-                    else if(elem_rows[i] != e_mat.rows()) return error(ErrorCode::DIMENSION_MISMATCH, pn);
-                    break;
-                }
-
-                default: return error(ErrorCode::TYPE_ERROR, arg);
+            if(e.index() == double_index){
+                if(i==0) elem_cols[j] = 1;
+                else if(elem_cols[j] != 1) return error(ErrorCode::DIMENSION_MISMATCH, pn);
+                if(j==0) elem_rows[i] = 1;
+                else if(elem_rows[i] != 1) return error(ErrorCode::DIMENSION_MISMATCH, pn);
+            }else{
+                assert(e.index() == MatrixXd_index);
+                const Eigen::MatrixXd& e_mat = std::get<Eigen::MatrixXd>(e);
+                if(i==0) elem_cols[j] = e_mat.cols();
+                else if(elem_cols[j] != e_mat.cols()) return error(ErrorCode::DIMENSION_MISMATCH, pn);
+                if(j==0) elem_rows[i] = e_mat.rows();
+                else if(elem_rows[i] != e_mat.rows()) return error(ErrorCode::DIMENSION_MISMATCH, pn);
             }
         }
     }
@@ -661,18 +646,12 @@ Value Interpreter::matrix(ParseNode pn){
         size_t col = 0;
         for(size_t j = 0; j < typeset_cols; j++){
             const Value& e = elements[j + i*typeset_cols];
-            switch(e.index()){
-                case double_index:
-                    mat(row, col) = std::get<double>(e);
-                    break;
-
-                case MatrixXd_index:{
-                    const Eigen::MatrixXd& e_mat = std::get<Eigen::MatrixXd>(e);
-                    mat.block(row, col, e_mat.rows(), e_mat.cols()) = e_mat;
-                    break;
-                }
-
-                default: assert(false);
+            if(e.index() == double_index){
+                mat(row, col) = std::get<double>(e);
+            }else{
+                assert(e.index() == MatrixXd_index);
+                const Eigen::MatrixXd& e_mat = std::get<Eigen::MatrixXd>(e);
+                mat.block(row, col, e_mat.rows(), e_mat.cols()) = e_mat;
             }
 
             col += elem_cols[j];
@@ -722,14 +701,11 @@ Value Interpreter::call(ParseNode call) {
 
         case double_index:
         case MatrixXd_index:
-            if(nargs != 1){
-                error(NOT_CALLABLE, call);
-                return NIL;
-            }
-            else return binaryDispatch(call);
+            assert(nargs == 1);
+            return binaryDispatch(call);
 
         default:
-            error(NOT_CALLABLE, call);
+            assert(false);
             return NIL;
     }
 }
@@ -752,8 +728,8 @@ void Interpreter::callStmt(ParseNode pn){
 
         case double_index:
         case MatrixXd_index:
-            if(nargs != 1) error(NOT_CALLABLE, pn);
-            else error(UNUSED_EXPRESSION, pn);
+            assert(nargs == 1);
+            error(UNUSED_EXPRESSION, pn);
             break;
 
         case Algorithm_index:{
@@ -762,7 +738,8 @@ void Interpreter::callStmt(ParseNode pn){
             break;
         }
 
-        default: error(NOT_CALLABLE, pn);
+        default:
+            assert(false);
     }
 }
 
@@ -770,7 +747,7 @@ Value Interpreter::innerCall(ParseNode call, ParseNode params, Closure& closure,
     size_t nargs = parse_tree.getNumArgs(call)-1;
     size_t nparams = parse_tree.getNumArgs(params);
     if(nargs > nparams) return error(INVALID_ARGS, call);
-    std::vector<std::pair<Value, std::string>> stack_vals;
+    std::vector<std::pair<Value, std::string>> stack_vals; //EVENTUALLY: break nested allocation
     std::vector<std::pair<ParseNode, Value>> closure_vals;
     for(size_t i = 0; (i < nargs) & (status == NORMAL); i++){
         ParseNode param = parse_tree.arg(params, i);
@@ -784,15 +761,8 @@ Value Interpreter::innerCall(ParseNode call, ParseNode params, Closure& closure,
     }
     for(size_t i = nargs; (i < nparams)  & (status == NORMAL); i++){
         ParseNode defnode = parse_tree.arg(params, i);
-        if(parse_tree.getOp(defnode) != OP_EQUAL){
-            stack.trim(frames.back());
-            frames.pop_back();
-
-            error(INVALID_ARGS, call);
-            return NIL;
-        }
-        ParseNode param = parse_tree.arg(params, i);
-        if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
+        assert(parse_tree.getOp(defnode) == OP_EQUAL);
+        ParseNode param = parse_tree.lhs(defnode);
         Value v = interpretExpr(parse_tree.rhs(defnode));
         if(parse_tree.getOp(param) == OP_READ_UPVALUE){
             closure_vals.push_back({param, v});
@@ -836,44 +806,39 @@ Value Interpreter::elementAccess(ParseNode pn){
     Value lhs = interpretExpr( parse_tree.arg(pn, 0) );
     size_t num_indices = parse_tree.getNumArgs(pn)-1;
 
-    switch (lhs.index()) {
-        case double_index:
-            for(size_t i = 1; i <= num_indices && status == NORMAL; i++)
-                readSubscript(parse_tree.arg(pn, i), 1);
-            return lhs;
+    if(lhs.index() == double_index){
+        for(size_t i = 1; i <= num_indices && status == NORMAL; i++)
+            readSubscript(parse_tree.arg(pn, i), 1);
+        return lhs;
+    }else{
+        assert(lhs.index() == MatrixXd_index);
 
-        case MatrixXd_index:{
-            const Eigen::MatrixXd& mat = std::get<Eigen::MatrixXd>(lhs);
-            if(num_indices == 1){
-                if(mat.rows() > 1 && mat.cols() > 1){
-                    error(INDEX_OUT_OF_RANGE, pn);
-                    return NIL;
-                }
-                Eigen::Map<const Eigen::VectorXd> vec(mat.data(), mat.size());
-                ParseNode index_node = parse_tree.arg(pn, 1);
-                Slice s = readSubscript(index_node, mat.size());
-                if(status != NORMAL) return NIL;
-                const auto& v = vec(s);
-                if(v.size() == 1) return v(0);
-                else if(mat.rows() == 1) return v.eval().transpose();
-                else return v;
-            }else if(num_indices == 2){
-                ParseNode row_node = parse_tree.arg(pn, 1);
-                Slice rows = readSubscript(row_node, mat.rows());
-                ParseNode col_node = parse_tree.arg(pn, 2);
-                Slice cols = readSubscript(col_node, mat.cols());
-                if(status != NORMAL) return NIL;
-                const auto& m = mat(rows, cols);
-                return m.size() > 1 ? Value(m) : m(0,0);
-            }else{
+        const Eigen::MatrixXd& mat = std::get<Eigen::MatrixXd>(lhs);
+        if(num_indices == 1){
+            if(mat.rows() > 1 && mat.cols() > 1){
                 error(INDEX_OUT_OF_RANGE, pn);
                 return NIL;
             }
-        }
-
-        default:
-            error(TYPE_ERROR, pn);
+            Eigen::Map<const Eigen::VectorXd> vec(mat.data(), mat.size());
+            ParseNode index_node = parse_tree.arg(pn, 1);
+            Slice s = readSubscript(index_node, mat.size());
+            if(status != NORMAL) return NIL;
+            const auto& v = vec(s);
+            if(v.size() == 1) return v(0);
+            else if(mat.rows() == 1) return v.eval().transpose();
+            else return v;
+        }else if(num_indices == 2){
+            ParseNode row_node = parse_tree.arg(pn, 1);
+            Slice rows = readSubscript(row_node, mat.rows());
+            ParseNode col_node = parse_tree.arg(pn, 2);
+            Slice cols = readSubscript(col_node, mat.cols());
+            if(status != NORMAL) return NIL;
+            const auto& m = mat(rows, cols);
+            return m.size() > 1 ? Value(m) : m(0,0);
+        }else{
+            error(INDEX_OUT_OF_RANGE, pn);
             return NIL;
+        }
     }
 }
 
@@ -932,7 +897,7 @@ Eigen::Index Interpreter::readIndex(ParseNode pn, Eigen::Index sze){
 double Interpreter::readDouble(ParseNode pn){
     Value v = interpretExpr(pn);
     if(v.index() != double_index){
-        error(TYPE_ERROR, pn);
+        error(DIMENSION_MISMATCH, pn);
         return INVALID;
     }else{
         return std::get<double>(v);
@@ -1015,19 +980,19 @@ Value Interpreter::pow(const Eigen::MatrixXd& a, double b, ParseNode pn){
 Value Interpreter::unitVector(ParseNode pn){
     Value elem = interpretExpr(parse_tree.arg(pn, 0));
     if(elem.index() != double_index){
-        error(TYPE_ERROR, parse_tree.arg(pn, 0));
+        error(DIMENSION_MISMATCH, parse_tree.arg(pn, 0));
         return NIL;
     }
 
     Value rows = interpretExpr(parse_tree.arg(pn, 1));
     if(rows.index() != double_index){
-        error(TYPE_ERROR, parse_tree.arg(pn, 1));
+        error(DIMENSION_MISMATCH, parse_tree.arg(pn, 1));
         return NIL;
     }
 
     Value cols = interpretExpr(parse_tree.arg(pn, 2));
     if(cols.index() != double_index){
-        error(TYPE_ERROR, parse_tree.arg(pn, 2));
+        error(DIMENSION_MISMATCH, parse_tree.arg(pn, 2));
         return NIL;
     }
 

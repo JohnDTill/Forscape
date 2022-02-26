@@ -2,7 +2,9 @@
 
 #include <stack>
 
-SymbolTreeView::SymbolTreeView(const Hope::Code::SymbolTable& symbol_table){
+#include "hope_type_resolver.h"
+
+SymbolTreeView::SymbolTreeView(const Hope::Code::SymbolTable& symbol_table, const Hope::Code::TypeResolver& ts){
     setWindowTitle("Symbol Table");
     constexpr size_t N_FIELDS = 4;
     setHeaderLabels({"Name", "Type", "Const", "Description"});
@@ -41,6 +43,7 @@ SymbolTreeView::SymbolTreeView(const Hope::Code::SymbolTable& symbol_table){
                         new QTreeWidgetItem(items.top());
             const auto& symbol = symbol_table.symbols[i];
             item->setText(NAME_COLUMN, QString::fromStdString(symbol_table.getSel(i).str()));
+            item->setText(1, QString::fromStdString(ts.typeString(symbol.type)));
             item->setText(2, QChar('0' + symbol.is_const));
             if(symbol.comment != Hope::Code::ParseTree::EMPTY){
                 std::string desc = symbol_table.parse_tree.str(symbol.comment);

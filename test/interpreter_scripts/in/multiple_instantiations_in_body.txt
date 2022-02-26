@@ -1,0 +1,6 @@
+alg echo(x) print(x)
+alg doCall(f){
+    f(1)
+    f("\n2nd instantiation of f within the same body!")
+}
+doCall(echo)

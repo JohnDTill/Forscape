@@ -1,0 +1,16 @@
+alg add(x, y) return x + y
+alg mult(x, y) return x y
+f ← add
+if(true) f ← mult
+print(f(3, 3), "\n")
+
+k = addfalsemulttrue
+print(k(3, 3), "\n")
+
+alg getFun(){
+    if(false) return add
+    return mult
+}
+
+h = getFun()
+print(h(3, 3))

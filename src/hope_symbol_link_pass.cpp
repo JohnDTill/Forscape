@@ -7,17 +7,31 @@ namespace Code {
 Hope::Code::SymbolTableLinker::SymbolTableLinker(SymbolTable& symbol_table, Hope::Code::ParseTree& parse_tree) noexcept
     : symbol_table(symbol_table), parse_tree(parse_tree) {}
 
-void SymbolTableLinker::link(){
-    std::vector<std::unordered_map<size_t, size_t>> closures;
-    std::vector<size_t> closure_size;
-    std::vector<size_t> stack_frame;
-    size_t stack_size = 0;
-
+void SymbolTableLinker::link() noexcept{
     for(ScopeSegment& scope : symbol_table.scopes){
         if(scope.isStartOfScope()){
-            if(scope.closure != NONE){
-                closures.push_back(std::unordered_map<size_t, size_t>());
-                closure_size.push_back(0);
+            if(scope.fn != NONE){
+                bool is_alg = (parse_tree.getOp(scope.fn) != OP_LAMBDA);
+                ParseNode val_list = parse_tree.arg(scope.fn, is_alg);
+                ParseNode ref_list = parse_tree.arg(scope.fn, 1+is_alg);
+                size_t N_cap = val_list == NONE ? 0 : parse_tree.getNumArgs(val_list);
+
+                for(size_t i = 0; i < N_cap; i++){
+                    size_t var_id = scope.sym_begin+i;
+                    Symbol& sym = symbol_table.symbols[var_id];
+                    old_flags.push_back(sym.flag);
+                    sym.flag = i;
+                }
+
+                for(size_t i = 0; i < parse_tree.getNumArgs(ref_list); i++){
+                    ParseNode ref = parse_tree.arg(ref_list, i);
+                    size_t var_id = parse_tree.getFlag(ref);
+                    Symbol& sym = symbol_table.symbols[var_id];
+                    old_flags.push_back(sym.flag);
+                    sym.flag = N_cap + i;
+                }
+
+                closure_depth++;
             }
 
             stack_frame.push_back(stack_size);
@@ -30,26 +44,16 @@ void SymbolTableLinker::link(){
             ParseNode pn = usage.pn;
 
             if(usage.type == DECLARE){
-                if(sym.is_closure_nested && !sym.is_captured){
-                    assert(sym.declaration_closure_depth <= closures.size());
-
+                if(sym.is_closure_nested && !sym.is_captured_by_value){
                     parse_tree.setOp(pn, OP_READ_UPVALUE);
-                    parse_tree.setClosureIndex(pn, closure_size.back());
-                    closures.back()[usage.var_id] = closure_size.back()++;
-                }else{
+                    parse_tree.setClosureIndex(pn, sym.flag);
+                }else if(!sym.is_captured_by_value){
                     sym.flag = stack_size++;
                 }
             }else{
                 if(sym.is_closure_nested){
-                    assert(sym.declaration_closure_depth <= closures.size());
-
-                    for(size_t i = sym.declaration_closure_depth; i < closures.size(); i++){
-                        std::unordered_map<size_t, size_t>& closure = closures[i];
-                        if(closure.find(usage.var_id) == closure.end())
-                            closure[usage.var_id] = closure_size[i]++;
-                    }
                     parse_tree.setOp(pn, OP_READ_UPVALUE);
-                    parse_tree.setClosureIndex(pn, closures.back()[usage.var_id]);
+                    parse_tree.setClosureIndex(pn, sym.flag);
                 }else if(sym.declaration_closure_depth == 0){
                     parse_tree.setOp(pn, OP_READ_GLOBAL);
                     parse_tree.setGlobalIndex(pn, sym.flag);
@@ -60,36 +64,44 @@ void SymbolTableLinker::link(){
         }
 
         if(scope.isEndOfScope()){
-            if(scope.closure != NONE){
-                ParseNode fn = scope.closure;
+            if(scope.fn != NONE){
+                ParseNode fn = scope.fn;
+                bool is_alg = (parse_tree.getOp(fn) != OP_LAMBDA);
+                ParseNode val_list = parse_tree.arg(fn, is_alg);
+                ParseNode ref_list = parse_tree.arg(fn, 1+is_alg);
+                size_t N_val = val_list == NONE ? 0 : parse_tree.getNumArgs(val_list);
 
-                ParseTree::NaryBuilder upvalue_builder = parse_tree.naryBuilder(OP_LIST);
-                for(const auto& entry : closures.back()){
-                    size_t symbol_index = entry.first;
-                    const Symbol& sym = symbol_table.symbols[symbol_index];
-                    ParseNode n = parse_tree.addTerminal(OP_IDENTIFIER, sym.sel(parse_tree));
+                for(size_t i = parse_tree.getNumArgs(ref_list); i-->0;){
+                    ParseNode n = parse_tree.arg(ref_list, i);
+                    size_t symbol_index = parse_tree.getFlag(n);
+                    Symbol& sym = symbol_table.symbols[symbol_index];
+                    sym.flag = old_flags.back();
+                    old_flags.pop_back();
 
-                    parse_tree.setFlag(n, entry.second);
+                    if(sym.declaration_closure_depth == closure_depth)
+                        parse_tree.setFlag(n, symbol_index);
+                }
 
-                    if(sym.declaration_closure_depth != closures.size())
+                for(size_t i = N_val; i-->0;){
+                    ParseNode n = parse_tree.arg(val_list, i);
+                    size_t symbol_index = parse_tree.getFlag(n);
+                    Symbol& sym = symbol_table.symbols[symbol_index];
+                    sym.flag = old_flags.back();
+                    old_flags.pop_back();
+                }
+
+                for(size_t i = parse_tree.getNumArgs(ref_list); i-->0;){
+                    ParseNode n = parse_tree.arg(ref_list, i);
+                    size_t symbol_index = parse_tree.getFlag(n);
+                    Symbol& sym = symbol_table.symbols[symbol_index];
+
+                    if(sym.declaration_closure_depth != closure_depth){
                         parse_tree.setOp(n, OP_READ_UPVALUE);
-
-                    upvalue_builder.addNaryChild(n);
+                        parse_tree.setFlag(n, sym.flag);
+                    }
                 }
 
-                ParseNode upvalue_list = upvalue_builder.finalize(parse_tree.getSelection(fn));
-
-                switch (parse_tree.getOp(fn)) {
-                    case OP_ALGORITHM:
-                        parse_tree.setArg(fn, 2, upvalue_list);
-                        break;
-                    case OP_LAMBDA:
-                        parse_tree.setArg(fn, 1, upvalue_list);
-                        break;
-                }
-
-                closures.pop_back();
-                closure_size.pop_back();
+                closure_depth--;
             }
 
             stack_size = stack_frame.back();

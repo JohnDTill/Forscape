@@ -5,6 +5,7 @@
 #include "hope_parse_tree.h"
 #include "hope_symbol_table.h"
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace Hope {
@@ -30,6 +31,10 @@ private:
     static constexpr size_t GLOBAL_DEPTH = 0;
     size_t lexical_depth = GLOBAL_DEPTH;
     size_t closure_depth = 0;
+
+    //EVENTUALLY: redesign nesting allocation
+    //This should probably be some kind of map to intrusive linked list, like for symbols in general
+    std::vector<std::unordered_set<size_t>> ref_list_sets;
 
     void reset() noexcept;
     ScopeSegment& activeScope() noexcept;

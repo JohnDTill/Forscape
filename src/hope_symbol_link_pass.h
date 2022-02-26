@@ -9,12 +9,16 @@ namespace Code {
 
 class SymbolTableLinker{
 private:
+    std::vector<size_t> stack_frame;
+    std::vector<size_t> old_flags;
+    size_t stack_size = 0;
+    size_t closure_depth = 0;
     SymbolTable& symbol_table;
     ParseTree& parse_tree;
 
 public:
     SymbolTableLinker(SymbolTable& symbol_table, ParseTree& parse_tree) noexcept;
-    void link(); //I don't believe user errors are possible
+    void link() noexcept; //No user errors possible at link stage
 };
 
 }

@@ -1,0 +1,6 @@
+alg makeClosure(a, b, c, d){
+    alg echo[a, b](e) print(a, ", ", b, ", ", c, ", ", d, ", ", e)
+    return echo
+}
+f = makeClosure(0, 1, 2, 3)
+f(4)
