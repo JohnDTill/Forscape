@@ -68,7 +68,6 @@ private:
     size_t last(size_t index) const noexcept;
     std::string abstractFunctionSetString(Type t) const;
     std::vector<DeclareSignature> declared_funcs;
-    std::vector<CallSignature> called_funcs;
 
     std::unordered_map<DeclareSignature, size_t, vectorOfIntHash> declared_func_map;
     std::unordered_map<CallSignature, size_t, vectorOfIntHash> called_func_map;
@@ -87,7 +86,7 @@ private:
 
     private:
         void resolveStmt(size_t pn) noexcept;
-        Type fillDefaultsAndInstantiate(CallSignature sig);
+        Type fillDefaultsAndInstantiate(ParseNode call_node, CallSignature sig);
         size_t resolveExpr(size_t pn) noexcept;
         size_t callSite(size_t pn) noexcept;
         size_t implicitMult(size_t pn, size_t start = 0) noexcept;

@@ -32,7 +32,9 @@ private:
     size_t lexical_depth = GLOBAL_DEPTH;
     size_t closure_depth = 0;
 
-    std::vector<std::unordered_set<size_t>> ref_list_sets; //DO THIS - redesign nesting allocation
+    //EVENTUALLY: redesign nesting allocation
+    //This should probably be some kind of map to intrusive linked list, like for symbols in general
+    std::vector<std::unordered_set<size_t>> ref_list_sets;
 
     void reset() noexcept;
     ScopeSegment& activeScope() noexcept;

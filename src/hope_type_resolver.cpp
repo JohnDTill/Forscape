@@ -4,10 +4,6 @@
 #include "hope_parse_tree.h"
 #include "hope_symbol_table.h"
 
-#ifndef NDEBUG
-#include <iostream>
-#endif
-
 namespace Hope {
 
 namespace Code {
@@ -23,6 +19,15 @@ void TypeResolver::resolve(){
     for(const auto& entry : called_func_map)
         if(entry.second == RECURSIVE_CYCLE)
             error(getFuncFromCallSig(entry.first), RECURSIVE_TYPE);
+    if(!errors.empty()) return;
+
+    //Not sure about the soundness of the recursion handling strategy, so let's double check
+    //EVENTUALLY: remove this check
+    const auto call_map_backup = called_func_map;
+    for(const auto& entry : call_map_backup){
+        called_func_map.erase(entry.first);
+        assert(instantiate(entry.first) == entry.second);
+    }
 }
 
 void TypeResolver::reset() noexcept{
@@ -30,7 +35,6 @@ void TypeResolver::reset() noexcept{
     memoized_abstract_function_groups.clear();
     declared_funcs.clear();
     declared_func_map.clear();
-    called_funcs.clear();
     called_func_map.clear();
     assert(return_types.empty());
     assert(retry_at_recursion == false);
@@ -213,7 +217,7 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
     #undef EXPECT
 }
 
-Type TypeResolver::fillDefaultsAndInstantiate(TypeResolver::CallSignature sig){
+Type TypeResolver::fillDefaultsAndInstantiate(ParseNode call_node, TypeResolver::CallSignature sig){
     const TypeResolver::DeclareSignature& dec = declared(sig.front());
     ParseNode fn = dec.front();
 
@@ -223,12 +227,12 @@ Type TypeResolver::fillDefaultsAndInstantiate(TypeResolver::CallSignature sig){
 
     size_t n_params = parse_tree.getNumArgs(params);
     size_t n_args = sig.size()-1;
-    if(n_args > n_params) return error(fn); //Too many args supplied at callsite
+    if(n_args > n_params) return error(call_node, TOO_MANY_ARGS);
 
     //Resolve default args
     for(size_t i = n_args; i < n_params; i++){
         ParseNode param = parse_tree.arg(params, i);
-        if(parse_tree.getOp(param) != OP_EQUAL) return error(param); //Too few args supplied at callsite
+        if(parse_tree.getOp(param) != OP_EQUAL) return error(call_node, TOO_FEW_ARGS);
         ParseNode default_var = parse_tree.lhs(param);
         size_t sym_id = parse_tree.getFlag(default_var);
         Type t = symbol_table.symbols[sym_id].type;
@@ -489,29 +493,36 @@ size_t TypeResolver::implicitMult(size_t pn, size_t start) noexcept{
 }
 
 size_t TypeResolver::instantiateSetOfFuncs(ParseNode call_node, Type fun_group, CallSignature& sig){
-    //DO THIS - make sure there isn't an exploitable bad assumption here
-
     Type expected = RECURSIVE_CYCLE;
     size_t expected_index;
 
     for(expected_index = 0; expected_index < numElements(fun_group) && expected == RECURSIVE_CYCLE; expected_index++){
         sig[0] = arg(fun_group, expected_index);
-        expected = fillDefaultsAndInstantiate(sig);
+        expected = fillDefaultsAndInstantiate(call_node, sig);
     }
 
-    if(expected == RECURSIVE_CYCLE) return error(call_node, RECURSIVE_TYPE);
+    if(expected == RECURSIVE_CYCLE){
+        for(size_t i = 0; i < numElements(fun_group); i++){
+            size_t decl_index = arg(fun_group, i);
+            const DeclareSignature& dec = declared(decl_index);
+            ParseNode fn = getFuncFromDeclSig(dec);
+            if(parse_tree.getOp(fn) != OP_LAMBDA) fn = parse_tree.arg(fn, 0);
+            error(fn, RECURSIVE_TYPE);
+        }
+        return error(call_node, RECURSIVE_TYPE);
+    }
 
     if(isAbstractFunctionGroup(expected)){
         for(size_t i = expected_index+1; i < numElements(fun_group); i++){
             sig[0] = arg(fun_group, i);
-            Type evaluated = fillDefaultsAndInstantiate(sig);
+            Type evaluated = fillDefaultsAndInstantiate(call_node, sig);
             if(evaluated == RECURSIVE_CYCLE) continue;
             if(!isAbstractFunctionGroup(evaluated)) return error(call_node);
             expected = functionSetUnion(expected, evaluated);
         }
         for(size_t i = expected_index; i-->0;){
             sig[0] = arg(fun_group, i);
-            Type evaluated = fillDefaultsAndInstantiate(sig);
+            Type evaluated = fillDefaultsAndInstantiate(call_node, sig);
             if(evaluated == RECURSIVE_CYCLE) continue;
             if(!isAbstractFunctionGroup(evaluated)) return error(call_node);
             expected = functionSetUnion(expected, evaluated);
@@ -519,13 +530,13 @@ size_t TypeResolver::instantiateSetOfFuncs(ParseNode call_node, Type fun_group, 
     }else{
         for(size_t i = expected_index+1; i < numElements(fun_group); i++){
             sig[0] = arg(fun_group, i);
-            Type evaluated = fillDefaultsAndInstantiate(sig);
+            Type evaluated = fillDefaultsAndInstantiate(call_node, sig);
             if(evaluated == RECURSIVE_CYCLE) continue;
             if(evaluated != expected) return error(call_node);
         }
         for(size_t i = expected_index; i-->0;){
             sig[0] = arg(fun_group, i);
-            Type evaluated = fillDefaultsAndInstantiate(sig);
+            Type evaluated = fillDefaultsAndInstantiate(call_node, sig);
             if(evaluated == RECURSIVE_CYCLE) continue;
             if(evaluated != expected) return error(call_node);
         }
@@ -580,8 +591,6 @@ Type TypeResolver::instantiate(const CallSignature& fn){
 
     //Instantiate
     //EVENTUALLY: in addition to type checking, should clone the function for type-specific operations refinement
-    called_funcs.push_back(fn);
-
     called_func_map[fn] = RECURSIVE_CYCLE;
 
     const DeclareSignature& dec = declared(fn[0]);

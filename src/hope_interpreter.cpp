@@ -606,6 +606,7 @@ Value Interpreter::matrix(ParseNode pn){
     size_t typeset_cols = nargs/typeset_rows;
     assert(typeset_cols*typeset_rows == nargs);
 
+    //EVENTUALLY: break nested allocation
     std::vector<size_t> elem_cols; elem_cols.resize(typeset_cols);
     std::vector<size_t> elem_rows; elem_rows.resize(typeset_rows);
     std::vector<Value> elements; elements.resize(nargs);
@@ -746,7 +747,7 @@ Value Interpreter::innerCall(ParseNode call, ParseNode params, Closure& closure,
     size_t nargs = parse_tree.getNumArgs(call)-1;
     size_t nparams = parse_tree.getNumArgs(params);
     if(nargs > nparams) return error(INVALID_ARGS, call);
-    std::vector<std::pair<Value, std::string>> stack_vals; //DO THIS - break nested allocation
+    std::vector<std::pair<Value, std::string>> stack_vals; //EVENTUALLY: break nested allocation
     std::vector<std::pair<ParseNode, Value>> closure_vals;
     for(size_t i = 0; (i < nargs) & (status == NORMAL); i++){
         ParseNode param = parse_tree.arg(params, i);
