@@ -40,7 +40,8 @@ else()
     add_compile_definitions(QT5)
 endif()
 
-configure_file(lambda.ico ${CMAKE_BINARY_DIR} COPYONLY)
+qt5_add_resources(EMBEDDED_RESOURCES resources.qrc)
+
 configure_file(toolbar_glyphs.otf ${CMAKE_BINARY_DIR} COPYONLY)
 
 set(GEN_FILES
@@ -128,6 +129,7 @@ set(PROJECT_SOURCES
     searchdialog.ui
     symboltreeview.cpp
     symboltreeview.h
+    ${EMBEDDED_RESOURCES}
     ${GEN_FILES}
     ${CONSTRUCT_FILES}
     ${SRC}/hope_error.cpp
