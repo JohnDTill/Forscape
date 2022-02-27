@@ -11,8 +11,9 @@
 
 ## Prerequisites
 
-* Qt (https://www.qt.io/download)
+* Qt5/6 (https://www.qt.io/download)
  * QtSvg module
+* Python3 on the system path
 
 ## Bundled software
 
