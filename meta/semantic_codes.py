@@ -39,14 +39,20 @@ def main():
             header_writer.write(f"    {getattr(e, ch)},\n")
         header_writer.write("};\n\n")
 
-    header_writer.write(f"constexpr std::string_view font_names[NUM_SEM_TYPES] {{\n")
+    fonts = set()
     for e in entries:
-        header_writer.write(f"    \"{e.font}\",\n")
+        fonts.add((e.font + ' ' + e.family).replace(' ', '_').upper())
+
+    header_writer.write(f"static constexpr size_t NUM_FONTS = {len(fonts)};\n\n")
+
+    header_writer.write("enum Font{\n")
+    for f in fonts:
+        header_writer.write(f"    {f},\n")
     header_writer.write("};\n\n")
 
-    header_writer.write(f"constexpr std::string_view font_family[NUM_SEM_TYPES] {{\n")
+    header_writer.write(f"constexpr Font font_enum[NUM_SEM_TYPES] {{\n")
     for e in entries:
-        header_writer.write(f"    \"{e.family}\",\n")
+        header_writer.write(f"    {(e.font + ' ' + e.family).replace(' ', '_').upper()},\n")
     header_writer.write("};\n\n")
 
     header_writer.write("#endif\n\n")

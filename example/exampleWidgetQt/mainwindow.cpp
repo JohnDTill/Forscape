@@ -63,7 +63,7 @@ MainWindow::MainWindow(QWidget* parent)
 
     setWindowTitle("Forscape - new script");
 
-    QGuiApplication::setWindowIcon(QIcon("lambda.ico"));
+    QGuiApplication::setWindowIcon(QIcon(":/lambda.ico"));
 
     editor->setFocus();
 
