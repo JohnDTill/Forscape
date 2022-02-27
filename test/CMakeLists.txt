@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-set(TEST_QT ON)
+option(TEST_QT OFF)
 
 project(HopeTests LANGUAGES CXX)
 
