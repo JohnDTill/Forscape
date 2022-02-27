@@ -30,6 +30,7 @@ bool is_init = false;
 
 static constexpr size_t N_DEPTHS = 3;
 QFont fonts[N_DEPTHS*NUM_SEM_TYPES];
+static QFont line_font;
 
 static QFont readFont(const QString& file, const QString& name, const QString& family){
     int id = QFontDatabase::addApplicationFont(file);
@@ -43,6 +44,9 @@ static QFont readFont(const QString& file, const QString& name, const QString& f
 void Painter::init(){
     is_init = true;
 
+    line_font = readFont(":/fonts/cmunbmr.ttf", "CMU Bright", "Roman");
+    line_font.setPointSize(8);
+
     std::array<QFont, NUM_FONTS> loaded_fonts;
     loaded_fonts[CMU_SERIF_BOLD] = readFont(":/fonts/cmunbx.ttf", "CMU Serif", "Bold");
     loaded_fonts[CMU_SERIF_BOLD_ITALIC] = readFont(":/fonts/cmunbi.ttf", "CMU Serif", "Bold Italic");
@@ -52,7 +56,7 @@ void Painter::init(){
     loaded_fonts[QUIVIRA_REGULAR] = readFont(":/fonts/Quivira.otf", "Quivira", "Regular");
 
     for(size_t i = 0; i < NUM_SEM_TYPES; i++){
-        QFont& font = loaded_fonts[font_enum[i]];
+        QFont font = loaded_fonts[font_enum[i]];
         fonts[N_DEPTHS*i] = font;
 
         for(uint8_t j = 1; j < N_DEPTHS; j++){
@@ -314,7 +318,7 @@ void Painter::drawLineNumber(double y, size_t num, bool active){
     if(active) painter.setPen(View::line_num_active_color);
     else painter.setPen(View::line_num_passive_color);
 
-    painter.setFont(QFontDatabase().font("CMU Bright", "Roman", 8));
+    painter.setFont(line_font);
     QFontMetricsF fm (painter.font());
     QString str = QString::number(num);
     qreal x = x_offset - fm.horizontalAdvance(str);
