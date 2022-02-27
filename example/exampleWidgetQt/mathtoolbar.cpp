@@ -14,7 +14,7 @@ static QFont glyph_font;
 
 MathToolbar::MathToolbar(QWidget* parent) : QToolBar(parent) {
     int id = QFontDatabase::addApplicationFont(":/toolbar_glyphs.otf");
-    Q_ASSERT(id!=-1);
+    assert(id!=-1);
     QString family = QFontDatabase::applicationFontFamilies(id).at(0);
     glyph_font = QFont(family);
     glyph_font.setPointSize(18);

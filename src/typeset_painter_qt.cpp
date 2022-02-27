@@ -6,6 +6,7 @@
 #include <iostream>
 #endif
 
+#include <array>
 #include <QDialog>
 #include <QLabel>
 #include <QPainterPath>
@@ -30,46 +31,34 @@ bool is_init = false;
 static constexpr size_t N_DEPTHS = 3;
 QFont fonts[N_DEPTHS*NUM_SEM_TYPES];
 
+static QFont readFont(const QString& file, const QString& name, const QString& family){
+    int id = QFontDatabase::addApplicationFont(file);
+    assert(id!=-1);
+    QFont font = QFontDatabase().font(name, family, depthToFontSize(0));
+    font.setKerning(false); //Probably can't have kerning and draw overlapping subtext
+
+    return font;
+}
+
 void Painter::init(){
     is_init = true;
 
-    std::vector<std::string> fonts_not_found;
+    std::array<QFont, NUM_FONTS> loaded_fonts;
+    loaded_fonts[CMU_SERIF_BOLD] = readFont(":/fonts/cmunbx.ttf", "CMU Serif", "Bold");
+    loaded_fonts[CMU_SERIF_BOLD_ITALIC] = readFont(":/fonts/cmunbi.ttf", "CMU Serif", "Bold Italic");
+    loaded_fonts[CMU_SERIF_ITALIC] = readFont(":/fonts/cmunti.ttf", "CMU Serif", "Italic");
+    loaded_fonts[CMU_SERIF_ROMAN] = readFont(":/fonts/cmunrm.ttf", "CMU Serif", "Roman");
+    loaded_fonts[CMU_TYPEWRITER_TEXT_BOLD] = readFont(":/fonts/cmuntb.ttf", "CMU Typewriter Text", "Bold");
+    loaded_fonts[QUIVIRA_REGULAR] = readFont(":/fonts/Quivira.otf", "Quivira", "Regular");
 
     for(size_t i = 0; i < NUM_SEM_TYPES; i++){
-        SemanticType type = static_cast<SemanticType>(i);
-        QString name = QString::fromStdString(font_names[type].data());
-        QString family = QString::fromStdString(font_family[type].data());
-        QFont font = QFontDatabase().font(name, family, depthToFontSize(0));
-        font.setKerning(false); //Probably can't have kerning and draw overlapping subtext
+        QFont& font = loaded_fonts[font_enum[i]];
         fonts[N_DEPTHS*i] = font;
 
         for(uint8_t j = 1; j < N_DEPTHS; j++){
             font.setPointSize(depthToFontSize(j));
             fonts[N_DEPTHS*i + j] = font;
         }
-
-        if(font.family() != name){
-            std::string font_name = name.toStdString() + " - " + family.toStdString();
-            if(std::find(fonts_not_found.begin(), fonts_not_found.end(), font_name) == fonts_not_found.end())
-                fonts_not_found.push_back(font_name);
-        }
-    }
-
-    //EVENTUALLY: remove this warning in favour of installing the fonts
-    if(!fonts_not_found.empty()){
-        QString font_request;
-        for(const std::string& str : fonts_not_found)
-            font_request += "\n* " + QString::fromStdString(str);
-
-        QLabel* label = new QLabel(
-            "At this stage of development,\n"
-            "fonts are not installed automatically.\n\n"
-            "Please install the following:"
-            + font_request
-        );
-
-        label->setAttribute(Qt::WA_DeleteOnClose);
-        label->show();
     }
 }
 
