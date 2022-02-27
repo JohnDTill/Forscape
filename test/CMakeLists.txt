@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-option(TEST_QT OFF)
+set(TEST_QT ON)
 
 project(HopeTests LANGUAGES CXX)
 
@@ -182,7 +182,9 @@ if (${TEST_QT})
     find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
     find_package(Qt${QT_VERSION_MAJOR}Svg REQUIRED)
     add_compile_definitions(TEST_QT)
+    qt5_add_resources(EMBEDDED_RESOURCES ${EXAMPLE}/resources.qrc)
     list(APPEND SOURCES
+        ${EMBEDDED_RESOURCES}
         ${TEST}/typeset_graphics.h
         ${TEST}/typeset_qpainter.h
         ${SRC}/typeset_painter.h

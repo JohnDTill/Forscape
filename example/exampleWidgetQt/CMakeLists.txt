@@ -42,8 +42,6 @@ endif()
 
 qt5_add_resources(EMBEDDED_RESOURCES resources.qrc)
 
-configure_file(toolbar_glyphs.otf ${CMAKE_BINARY_DIR} COPYONLY)
-
 set(GEN_FILES
     ${GEN}/code_ast_fields.cpp
     ${GEN}/code_ast_fields.h
