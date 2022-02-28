@@ -12,7 +12,7 @@
 ## Prerequisites
 
 * Qt5/6 (https://www.qt.io/download)
- * QtSvg module
+  * QtSvg module
 * Python3 on the system path
 
 ## Bundled software
@@ -20,8 +20,8 @@
 * [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) (Header-only linear algebra)
 * [readerwriterqueue](https://github.com/cameron314/readerwriterqueue) (Lock-free queue for single-producer/single-consumer messages)
 * Fonts with extensive unicode support:
- * [Computer Modern](https://www.fontsquirrel.com/fonts/computer-modern)
- * [Quivira](http://quivira-font.com/)
+  * [Computer Modern](https://www.fontsquirrel.com/fonts/computer-modern)
+  * [Quivira](http://quivira-font.com/)
 
 ## License
 
