@@ -37,6 +37,7 @@ public:
     void updateHighlighting();
     bool scrolledToBottom() const noexcept;
     void scrollToBottom();
+    bool lineNumbersShown() const noexcept;
 
     static QColor selection_box_color;
     static QColor selection_text_color;
@@ -107,11 +108,10 @@ private:
     bool show_line_nums = true;
     bool allow_write = true;
     bool insert_mode = false;
-    double zoom = ZOOM_DEFAULT;
     bool show_cursor = true;
     bool model_owned = true;
-
     friend MarkerLink;
+    public: double zoom = ZOOM_DEFAULT;
 
 //Qt specific code
 protected:
@@ -141,6 +141,9 @@ private:
 
     QScrollBar* v_scroll;
     QScrollBar* h_scroll;
+
+signals:
+    void textChanged();
 
 public slots:
     void undo();

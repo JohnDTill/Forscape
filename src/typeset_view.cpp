@@ -410,6 +410,8 @@ void View::resolveSelectionDrag(double x, double y){
     Command* cmd = delete_first ? new CommandPair(a,b) : new CommandPair(b,a);
     if(delete_first) a->undo(controller);
     model->mutate(cmd, controller);
+
+    emit textChanged();
 }
 
 bool View::isInLineBox(double x) const noexcept{
@@ -477,6 +479,10 @@ bool View::scrolledToBottom() const noexcept{
 void View::scrollToBottom(){
     v_scroll->setValue(v_scroll->maximum());
     repaint();
+}
+
+bool View::lineNumbersShown() const noexcept{
+    return show_line_nums;
 }
 
 void View::ensureCursorVisible(){
@@ -660,6 +666,8 @@ void View::keyPressEvent(QKeyEvent* e){
     ensureCursorVisible();
     updateHighlighting();
     repaint();
+
+    emit textChanged();
 }
 
 void View::mousePressEvent(QMouseEvent* e){
@@ -744,11 +752,15 @@ void View::cut(){
     std::string str = controller.selectedText();
     QGuiApplication::clipboard()->setText(QString::fromStdString(str));
     controller.del();
+
+    emit textChanged();
 }
 
 void View::paste(){
     std::string str = QGuiApplication::clipboard()->text().toStdString();
     model->mutate(controller.getInsertSerial(str), controller);
+
+    emit textChanged();
 }
 
 void View::setCursorAppearance(double x, double y){
@@ -892,6 +904,8 @@ void View::undo(){
     updateHighlighting();
     recommender->hide();
     repaint();
+
+    emit textChanged();
 }
 
 void View::redo(){
@@ -899,6 +913,8 @@ void View::redo(){
     updateHighlighting();
     recommender->hide();
     repaint();
+
+    emit textChanged();
 }
 
 void View::selectAll() noexcept{
@@ -927,6 +943,8 @@ void View::rename(){
     std::vector<Typeset::Selection> occurences;
     symbol_table.getSymbolOccurences(c.getAnchor(), occurences);
     rename(occurences, name);
+
+    emit textChanged();
 }
 
 void View::goToDef(){
@@ -983,6 +1001,8 @@ void View::takeRecommendation(QListWidgetItem* item){
     updateModel();
     recommender->hide();
     QTimer::singleShot(0, this, SLOT(setFocus())); //Delay 1 cycle to avoid whatever input activated item
+
+    emit textChanged();
 }
 
 void View::paintEvent(QPaintEvent* event){

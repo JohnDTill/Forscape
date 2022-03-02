@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QSettings>
 #include <QTimer>
 
 QT_BEGIN_NAMESPACE
@@ -18,6 +19,7 @@ public:
     ~MainWindow();
 
 private:
+    QSettings settings;
     Ui::MainWindow* ui;
     Hope::Typeset::View* editor;
     Hope::Typeset::View* console;
@@ -26,6 +28,8 @@ private:
     static constexpr std::chrono::milliseconds INTERPETER_POLL_PERIOD = std::chrono::milliseconds(15);
     std::string print_buffer; //Need an extra layer of buffering so we don't try to parse incomplete constructs
     bool editor_had_focus;
+    bool unsaved_changes = false;
+    bool isSavedDeepComparison() const;
 
 private slots:
     void run();
@@ -35,7 +39,7 @@ private slots:
     void symbolTable();
     void on_actionNew_triggered();
     void on_actionOpen_triggered();
-    void on_actionSave_triggered();
+    bool on_actionSave_triggered();
     void on_actionSave_As_triggered();
     void on_actionExit_triggered();
     void on_actionFind_Replace_triggered();
@@ -59,9 +63,14 @@ private slots:
     void on_actionSVG_Image_triggered();
     void on_actionTeX_triggered();
     void on_actionUnicode_triggered();
+    void onTextChanged();
+
+protected:
+    virtual void closeEvent(QCloseEvent* event) override;
 
 private:
-    void savePrompt();
-    void saveAs(QString name);
+    bool savePrompt();
+    bool saveAs(QString name);
+    void open(QString path);
 };
 #endif // MAINWINDOW_H

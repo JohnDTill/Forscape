@@ -71,6 +71,7 @@ public:
     Line* appendLine();
     Line* lastLine() const noexcept;
     std::vector<Selection> findCaseInsensitive(const std::string& str) const;
+    bool empty() const noexcept;
 
     static constexpr double LINE_VERTICAL_PADDING = 5;
 

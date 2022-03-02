@@ -11,6 +11,7 @@
 #include <hope_symbol_build_pass.h>
 #include <QBuffer>
 #include <QClipboard>
+#include <QCloseEvent>
 #include <QFileDialog>
 #include <QGroupBox>
 #include <QMessageBox>
@@ -24,11 +25,19 @@
 #include "searchdialog.h"
 #include "symboltreeview.h"
 
+#include <fstream>
 #include <iostream>
 
 #ifndef NDEBUG
 #include "qgraphvizcall.h"
 #endif
+
+#define ACTIVE_FILE "active_file"
+#define ZOOM_EDITOR "editor_zoom"
+#define ZOOM_CONSOLE "console_zoom"
+#define LINE_NUMBERS_VISIBLE "line_nums_shown"
+#define WINDOW_TITLE_SUFFIX " - Forscape"
+#define NEW_SCRIPT_TITLE "new script"
 
 using namespace Hope;
 
@@ -42,6 +51,9 @@ MainWindow::MainWindow(QWidget* parent)
     setCentralWidget(splitter);
 
     editor = new Typeset::View();
+    setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
+    if(settings.contains(ACTIVE_FILE))
+        open(settings.value(ACTIVE_FILE).toString());
     splitter->addWidget(editor);
 
     QGroupBox* group_box = new QGroupBox(this);
@@ -61,9 +73,25 @@ MainWindow::MainWindow(QWidget* parent)
 
     editor->console = console;
 
-    setWindowTitle("Forscape - new script");
-
     QGuiApplication::setWindowIcon(QIcon(":/lambda.ico"));
+
+    if(settings.contains(ZOOM_CONSOLE)){
+        bool success;
+        double old_zoom = settings.value(ZOOM_CONSOLE).toDouble(&success);
+        if(success) console->zoom = old_zoom;
+        //EVENTUALLY: log error if this fails
+    }
+
+    if(settings.contains(ZOOM_EDITOR)){
+        bool success;
+        double old_zoom = settings.value(ZOOM_EDITOR).toDouble(&success);
+        if(success) editor->zoom = old_zoom;
+    }
+
+    if(settings.contains(LINE_NUMBERS_VISIBLE)){
+        bool line_numbers_visible = settings.value(LINE_NUMBERS_VISIBLE).toBool();
+        if(!line_numbers_visible) ui->actionShow_line_numbers->setChecked(false);
+    }
 
     editor->setFocus();
 
@@ -101,10 +129,32 @@ MainWindow::MainWindow(QWidget* parent)
     ui->actionDelete->setShortcutContext(Qt::WidgetShortcut);
 
     connect(&interpreter_poll_timer, SIGNAL(timeout()), this, SLOT(pollInterpreterThread()));
+    connect(editor, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
 }
 
 MainWindow::~MainWindow(){
+    settings.setValue(ZOOM_CONSOLE, console->zoom);
+    settings.setValue(ZOOM_EDITOR, editor->zoom);
+    settings.setValue(LINE_NUMBERS_VISIBLE, editor->lineNumbersShown());
     delete ui;
+}
+
+bool MainWindow::isSavedDeepComparison() const{
+    if(!settings.contains(ACTIVE_FILE)) return editor->getModel()->empty();
+
+    std::string filename = settings.value(ACTIVE_FILE).toString().toStdString();
+    std::ifstream in(filename);
+    if(!in.is_open()) std::cout << "Failed to open " << filename << std::endl;
+    assert(in.is_open());
+
+    std::stringstream buffer;
+    buffer << in.rdbuf();
+
+    std::string saved_src = buffer.str();
+    saved_src.erase( std::remove(saved_src.begin(), saved_src.end(), '\r'), saved_src.end() );
+    std::string curr_src = editor->getModel()->toSerial();
+
+    return saved_src == curr_src; //EVENTUALLY: no need to convert model to serial
 }
 
 void MainWindow::run(){
@@ -179,6 +229,7 @@ void MainWindow::pollInterpreterThread(){
         editor->setEnabled(true);
         editor->setReadOnly(false);
         interpreter_poll_timer.stop();
+        if(editor_had_focus) editor->setFocus();
     }
 }
 
@@ -201,7 +252,8 @@ void MainWindow::symbolTable(){
 void MainWindow::on_actionNew_triggered(){
     if(!editor->isEnabled()) return;
     editor->setFromSerial("");
-    setWindowTitle("Forscape - new script");
+    setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
+    settings.remove(ACTIVE_FILE);
     path.clear();
 }
 
@@ -212,6 +264,68 @@ void MainWindow::on_actionOpen_triggered(){
     QString path = QFileDialog::getOpenFileName(nullptr, tr("Load File"), "./", tr("Text (*.txt)"));
     if(path.isEmpty()) return;
 
+    open(path);
+}
+
+
+bool MainWindow::on_actionSave_triggered(){
+    if(!editor->isEnabled()) return false;
+
+    if(path.isEmpty()) return savePrompt();
+    else return saveAs(path);
+}
+
+
+void MainWindow::on_actionSave_As_triggered(){
+    if(!editor->isEnabled()) return;
+
+    savePrompt();
+}
+
+
+void MainWindow::on_actionExit_triggered(){
+    close();
+}
+
+bool MainWindow::savePrompt(){
+    if(!editor->isEnabled()) return false;
+
+    QString prompt_name = "untitled.txt";
+    QString file_name = QFileDialog::getSaveFileName(nullptr, tr("Save File"),
+                                prompt_name,
+                                tr("Text (*.txt)"));
+
+    if(!file_name.isEmpty()) return saveAs(file_name);
+    return false;
+}
+
+bool MainWindow::saveAs(QString path){
+    if(!editor->isEnabled()) return false;
+
+    QFile file(path);
+
+    if(!file.open(QIODevice::WriteOnly | QIODevice::Text)){
+        QMessageBox messageBox;
+        messageBox.critical(nullptr, "Error", "Could not open \"" + path + "\" to write.");
+        messageBox.setFixedSize(500,200);
+        return false;
+    }
+
+    QTextStream out(&file);
+    #ifdef QT5
+    out.setCodec("UTF-8");
+    #endif
+    out << QString::fromStdString(editor->getModel()->toSerial());
+
+    setWindowTitle(file.fileName() + WINDOW_TITLE_SUFFIX);
+    settings.setValue(ACTIVE_FILE, path);
+    this->path = path;
+    unsaved_changes = false;
+
+    return true;
+}
+
+void MainWindow::open(QString path){
     QFile file(path);
 
     if(!file.open(QIODevice::ReadOnly | QIODevice::Text)){
@@ -235,61 +349,10 @@ void MainWindow::on_actionOpen_triggered(){
     }
 
     editor->setFromSerial(src);
-    setWindowTitle("Forscape - " + file.fileName());
+    setWindowTitle(file.fileName() + WINDOW_TITLE_SUFFIX);
+    settings.setValue(ACTIVE_FILE, path);
     this->path = path;
-}
-
-
-void MainWindow::on_actionSave_triggered(){
-    if(!editor->isEnabled()) return;
-
-    if(path.isEmpty()) savePrompt();
-    else saveAs(path);
-}
-
-
-void MainWindow::on_actionSave_As_triggered(){
-    if(!editor->isEnabled()) return;
-
-    savePrompt();
-}
-
-
-void MainWindow::on_actionExit_triggered(){
-    exit(0);
-}
-
-void MainWindow::savePrompt(){
-    if(!editor->isEnabled()) return;
-
-    QString prompt_name = "untitled.txt";
-    QString file_name = QFileDialog::getSaveFileName(nullptr, tr("Save File"),
-                                prompt_name,
-                                tr("Text (*.txt)"));
-
-    if(!file_name.isEmpty()) saveAs(file_name);
-}
-
-void MainWindow::saveAs(QString path){
-    if(!editor->isEnabled()) return;
-
-    QFile file(path);
-
-    if(!file.open(QIODevice::WriteOnly | QIODevice::Text)){
-        QMessageBox messageBox;
-        messageBox.critical(nullptr, "Error", "Could not open \"" + path + "\" to write.");
-        messageBox.setFixedSize(500,200);
-        return;
-    }
-
-    QTextStream out(&file);
-    #ifdef QT5
-    out.setCodec("UTF-8");
-    #endif
-    out << QString::fromStdString(editor->getModel()->toSerial());
-
-    setWindowTitle("Forscape - " + file.fileName());
-    this->path = path;
+    unsaved_changes = false;
 }
 
 
@@ -397,6 +460,8 @@ void MainWindow::insertFlatText(const QString &str){
 
     editor->getController().insertText(str.toStdString());
     editor->update();
+
+    onTextChanged();
 }
 
 void MainWindow::insertSerial(const QString& str){
@@ -404,6 +469,8 @@ void MainWindow::insertSerial(const QString& str){
 
     editor->getController().insertSerial(str.toStdString());
     editor->update();
+
+    onTextChanged();
 }
 
 void MainWindow::insertSerialSelection(const QString& A, const QString& B){
@@ -412,12 +479,13 @@ void MainWindow::insertSerialSelection(const QString& A, const QString& B){
     Typeset::Controller& c = editor->getController();
     c.insertSerial(A.toStdString() + c.selectedText() + B.toStdString());
     editor->update();
+
+    onTextChanged();
 }
 
 void MainWindow::on_actionStop_triggered(){
     stop();
 }
-
 
 void MainWindow::on_actionPNG_triggered(){
     Typeset::Controller c = editor->getController();
@@ -458,4 +526,34 @@ void MainWindow::on_actionUnicode_triggered(){
         messageBox.warning(nullptr, "Warning", "Selected text cannot be converted to unicode.");
         messageBox.setFixedSize(500, 200);
     }
+}
+
+void MainWindow::onTextChanged(){
+    //EVENTUALLY: doing a deep comparison is terrible. Need a more efficient way to determine if the document is saved
+    bool changed_from_save = !isSavedDeepComparison();
+
+    if(changed_from_save && !unsaved_changes)
+        setWindowTitle(windowTitle().insert(0, '*'));
+    else if(unsaved_changes && !changed_from_save)
+        setWindowTitle(windowTitle().remove(0, 1));
+
+    unsaved_changes = changed_from_save;
+}
+
+void MainWindow::closeEvent(QCloseEvent* event){
+    if(!isSavedDeepComparison()){
+        QMessageBox::StandardButton reply = QMessageBox::question(this, "Unsaved changes", "Save file before closing?",
+        QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+        if(reply == QMessageBox::Cancel){
+            event->ignore();
+            return;
+        }else if(reply == QMessageBox::Yes){
+            if(!on_actionSave_triggered()){
+                event->ignore();
+                return;
+            }
+        }
+    }
+
+    QMainWindow::closeEvent(event);
 }
