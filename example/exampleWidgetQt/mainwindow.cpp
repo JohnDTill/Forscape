@@ -12,6 +12,7 @@
 #include <QBuffer>
 #include <QClipboard>
 #include <QCloseEvent>
+#include <QDesktopServices>
 #include <QFileDialog>
 #include <QGroupBox>
 #include <QMessageBox>
@@ -95,16 +96,49 @@ MainWindow::MainWindow(QWidget* parent)
 
     editor->setFocus();
 
-    QToolBar* fileToolBar = addToolBar(tr("File"));
-    QAction* newAct = new QAction(tr("⏵ Run"), this);
-    newAct->setShortcuts(QKeySequence::InsertLineSeparator);
-    connect(newAct, &QAction::triggered, this, &MainWindow::run);
-    fileToolBar->addAction(newAct);
+    int id = QFontDatabase::addApplicationFont(":/toolbar_glyphs.otf");
+    assert(id!=-1);
+    QString family = QFontDatabase::applicationFontFamilies(id).at(0);
+    QFont glyph_font = QFont(family);
+    glyph_font.setPointSize(18);
 
-    newAct = new QAction(tr("■ Stop"), this);
-    newAct->setShortcuts(QKeySequence::InsertLineSeparator);
-    connect(newAct, &QAction::triggered, this, &MainWindow::stop);
-    fileToolBar->addAction(newAct);
+    QToolBar* fileToolBar = addToolBar(tr("File"));
+    QAction* run_act = new QAction(tr("Œ"), this);
+    run_act->setToolTip("Run script   Ctrl+R");
+    run_act->setFont(glyph_font);
+    run_act->setShortcuts(QKeySequence::InsertLineSeparator);
+    connect(run_act, &QAction::triggered, this, &MainWindow::run);
+    fileToolBar->addAction(run_act);
+
+    QAction* stop_act = new QAction(tr("Ŗ"), this);
+    stop_act->setToolTip("Stop script");
+    stop_act->setFont(glyph_font);
+    stop_act->setShortcuts(QKeySequence::InsertLineSeparator);
+    connect(stop_act, &QAction::triggered, this, &MainWindow::stop);
+    fileToolBar->addAction(stop_act);
+
+    #ifndef NDEBUG
+    QAction* ast_act = new QAction(tr("œ"), this);
+    ast_act->setToolTip("Show AST");
+    ast_act->setFont(glyph_font);
+    ast_act->setShortcuts(QKeySequence::InsertLineSeparator);
+    connect(ast_act, &QAction::triggered, this, &MainWindow::parseTree);
+    fileToolBar->addAction(ast_act);
+
+    QAction* sym_act = new QAction(tr("Ŕ"), this);
+    sym_act->setToolTip("Show symbol table");
+    sym_act->setFont(glyph_font);
+    sym_act->setShortcuts(QKeySequence::InsertLineSeparator);
+    connect(sym_act, &QAction::triggered, this, &MainWindow::symbolTable);
+    fileToolBar->addAction(sym_act);
+
+    QAction* github_act = new QAction(tr("ŕ"), this);
+    github_act->setToolTip("View on GitHub");
+    github_act->setFont(glyph_font);
+    github_act->setShortcuts(QKeySequence::InsertLineSeparator);
+    connect(github_act, &QAction::triggered, this, &MainWindow::github);
+    fileToolBar->addAction(github_act);
+    #endif
 
     MathToolbar* toolbar = new MathToolbar(this);
     connect(toolbar, SIGNAL(insertFlatText(QString)), this, SLOT(insertFlatText(const QString&)));
@@ -247,6 +281,10 @@ void MainWindow::symbolTable(){
     SymbolTreeView* view = new SymbolTreeView(m->symbol_builder.symbol_table, m->type_resolver);
     view->show();
     #endif
+}
+
+void MainWindow::github(){
+    QDesktopServices::openUrl(QUrl("https://github.com/JohnDTill/Forscape"));
 }
 
 void MainWindow::on_actionNew_triggered(){

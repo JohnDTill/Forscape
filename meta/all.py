@@ -21,7 +21,7 @@ def should_run():
     src = [fn for fn in os.listdir(".") if any(fn.endswith(ext) for ext in included_extensions)]
     latest_change = max([os.path.getmtime("./" + file) for file in src])
     latest_run = min([os.path.getmtime("../src/generated/" + file) for file in os.listdir("../src/generated")])
-    print(f"{latest_change} > {latest_run}")
+    print(f"Codegen: latest change @ {latest_change}, latest run @ {latest_run}")
     return latest_change > latest_run
 
 

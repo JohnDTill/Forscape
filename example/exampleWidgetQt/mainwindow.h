@@ -37,6 +37,7 @@ private slots:
     void pollInterpreterThread();
     void parseTree();
     void symbolTable();
+    void github();
     void on_actionNew_triggered();
     void on_actionOpen_triggered();
     bool on_actionSave_triggered();
