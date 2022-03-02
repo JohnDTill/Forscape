@@ -206,6 +206,10 @@ std::vector<Selection> Model::findCaseInsensitive(const std::string& str) const{
     return hits;
 }
 
+bool Model::empty() const noexcept{
+    return lines.size() == 1 && lines[0]->empty();
+}
+
 Text* Model::firstText() const noexcept{
     return lines[0]->front();
 }
