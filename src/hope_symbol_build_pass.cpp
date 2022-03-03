@@ -603,7 +603,7 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end){
 
         ParseTree::NaryBuilder ref_builder = parse_tree.naryBuilder(OP_LIST);
         for(size_t sym_id : closed_refs){
-            Op op = symbol_table.symbols[sym_id].declaration_closure_depth < closure_depth ?
+            Op op = symbol_table.symbols[sym_id].declaration_closure_depth <= closure_depth ?
                     OP_READ_UPVALUE :
                     OP_IDENTIFIER;
             Typeset::Selection sel = symbol_table.getSel(sym_id);

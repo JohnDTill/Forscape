@@ -179,6 +179,7 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
             ParseNode reference_list = parse_tree.arg(pn, 2);
             for(size_t i = 0; i < parse_tree.getNumArgs(reference_list); i++){
                 ParseNode ref = parse_tree.arg(reference_list, i);
+                if(parse_tree.getOp(ref) != OP_READ_UPVALUE) continue;
                 size_t sym_id = parse_tree.getFlag(ref);
                 Type t = symbol_table.symbols[sym_id].type;
                 sig.push_back(t);
@@ -275,6 +276,7 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
             ParseNode reference_list = parse_tree.arg(pn, 1);
             for(size_t i = 0; i < parse_tree.getNumArgs(reference_list); i++){
                 ParseNode ref = parse_tree.arg(reference_list, i);
+                if(parse_tree.getOp(ref) != OP_READ_UPVALUE) continue;
                 size_t sym_id = parse_tree.getFlag(ref);
                 Type t = symbol_table.symbols[sym_id].type;
                 sig.push_back(t);
@@ -616,12 +618,15 @@ Type TypeResolver::instantiate(const CallSignature& fn){
         }
     }
 
+    size_t j = 0;
     for(size_t i = 0; i < parse_tree.getNumArgs(ref_list); i++){
         ParseNode ref = parse_tree.arg(ref_list, i);
+        if(parse_tree.getOp(ref) != OP_READ_UPVALUE) continue;
         size_t sym_id = parse_tree.getFlag(ref);
         Symbol& sym = symbol_table.symbols[sym_id];
         old_ref_cap.push_back(sym.type);
-        sym.type = dec[1+N_vals+i];
+        sym.type = dec[1+N_vals+j];
+        j++;
     }
 
     for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
@@ -680,11 +685,14 @@ Type TypeResolver::instantiate(const CallSignature& fn){
     }
     old_val_cap.resize(old_val_cap_index);
 
+    j = 0;
     for(size_t i = 0; i < parse_tree.getNumArgs(ref_list); i++){
         ParseNode ref = parse_tree.arg(ref_list, i);
+        if(parse_tree.getOp(ref) != OP_READ_UPVALUE) continue;
         size_t sym_id = parse_tree.getFlag(ref);
         Symbol& sym = symbol_table.symbols[sym_id];
-        sym.type = old_ref_cap[i+old_ref_cap_index];
+        sym.type = old_ref_cap[j+old_ref_cap_index];
+        j++;
     }
     old_ref_cap.resize(old_ref_cap_index);
 
@@ -704,9 +712,9 @@ static constexpr std::string_view type_strs[] = {
     "Failure",
     "Recursive-Cycle",
     "Void",
-    "Boolean",
-    "String",
-    "Numeric",
+    "Bool",
+    "Str",
+    "Num",
     "Unknown",
 };
 
@@ -808,11 +816,13 @@ size_t TypeResolver::last(size_t index) const noexcept{
 std::string TypeResolver::abstractFunctionSetString(Type t) const{
     assert(v(t) == TYPE_FUNCTION_SET);
 
+    if(numElements(t) == 1) return declFunctionString( v(first(t)) );
+
     size_t index = first(t);
     std::string str = "{" + declFunctionString( v(index++) );
     while(index <= last(t))
         str += ", " + declFunctionString(v(index++));
-    str += "} : AbstractFunctionSet";
+    str += "}";
 
     return str;
 }
