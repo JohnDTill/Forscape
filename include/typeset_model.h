@@ -72,13 +72,13 @@ public:
     Line* lastLine() const noexcept;
     std::vector<Selection> findCaseInsensitive(const std::string& str) const;
     bool empty() const noexcept;
+    size_t serialChars() const noexcept;
 
     static constexpr double LINE_VERTICAL_PADDING = 5;
 
 private:
     Model(const std::string& src, bool is_output = false);
     static std::vector<Line*> linesFromSerial(const std::string& src);
-    size_t serialChars() const noexcept;
     void writeString(std::string& out) const noexcept;
     Line* nextLine(const Line* l) const noexcept;
     Line* prevLine(const Line* l) const noexcept;

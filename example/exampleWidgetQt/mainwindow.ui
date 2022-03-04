@@ -70,6 +70,8 @@
     <addaction name="actionZoom_out"/>
     <addaction name="actionReset_zoom"/>
     <addaction name="actionShow_line_numbers"/>
+    <addaction name="actionShow_action_toolbar"/>
+    <addaction name="actionShow_typesetting_toolbar"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -241,6 +243,28 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+U</string>
+   </property>
+  </action>
+  <action name="actionShow_action_toolbar">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show action toolbar</string>
+   </property>
+  </action>
+  <action name="actionShow_typesetting_toolbar">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show typesetting toolbar</string>
    </property>
   </action>
  </widget>
