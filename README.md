@@ -15,8 +15,7 @@
 
 #### Windows
 
-DO THIS: make an installer
-
+Just download and run a windows installer from the [releases](https://github.com/JohnDTill/Forscape/releases).
 Alternately, install the development prerequisites listed below and compile from source.
 
 #### Linux
