@@ -9,6 +9,8 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
+class MathToolbar;
+
 namespace Hope{ namespace Typeset { class View; } }
 
 class MainWindow : public QMainWindow{
@@ -23,6 +25,8 @@ private:
     Ui::MainWindow* ui;
     Hope::Typeset::View* editor;
     Hope::Typeset::View* console;
+    MathToolbar* math_toolbar;
+    QToolBar* action_toolbar;
     QString path;
     QTimer interpreter_poll_timer;
     static constexpr std::chrono::milliseconds INTERPETER_POLL_PERIOD = std::chrono::milliseconds(15);
@@ -65,6 +69,8 @@ private slots:
     void on_actionTeX_triggered();
     void on_actionUnicode_triggered();
     void onTextChanged();
+    void on_actionShow_action_toolbar_toggled(bool show);
+    void on_actionShow_typesetting_toolbar_toggled(bool show);
 
 protected:
     virtual void closeEvent(QCloseEvent* event) override;

@@ -32,7 +32,7 @@ set(GEN_FILES
     ${GEN}/code_ast_fields.cpp
     ${GEN}/code_ast_fields.h
     ${GEN}/code_error_types.h
-    ${GEN}/code_parsenodetype.h
+    ${GEN}/code_parsenode_ops.h
     ${GEN}/code_tokentype.h
     ${GEN}/construct_codes.h
     ${GEN}/hope_interpreter_gen.cpp

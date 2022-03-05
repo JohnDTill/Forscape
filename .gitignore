@@ -36,6 +36,12 @@ build*
 #Dia
 *.dia~
 
+#Installer build
+*/com.automath.forscape/data/*
+*/com.automath.forscape/meta/LICENSE
+*/config/lambda.ico
+ForscapeInstaller.exe
+
 #WASM generation
 *Makefile
 ExampleApp_Wasm/*.h

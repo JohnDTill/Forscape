@@ -26,6 +26,7 @@
 #include "searchdialog.h"
 #include "symboltreeview.h"
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 
@@ -39,6 +40,10 @@
 #define LINE_NUMBERS_VISIBLE "line_nums_shown"
 #define WINDOW_TITLE_SUFFIX " - Forscape"
 #define NEW_SCRIPT_TITLE "new script"
+#define MATH_TOOLBAR_VISIBLE "math_tb_visible"
+#define ACTION_TOOLBAR_VISIBLE "action_tb_visible"
+#define WINDOW_GEOMETRY "geometry"
+#define WINDOW_STATE "window_state"
 
 using namespace Hope;
 
@@ -102,20 +107,21 @@ MainWindow::MainWindow(QWidget* parent)
     QFont glyph_font = QFont(family);
     glyph_font.setPointSize(18);
 
-    QToolBar* fileToolBar = addToolBar(tr("File"));
+    action_toolbar = addToolBar(tr("File"));
+    action_toolbar->setObjectName("action_toolbar");
     QAction* run_act = new QAction(tr("Œ"), this);
     run_act->setToolTip("Run script   Ctrl+R");
     run_act->setFont(glyph_font);
     run_act->setShortcuts(QKeySequence::InsertLineSeparator);
     connect(run_act, &QAction::triggered, this, &MainWindow::run);
-    fileToolBar->addAction(run_act);
+    action_toolbar->addAction(run_act);
 
     QAction* stop_act = new QAction(tr("Ŗ"), this);
     stop_act->setToolTip("Stop script");
     stop_act->setFont(glyph_font);
     stop_act->setShortcuts(QKeySequence::InsertLineSeparator);
     connect(stop_act, &QAction::triggered, this, &MainWindow::stop);
-    fileToolBar->addAction(stop_act);
+    action_toolbar->addAction(stop_act);
 
     #ifndef NDEBUG
     QAction* ast_act = new QAction(tr("œ"), this);
@@ -123,30 +129,47 @@ MainWindow::MainWindow(QWidget* parent)
     ast_act->setFont(glyph_font);
     ast_act->setShortcuts(QKeySequence::InsertLineSeparator);
     connect(ast_act, &QAction::triggered, this, &MainWindow::parseTree);
-    fileToolBar->addAction(ast_act);
+    action_toolbar->addAction(ast_act);
 
     QAction* sym_act = new QAction(tr("Ŕ"), this);
     sym_act->setToolTip("Show symbol table");
     sym_act->setFont(glyph_font);
     sym_act->setShortcuts(QKeySequence::InsertLineSeparator);
     connect(sym_act, &QAction::triggered, this, &MainWindow::symbolTable);
-    fileToolBar->addAction(sym_act);
+    action_toolbar->addAction(sym_act);
+    #endif
 
     QAction* github_act = new QAction(tr("ŕ"), this);
     github_act->setToolTip("View on GitHub");
     github_act->setFont(glyph_font);
     github_act->setShortcuts(QKeySequence::InsertLineSeparator);
     connect(github_act, &QAction::triggered, this, &MainWindow::github);
-    fileToolBar->addAction(github_act);
-    #endif
+    action_toolbar->addAction(github_act);
 
-    MathToolbar* toolbar = new MathToolbar(this);
-    connect(toolbar, SIGNAL(insertFlatText(QString)), this, SLOT(insertFlatText(const QString&)));
-    connect(toolbar, SIGNAL(insertSerial(QString)), this, SLOT(insertSerial(const QString&)));
-    connect(toolbar, SIGNAL(insertSerialSelection(QString, QString)),
+    if(settings.contains(ACTION_TOOLBAR_VISIBLE)){
+        bool visible = settings.value(ACTION_TOOLBAR_VISIBLE).toBool();
+        if(!visible){
+            ui->actionShow_action_toolbar->setChecked(false);
+            action_toolbar->hide();
+        }
+    }
+
+    math_toolbar = new MathToolbar(this);
+    math_toolbar->setObjectName("math_toolbar");
+    connect(math_toolbar, SIGNAL(insertFlatText(QString)), this, SLOT(insertFlatText(const QString&)));
+    connect(math_toolbar, SIGNAL(insertSerial(QString)), this, SLOT(insertSerial(const QString&)));
+    connect(math_toolbar, SIGNAL(insertSerialSelection(QString, QString)),
             this, SLOT(insertSerialSelection(QString, QString)));
     addToolBarBreak(Qt::ToolBarArea::TopToolBarArea);
-    addToolBar(Qt::ToolBarArea::TopToolBarArea, toolbar);
+    addToolBar(Qt::ToolBarArea::TopToolBarArea, math_toolbar);
+
+    if(settings.contains(MATH_TOOLBAR_VISIBLE)){
+        bool visible = settings.value(MATH_TOOLBAR_VISIBLE).toBool();
+        if(!visible){
+            ui->actionShow_typesetting_toolbar->setChecked(false);
+            math_toolbar->hide();
+        }
+    }
 
     #ifndef NDEBUG
     auto action = ui->menuCode->addAction("Parse Tree");
@@ -162,6 +185,13 @@ MainWindow::MainWindow(QWidget* parent)
     ui->actionPaste->setShortcutContext(Qt::WidgetShortcut);
     ui->actionDelete->setShortcutContext(Qt::WidgetShortcut);
 
+    if(settings.contains(WINDOW_GEOMETRY))
+        restoreGeometry(settings.value(WINDOW_GEOMETRY).toByteArray());
+
+    if(settings.contains(WINDOW_STATE)){
+        restoreState(settings.value(WINDOW_STATE).toByteArray());
+    }
+
     connect(&interpreter_poll_timer, SIGNAL(timeout()), this, SLOT(pollInterpreterThread()));
     connect(editor, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
 }
@@ -170,13 +200,20 @@ MainWindow::~MainWindow(){
     settings.setValue(ZOOM_CONSOLE, console->zoom);
     settings.setValue(ZOOM_EDITOR, editor->zoom);
     settings.setValue(LINE_NUMBERS_VISIBLE, editor->lineNumbersShown());
+    settings.setValue(MATH_TOOLBAR_VISIBLE, ui->actionShow_typesetting_toolbar->isChecked());
+    settings.setValue(ACTION_TOOLBAR_VISIBLE, ui->actionShow_action_toolbar->isChecked());
+    settings.setValue(WINDOW_GEOMETRY, saveGeometry());
+    settings.setValue(WINDOW_STATE, saveState());
     delete ui;
 }
 
 bool MainWindow::isSavedDeepComparison() const{
     if(!settings.contains(ACTIVE_FILE)) return editor->getModel()->empty();
 
+    //Avoid a deep comparison if size from file meta data doesn't match
     std::string filename = settings.value(ACTIVE_FILE).toString().toStdString();
+    if(std::filesystem::file_size(filename) != editor->getModel()->serialChars()) return false;
+
     std::ifstream in(filename);
     if(!in.is_open()) std::cout << "Failed to open " << filename << std::endl;
     assert(in.is_open());
@@ -186,9 +223,11 @@ bool MainWindow::isSavedDeepComparison() const{
 
     std::string saved_src = buffer.str();
     saved_src.erase( std::remove(saved_src.begin(), saved_src.end(), '\r'), saved_src.end() );
+
+    //MAYDO: no need to convert model to serial, but cost is probably negligible compared to I/O
     std::string curr_src = editor->getModel()->toSerial();
 
-    return saved_src == curr_src; //EVENTUALLY: no need to convert model to serial
+    return saved_src == curr_src;
 }
 
 void MainWindow::run(){
@@ -349,11 +388,12 @@ bool MainWindow::saveAs(QString path){
         return false;
     }
 
+    file.setTextModeEnabled(false);
     QTextStream out(&file);
     #ifdef QT5
     out.setCodec("UTF-8");
     #endif
-    out << QString::fromStdString(editor->getModel()->toSerial());
+    out << QByteArray::fromStdString(editor->getModel()->toSerial());
 
     setWindowTitle(file.fileName() + WINDOW_TITLE_SUFFIX);
     settings.setValue(ACTIVE_FILE, path);
@@ -595,3 +635,13 @@ void MainWindow::closeEvent(QCloseEvent* event){
 
     QMainWindow::closeEvent(event);
 }
+
+void MainWindow::on_actionShow_action_toolbar_toggled(bool show){
+    action_toolbar->setVisible(show);
+}
+
+
+void MainWindow::on_actionShow_typesetting_toolbar_toggled(bool show){
+    math_toolbar->setVisible(show);
+}
+

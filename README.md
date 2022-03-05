@@ -9,13 +9,36 @@
 
 ![alt text](root_finding.png?raw=true "Forscape")
 
-## Prerequisites
+## Installation
+
+*But first, a warning*. Forscape is in early alpha. Feedback and bug reports are welcome, but backward compatibility will be broken. The language syntax will be broken. The file encoding will be broken. Crashes are likely.
+
+#### Windows
+
+Just download and run a windows installer from the [releases](https://github.com/JohnDTill/Forscape/releases).
+Alternately, install the development prerequisites listed below and compile from source.
+
+#### Linux
+Compile from source using:
+```
+apt-get install cmake python3 qt5-default libqt5svg5-dev
+git clone https://github.com/JohnDTill/Forscape
+cd ./Forscape/example/exampleWidgetQt
+cmake CMakeLists.txt
+make
+./Forscape #Run
+```
+
+## Development Prerequisites
 
 * Qt5/6 (https://www.qt.io/download)
   * QtSvg module
 * Python3 on the system path
 
-## Bundled software
+#### Optional
+* [GraphViz](https://graphviz.org/) on system path for debugging AST
+
+#### Bundled software
 
 * [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) (Header-only linear algebra)
 * [readerwriterqueue](https://github.com/cameron314/readerwriterqueue) (Lock-free queue for single-producer/single-consumer messages)
