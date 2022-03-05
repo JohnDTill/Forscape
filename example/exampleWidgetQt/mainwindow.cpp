@@ -137,6 +137,7 @@ MainWindow::MainWindow(QWidget* parent)
     sym_act->setShortcuts(QKeySequence::InsertLineSeparator);
     connect(sym_act, &QAction::triggered, this, &MainWindow::symbolTable);
     action_toolbar->addAction(sym_act);
+    #endif
 
     QAction* github_act = new QAction(tr("ŕ"), this);
     github_act->setToolTip("View on GitHub");
@@ -144,7 +145,6 @@ MainWindow::MainWindow(QWidget* parent)
     github_act->setShortcuts(QKeySequence::InsertLineSeparator);
     connect(github_act, &QAction::triggered, this, &MainWindow::github);
     action_toolbar->addAction(github_act);
-    #endif
 
     if(settings.contains(ACTION_TOOLBAR_VISIBLE)){
         bool visible = settings.value(ACTION_TOOLBAR_VISIBLE).toBool();

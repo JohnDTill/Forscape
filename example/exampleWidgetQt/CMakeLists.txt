@@ -36,17 +36,17 @@ find_package(Qt${QT_VERSION_MAJOR}Svg REQUIRED)
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     find_package(QT NAMES Qt6 COMPONENTS SvgWidgets REQUIRED)
     find_package(Qt${QT_VERSION_MAJOR} COMPONENTS SvgWidgets REQUIRED)
+    qt6_add_resources(EMBEDDED_RESOURCES resources.qrc)
 else()
     add_compile_definitions(QT5)
+    qt5_add_resources(EMBEDDED_RESOURCES resources.qrc)
 endif()
-
-qt5_add_resources(EMBEDDED_RESOURCES resources.qrc)
 
 set(GEN_FILES
     ${GEN}/code_ast_fields.cpp
     ${GEN}/code_ast_fields.h
     ${GEN}/code_error_types.h
-    ${GEN}/code_parsenodetype.h
+    ${GEN}/code_parsenode_ops.h
     ${GEN}/code_tokentype.h
     ${GEN}/construct_codes.h
     ${GEN}/hope_interpreter_gen.cpp
@@ -260,12 +260,12 @@ add_compile_options(
 
 set_target_properties(exampleWidgetQt PROPERTIES OUTPUT_NAME ${EXE_NAME})
 
-add_custom_target(
-    codegen ALL
-    COMMAND python3 all.py
-    WORKING_DIRECTORY ${META}
-    BYPRODUCTS ${GEN_FILES}
-    COMMENT "Performing codegen"
-)
+#add_custom_target(
+#    codegen ALL
+#    COMMAND python3 all.py
+#    WORKING_DIRECTORY ${META}
+#    BYPRODUCTS ${GEN_FILES}
+#    COMMENT "Performing codegen"
+#)
 
-add_dependencies(exampleWidgetQt codegen)
+#add_dependencies(exampleWidgetQt codegen)
