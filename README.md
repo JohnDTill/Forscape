@@ -15,11 +15,11 @@
 
 #### Windows
 
-Just download and run a windows installer from the [releases](https://github.com/JohnDTill/Forscape/releases).
+Download and run [ForscapeInstaller_Win64.exe](https://github.com/JohnDTill/Forscape/releases/download/pre-alpha-0.0.2/ForscapeInstaller_Win64.exe).
 Alternately, install the development prerequisites listed below and compile from source.
 
 #### Linux
-Compile from source using:
+Use the [.deb file](https://github.com/JohnDTill/Forscape/releases/download/pre-alpha-0.0.2/forscape_0.0.1_amd64.deb) or compile from source using:
 ```
 apt-get install cmake python3 qt5-default libqt5svg5-dev
 git clone https://github.com/JohnDTill/Forscape

@@ -37,10 +37,10 @@ build*
 *.dia~
 
 #Installer build
-*/com.automath.forscape/data/*
-*/com.automath.forscape/meta/LICENSE
-*/config/lambda.ico
-ForscapeInstaller.exe
+com.automath.forscape/data
+com.automath.forscape/meta/LICENSE
+config/lambda.ico
+ForscapeInstaller_Win64.exe
 
 #WASM generation
 *Makefile

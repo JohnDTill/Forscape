@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(exampleWidgetQt VERSION 0.1 LANGUAGES CXX)
+project(Forscape VERSION 0.0.1 LANGUAGES CXX)
 set(EXE_NAME "Forscape")
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -196,58 +196,58 @@ set(PROJECT_SOURCES
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(exampleWidgetQt
+    qt_add_executable(Forscape
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
     )
 else()
     if(ANDROID)
-        add_library(exampleWidgetQt SHARED
+        add_library(Forscape SHARED
             ${PROJECT_SOURCES}
         )
     else()
-        add_executable(exampleWidgetQt
+        add_executable(Forscape
             ${PROJECT_SOURCES}
             ${APP_ICON_RESOURCE_WINDOWS}
         )
     endif()
 endif()
 
-target_link_libraries(exampleWidgetQt PRIVATE
+target_link_libraries(Forscape PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::Svg
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    target_link_libraries(exampleWidgetQt PRIVATE
+    target_link_libraries(Forscape PRIVATE
         Qt${QT_VERSION_MAJOR}::SvgWidgets
     )
 endif()
 
 FIND_PACKAGE ( Threads REQUIRED )
-target_link_libraries(exampleWidgetQt PRIVATE Threads::Threads)
+target_link_libraries(Forscape PRIVATE Threads::Threads)
 
-set_target_properties(exampleWidgetQt PROPERTIES
+set_target_properties(Forscape PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-  set_property(TARGET exampleWidgetQt PROPERTY WIN32_EXECUTABLE true)
+  set_property(TARGET Forscape PROPERTY WIN32_EXECUTABLE true)
 endif()
 
 if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(exampleWidgetQt)
+    qt_finalize_executable(Forscape)
 endif()
 
-#target_compile_options(exampleWidgetQt PRIVATE
+#target_compile_options(Forscape PRIVATE
 #  $<$<CXX_COMPILER_ID:MSVC>:/W3 /WX>
 #  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic -Werror>
 #)
 
 #Added because Eigen unsupported resulted in compiles with too many sections
-target_compile_options(exampleWidgetQt PRIVATE
+target_compile_options(Forscape PRIVATE
   $<$<CXX_COMPILER_ID:MSVC>:/bigobj>
 )
 
@@ -258,14 +258,19 @@ add_compile_options(
   "$<$<CONFIG:RELEASE>:-DEIGEN_NO_DEBUG>"
 )
 
-set_target_properties(exampleWidgetQt PROPERTIES OUTPUT_NAME ${EXE_NAME})
+set_target_properties(Forscape PROPERTIES OUTPUT_NAME ${EXE_NAME})
 
-#add_custom_target(
-#    codegen ALL
-#    COMMAND python3 all.py
-#    WORKING_DIRECTORY ${META}
-#    BYPRODUCTS ${GEN_FILES}
-#    COMMENT "Performing codegen"
-#)
+add_custom_target(
+    codegen ALL
+    COMMAND python3 all.py
+    WORKING_DIRECTORY ${META}
+    BYPRODUCTS ${GEN_FILES}
+    COMMENT "Performing codegen"
+)
 
-#add_dependencies(exampleWidgetQt codegen)
+add_dependencies(Forscape codegen)
+
+if (${MAKE_DEB})
+    install(TARGETS Forscape RUNTIME)
+    include(Packing.cmake)
+endif ()
