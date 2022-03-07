@@ -71,6 +71,7 @@ private slots:
     void onTextChanged();
     void on_actionShow_action_toolbar_toggled(bool show);
     void on_actionShow_typesetting_toolbar_toggled(bool show);
+    void checkForChanges();
 
 protected:
     virtual void closeEvent(QCloseEvent* event) override;
@@ -79,5 +80,6 @@ private:
     bool savePrompt();
     bool saveAs(QString name);
     void open(QString path);
+    QString getLastDir();
 };
 #endif // MAINWINDOW_H

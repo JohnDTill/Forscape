@@ -26,6 +26,7 @@
 #include "searchdialog.h"
 #include "symboltreeview.h"
 
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -44,14 +45,25 @@
 #define ACTION_TOOLBAR_VISIBLE "action_tb_visible"
 #define WINDOW_GEOMETRY "geometry"
 #define WINDOW_STATE "window_state"
+#define LAST_DIRECTORY "last_dir"
 
 using namespace Hope;
+
+static std::filesystem::file_time_type write_time;
+
+static QTimer* external_change_timer;
+
+static constexpr int CHANGE_CHECK_PERIOD_MS = 100;
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow){
     ui->setupUi(this);
     Typeset::Painter::init();
+
+    external_change_timer = new QTimer(this);
+    connect(external_change_timer, &QTimer::timeout, this, &MainWindow::checkForChanges);
+    external_change_timer->start(CHANGE_CHECK_PERIOD_MS);
 
     QSplitter* splitter = new QSplitter(Qt::Vertical, this);
     setCentralWidget(splitter);
@@ -208,7 +220,7 @@ MainWindow::~MainWindow(){
 }
 
 bool MainWindow::isSavedDeepComparison() const{
-    if(!settings.contains(ACTIVE_FILE)) return editor->getModel()->empty();
+    if(path.isEmpty()) return editor->getModel()->empty();
 
     //Avoid a deep comparison if size from file meta data doesn't match
     std::string filename = settings.value(ACTIVE_FILE).toString().toStdString();
@@ -338,7 +350,7 @@ void MainWindow::on_actionNew_triggered(){
 void MainWindow::on_actionOpen_triggered(){
     if(!editor->isEnabled()) return;
 
-    QString path = QFileDialog::getOpenFileName(nullptr, tr("Load File"), "./", tr("Text (*.txt)"));
+    QString path = QFileDialog::getOpenFileName(nullptr, tr("Load File"), getLastDir(), tr("Text (*.txt)"));
     if(path.isEmpty()) return;
 
     open(path);
@@ -367,7 +379,7 @@ void MainWindow::on_actionExit_triggered(){
 bool MainWindow::savePrompt(){
     if(!editor->isEnabled()) return false;
 
-    QString prompt_name = "untitled.txt";
+    QString prompt_name = getLastDir() + "/untitled.txt";
     QString file_name = QFileDialog::getSaveFileName(nullptr, tr("Save File"),
                                 prompt_name,
                                 tr("Text (*.txt)"));
@@ -399,6 +411,8 @@ bool MainWindow::saveAs(QString path){
     settings.setValue(ACTIVE_FILE, path);
     this->path = path;
     unsaved_changes = false;
+    write_time = std::filesystem::last_write_time(path.toStdString());
+    settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
 
     return true;
 }
@@ -431,6 +445,18 @@ void MainWindow::open(QString path){
     settings.setValue(ACTIVE_FILE, path);
     this->path = path;
     unsaved_changes = false;
+    write_time = std::filesystem::last_write_time(path.toStdString());
+
+    settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
+}
+
+QString MainWindow::getLastDir(){
+    if(settings.contains(LAST_DIRECTORY)){
+        QString last_dir = settings.value(LAST_DIRECTORY).toString();
+        if(std::filesystem::is_directory(last_dir.toStdString())) return last_dir;
+    }
+
+    return QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
 }
 
 
@@ -643,5 +669,25 @@ void MainWindow::on_actionShow_action_toolbar_toggled(bool show){
 
 void MainWindow::on_actionShow_typesetting_toolbar_toggled(bool show){
     math_toolbar->setVisible(show);
+}
+
+void MainWindow::checkForChanges(){
+    if(path.isEmpty()) return;
+
+    assert(settings.contains(ACTIVE_FILE));
+    std::string filename = settings.value(ACTIVE_FILE).toString().toStdString();
+
+    const std::filesystem::file_time_type modified_time = std::filesystem::last_write_time(filename);
+    if(modified_time <= write_time) return;
+    write_time = modified_time;
+
+    QMessageBox::StandardButton reply = QMessageBox::question(this,
+        "File modified externally",
+        "This file has been modified externally.\nWould you like to reload it?",
+        QMessageBox::Yes|QMessageBox::No
+    );
+
+    if(reply == QMessageBox::Yes) open(path);
+    else onTextChanged();
 }
 
