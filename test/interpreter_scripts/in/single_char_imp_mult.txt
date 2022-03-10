@@ -1,0 +1,8 @@
+x = 1
+y = 3
+z = x + 2xy
+print(z, "\n")
+a = 1
+b = 2
+ab = 3
+print(ab)

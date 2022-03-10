@@ -55,7 +55,7 @@ private:
     void resolveAssignmentId(ParseNode pn);
     void resolveAssignmentSubscript(ParseNode pn, ParseNode lhs, ParseNode rhs);
     bool resolvePotentialIdSub(ParseNode pn);
-    void resolveReference(ParseNode pn);
+    template <bool allow_imp_mult = false> void resolveReference(ParseNode pn);
     void resolveReference(ParseNode pn, const Typeset::Selection& c, size_t sym_id);
     void resolveConditional1(const Typeset::Selection& name, ParseNode pn);
     void resolveConditional2(ParseNode pn);

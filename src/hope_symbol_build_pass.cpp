@@ -127,7 +127,7 @@ void SymbolTableBuilder::resolveStmt(ParseNode pn){
 
 void SymbolTableBuilder::resolveExpr(ParseNode pn){
     switch (parse_tree.getOp(pn)) {
-        case OP_IDENTIFIER: resolveReference(pn); break;
+        case OP_IDENTIFIER: resolveReference<true>(pn); break;
         case OP_LAMBDA: resolveLambda(pn); break;
         case OP_SUBSCRIPT_ACCESS: resolveSubscript(pn); break;
 
@@ -287,6 +287,7 @@ bool SymbolTableBuilder::resolvePotentialIdSub(ParseNode pn){
     return true;
 }
 
+template <bool allow_imp_mult>
 void SymbolTableBuilder::resolveReference(ParseNode pn){
     Typeset::Selection c = parse_tree.getSelection(pn);
 
@@ -298,8 +299,45 @@ void SymbolTableBuilder::resolveReference(ParseNode pn){
             parse_tree.setOp(pn, read_type);
             c.format(SEM_PREDEF);
             return;
+        }else if(allow_imp_mult){
+            if(parse_tree.getOp(pn) == OP_IDENTIFIER){
+                Typeset::Marker left = parse_tree.getLeft(pn);
+                const Typeset::Marker right = parse_tree.getRight(pn);
+                if(left.phrase() != right.phrase()){
+                    errors.push_back(Error(c, BAD_READ));
+                    return;
+                }
+                Typeset::Marker m = left;
+                while(m != right){
+                    m.incrementGrapheme();
+                    auto lookup = map.find(Typeset::Selection(left, m));
+                    if(lookup == map.end()){
+                        errors.push_back(Error(c, BAD_READ));
+                        return;
+                    }
+                    left = m;
+                }
+
+                ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_IMPLICIT_MULTIPLY);
+                left = parse_tree.getLeft(pn);
+                m = left;
+                while(m != right){
+                    m.incrementGrapheme();
+                    Typeset::Selection sel(left, m);
+                    auto lookup = map.find(sel);
+                    ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
+                    resolveReference(pn, sel, lookup->second);
+                    builder.addNaryChild(pn);
+                    left = m;
+                }
+                ParseNode mult = builder.finalize();
+
+                parse_tree.setFlag(pn, mult);
+                parse_tree.setOp(pn, OP_PROXY);
+            }
+        }else{
+            errors.push_back(Error(c, BAD_READ));
         }
-        errors.push_back(Error(c, BAD_READ));
     }else{
         resolveReference(pn, c, lookup->second);
     }

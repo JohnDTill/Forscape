@@ -434,6 +434,8 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
             return BOOLEAN;
         case OP_STRING:
             return STRING;
+        case OP_PROXY:
+            return resolveExpr(parse_tree.getFlag(pn));
         default:
             assert(false);
             return BOOLEAN;
