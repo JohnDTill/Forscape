@@ -66,8 +66,8 @@ private:
     void ifElseStmt(ParseNode pn);
     void blockStmt(ParseNode pn);
     void algorithmStmt(ParseNode pn);
-    void initClosure(Closure& closure, ParseNode captured, ParseNode upvalues);
-    void breakLocalClosureLinks(Closure& closure, ParseNode captured, ParseNode upvalues);
+    void initClosure(Closure& closure, ParseNode val_cap, ParseNode ref_cap);
+    void breakLocalClosureLinks(Closure& closure, ParseNode val_cap, ParseNode ref_cap);
     void returnStmt(ParseNode pn);
     Value implicitMult(ParseNode pn, size_t start = 0);
     Value sum(ParseNode pn);

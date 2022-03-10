@@ -18,17 +18,17 @@ typedef std::vector<std::shared_ptr<void>> Closure;
 struct Lambda{
     Closure closure;
     ParseNode def;
-    ParseNode captured(const ParseTree& parse_tree) const noexcept{
-        return parse_tree.arg(def, 0);
+    ParseNode valCap(const ParseTree& parse_tree) const noexcept{
+        return parse_tree.valCapList(def);
     }
-    ParseNode upvalues(const ParseTree& parse_tree) const noexcept{
-        return parse_tree.arg(def, 1);
+    ParseNode refCap(const ParseTree& parse_tree) const noexcept{
+        return parse_tree.refCapList(def);
     }
     ParseNode params(const ParseTree& parse_tree) const noexcept{
-        return parse_tree.arg(def, 2);
+        return parse_tree.paramList(def);
     }
     ParseNode expr(const ParseTree& parse_tree) const noexcept{
-        return parse_tree.arg(def, 3);
+        return parse_tree.body(def);
     }
 
     Lambda(ParseNode def)
@@ -40,19 +40,19 @@ struct Algorithm{
     ParseNode def;
 
     ParseNode name(const ParseTree& parse_tree) const noexcept{
-        return parse_tree.arg(def, 0);
+        return parse_tree.algName(def);
     }
-    ParseNode captured(const ParseTree& parse_tree) const noexcept{
-        return parse_tree.arg(def, 1);
+    ParseNode valCap(const ParseTree& parse_tree) const noexcept{
+        return parse_tree.valCapList(def);
     }
-    ParseNode upvalues(const ParseTree& parse_tree) const noexcept{
-        return parse_tree.arg(def, 2);
+    ParseNode refCap(const ParseTree& parse_tree) const noexcept{
+        return parse_tree.refCapList(def);
     }
     ParseNode params(const ParseTree& parse_tree) const noexcept{
-        return parse_tree.arg(def, 3);
+        return parse_tree.paramList(def);
     }
     ParseNode body(const ParseTree& parse_tree) const noexcept{
-        return parse_tree.arg(def, 4);
+        return parse_tree.body(def);
     }
 
     Algorithm(ParseNode def)

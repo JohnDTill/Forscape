@@ -161,8 +161,8 @@ void Interpreter::algorithmStmt(ParseNode pn){
     Closure* list;
 
     ParseNode name = alg.name(parse_tree);
-    ParseNode captured = alg.captured(parse_tree);
-    ParseNode upvalues = alg.upvalues(parse_tree);
+    ParseNode captured = alg.valCap(parse_tree);
+    ParseNode upvalues = alg.refCap(parse_tree);
 
     if(parse_tree.getFlag(pn) == NONE){
         stack.push(alg, parse_tree.str(name));
@@ -176,22 +176,18 @@ void Interpreter::algorithmStmt(ParseNode pn){
     initClosure(*list, captured, upvalues);
 }
 
-void Interpreter::initClosure(Closure& closure, ParseNode captured, ParseNode upvalues){
+void Interpreter::initClosure(Closure& closure, ParseNode val_cap, ParseNode ref_cap){
     closure.clear();
 
-    if(captured != ParseTree::EMPTY){
-        size_t N = parse_tree.getNumArgs(captured);
-
-        for(size_t i = 0; i < N; i++){
-            ParseNode capture = parse_tree.arg(captured, i);
-            Value* v = new Value(read(capture));
-            std::shared_ptr<void> ptr(v);
-            closure.push_back(ptr);
-        }
+    for(size_t i = 0; i < parse_tree.valListSize(val_cap); i++){
+        ParseNode capture = parse_tree.arg(val_cap, i);
+        Value* v = new Value(read(capture));
+        std::shared_ptr<void> ptr(v);
+        closure.push_back(ptr);
     }
 
-    for(size_t i = 0; i < parse_tree.getNumArgs(upvalues); i++){
-        ParseNode up = parse_tree.arg(upvalues, i);
+    for(size_t i = 0; i < parse_tree.getNumArgs(ref_cap); i++){
+        ParseNode up = parse_tree.arg(ref_cap, i);
 
         switch (parse_tree.getOp(up)) {
             case OP_IDENTIFIER:{ //Place on heap
@@ -213,18 +209,18 @@ void Interpreter::initClosure(Closure& closure, ParseNode captured, ParseNode up
     }
 }
 
-void Interpreter::breakLocalClosureLinks(Closure& closure, ParseNode captured, ParseNode upvalues){
-    size_t cap_size = (captured == ParseTree::EMPTY) ? 0 : parse_tree.getNumArgs(captured);
+void Interpreter::breakLocalClosureLinks(Closure& closure, ParseNode val_cap, ParseNode ref_cap){
+    size_t val_cap_size = parse_tree.valListSize(val_cap);
 
-    for(size_t i = 0; i < cap_size; i++){
+    for(size_t i = 0; i < val_cap_size; i++){
         Value& val = conv(closure[i]);
         std::shared_ptr<void> ptr(new Value(val));
         closure[i] = ptr;
     }
 
-    for(size_t i = 0; i < parse_tree.getNumArgs(upvalues); i++){
-        if(parse_tree.getOp(parse_tree.arg(upvalues, i)) == OP_IDENTIFIER){
-            size_t j = cap_size + i;
+    for(size_t i = 0; i < parse_tree.getNumArgs(ref_cap); i++){
+        if(parse_tree.getOp(parse_tree.arg(ref_cap, i)) == OP_IDENTIFIER){
+            size_t j = val_cap_size + i;
             Value& val = conv(closure[j]);
             std::shared_ptr<void> ptr(new Value(val));
             closure[j] = ptr;
@@ -671,11 +667,11 @@ Value Interpreter::str(ParseNode pn) const{
 Value Interpreter::anonFun(ParseNode pn){
     Lambda l(pn);
 
-    ParseNode upvalues = l.upvalues(parse_tree);
+    ParseNode ref_list = l.refCap(parse_tree);
 
     Closure* list = &l.closure;
 
-    initClosure(*list, ParseTree::EMPTY, upvalues);
+    initClosure(*list, ParseTree::EMPTY, ref_list);
 
     return l;
 }
@@ -687,12 +683,12 @@ Value Interpreter::call(ParseNode call) {
     switch (v.index()) {
         case Lambda_index:{
             Lambda& f = std::get<Lambda>(v);
-            return innerCall(call, f.params(parse_tree), f.closure, f.captured(parse_tree), f.upvalues(parse_tree), f.expr(parse_tree), true, true);
+            return innerCall(call, f.params(parse_tree), f.closure, f.valCap(parse_tree), f.refCap(parse_tree), f.expr(parse_tree), true, true);
         }
 
         case Algorithm_index:{
             Algorithm& alg = std::get<Algorithm>(v);
-            return innerCall(call, alg.params(parse_tree), alg.closure, alg.captured(parse_tree), alg.upvalues(parse_tree), alg.body(parse_tree), true, false);
+            return innerCall(call, alg.params(parse_tree), alg.closure, alg.valCap(parse_tree), alg.refCap(parse_tree), alg.body(parse_tree), true, false);
         }
 
         case Unitialized_index:
@@ -734,7 +730,7 @@ void Interpreter::callStmt(ParseNode pn){
 
         case Algorithm_index:{
             Algorithm& alg = std::get<Algorithm>(v);
-            innerCall(pn, alg.params(parse_tree), alg.closure, alg.captured(parse_tree), alg.upvalues(parse_tree), alg.body(parse_tree), false, false);
+            innerCall(pn, alg.params(parse_tree), alg.closure, alg.valCap(parse_tree), alg.refCap(parse_tree), alg.body(parse_tree), false, false);
             break;
         }
 

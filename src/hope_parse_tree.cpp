@@ -41,23 +41,68 @@ ParseNode ParseTree::arg(ParseNode node, size_t index) const noexcept{
     return (*this)[node+FIXED_FIELDS+index];
 }
 
+template<size_t index>
+ParseNode ParseTree::arg(ParseNode node) const noexcept{
+    assert(index < getNumArgs(node));
+    return (*this)[node+FIXED_FIELDS+index];
+}
+
 void ParseTree::setArg(ParseNode node, size_t index, ParseNode val) noexcept{
+    (*this)[node+FIXED_FIELDS+index] = val;
+}
+
+template<size_t index>
+void ParseTree::setArg(ParseNode node, ParseNode val) noexcept{
     (*this)[node+FIXED_FIELDS+index] = val;
 }
 
 ParseNode ParseTree::lhs(ParseNode node) const noexcept{
     assert(getNumArgs(node) == 2);
-    return arg(node, 0);
+    return arg<0>(node);
 }
 
 ParseNode ParseTree::rhs(ParseNode node) const noexcept{
     assert(getNumArgs(node) == 2);
-    return arg(node, 1);
+    return arg<1>(node);
 }
 
 ParseNode ParseTree::child(ParseNode node) const noexcept{
     assert(getNumArgs(node) == 1);
-    return arg(node, 0);
+    return arg<0>(node);
+}
+
+ParseNode ParseTree::valCapList(ParseNode node) const noexcept{
+    assert(getOp(node) == OP_ALGORITHM || getOp(node) == OP_LAMBDA);
+    return arg<0>(node);
+}
+
+ParseNode ParseTree::refCapList(ParseNode node) const noexcept{
+    assert(getOp(node) == OP_ALGORITHM || getOp(node) == OP_LAMBDA);
+    return arg<1>(node);
+}
+
+void ParseTree::setRefList(ParseNode fn, ParseNode list) noexcept{
+    assert(getOp(fn) == OP_ALGORITHM || getOp(fn) == OP_LAMBDA);
+    setArg<1>(fn, list);
+}
+
+ParseNode ParseTree::paramList(ParseNode node) const noexcept{
+    assert(getOp(node) == OP_ALGORITHM || getOp(node) == OP_LAMBDA);
+    return arg<2>(node);
+}
+
+ParseNode ParseTree::body(ParseNode node) const noexcept{
+    assert(getOp(node) == OP_ALGORITHM || getOp(node) == OP_LAMBDA);
+    return arg<3>(node);
+}
+
+ParseNode ParseTree::algName(ParseNode node) const noexcept{
+    assert(getOp(node) == OP_ALGORITHM);
+    return arg<4>(node);
+}
+
+size_t ParseTree::valListSize(ParseNode node) const noexcept{
+    return node == EMPTY ? 0 : getNumArgs(node);
 }
 
 std::string ParseTree::str(ParseNode node) const{

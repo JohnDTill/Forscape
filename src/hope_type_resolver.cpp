@@ -154,7 +154,7 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
             break;
 
         case OP_ALGORITHM:{
-            ParseNode params = parse_tree.arg(pn, 3);
+            ParseNode params = parse_tree.paramList(pn);
             for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
                 ParseNode param = parse_tree.arg(params, i);
                 if(parse_tree.getOp(param) == OP_EQUAL) resolveStmt(param);
@@ -163,22 +163,21 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
             TypeResolver::DeclareSignature sig;
             sig.push_back(pn);
 
-            ParseNode capture_list = parse_tree.arg(pn, 1);
-            if(capture_list != ParseTree::EMPTY){
-                for(size_t i = 0; i < parse_tree.getNumArgs(capture_list); i++){
-                    ParseNode cap = parse_tree.arg(capture_list, i);
-                    size_t inner_id = parse_tree.getFlag(cap);
-                    assert(inner_id < symbol_table.symbols.size());
-                    const Symbol& inner = symbol_table.symbols[inner_id];
-                    const Symbol& outer = symbol_table.symbols[inner.shadowed_var];
-                    Type t = outer.type;
-                    sig.push_back(t);
-                }
+            ParseNode cap_list = parse_tree.valCapList(pn);
+            size_t cap_list_size = parse_tree.valListSize(cap_list);
+            for(size_t i = 0; i < cap_list_size; i++){
+                ParseNode cap = parse_tree.arg(cap_list, i);
+                size_t inner_id = parse_tree.getFlag(cap);
+                assert(inner_id < symbol_table.symbols.size());
+                const Symbol& inner = symbol_table.symbols[inner_id];
+                const Symbol& outer = symbol_table.symbols[inner.shadowed_var];
+                Type t = outer.type;
+                sig.push_back(t);
             }
 
-            ParseNode reference_list = parse_tree.arg(pn, 2);
-            for(size_t i = 0; i < parse_tree.getNumArgs(reference_list); i++){
-                ParseNode ref = parse_tree.arg(reference_list, i);
+            ParseNode ref_list = parse_tree.refCapList(pn);
+            for(size_t i = 0; i < parse_tree.getNumArgs(ref_list); i++){
+                ParseNode ref = parse_tree.arg(ref_list, i);
                 if(parse_tree.getOp(ref) != OP_READ_UPVALUE) continue;
                 size_t sym_id = parse_tree.getFlag(ref);
                 Type t = symbol_table.symbols[sym_id].type;
@@ -187,7 +186,7 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
 
             Type t = declare(sig);
 
-            size_t sym_id = parse_tree.getFlag(parse_tree.arg(pn, 0));
+            size_t sym_id = parse_tree.getFlag(parse_tree.algName(pn));
             symbol_table.symbols[sym_id].type = makeFunctionSet(t);
 
             break;
@@ -222,9 +221,7 @@ Type TypeResolver::fillDefaultsAndInstantiate(ParseNode call_node, TypeResolver:
     const TypeResolver::DeclareSignature& dec = declared(sig.front());
     ParseNode fn = dec.front();
 
-    ParseNode params = parse_tree.getOp(fn) == OP_ALGORITHM ?
-                       parse_tree.arg(fn, 3) :
-                       parse_tree.arg(fn, 2);
+    ParseNode params = parse_tree.paramList(fn);
 
     size_t n_params = parse_tree.getNumArgs(params);
     size_t n_args = sig.size()-1;
@@ -254,7 +251,7 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
 
     switch (parse_tree.getOp(pn)) {
         case OP_LAMBDA:{
-            ParseNode params = parse_tree.arg(pn, 2);
+            ParseNode params = parse_tree.paramList(pn);
             for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
                 ParseNode param = parse_tree.arg(params, i);
                 if(parse_tree.getOp(param) == OP_EQUAL) resolveStmt(param);
@@ -263,19 +260,18 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
             TypeResolver::DeclareSignature sig;
             sig.push_back(pn);
 
-            ParseNode capture_list = parse_tree.arg(pn, 0);
-            if(capture_list != ParseTree::EMPTY){
-                for(size_t i = 0; i < parse_tree.getNumArgs(capture_list); i++){
-                    ParseNode cap = parse_tree.arg(capture_list, i);
-                    size_t sym_id = parse_tree.getFlag(parse_tree.getFlag(cap));
-                    Type t = symbol_table.symbols[sym_id].type;
-                    sig.push_back(t);
-                }
+            ParseNode val_list = parse_tree.valCapList(pn);
+            size_t num_vals = parse_tree.valListSize(val_list);
+            for(size_t i = 0; i < num_vals; i++){
+                ParseNode cap = parse_tree.arg(val_list, i);
+                size_t sym_id = parse_tree.getFlag(parse_tree.getFlag(cap));
+                Type t = symbol_table.symbols[sym_id].type;
+                sig.push_back(t);
             }
 
-            ParseNode reference_list = parse_tree.arg(pn, 1);
-            for(size_t i = 0; i < parse_tree.getNumArgs(reference_list); i++){
-                ParseNode ref = parse_tree.arg(reference_list, i);
+            ParseNode ref_list = parse_tree.refCapList(pn);
+            for(size_t i = 0; i < parse_tree.getNumArgs(ref_list); i++){
+                ParseNode ref = parse_tree.arg(ref_list, i);
                 if(parse_tree.getOp(ref) != OP_READ_UPVALUE) continue;
                 size_t sym_id = parse_tree.getFlag(ref);
                 Type t = symbol_table.symbols[sym_id].type;
@@ -598,17 +594,14 @@ Type TypeResolver::instantiate(const CallSignature& fn){
     const DeclareSignature& dec = declared(fn[0]);
     ParseNode pn = dec[0];
 
-    bool is_alg = parse_tree.getOp(pn) != OP_LAMBDA;
-    ParseNode value_list = parse_tree.arg(pn, is_alg);
-    ParseNode ref_list = parse_tree.arg(pn, 1+is_alg);
-    ParseNode params = parse_tree.arg(pn, 2+is_alg);
-    ParseNode body = parse_tree.arg(pn, 3+is_alg);
-    size_t N_vals = value_list == ParseTree::EMPTY ?
-                    0 :
-                    parse_tree.getNumArgs(value_list);
+    ParseNode val_list = parse_tree.valCapList(pn);
+    ParseNode ref_list = parse_tree.refCapList(pn);
+    ParseNode params = parse_tree.paramList(pn);
+    ParseNode body = parse_tree.body(pn);
+    size_t N_vals = parse_tree.valListSize(val_list);
 
-    if(value_list != ParseTree::EMPTY){
-        size_t scope_index = parse_tree.getFlag(value_list);
+    if(val_list != ParseTree::EMPTY){
+        size_t scope_index = parse_tree.getFlag(val_list);
         const ScopeSegment& scope = symbol_table.scopes[scope_index];
         for(size_t i = 0; i < N_vals; i++){
             size_t sym_id = scope.sym_begin + i;
@@ -639,6 +632,8 @@ Type TypeResolver::instantiate(const CallSignature& fn){
     }
 
     Type return_type;
+
+    bool is_alg = parse_tree.getOp(pn) != OP_LAMBDA;
 
     if(is_alg){
         return_types.push(UNINITIALISED);
@@ -678,7 +673,7 @@ Type TypeResolver::instantiate(const CallSignature& fn){
     }
 
     for(size_t i = 0; i < N_vals; i++){
-        ParseNode val = parse_tree.arg(value_list, i);
+        ParseNode val = parse_tree.arg(val_list, i);
         size_t sym_id = parse_tree.getFlag(val);
         Symbol& sym = symbol_table.symbols[sym_id];
         sym.type = old_val_cap[i+old_val_cap_index];
@@ -834,7 +829,7 @@ std::string TypeResolver::declFunctionString(size_t i) const{
     ParseNode pn = fn[0];
     std::string str = parse_tree.getOp(pn) == OP_LAMBDA ?
                       "λ" + std::to_string(pn):
-                      parse_tree.str(parse_tree.arg(pn, 0));
+                      parse_tree.str(parse_tree.algName(pn));
     str += '[';
 
     if(fn.size() >= 2){
