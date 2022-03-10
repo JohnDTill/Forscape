@@ -129,7 +129,7 @@ size_t ParseTree::addUnary(size_t type, const Typeset::Selection& c, size_t chil
     setFlag(pn, EMPTY);
     setSelection(pn, c);
     setNumArgs(pn, 1);
-    setArg(pn, 0, child);
+    setArg<0>(pn, child);
 
     return pn;
 }
@@ -142,7 +142,7 @@ size_t ParseTree::addUnary(size_t type, size_t child){
     setFlag(pn, EMPTY);
     setSelection(pn, getSelection(child));
     setNumArgs(pn, 1);
-    setArg(pn, 0, child);
+    setArg<0>(pn, child);
 
     return pn;
 }
@@ -156,7 +156,7 @@ size_t ParseTree::addLeftUnary(size_t type, const Typeset::Marker& left, size_t 
     setLeft(pn, left);
     setRight(pn, getRight(child));
     setNumArgs(pn, 1);
-    setArg(pn, 0, child);
+    setArg<0>(pn, child);
 
     return pn;
 }
@@ -170,7 +170,7 @@ size_t ParseTree::addRightUnary(size_t type, const Typeset::Marker& right, size_
     setLeft(pn, getLeft(child));
     setRight(pn, right);
     setNumArgs(pn, 1);
-    setArg(pn, 0, child);
+    setArg<0>(pn, child);
 
     return pn;
 }
@@ -183,8 +183,8 @@ size_t ParseTree::addBinary(size_t type, const Typeset::Selection& c, size_t lhs
     setFlag(pn, EMPTY);
     setSelection(pn, c);
     setNumArgs(pn, 2);
-    setArg(pn, 0, lhs);
-    setArg(pn, 1, rhs);
+    setArg<0>(pn, lhs);
+    setArg<1>(pn, rhs);
 
     return pn;
 }
@@ -198,8 +198,8 @@ size_t ParseTree::addBinary(size_t type, size_t lhs, size_t rhs){
     setLeft(pn, getLeft(lhs));
     setRight(pn, getRight(rhs));
     setNumArgs(pn, 2);
-    setArg(pn, 0, lhs);
-    setArg(pn, 1, rhs);
+    setArg<0>(pn, lhs);
+    setArg<1>(pn, rhs);
 
     return pn;
 }
@@ -212,9 +212,9 @@ size_t ParseTree::addTernary(size_t type, const Typeset::Selection& c, size_t A,
     setFlag(pn, EMPTY);
     setSelection(pn, c);
     setNumArgs(pn, 3);
-    setArg(pn, 0, A);
-    setArg(pn, 1, B);
-    setArg(pn, 2, C);
+    setArg<0>(pn, A);
+    setArg<1>(pn, B);
+    setArg<2>(pn, C);
 
     return pn;
 }
@@ -228,9 +228,9 @@ ParseNode ParseTree::addTernary(Op type, ParseNode A, ParseNode B, ParseNode C){
     setLeft(pn, getLeft(A));
     setRight(pn, getRight(C));
     setNumArgs(pn, 3);
-    setArg(pn, 0, A);
-    setArg(pn, 1, B);
-    setArg(pn, 2, C);
+    setArg<0>(pn, A);
+    setArg<1>(pn, B);
+    setArg<2>(pn, C);
 
     return pn;
 }
@@ -244,10 +244,10 @@ ParseNode ParseTree::addQuadary(Op type, ParseNode A, ParseNode B, ParseNode C, 
     setLeft(pn, getLeft(A));
     setRight(pn, getRight(D));
     setNumArgs(pn, 4);
-    setArg(pn, 0, A);
-    setArg(pn, 1, B);
-    setArg(pn, 2, C);
-    setArg(pn, 3, D);
+    setArg<0>(pn, A);
+    setArg<1>(pn, B);
+    setArg<2>(pn, C);
+    setArg<3>(pn, D);
 
     return pn;
 }
@@ -260,10 +260,10 @@ ParseNode ParseTree::addQuadary(Op type, const Typeset::Selection &c, ParseNode 
     setFlag(pn, EMPTY);
     setSelection(pn, c);
     setNumArgs(pn, 4);
-    setArg(pn, 0, A);
-    setArg(pn, 1, B);
-    setArg(pn, 2, C);
-    setArg(pn, 3, D);
+    setArg<0>(pn, A);
+    setArg<1>(pn, B);
+    setArg<2>(pn, C);
+    setArg<3>(pn, D);
 
     return pn;
 }
@@ -277,11 +277,11 @@ ParseNode ParseTree::addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, 
     setLeft(pn, getLeft(A));
     setRight(pn, getRight(E));
     setNumArgs(pn, 5);
-    setArg(pn, 0, A);
-    setArg(pn, 1, B);
-    setArg(pn, 2, C);
-    setArg(pn, 3, D);
-    setArg(pn, 4, E);
+    setArg<0>(pn, A);
+    setArg<1>(pn, B);
+    setArg<2>(pn, C);
+    setArg<3>(pn, D);
+    setArg<4>(pn, E);
 
     return pn;
 }

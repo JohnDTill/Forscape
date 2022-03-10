@@ -73,7 +73,6 @@ MATRIX,,,,matrix(pn),,,,
 DECIMAL_LITERAL|INTEGER_LITERAL,,,,stod(parse_tree.str(pn)),,,,
 STRING,,,,str(pn),,,,
 LAMBDA,,,,anonFun(pn),,,,
-LAMBDA_UP,,,,anonFun(pn),,,,
 CALL,,,,call(pn),,,,
 ZERO_MATRIX,double,double,MatrixXd|double,"a*b == 1 ? Value(0.0) : MatrixXd::Zero(static_cast<Index>(a), static_cast<Index>(b))",,,,(a < 1) | (b < 1)=>DIMENSION_MISMATCH
 ONES_MATRIX,double,double,MatrixXd|double,"a*b == 1 ? Value(1.0) : MatrixXd::Ones(static_cast<Index>(a), static_cast<Index>(b))",,,,(a < 1) | (b < 1)=>DIMENSION_MISMATCH

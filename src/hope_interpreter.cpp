@@ -75,7 +75,7 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_WHILE: whileStmt(pn); break;
         case OP_FOR: forStmt(pn); break;
         case OP_BLOCK: blockStmt(pn); break;
-        case OP_ALGORITHM: case OP_ALGORITHM_UP: algorithmStmt(pn); break;
+        case OP_ALGORITHM: algorithmStmt(pn); break;
         case OP_PROTOTYPE_ALG: stack.push(static_cast<void*>(nullptr), parse_tree.str(parse_tree.child(pn))); break;
         case OP_EXPR_STMT: callStmt(parse_tree.child(pn)); break;
         case OP_RETURN: returnStmt(pn); break;
