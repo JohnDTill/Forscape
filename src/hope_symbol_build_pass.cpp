@@ -127,7 +127,7 @@ void SymbolTableBuilder::resolveStmt(ParseNode pn){
 
 void SymbolTableBuilder::resolveExpr(ParseNode pn){
     switch (parse_tree.getOp(pn)) {
-        case OP_IDENTIFIER: resolveReference(pn); break;
+        case OP_IDENTIFIER: resolveReference<true>(pn); break;
         case OP_LAMBDA: resolveLambda(pn); break;
         case OP_SUBSCRIPT_ACCESS: resolveSubscript(pn); break;
 
@@ -287,6 +287,7 @@ bool SymbolTableBuilder::resolvePotentialIdSub(ParseNode pn){
     return true;
 }
 
+template <bool allow_imp_mult>
 void SymbolTableBuilder::resolveReference(ParseNode pn){
     Typeset::Selection c = parse_tree.getSelection(pn);
 
@@ -298,8 +299,16 @@ void SymbolTableBuilder::resolveReference(ParseNode pn){
             parse_tree.setOp(pn, read_type);
             c.format(SEM_PREDEF);
             return;
+        }else if(allow_imp_mult){
+            if(parse_tree.getOp(pn) == OP_IDENTIFIER){
+                const Typeset::Marker left = parse_tree.getLeft(pn);
+                const Typeset::Marker right = parse_tree.getRight(pn);
+                if(parse_tree.getNumArgs(pn) == 0) resolveIdMult(pn, left, right);
+                else resolveScriptMult(pn, left, right);
+            }
+        }else{
+            errors.push_back(Error(c, BAD_READ));
         }
-        errors.push_back(Error(c, BAD_READ));
     }else{
         resolveReference(pn, c, lookup->second);
     }
@@ -315,6 +324,89 @@ void SymbolTableBuilder::resolveReference(ParseNode pn, const Typeset::Selection
     sym.is_closure_nested |= sym.declaration_closure_depth && (closure_depth != sym.declaration_closure_depth);
 
     symbol_table.usages.push_back(Usage(sym_id, pn, READ));
+}
+
+void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right){
+    Typeset::Marker m = left;
+    while(m != right){
+        m.incrementGrapheme();
+        if(m.index == m.text->size()) m = right;
+
+        auto lookup = map.find(Typeset::Selection(left, m));
+        if(lookup == map.end()){
+            errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
+            return;
+        }
+        left = m;
+    }
+
+    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_IMPLICIT_MULTIPLY);
+    left = parse_tree.getLeft(pn);
+    m = left;
+    while(m != right){
+        m.incrementGrapheme();
+        if(m.index == m.text->size()) m = right;
+
+        Typeset::Selection sel(left, m);
+        auto lookup = map.find(sel);
+        ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
+        resolveReference(pn, sel, lookup->second);
+        builder.addNaryChild(pn);
+        left = m;
+    }
+    ParseNode mult = builder.finalize();
+
+    parse_tree.setFlag(pn, mult);
+    parse_tree.setOp(pn, OP_PROXY);
+}
+
+void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right){
+    assert(left.text != right.text);
+
+    Typeset::Marker m = left;
+    Typeset::Marker end(m.text, m.text->size());
+    Typeset::Marker new_right = end;
+    end.decrementGrapheme();
+    if(left == end){
+        errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
+        return;
+    }
+
+    while(m != end){
+        m.incrementGrapheme();
+        auto lookup = map.find(Typeset::Selection(left, m));
+        if(lookup == map.end()){
+            errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
+            return;
+        }
+        left = m;
+    }
+
+    ParseNode new_id = parse_tree.addTerminal(OP_IDENTIFIER, Typeset::Selection(end, new_right));
+    ParseTree::NaryBuilder script_builder = parse_tree.naryBuilder(parse_tree.getOp(pn));
+    script_builder.addNaryChild(new_id);
+    for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++)
+        script_builder.addNaryChild(parse_tree.arg(pn, i));
+    ParseNode script = script_builder.finalize(Typeset::Selection(end, right));
+    resolveExpr(script);
+
+    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_IMPLICIT_MULTIPLY);
+    left = parse_tree.getLeft(pn);
+    m = left;
+    while(m != end){
+        m.incrementGrapheme();
+        Typeset::Selection sel(left, m);
+        auto lookup = map.find(sel);
+        ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
+        resolveReference(pn, sel, lookup->second);
+        builder.addNaryChild(pn);
+        left = m;
+    }
+    builder.addNaryChild(script);
+    ParseNode mult = builder.finalize();
+
+    parse_tree.setFlag(pn, mult);
+    parse_tree.setOp(pn, OP_PROXY);
 }
 
 void SymbolTableBuilder::resolveConditional1(const Typeset::Selection& name, ParseNode pn){
@@ -364,9 +456,7 @@ void SymbolTableBuilder::resolveDefault(ParseNode pn){
 void SymbolTableBuilder::resolveLambda(ParseNode pn){
     increaseClosureDepth(symbol_table.lambda(), parse_tree.getLeft(pn), pn);
 
-    ParseNode params = parse_tree.arg(pn, 2);
-    assert(parse_tree.getOp(params) == OP_LIST);
-
+    ParseNode params = parse_tree.paramList(pn);
     for(size_t i = 0; i < parse_tree.getNumArgs(params); i++)
         defineLocalScope( parse_tree.arg(params, i) );
 
@@ -377,10 +467,10 @@ void SymbolTableBuilder::resolveLambda(ParseNode pn){
 }
 
 void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
-    ParseNode name = parse_tree.arg(pn, 0);
-    ParseNode captured = parse_tree.arg(pn, 1);
-    ParseNode params = parse_tree.arg(pn, 3);
-    ParseNode body = parse_tree.arg(pn, 4);
+    ParseNode name = parse_tree.algName(pn);
+    ParseNode val_cap = parse_tree.valCapList(pn);
+    ParseNode params = parse_tree.paramList(pn);
+    ParseNode body = parse_tree.body(pn);
 
     const Typeset::Selection sel = parse_tree.getSelection(name);
     auto lookup = map.find(sel);
@@ -405,25 +495,22 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
         sym.is_prototype = false;
     }
 
-    if(captured != ParseTree::EMPTY){
-        parse_tree.setFlag(captured, symbol_table.scopes.size());
-        for(size_t i = 0; i < parse_tree.getNumArgs(captured); i++){
-            ParseNode capture = parse_tree.arg(captured, i);
+    size_t val_cap_size = parse_tree.valListSize(val_cap);
+    if(val_cap != ParseTree::EMPTY){
+        parse_tree.setFlag(val_cap, symbol_table.scopes.size());
+        for(size_t i = 0; i < val_cap_size; i++){
+            ParseNode capture = parse_tree.arg(val_cap, i);
             resolveReference(capture);
         }
     }
 
     increaseClosureDepth(parse_tree.getSelection(name), parse_tree.getLeft(body), pn);
 
-    if(captured != ParseTree::EMPTY){
-        size_t N = parse_tree.getNumArgs(captured);
-
-        for(size_t i = 0; i < N; i++){
-            ParseNode capture = parse_tree.arg(captured, i);
-            defineLocalScope(capture, false);
-            symbol_table.symbols.back().is_captured_by_value = true;
-            symbol_table.symbols.back().is_closure_nested = true;
-        }
+    for(size_t i = 0; i < val_cap_size; i++){
+        ParseNode capture = parse_tree.arg(val_cap, i);
+        defineLocalScope(capture, false);
+        symbol_table.symbols.back().is_captured_by_value = true;
+        symbol_table.symbols.back().is_closure_nested = true;
     }
 
     bool expect_default = false;
@@ -482,7 +569,7 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn){
     if(map.find(id_sel) == map.end() ||
             (parse_tree.getOp(rhs) == OP_IDENTIFIER && map.find(rhs_sel) == map.end())){
         parse_tree.setOp(pn, OP_IDENTIFIER);
-        resolveReference(pn);
+        resolveReference<true>(pn);
     }else{
         resolveDefault(pn);
     }
@@ -590,7 +677,6 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end){
         }
     }
 
-    bool fn_is_alg = (parse_tree.getOp(fn) != OP_LAMBDA);
     if(!closed_refs.empty()){
         if(ref_list_sets.size() >= 2){
             std::unordered_set<size_t>& returning_refs = ref_list_sets[ref_list_sets.size()-2];
@@ -614,9 +700,9 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end){
             ref_builder.addNaryChild(n);
         }
         ParseNode list = ref_builder.finalize(parse_tree.getSelection(fn));
-        parse_tree.setArg(fn, 1+fn_is_alg, list);
+        parse_tree.setRefList(fn, list);
     }else{
-        parse_tree.setArg(fn, 1+fn_is_alg, parse_tree.addTerminal(OP_LIST, parse_tree.getSelection(fn)));
+        parse_tree.setRefList(fn, parse_tree.addTerminal(OP_LIST, parse_tree.getSelection(fn)));
     }
 
     ref_list_sets.pop_back();

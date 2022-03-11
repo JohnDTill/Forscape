@@ -11,10 +11,9 @@ void SymbolTableLinker::link() noexcept{
     for(ScopeSegment& scope : symbol_table.scopes){
         if(scope.isStartOfScope()){
             if(scope.fn != NONE){
-                bool is_alg = (parse_tree.getOp(scope.fn) != OP_LAMBDA);
-                ParseNode val_list = parse_tree.arg(scope.fn, is_alg);
-                ParseNode ref_list = parse_tree.arg(scope.fn, 1+is_alg);
-                size_t N_cap = val_list == NONE ? 0 : parse_tree.getNumArgs(val_list);
+                ParseNode val_list = parse_tree.valCapList(scope.fn);
+                ParseNode ref_list = parse_tree.refCapList(scope.fn);
+                size_t N_cap = parse_tree.valListSize(val_list);
 
                 for(size_t i = 0; i < N_cap; i++){
                     size_t var_id = scope.sym_begin+i;
@@ -66,10 +65,9 @@ void SymbolTableLinker::link() noexcept{
         if(scope.isEndOfScope()){
             if(scope.fn != NONE){
                 ParseNode fn = scope.fn;
-                bool is_alg = (parse_tree.getOp(fn) != OP_LAMBDA);
-                ParseNode val_list = parse_tree.arg(fn, is_alg);
-                ParseNode ref_list = parse_tree.arg(fn, 1+is_alg);
-                size_t N_val = val_list == NONE ? 0 : parse_tree.getNumArgs(val_list);
+                ParseNode val_list = parse_tree.valCapList(fn);
+                ParseNode ref_list = parse_tree.refCapList(fn);
+                size_t N_val = parse_tree.valListSize(val_list);
 
                 for(size_t i = parse_tree.getNumArgs(ref_list); i-->0;){
                     ParseNode n = parse_tree.arg(ref_list, i);

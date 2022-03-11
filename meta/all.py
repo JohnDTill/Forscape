@@ -20,7 +20,10 @@ def should_run():
     included_extensions = ['csv', 'py']
     src = [fn for fn in os.listdir(".") if any(fn.endswith(ext) for ext in included_extensions)]
     latest_change = max([os.path.getmtime("./" + file) for file in src])
-    latest_run = min([os.path.getmtime("../src/generated/" + file) for file in os.listdir("../src/generated")])
+    file_change_times = [os.path.getmtime("../src/generated/" + file) for file in os.listdir("../src/generated")]
+    if not file_change_times:
+        return True
+    latest_run = min(file_change_times)
     print(f"Codegen: latest change @ {latest_change}, latest run @ {latest_run}")
     return latest_change > latest_run
 

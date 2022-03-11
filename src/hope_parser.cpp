@@ -213,9 +213,9 @@ Parser::ParseNode Parser::algStatement() noexcept{
     if(!peek(LEFTPAREN) & !peek(LEFTBRACE))
         return parse_tree.addUnary(OP_PROTOTYPE_ALG, id);
 
-    ParseNode captures = match(LEFTBRACE) ? captureList() : ParseTree::EMPTY;
+    ParseNode val_captures = match(LEFTBRACE) ? captureList() : ParseTree::EMPTY;
 
-    ParseNode referenced_upvalues = ParseTree::EMPTY;
+    ParseNode ref_upvalues = ParseTree::EMPTY;
 
     consume(LEFTPAREN);
     ParseNode params = paramList();
@@ -227,11 +227,11 @@ Parser::ParseNode Parser::algStatement() noexcept{
 
     return parse_tree.addPentary(
                 OP_ALGORITHM,
-                id,
-                captures,
-                referenced_upvalues,
+                val_captures,
+                ref_upvalues,
                 params,
-                body
+                body,
+                id
            );
 }
 
