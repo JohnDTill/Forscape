@@ -301,39 +301,10 @@ void SymbolTableBuilder::resolveReference(ParseNode pn){
             return;
         }else if(allow_imp_mult){
             if(parse_tree.getOp(pn) == OP_IDENTIFIER){
-                Typeset::Marker left = parse_tree.getLeft(pn);
+                const Typeset::Marker left = parse_tree.getLeft(pn);
                 const Typeset::Marker right = parse_tree.getRight(pn);
-                if(left.phrase() != right.phrase()){
-                    errors.push_back(Error(c, BAD_READ));
-                    return;
-                }
-                Typeset::Marker m = left;
-                while(m != right){
-                    m.incrementGrapheme();
-                    auto lookup = map.find(Typeset::Selection(left, m));
-                    if(lookup == map.end()){
-                        errors.push_back(Error(c, BAD_READ));
-                        return;
-                    }
-                    left = m;
-                }
-
-                ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_IMPLICIT_MULTIPLY);
-                left = parse_tree.getLeft(pn);
-                m = left;
-                while(m != right){
-                    m.incrementGrapheme();
-                    Typeset::Selection sel(left, m);
-                    auto lookup = map.find(sel);
-                    ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
-                    resolveReference(pn, sel, lookup->second);
-                    builder.addNaryChild(pn);
-                    left = m;
-                }
-                ParseNode mult = builder.finalize();
-
-                parse_tree.setFlag(pn, mult);
-                parse_tree.setOp(pn, OP_PROXY);
+                if(parse_tree.getNumArgs(pn) == 0) resolveIdMult(pn, left, right);
+                else resolveScriptMult(pn, left, right);
             }
         }else{
             errors.push_back(Error(c, BAD_READ));
@@ -353,6 +324,89 @@ void SymbolTableBuilder::resolveReference(ParseNode pn, const Typeset::Selection
     sym.is_closure_nested |= sym.declaration_closure_depth && (closure_depth != sym.declaration_closure_depth);
 
     symbol_table.usages.push_back(Usage(sym_id, pn, READ));
+}
+
+void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right){
+    Typeset::Marker m = left;
+    while(m != right){
+        m.incrementGrapheme();
+        if(m.index == m.text->size()) m = right;
+
+        auto lookup = map.find(Typeset::Selection(left, m));
+        if(lookup == map.end()){
+            errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
+            return;
+        }
+        left = m;
+    }
+
+    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_IMPLICIT_MULTIPLY);
+    left = parse_tree.getLeft(pn);
+    m = left;
+    while(m != right){
+        m.incrementGrapheme();
+        if(m.index == m.text->size()) m = right;
+
+        Typeset::Selection sel(left, m);
+        auto lookup = map.find(sel);
+        ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
+        resolveReference(pn, sel, lookup->second);
+        builder.addNaryChild(pn);
+        left = m;
+    }
+    ParseNode mult = builder.finalize();
+
+    parse_tree.setFlag(pn, mult);
+    parse_tree.setOp(pn, OP_PROXY);
+}
+
+void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right){
+    assert(left.text != right.text);
+
+    Typeset::Marker m = left;
+    Typeset::Marker end(m.text, m.text->size());
+    Typeset::Marker new_right = end;
+    end.decrementGrapheme();
+    if(left == end){
+        errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
+        return;
+    }
+
+    while(m != end){
+        m.incrementGrapheme();
+        auto lookup = map.find(Typeset::Selection(left, m));
+        if(lookup == map.end()){
+            errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
+            return;
+        }
+        left = m;
+    }
+
+    ParseNode new_id = parse_tree.addTerminal(OP_IDENTIFIER, Typeset::Selection(end, new_right));
+    ParseTree::NaryBuilder script_builder = parse_tree.naryBuilder(parse_tree.getOp(pn));
+    script_builder.addNaryChild(new_id);
+    for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++)
+        script_builder.addNaryChild(parse_tree.arg(pn, i));
+    ParseNode script = script_builder.finalize(Typeset::Selection(end, right));
+    resolveExpr(script);
+
+    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_IMPLICIT_MULTIPLY);
+    left = parse_tree.getLeft(pn);
+    m = left;
+    while(m != end){
+        m.incrementGrapheme();
+        Typeset::Selection sel(left, m);
+        auto lookup = map.find(sel);
+        ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
+        resolveReference(pn, sel, lookup->second);
+        builder.addNaryChild(pn);
+        left = m;
+    }
+    builder.addNaryChild(script);
+    ParseNode mult = builder.finalize();
+
+    parse_tree.setFlag(pn, mult);
+    parse_tree.setOp(pn, OP_PROXY);
 }
 
 void SymbolTableBuilder::resolveConditional1(const Typeset::Selection& name, ParseNode pn){
@@ -515,7 +569,7 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn){
     if(map.find(id_sel) == map.end() ||
             (parse_tree.getOp(rhs) == OP_IDENTIFIER && map.find(rhs_sel) == map.end())){
         parse_tree.setOp(pn, OP_IDENTIFIER);
-        resolveReference(pn);
+        resolveReference<true>(pn);
     }else{
         resolveDefault(pn);
     }

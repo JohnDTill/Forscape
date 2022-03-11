@@ -57,6 +57,8 @@ private:
     bool resolvePotentialIdSub(ParseNode pn);
     template <bool allow_imp_mult = false> void resolveReference(ParseNode pn);
     void resolveReference(ParseNode pn, const Typeset::Selection& c, size_t sym_id);
+    void resolveIdMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right);
+    void resolveScriptMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right);
     void resolveConditional1(const Typeset::Selection& name, ParseNode pn);
     void resolveConditional2(ParseNode pn);
     void resolveFor(ParseNode pn);

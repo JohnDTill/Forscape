@@ -5,4 +5,8 @@ print(z, "\n")
 a = 1
 b = 2
 ab = 3
-print(ab)
+print(ab, "\n")
+x* = 2
+xr = 3
+print(abx*a, "\n")
+print(abxra)
