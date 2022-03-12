@@ -549,13 +549,15 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn){
     ParseNode id = parse_tree.lhs(pn);
     ParseNode rhs = parse_tree.rhs(pn);
 
-    if(parse_tree.getOp(id) != OP_IDENTIFIER ||
-       (parse_tree.getOp(rhs) != OP_IDENTIFIER && parse_tree.getOp(rhs) != OP_INTEGER_LITERAL) ||
-       (declared(id) && (parse_tree.getOp(rhs) != OP_IDENTIFIER || !declared(rhs)))){
-        resolveDefault(pn);
-    }else{
+    bool lhs_type_eligible = (parse_tree.getOp(id) == OP_IDENTIFIER);
+    bool rhs_type_eligible = (parse_tree.getOp(rhs) == OP_IDENTIFIER || parse_tree.getOp(rhs) == OP_INTEGER_LITERAL);
+    #define UNDECLARED_ELEMS (!declared(id) || (parse_tree.getOp(rhs) == OP_IDENTIFIER && !declared(rhs)))
+
+    if(lhs_type_eligible && rhs_type_eligible && UNDECLARED_ELEMS){
         parse_tree.setOp(pn, OP_IDENTIFIER);
         resolveReference<true>(pn);
+    }else{
+        resolveDefault(pn);
     }
 }
 
@@ -609,7 +611,7 @@ bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable){
 }
 
 bool SymbolTableBuilder::declared(ParseNode pn) const noexcept{
-    return map.find(parse_tree.getSelection(pn)) == map.end();
+    return map.find(parse_tree.getSelection(pn)) != map.end();
 }
 
 void SymbolTableBuilder::increaseLexicalDepth(const Typeset::Selection& name, const Typeset::Marker& begin){
