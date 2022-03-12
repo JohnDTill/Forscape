@@ -23,6 +23,10 @@ class SymbolTable;
 typedef size_t Type;
 
 class TypeResolver : private std::vector<size_t>{
+
+//DO THIS: avoid collisions with logging macros
+#undef VOID
+
 public:
     typedef size_t ParseNode;
     typedef std::vector<size_t> DeclareSignature;

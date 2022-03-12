@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 
+#include <hope_logging.h>
 #include <typeset_model.h>
 #include <typeset_painter.h>
 #include <typeset_view.h>
@@ -33,26 +34,6 @@
 
 #ifndef NDEBUG
 #include "qgraphvizcall.h"
-#endif
-
-#ifndef NLOGGING
-#include "spdlog/spdlog.h"
-
-inline std::string cStr(const std::string& str){
-    std::string out;
-    out += '"';
-    for(char ch : str){
-        if(ch == '\n'){
-            out += "\\n";
-        }else{
-            if(ch == '"' || ch == '\\') out += '\\';
-            out += ch;
-        }
-    }
-    out += '"';
-
-    return out;
-}
 #endif
 
 #define ACTIVE_FILE "active_file"

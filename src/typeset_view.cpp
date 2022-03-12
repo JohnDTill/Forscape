@@ -1,5 +1,6 @@
 #include <typeset_view.h>
 
+#include <hope_logging.h>
 #include <typeset_command_pair.h>
 #include <typeset_construct.h>
 #include <typeset_line.h>
@@ -17,30 +18,6 @@
 #include <QScrollBar>
 #include <QStyle>
 #include <QTimer>
-
-#ifndef NDEBUG
-#include <iostream>
-#endif
-
-#ifndef NLOGGING
-#include "spdlog/spdlog.h"
-
-inline std::string cStr(const std::string& str){
-    std::string out;
-    out += '"';
-    for(char ch : str){
-        if(ch == '\n'){
-            out += "\\n";
-        }else{
-            if(ch == '"' || ch == '\\') out += '\\';
-            out += ch;
-        }
-    }
-    out += '"';
-
-    return out;
-}
-#endif
 
 static std::chrono::time_point throttle_time =
         std::chrono::steady_clock::time_point{std::chrono::milliseconds{0}};

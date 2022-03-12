@@ -3,6 +3,7 @@
 
 #include "typeset_construct.h"
 
+#include <hope_logging.h>
 #include "typeset_command.h"
 #include "typeset_controller.h"
 #include "typeset_model.h"
@@ -145,11 +146,13 @@ public:
                 : cases(cases), row(row){
 
                 if(is_insert){
+                    spdlog::info("insertRow({:d})", row);
                     first = new Subphrase;
                     first->setParent(&cases);
                     second = new Subphrase;
                     second->setParent(&cases);
                 }else{
+                    spdlog::info("removeRow({:d})", row);
                     first = cases.arg(2*row);
                     second = cases.arg(2*row+1);
                 }

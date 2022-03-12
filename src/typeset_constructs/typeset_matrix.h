@@ -1,6 +1,7 @@
 #ifndef TYPESET_MATRIX_H
 #define TYPESET_MATRIX_H
 
+#include <hope_logging.h>
 #include "typeset_command.h"
 #include "typeset_construct.h"
 #include "typeset_controller.h"
@@ -225,11 +226,13 @@ public:
                 : mat(mat), row(row){
 
                 if(is_insert){
+                    spdlog::info("insertRow({:d})", row);
                     for(size_t i = 0; i < mat.cols; i++){
                         data.push_back( new Subphrase );
                         data.back()->setParent(&mat);
                     }
                 }else{
+                    spdlog::info("deleteRow({:d})", row);
                     for(size_t i = 0; i < mat.cols; i++){
                         data.push_back( mat.arg(mat.cols*row+i) );
                     }
@@ -277,11 +280,13 @@ public:
             : mat(mat), col(col){
 
             if(is_insert){
+                spdlog::info("insertCol({:d})", col);
                 for(size_t i = 0; i < mat.rows; i++){
                     data.push_back( new Subphrase );
                     data.back()->setParent(&mat);
                 }
             }else{
+                spdlog::info("deleteCol({:d})", col);
                 for(size_t i = 0; i < mat.rows; i++){
                     data.push_back( mat.arg(i*mat.cols + col) );
                 }

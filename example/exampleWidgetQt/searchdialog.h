@@ -4,8 +4,6 @@
 #include <QDialog>
 #include <typeset_selection.h>
 
-//DO THIS: fix "replace" logging (and find?)
-
 namespace Ui {
 class SearchDialog;
 }
@@ -38,7 +36,13 @@ private slots:
     void on_findAllButton_clicked();
 
 private:
+    std::string searchStr() const;
+    std::string replaceStr() const;
+    void goToNext();
     void populateHits();
+    void populateHits(const std::string& str);
+    void replace(const std::string& str);
+    void replaceAll(const std::string& str);
 
     Ui::SearchDialog* ui;
     Typeset::View* in;

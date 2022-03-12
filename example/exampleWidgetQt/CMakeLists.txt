@@ -134,6 +134,7 @@ set(PROJECT_SOURCES
     ${INCLUDE}/hope_error.h
     ${SRC}/hope_interpreter.cpp
     ${SRC}/hope_interpreter.h
+    ${INCLUDE}/hope_logging.h
     ${SRC}/hope_parse_tree.cpp
     ${SRC}/hope_parse_tree.h
     ${SRC}/hope_parser.cpp
