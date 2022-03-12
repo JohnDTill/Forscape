@@ -220,8 +220,7 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
     for(size_t i = 0; i < num_subscripts; i++){
         ParseNode sub = parse_tree.arg(lhs, i+1);
         Op type = parse_tree.getOp(sub);
-        const Typeset::Selection& sel = parse_tree.getSelection(sub);
-        if(type == OP_IDENTIFIER && map.find(sel) == map.end()){
+        if(type == OP_IDENTIFIER && !declared(sub)){
             undefined_vars.push_back(sub);
         }else{
             only_trivial_slice &= (type == OP_SLICE) && parse_tree.getNumArgs(sub) == 1;
@@ -271,16 +270,9 @@ bool SymbolTableBuilder::resolvePotentialIdSub(ParseNode pn){
     ParseNode sub = parse_tree.rhs(pn);
 
     if(parse_tree.getOp(id) != OP_IDENTIFIER ||
-            (parse_tree.getOp(sub) != OP_IDENTIFIER && parse_tree.getOp(sub) != OP_INTEGER_LITERAL))
+       (parse_tree.getOp(sub) != OP_IDENTIFIER && parse_tree.getOp(sub) != OP_INTEGER_LITERAL) ||
+       (declared(id) && declared(sub)))
         return false;
-
-    const Typeset::Selection& id_sel = parse_tree.getSelection(id);
-    const Typeset::Selection& id_sub = parse_tree.getSelection(sub);
-
-    auto lookup_id = map.find(id_sel);
-    auto lookup_sub = map.find(id_sub);
-
-    if(lookup_id != map.end() && lookup_sub != map.end()) return false;
 
     parse_tree.setOp(pn, OP_IDENTIFIER);
 
@@ -558,20 +550,12 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn){
     ParseNode rhs = parse_tree.rhs(pn);
 
     if(parse_tree.getOp(id) != OP_IDENTIFIER ||
-            (parse_tree.getOp(rhs) != OP_IDENTIFIER && parse_tree.getOp(rhs) != OP_INTEGER_LITERAL)){
+       (parse_tree.getOp(rhs) != OP_IDENTIFIER && parse_tree.getOp(rhs) != OP_INTEGER_LITERAL) ||
+       (declared(id) && (parse_tree.getOp(rhs) != OP_IDENTIFIER || !declared(rhs)))){
         resolveDefault(pn);
-        return;
-    }
-
-    const Typeset::Selection& id_sel = parse_tree.getSelection(id);
-    const Typeset::Selection& rhs_sel = parse_tree.getSelection(rhs);
-
-    if(map.find(id_sel) == map.end() ||
-            (parse_tree.getOp(rhs) == OP_IDENTIFIER && map.find(rhs_sel) == map.end())){
+    }else{
         parse_tree.setOp(pn, OP_IDENTIFIER);
         resolveReference<true>(pn);
-    }else{
-        resolveDefault(pn);
     }
 }
 
@@ -624,6 +608,10 @@ bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable){
     return true;
 }
 
+bool SymbolTableBuilder::declared(ParseNode pn) const noexcept{
+    return map.find(parse_tree.getSelection(pn)) == map.end();
+}
+
 void SymbolTableBuilder::increaseLexicalDepth(const Typeset::Selection& name, const Typeset::Marker& begin){
     lexical_depth++;
     addScope(name, begin);
@@ -638,11 +626,10 @@ void SymbolTableBuilder::decreaseLexicalDepth(const Typeset::Marker& end){
             Symbol& sym = symbol_table.symbols[sym_id];
             assert(sym.declaration_lexical_depth == lexical_depth);
 
-            if(sym.shadowed_var == NONE){
+            if(sym.shadowed_var == NONE)
                 map.erase(sym.sel(parse_tree)); //Much better to erase empty entries than check for them
-            }else{
+            else
                 map[sym.sel(parse_tree)] = sym.shadowed_var;
-            }
         }
     }
 

@@ -41,7 +41,7 @@ void Interpreter::stop(){
 }
 
 void Interpreter::reset() noexcept {
-    error_code = NO_ERROR;
+    error_code = NO_ERROR_FOUND;
     error_node = ParseTree::EMPTY;
     directive = RUN;
     status = NORMAL;

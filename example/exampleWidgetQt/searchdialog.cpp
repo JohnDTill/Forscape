@@ -65,7 +65,7 @@ void SearchDialog::on_replaceAllButton_clicked(){
     QString replace_word = ui->replaceEdit->text();
     std::string replace = replace_word.toStdString();
 
-    in->rename(hits, replace);
+    in->replaceAll(hits, replace);
     hits.clear();
 }
 

@@ -35,6 +35,26 @@
 #include "qgraphvizcall.h"
 #endif
 
+#ifndef NLOGGING
+#include "spdlog/spdlog.h"
+
+inline std::string cStr(const std::string& str){
+    std::string out;
+    out += '"';
+    for(char ch : str){
+        if(ch == '\n'){
+            out += "\\n";
+        }else{
+            if(ch == '"' || ch == '\\') out += '\\';
+            out += ch;
+        }
+    }
+    out += '"';
+
+    return out;
+}
+#endif
+
 #define ACTIVE_FILE "active_file"
 #define ZOOM_EDITOR "editor_zoom"
 #define ZOOM_CONSOLE "console_zoom"
@@ -243,6 +263,8 @@ bool MainWindow::isSavedDeepComparison() const{
 }
 
 void MainWindow::run(){
+    spdlog::info("run()");
+
     if(!editor->isEnabled()) return;
 
     console->setModel(Typeset::Model::fromSerial("", true));
@@ -264,6 +286,8 @@ void MainWindow::run(){
 }
 
 void MainWindow::stop(){
+    spdlog::info("stop() //Note: potential for non-repeatable timing dependent behaviour.");
+
     if(editor->isEnabled()) return;
     editor->getModel()->stop();
     if(editor_had_focus) editor->setFocus();
@@ -293,7 +317,7 @@ void MainWindow::pollInterpreterThread(){
     if(interpreter.status == Hope::Code::Interpreter::FINISHED){
         auto output = console->getModel();
         switch(interpreter.error_code){
-            case Hope::Code::NO_ERROR: break;
+            case Hope::Code::NO_ERROR_FOUND: break;
             case Hope::Code::USER_STOP:
                 console->getController().insertSerial("\nScript terminated by user");
                 console->updateModel();
@@ -320,6 +344,7 @@ void MainWindow::pollInterpreterThread(){
 
 void MainWindow::parseTree(){
     #ifndef NDEBUG
+    spdlog::info("parseTree()");
     QString dot_src = QString::fromStdString(editor->getModel()->parseTreeDot());
     dot_src.replace("\\n", "\\\\n");
     QGraphvizCall::show(dot_src);
@@ -328,6 +353,7 @@ void MainWindow::parseTree(){
 
 void MainWindow::symbolTable(){
     #ifndef NDEBUG
+    spdlog::info("symbolTable()");
     Typeset::Model* m = editor->getModel();
     SymbolTreeView* view = new SymbolTreeView(m->symbol_builder.symbol_table, m->type_resolver);
     view->show();
@@ -339,6 +365,7 @@ void MainWindow::github(){
 }
 
 void MainWindow::on_actionNew_triggered(){
+    spdlog::info("on_actionNew_triggered()");
     if(!editor->isEnabled()) return;
     editor->setFromSerial("");
     setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
@@ -389,6 +416,8 @@ bool MainWindow::savePrompt(){
 }
 
 bool MainWindow::saveAs(QString path){
+    spdlog::info("saveAs({:s})", cStr(path.toStdString()));
+
     if(!editor->isEnabled()) return false;
 
     QFile file(path);
@@ -418,6 +447,8 @@ bool MainWindow::saveAs(QString path){
 }
 
 void MainWindow::open(QString path){
+    spdlog::info("//open({:s})", cStr(path.toStdString()));
+
     QFile file(path);
 
     if(!file.open(QIODevice::ReadOnly | QIODevice::Text)){
@@ -433,6 +464,7 @@ void MainWindow::open(QString path){
     #endif
 
     std::string src = in.readAll().toStdString();
+    spdlog::info("editor->setFromSerial({:s})", cStr(src));
     if(!Hope::isValidSerial(src)){
         QMessageBox messageBox;
         messageBox.critical(nullptr, "Error", "\"" + path + "\" is corrupted.");
@@ -513,7 +545,7 @@ void MainWindow::on_actionPaste_triggered(){
 void MainWindow::on_actionDelete_triggered(){
     if(!editor->isEnabled()) return;
 
-    editor->getController().del();
+    editor->del();
     editor->updateModel();
 }
 
@@ -562,7 +594,7 @@ void MainWindow::on_actionShow_line_numbers_toggled(bool checked){
 void MainWindow::insertFlatText(const QString &str){
     if(!editor->isEnabled()) return;
 
-    editor->getController().insertText(str.toStdString());
+    editor->insertText(str.toStdString());
     editor->update();
 
     onTextChanged();
@@ -571,7 +603,7 @@ void MainWindow::insertFlatText(const QString &str){
 void MainWindow::insertSerial(const QString& str){
     if(!editor->isEnabled()) return;
 
-    editor->getController().insertSerial(str.toStdString());
+    editor->insertSerial(str.toStdString());
     editor->update();
 
     onTextChanged();
@@ -581,7 +613,7 @@ void MainWindow::insertSerialSelection(const QString& A, const QString& B){
     if(!editor->isEnabled()) return;
 
     Typeset::Controller& c = editor->getController();
-    c.insertSerial(A.toStdString() + c.selectedText() + B.toStdString());
+    editor->insertSerial(A.toStdString() + c.selectedText() + B.toStdString());
     editor->update();
 
     onTextChanged();
@@ -621,6 +653,8 @@ void MainWindow::on_actionTeX_triggered(){
 }
 
 void MainWindow::on_actionUnicode_triggered(){
+    spdlog::info("on_actionUnicode_triggered()");
+
     std::string str = editor->getController().selectedText();
     if(UnicodeConverter::canConvert(str)){
         std::string uni = UnicodeConverter::convert(str);

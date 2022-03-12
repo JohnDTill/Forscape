@@ -4,6 +4,8 @@
 #include <QDialog>
 #include <typeset_selection.h>
 
+//DO THIS: fix "replace" logging (and find?)
+
 namespace Ui {
 class SearchDialog;
 }
@@ -32,8 +34,7 @@ private slots:
     void on_replaceAllButton_clicked();
     void on_findPrevButton_clicked();
     void on_replaceButton_clicked();
-    void on_findEdit_textChanged(const QString &arg1);
-
+    void on_findEdit_textChanged(const QString& arg1);
     void on_findAllButton_clicked();
 
 private:

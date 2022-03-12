@@ -41,7 +41,7 @@ public:
 
     //These can be read from outside the interpreter
     Status status = NORMAL;
-    ErrorCode error_code = NO_ERROR;
+    ErrorCode error_code = NO_ERROR_FOUND;
     ParseNode error_node = ParseTree::EMPTY;
 
     void run(const ParseTree& parse_tree, SymbolTable symbol_table);
