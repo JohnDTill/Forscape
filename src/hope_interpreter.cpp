@@ -50,18 +50,18 @@ void Interpreter::reset() noexcept {
 }
 
 Value Interpreter::error(ErrorCode code, ParseNode pn) noexcept {
-    if(status < ERROR){
+    if(status < RUNTIME_ERROR){
         directive = STOP;
         error_code = code;
         error_node = pn;
     }
-    status = ERROR;
+    status = RUNTIME_ERROR;
 
     return NIL;
 }
 
 void Interpreter::interpretStmt(ParseNode pn){
-    if(directive == STOP) status = ERROR;
+    if(directive == STOP) status = RUNTIME_ERROR;
 
     switch (parse_tree.getOp(pn)) {
         case OP_EQUAL: assignStmt(pn); break;
@@ -305,7 +305,7 @@ Value Interpreter::big(ParseNode pn, Op type){
     }
 
     Value v = interpretExpr(body);
-    while(++start < final && status < ERROR){
+    while(++start < final && status < RUNTIME_ERROR){
         std::get<double>(stack.back()) += 1;
         v = binaryDispatch(type, v, interpretExpr(body), pn);
     }
@@ -316,7 +316,7 @@ Value Interpreter::big(ParseNode pn, Op type){
 }
 
 Value Interpreter::cases(ParseNode pn){
-    for(size_t i = 0; i < parse_tree.getNumArgs(pn) && status < ERROR; i+=2)
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn) && status < RUNTIME_ERROR; i+=2)
         if(evaluateCondition(parse_tree.arg(pn, i+1)))
             return interpretExpr(parse_tree.arg(pn, i));
 
@@ -921,8 +921,8 @@ void Interpreter::printNode(const ParseNode& pn){
             str += MATRIX;
             str += mat.rows();
             str += mat.cols();
-            for(size_t i = 0; i < mat.rows(); i++)
-                for(size_t j = 0; j < mat.cols(); j++)
+            for(Eigen::Index i = 0; i < mat.rows(); i++)
+                for(Eigen::Index j = 0; j < mat.cols(); j++)
                     str += formatted(mat(i,j)) + CLOSE;
             break;
         }

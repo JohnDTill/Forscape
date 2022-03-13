@@ -104,8 +104,8 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
         case OP_RETURN_EMPTY:{
             assert(!return_types.empty());
             if(return_types.top() == UNINITIALISED){
-                return_types.top() = VOID;
-            }else if(return_types.top() != VOID){
+                return_types.top() = VOID_TYPE;
+            }else if(return_types.top() != VOID_TYPE){
                 error(pn);
             }
             break;
@@ -641,7 +641,7 @@ Type TypeResolver::instantiate(const CallSignature& fn){
         return_types.push(UNINITIALISED);
         resolveStmt(body);
         return_type = return_types.top();
-        if(return_type == UNINITIALISED) return_type = VOID; //Function with no return statement
+        if(return_type == UNINITIALISED) return_type = VOID_TYPE; //Function with no return statement
         return_types.pop();
     }else{
         return_type = resolveExpr(body);
@@ -658,7 +658,7 @@ Type TypeResolver::instantiate(const CallSignature& fn){
                 return_types.push(UNINITIALISED);
                 resolveStmt(body);
                 return_type = return_types.top();
-                if(return_type == UNINITIALISED) return_type = VOID; //Function with no return statement
+                if(return_type == UNINITIALISED) return_type = VOID_TYPE; //Function with no return statement
                 return_types.pop();
             }else{
                 return_type = resolveExpr(body);

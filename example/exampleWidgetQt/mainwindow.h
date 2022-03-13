@@ -73,6 +73,8 @@ private slots:
     void on_actionShow_typesetting_toolbar_toggled(bool show);
     void checkForChanges();
 
+    void on_actionSee_log_triggered();
+
 protected:
     virtual void closeEvent(QCloseEvent* event) override;
 

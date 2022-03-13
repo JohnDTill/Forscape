@@ -61,6 +61,7 @@
     </property>
     <addaction name="actionRun"/>
     <addaction name="actionStop"/>
+    <addaction name="actionSee_log"/>
    </widget>
    <widget class="QMenu" name="menuWindow">
     <property name="title">
@@ -265,6 +266,11 @@
    </property>
    <property name="text">
     <string>Show typesetting toolbar</string>
+   </property>
+  </action>
+  <action name="actionSee_log">
+   <property name="text">
+    <string>Open log</string>
    </property>
   </action>
  </widget>

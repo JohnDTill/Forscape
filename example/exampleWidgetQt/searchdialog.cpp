@@ -32,14 +32,14 @@ SearchDialog::~SearchDialog(){
 }
 
 void SearchDialog::on_closeButton_clicked(){
-    spdlog::info("on_closeButton_clicked()");
+    logger->info("on_closeButton_clicked()");
 
     accept();
 }
 
 
 void SearchDialog::on_findNextButton_clicked(){
-    spdlog::info("on_findNextButton_clicked()");
+    logger->info("on_findNextButton_clicked()");
 
     if(!hits.empty()){
         index++;
@@ -53,7 +53,7 @@ void SearchDialog::on_findNextButton_clicked(){
 
 
 void SearchDialog::on_findPrevButton_clicked(){
-    spdlog::info("on_findPrevButton_clicked()");
+    logger->info("on_findPrevButton_clicked()");
     goToNext();
 }
 
@@ -70,7 +70,7 @@ void SearchDialog::populateHits(){
 }
 
 void SearchDialog::populateHits(const std::string& str){
-    spdlog::info("populateHits({:s})", cStr(str));
+    logger->info("populateHits({:s})", cStr(str));
 
     if(str.empty()){
         hits.clear();
@@ -84,7 +84,7 @@ void SearchDialog::populateHits(const std::string& str){
 }
 
 void SearchDialog::replace(const std::string& str){
-    spdlog::info("replace({:s})", cStr(str));
+    logger->info("replace({:s})", cStr(str));
 
     if(index >= hits.size()) index = 0;
 
@@ -97,7 +97,7 @@ void SearchDialog::replace(const std::string& str){
 }
 
 void SearchDialog::replaceAll(const std::string& str){
-    spdlog::info("replaceAll({:s})", cStr(str));
+    logger->info("replaceAll({:s})", cStr(str));
 
     in->replaceAll(hits, str);
     hits.clear();
@@ -111,7 +111,7 @@ void SearchDialog::on_findEdit_textChanged(const QString&){
 
 
 void SearchDialog::on_findAllButton_clicked(){
-    spdlog::info("on_findAllButton_clicked()");
+    logger->info("on_findAllButton_clicked()");
 
     out->setFromSerial("");
     std::string search_str = searchStr();

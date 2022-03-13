@@ -35,7 +35,7 @@ public:
         CONTINUE = 1,
         BREAK = 3,
         RETURN = 7,
-        ERROR = 15,
+        RUNTIME_ERROR = 15,
         FINISHED = std::numeric_limits<size_t>::max(),
     };
 

@@ -422,8 +422,8 @@ ParseNode Parser::primary() noexcept{
         //Value literal
         case INFTY: return terminalAndAdvance(OP_INFTY);
         case EMPTYSET: return terminalAndAdvance(OP_EMPTY_SET);
-        case TRUE: return terminalAndAdvance(OP_TRUE);
-        case FALSE: return terminalAndAdvance(OP_FALSE);
+        case TRUELITERAL: return terminalAndAdvance(OP_TRUE);
+        case FALSELITERAL: return terminalAndAdvance(OP_FALSE);
         case STRING: return terminalAndAdvance(OP_STRING);
         case GRAVITY: return terminalAndAdvance(OP_GRAVITY);
 
@@ -1106,7 +1106,7 @@ ParseNode Parser::error(ErrorCode code){
 
 Parser::ParseNode Parser::error(ErrorCode code, const Typeset::Selection& c){
     if(noErrors()){
-        error_node = parse_tree.addTerminal(ERROR, c);
+        error_node = parse_tree.addTerminal(SCANNER_ERROR, c);
         errors.push_back(Error(c, code));
     }
 

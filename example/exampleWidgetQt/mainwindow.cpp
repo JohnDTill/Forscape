@@ -244,7 +244,7 @@ bool MainWindow::isSavedDeepComparison() const{
 }
 
 void MainWindow::run(){
-    spdlog::info("run()");
+    logger->info("run()");
 
     if(!editor->isEnabled()) return;
 
@@ -267,7 +267,7 @@ void MainWindow::run(){
 }
 
 void MainWindow::stop(){
-    spdlog::info("stop() //Note: potential for non-repeatable timing dependent behaviour.");
+    logger->info("stop() //Note: potential for non-repeatable timing dependent behaviour.");
 
     if(editor->isEnabled()) return;
     editor->getModel()->stop();
@@ -325,7 +325,7 @@ void MainWindow::pollInterpreterThread(){
 
 void MainWindow::parseTree(){
     #ifndef NDEBUG
-    spdlog::info("parseTree()");
+    logger->info("parseTree()");
     QString dot_src = QString::fromStdString(editor->getModel()->parseTreeDot());
     dot_src.replace("\\n", "\\\\n");
     QGraphvizCall::show(dot_src);
@@ -334,7 +334,7 @@ void MainWindow::parseTree(){
 
 void MainWindow::symbolTable(){
     #ifndef NDEBUG
-    spdlog::info("symbolTable()");
+    logger->info("symbolTable()");
     Typeset::Model* m = editor->getModel();
     SymbolTreeView* view = new SymbolTreeView(m->symbol_builder.symbol_table, m->type_resolver);
     view->show();
@@ -346,7 +346,7 @@ void MainWindow::github(){
 }
 
 void MainWindow::on_actionNew_triggered(){
-    spdlog::info("on_actionNew_triggered()");
+    logger->info("on_actionNew_triggered()");
     if(!editor->isEnabled()) return;
     editor->setFromSerial("");
     setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
@@ -397,7 +397,7 @@ bool MainWindow::savePrompt(){
 }
 
 bool MainWindow::saveAs(QString path){
-    spdlog::info("saveAs({:s})", cStr(path.toStdString()));
+    logger->info("saveAs({:s})", cStr(path.toStdString()));
 
     if(!editor->isEnabled()) return false;
 
@@ -428,7 +428,7 @@ bool MainWindow::saveAs(QString path){
 }
 
 void MainWindow::open(QString path){
-    spdlog::info("//open({:s})", cStr(path.toStdString()));
+    logger->info("//open({:s})", cStr(path.toStdString()));
 
     QFile file(path);
 
@@ -445,7 +445,7 @@ void MainWindow::open(QString path){
     #endif
 
     std::string src = in.readAll().toStdString();
-    spdlog::info("editor->setFromSerial({:s})", cStr(src));
+    logger->info("editor->setFromSerial({:s})", cStr(src));
     if(!Hope::isValidSerial(src)){
         QMessageBox messageBox;
         messageBox.critical(nullptr, "Error", "\"" + path + "\" is corrupted.");
@@ -472,7 +472,6 @@ QString MainWindow::getLastDir(){
     return QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
 }
 
-
 void MainWindow::on_actionFind_Replace_triggered(){
     if(!editor->isEnabled()) return;
 
@@ -482,7 +481,6 @@ void MainWindow::on_actionFind_Replace_triggered(){
     search.exec();
 }
 
-
 void MainWindow::on_actionUndo_triggered(){
     if(!editor->isEnabled()) return;
 
@@ -490,14 +488,12 @@ void MainWindow::on_actionUndo_triggered(){
     editor->updateModel();
 }
 
-
 void MainWindow::on_actionRedo_triggered(){
     if(!editor->isEnabled()) return;
 
     editor->redo();
     editor->updateModel();
 }
-
 
 void MainWindow::on_actionCut_triggered(){
     if(!editor->isEnabled()) return;
@@ -530,7 +526,6 @@ void MainWindow::on_actionDelete_triggered(){
     editor->updateModel();
 }
 
-
 void MainWindow::on_actionSelect_all_triggered(){
     if(!editor->isEnabled()) return;
 
@@ -538,11 +533,9 @@ void MainWindow::on_actionSelect_all_triggered(){
     editor->updateModel();
 }
 
-
 void MainWindow::on_actionRun_triggered(){
     run();
 }
-
 
 void MainWindow::on_actionZoom_in_triggered(){
     editor->zoomIn();
@@ -551,7 +544,6 @@ void MainWindow::on_actionZoom_in_triggered(){
     console->update();
 }
 
-
 void MainWindow::on_actionZoom_out_triggered(){
     editor->zoomOut();
     console->zoomOut();
@@ -559,14 +551,12 @@ void MainWindow::on_actionZoom_out_triggered(){
     console->update();
 }
 
-
 void MainWindow::on_actionReset_zoom_triggered(){
     editor->resetZoom();
     console->resetZoom();
     editor->update();
     console->update();
 }
-
 
 void MainWindow::on_actionShow_line_numbers_toggled(bool checked){
     editor->setLineNumbersVisible(checked);
@@ -634,7 +624,7 @@ void MainWindow::on_actionTeX_triggered(){
 }
 
 void MainWindow::on_actionUnicode_triggered(){
-    spdlog::info("on_actionUnicode_triggered()");
+    logger->info("on_actionUnicode_triggered()");
 
     std::string str = editor->getController().selectedText();
     if(UnicodeConverter::canConvert(str)){
@@ -706,3 +696,6 @@ void MainWindow::checkForChanges(){
     else onTextChanged();
 }
 
+void MainWindow::on_actionSee_log_triggered(){
+    openLogFile();
+}

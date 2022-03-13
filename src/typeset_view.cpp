@@ -148,7 +148,7 @@ void View::runThread(View* console){
 }
 
 void View::setLineNumbersVisible(bool show){
-    spdlog::info("setLineNumbersVisible({})", show);
+    logger->info("setLineNumbersVisible({})", show);
 
     if(show_line_nums == show) return;
     show_line_nums = show;
@@ -182,12 +182,12 @@ void View::dispatchClick(double x, double y, int xScreen, int yScreen, bool righ
         resolveTripleClick(y);
         mouse_hold_state = TripleClick;
     }else if(shift_held){
-        spdlog::info("resolveShiftClick({:03.2f}, {:03.2f})", x, y);
+        logger->info("resolveShiftClick({:03.2f}, {:03.2f})", x, y);
         resolveShiftClick(x, y);
     }else if(ALLOW_SELECTION_DRAG && controller.contains(x, y)){
         mouse_hold_state = ClickedOnSelection;
     }else{
-        spdlog::info("click,{:03.2f},{:03.2f}", x, y);
+        logger->info("dispatchClick({:03.2f}, {:03.2f}, {:d}, {:d}, {}, {})", x, y, xScreen, yScreen, right_click, shift_held);
         resolveClick(x, y);
         mouse_hold_state = SingleClick;
     }
@@ -198,7 +198,7 @@ void View::dispatchClick(double x, double y, int xScreen, int yScreen, bool righ
 }
 
 void View::dispatchRelease(double x, double y){
-    spdlog::info("dispatchRelease({:03.2f}, {:03.2f})", x, y);
+    logger->info("dispatchRelease({:03.2f}, {:03.2f})", x, y);
 
     if(mouse_hold_state == ClickedOnSelection)
         resolveClick(x, y);
@@ -211,7 +211,7 @@ void View::dispatchRelease(double x, double y){
 }
 
 void View::dispatchDoubleClick(double x, double y){
-    spdlog::info("dispatchDoubleClick({:03.2f}, {:03.2f})", x, y);
+    logger->info("dispatchDoubleClick({:03.2f}, {:03.2f})", x, y);
 
     if(!isInLineBox(x)){
         resolveWordClick(x, y);
@@ -228,7 +228,7 @@ void View::dispatchHover(double x, double y){
     switch(mouse_hold_state){
         case Hover: resolveTooltip(x, y); break;
         case SingleClick:
-            spdlog::info("dispatchHover({:03.2f}, {:03.2f}) //Drag to select", x, y);
+            logger->info("dispatchHover({:03.2f}, {:03.2f}) //Drag to select", x, y);
             resolveShiftClick(x, y); repaint(); break;
         case DoubleClick: resolveWordDrag(x, y); repaint(); break;
         case TripleClick: resolveLineDrag(y); repaint(); break;
@@ -267,7 +267,7 @@ void View::resolveShiftClick(double x, double y) noexcept{
 }
 
 void View::resolveRightClick(double x, double y, int xScreen, int yScreen){
-    spdlog::info("resolveRightClick({:03.2f}, {:03.2f}, {:d}, {:d})", x, y, xScreen, yScreen);
+    logger->info("resolveRightClick({:03.2f}, {:03.2f}, {:d}, {:d})", x, y, xScreen, yScreen);
 
     QMenu menu;
 
@@ -333,7 +333,7 @@ void View::resolveWordClick(double x, double y){
 }
 
 void View::resolveWordDrag(double x, double y) noexcept{
-    THROTTLE(spdlog::info("resolveWordDrag({:03.2f}, {:03.2f})", x, y);)
+    THROTTLE(logger->info("resolveWordDrag({:03.2f}, {:03.2f})", x, y);)
 
     bool forward = controller.isForward();
 
@@ -361,7 +361,7 @@ void View::resolveWordDrag(double x, double y) noexcept{
 }
 
 void View::resolveTripleClick(double y) noexcept{
-    spdlog::info("resolveTripleClick({:03.2f})", y);
+    logger->info("resolveTripleClick({:03.2f})", y);
 
     Line* l = model->nearestLine(y);
     controller.selectLine(l);
@@ -371,7 +371,7 @@ void View::resolveTripleClick(double y) noexcept{
 }
 
 void View::resolveLineDrag(double y) noexcept{
-    THROTTLE(spdlog::info("resolveLineDrag({:03.2f})", y);)
+    THROTTLE(logger->info("resolveLineDrag({:03.2f})", y);)
 
     Line* active_line = model->nearestLine(y);
     Line* anchor_line = controller.anchorLine();
@@ -393,7 +393,7 @@ void View::resolveTooltip(double x, double y) noexcept{
 
     for(const Code::Error& err : model->errors){
         if(err.selection.containsWithEmptyMargin(x, y)){
-            THROTTLE(spdlog::info("resolveTooltip({:03.2f}, {:03.2f})", x, y);)
+            THROTTLE(logger->info("resolveTooltip({:03.2f}, {:03.2f})", x, y);)
 
             setTooltipError(err.message());
             return;
@@ -409,7 +409,7 @@ void View::resolveTooltip(double x, double y) noexcept{
         //EVENTUALLY enable the assertion when idAt accurately reports identifier
         //assert(lookup != symbol_table.occurence_to_symbol_map.end() || model->errors.size());
         if(lookup != symbol_table.occurence_to_symbol_map.end()){
-            THROTTLE(spdlog::info("resolveTooltip({:03.2f}, {:03.2f})", x, y);)
+            THROTTLE(logger->info("resolveTooltip({:03.2f}, {:03.2f})", x, y);)
 
             const auto& symbol = symbol_table.symbols[lookup->second];
             QString tooltip = "<b>" + QString::fromStdString(c.selectedText()) + "</b> : "
@@ -425,7 +425,7 @@ void View::resolveTooltip(double x, double y) noexcept{
 }
 
 void View::resolveSelectionDrag(double x, double y){
-    spdlog::info("resolveSelectionDrag({:03.2f}, {:03.2f})", x, y);
+    logger->info("resolveSelectionDrag({:03.2f}, {:03.2f})", x, y);
 
     mouse_hold_state = Hover;
 
@@ -472,17 +472,17 @@ double View::yScreen(double yModel) const noexcept{
 }
 
 void View::zoomIn() noexcept{
-    spdlog::info("zoomIn()");
+    logger->info("zoomIn()");
     zoom = std::min(ZOOM_MAX, zoom*ZOOM_DELTA);
 }
 
 void View::zoomOut() noexcept{
-    spdlog::info("zoomOut()");
+    logger->info("zoomOut()");
     zoom = std::max(ZOOM_MIN, zoom/ZOOM_DELTA);
 }
 
 void View::resetZoom() noexcept{
-    spdlog::info("resetZoom()");
+    logger->info("resetZoom()");
     zoom = ZOOM_DEFAULT;
 }
 
@@ -522,12 +522,12 @@ bool View::lineNumbersShown() const noexcept{
 }
 
 void View::insertText(const std::string& str){
-    spdlog::info("insertText({:s})", cStr(str));
+    logger->info("insertText({:s})", cStr(str));
     controller.insertText(str);
 }
 
 void View::insertSerial(const std::string& str){
-    spdlog::info("insertSerial({:s})", cStr(str));
+    logger->info("insertSerial({:s})", cStr(str));
     controller.insertSerial(str);
 }
 
@@ -568,7 +568,7 @@ void View::updateModel() noexcept{
 }
 
 void View::followLink(size_t line_num){
-    spdlog::info("followLink({:d})", line_num);
+    logger->info("followLink({:d})", line_num);
 
     if(line_num > model->lines.size()) return;
     controller.setBothToBackOf(model->lines[line_num]->back());
@@ -688,14 +688,14 @@ void View::onBlink() noexcept{
 }
 
 void View::copy() const{
-    spdlog::info("copy()");
+    logger->info("copy()");
     if(!controller.hasSelection()) return;
     std::string str = controller.selectedText();
     QGuiApplication::clipboard()->setText(QString::fromStdString(str));
 }
 
 void View::cut(){
-    spdlog::info("cut()");
+    logger->info("cut()");
     if(!controller.hasSelection()) return;
     std::string str = controller.selectedText();
     QGuiApplication::clipboard()->setText(QString::fromStdString(str));
@@ -710,7 +710,7 @@ void View::paste(){
 }
 
 void View::del(){
-    spdlog::info("del()");
+    logger->info("del()");
     controller.del();
 }
 
@@ -805,7 +805,7 @@ void View::handleResize(){
 }
 
 void View::handleResize(int w, int h){
-    THROTTLE(spdlog::info("handleResize({:d}, {:d})", w, h);)
+    THROTTLE(logger->info("handleResize({:d}, {:d})", w, h);)
 
     int display_width = w - v_scroll->width();
     int model_display_width = display_width - (getLineboxWidth() + MARGIN_LEFT + MARGIN_RIGHT)*zoom;
@@ -839,13 +839,13 @@ void View::handleResize(int w, int h){
 }
 
 void View::scrollUp(){
-    spdlog::info("scrollUp()");
+    logger->info("scrollUp()");
 
     v_scroll->setValue( v_scroll->value() - v_scroll->pageStep()/10 );
 }
 
 void View::scrollDown(){
-    spdlog::info("scrollDown()");
+    logger->info("scrollDown()");
 
     v_scroll->setValue( v_scroll->value() + v_scroll->pageStep()/10 );
 }
@@ -861,7 +861,7 @@ void View::clearTooltip(){
 }
 
 void View::undo(){
-    spdlog::info("undo()");
+    logger->info("undo()");
 
     model->undo(controller);
     updateHighlighting();
@@ -872,7 +872,7 @@ void View::undo(){
 }
 
 void View::redo(){
-    spdlog::info("redo()");
+    logger->info("redo()");
 
     model->redo(controller);
     updateHighlighting();
@@ -883,7 +883,7 @@ void View::redo(){
 }
 
 void View::selectAll() noexcept{
-    spdlog::info("selectAll()");
+    logger->info("selectAll()");
 
     controller.selectAll();
 }
@@ -906,7 +906,7 @@ void View::rename(){
 }
 
 void View::goToDef(){
-    spdlog::info("goToDef()");
+    logger->info("goToDef()");
 
     Controller c = model->idAt(controller.active);
     assert(c.hasSelection());
@@ -922,7 +922,7 @@ void View::goToDef(){
 }
 
 void View::findUsages(){
-    spdlog::info("findUsages()");
+    logger->info("findUsages()");
 
     assert(console);
 
@@ -963,7 +963,7 @@ void View::handleKey(int key, int modifiers, const std::string& str){
 
     bool hide_recommender = true;
 
-    spdlog::info("handleKey({:d}, {:d}, {:s})", key, modifiers, cStr(str));
+    logger->info("handleKey({:d}, {:d}, {:s})", key, modifiers, cStr(str));
 
     switch (key | modifiers) {
         case Qt::Key_Z|Ctrl: if(allow_write) model->undo(controller); updateXSetpoint(); restartCursorBlink(); break;
@@ -1073,13 +1073,13 @@ void View::handleKey(int key, int modifiers, const std::string& str){
 }
 
 void View::paste(const std::string& str){
-    spdlog::info("paste({:s})", cStr(str));
+    logger->info("paste({:s})", cStr(str));
     model->mutate(controller.getInsertSerial(str), controller);
     emit textChanged();
 }
 
 void View::rename(const std::string& str){
-    spdlog::info("rename({:s})", cStr(str));
+    logger->info("rename({:s})", cStr(str));
 
     Controller c = model->idAt(controller.active);
     assert(c.hasSelection());
@@ -1093,7 +1093,7 @@ void View::rename(const std::string& str){
 }
 
 void View::takeRecommendation(const std::string& str){
-    spdlog::info("takeRecommendation({:s})", cStr(str));
+    logger->info("takeRecommendation({:s})", cStr(str));
 
     controller.selectPrevWord();
     if(str != controller.selectedText())
@@ -1124,7 +1124,7 @@ void View::paintEvent(QPaintEvent* event){
 }
 
 QImage View::toPng() const{
-    spdlog::info("toPng()");
+    logger->info("toPng()");
     return controller.selection().toPng();
 }
 
