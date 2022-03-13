@@ -168,6 +168,7 @@ private:
     void paste(const std::string& str);
     void rename(const std::string& str);
     void takeRecommendation(const std::string& str);
+    std::string_view logPrefix() const noexcept;
 
 public:
     QImage toPng() const;

@@ -13,6 +13,8 @@
 #include <iostream>
 #endif
 
+#define LOG_PREFIX "clickedCases()->"
+
 namespace Hope {
 
 namespace Typeset {
@@ -146,13 +148,13 @@ public:
                 : cases(cases), row(row){
 
                 if(is_insert){
-                    logger->info("insertRow({:d})", row);
+                    logger->info(LOG_PREFIX "insertRow({});", row);
                     first = new Subphrase;
                     first->setParent(&cases);
                     second = new Subphrase;
                     second->setParent(&cases);
                 }else{
-                    logger->info("removeRow({:d})", row);
+                    logger->info(LOG_PREFIX "removeRow({});", row);
                     first = cases.arg(2*row);
                     second = cases.arg(2*row+1);
                 }
