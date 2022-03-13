@@ -22,6 +22,7 @@ public:
     View();
     virtual ~View() override;
     void setFromSerial(const std::string& src);
+    std::string toSerial() const;
     Model* getModel() const noexcept;
     void setModel(Model* m, bool owned = true);
     void runThread(View* output);

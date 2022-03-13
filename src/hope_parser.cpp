@@ -699,11 +699,14 @@ ParseNode Parser::identifier() noexcept{
                 advance();
                 parsing_dims = true;
                 ParseNode dim0 = expression();
-                consume(TIMES);
+                if(!noErrors()) return error_node;
+                if(!match(TIMES)) return error(UNRECOGNIZED_EXPR, Typeset::Selection(rMarkPrev(), rMarkPrev()));
                 ParseNode dim1 = expression();
-                consume(ARGCLOSE);
+                if(!noErrors()) return error_node;
+                if(!match(ARGCLOSE)) return error(UNRECOGNIZED_EXPR, Typeset::Selection(rMarkPrev(), rMarkPrev()));
                 ParseNode elem = expression();
-                consume(ARGCLOSE);
+                if(!noErrors()) return error_node;
+                if(!match(ARGCLOSE)) return error(UNRECOGNIZED_EXPR, Typeset::Selection(rMarkPrev(), rMarkPrev()));
                 ParseNode n = parse_tree.addTernary(OP_UNIT_VECTOR, c, elem, dim0, dim1);
                 parsing_dims = false;
                 return n;
@@ -845,6 +848,11 @@ ParseNode Parser::superscript(const ParseNode& lhs) noexcept{
         case CARET:{
             advance();
             n = parse_tree.addUnary(OP_ACCENT_HAT, c, lhs);
+            break;
+        }
+        case DISJUNCTION:{
+            advance();
+            n = parse_tree.addUnary(OP_BIJECTIVE_MAPPING, c, lhs);
             break;
         }
         default: n = parse_tree.addBinary(OP_POWER, c, lhs, expression());
@@ -991,9 +999,10 @@ Parser::ParseNode Parser::twoDims(Op type) noexcept{
     advance();
     parsing_dims = true;
     ParseNode lhs = expression();
-    consume(TIMES);
+    if(!noErrors()) return error_node;
+    if(!match(TIMES)) return error(ErrorCode::INVALID_ARGS, Typeset::Selection(rMarkPrev(), rMarkPrev()));
     ParseNode pn = parse_tree.addBinary(type, c, lhs, expression());
-    consume(ARGCLOSE);
+    if(!match(ARGCLOSE)) return error(ErrorCode::INVALID_ARGS, Typeset::Selection(rMarkPrev(), rMarkPrev()));
     parsing_dims = false;
 
     return pn;

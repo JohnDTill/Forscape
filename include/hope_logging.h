@@ -36,7 +36,7 @@ inline std::string cStr(const std::string& str){
     std::string out;
     out += '"';
     for(char ch : str){
-        if(ch == '\n'){
+        if(ch == '\n' || ch == '\r'){
             out += "\\n";
         }else{
             if(ch == '"' || ch == '\\') out += '\\';

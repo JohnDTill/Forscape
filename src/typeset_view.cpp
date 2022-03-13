@@ -121,6 +121,10 @@ void View::setFromSerial(const std::string& src){
     repaint();
 }
 
+std::string View::toSerial() const{
+    return model->toSerial();
+}
+
 Model* View::getModel() const noexcept{
     return model;
 }

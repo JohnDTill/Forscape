@@ -203,9 +203,8 @@ MainWindow::MainWindow(QWidget* parent)
     if(settings.contains(WINDOW_GEOMETRY))
         restoreGeometry(settings.value(WINDOW_GEOMETRY).toByteArray());
 
-    if(settings.contains(WINDOW_STATE)){
+    if(settings.contains(WINDOW_STATE))
         restoreState(settings.value(WINDOW_STATE).toByteArray());
-    }
 
     connect(&interpreter_poll_timer, SIGNAL(timeout()), this, SLOT(pollInterpreterThread()));
     connect(editor, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
@@ -423,6 +422,7 @@ bool MainWindow::saveAs(QString path){
     settings.setValue(ACTIVE_FILE, path);
     this->path = path;
     unsaved_changes = false;
+    out.flush();
     write_time = std::filesystem::last_write_time(path.toStdString());
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
 
@@ -665,6 +665,8 @@ void MainWindow::closeEvent(QCloseEvent* event){
             }
         }
     }
+
+    logger->info("assert(editor->toSerial() == {});", cStr(editor->toSerial()));
 
     QMainWindow::closeEvent(event);
 }

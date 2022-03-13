@@ -129,3 +129,4 @@ REDUCED_PLANCK_CONSTANT,,,,1.054571817e-34f,,,,
 STEFAN_BOLTZMANN_CONSTANT,,,,5.670374419e-8f,,,,
 ACCENT_HAT,MatrixXd,,,hat(a),,,,((a.size()!=3) & (a.size() != 6)) | ((a.rows()>1) & (a.cols()>1))=>DIMENSION_MISMATCH
 PROXY,,,,interpretExpr(parse_tree.getFlag(pn)),,,,
+BIJECTIVE_MAPPING,MatrixXd,,,invHat(a),,,,((a.rows()!=3) | (a.cols() != 3)) & ((a.rows() != 4) | (a.cols() != 4))=>DIMENSION_MISMATCH

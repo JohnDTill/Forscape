@@ -956,10 +956,21 @@ Eigen::MatrixXd Interpreter::hat(const Eigen::MatrixXd& a){
                                 { a(2),     0, -a(0)},
                                 {-a(1),  a(0),     0}});
     }else{
+        assert(a.size() == 6);
         return Eigen::MatrixXd({{    0, -a(2),  a(1), a(3)},
                                 { a(2),     0, -a(0), a(4)},
                                 {-a(1),  a(0),     0, a(5)},
                                 {    0,     0,     0,    1}});
+    }
+}
+
+Eigen::MatrixXd Interpreter::invHat(const Eigen::MatrixXd& a){
+    if(a.size() == 9){
+        assert(a.rows() == 3);
+        return Eigen::Vector3d(a(2,1), a(0,2), a(1,0));
+    }else{
+        assert(a.rows() == 4 && a.cols() == 4);
+        return Eigen::Matrix<double, 6, 1>(a(2,1), a(0,2), a(1,0), a(0,3), a(1,3), a(2,3));
     }
 }
 
