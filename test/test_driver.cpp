@@ -6,6 +6,7 @@
 #include "typeset_loadsave.h"
 #include "typeset_mutability.h"
 #include "hope_benchmark.h"
+#include <hope_logging.h>
 
 #ifdef TEST_QT
 #include <QApplication>
@@ -19,6 +20,9 @@ int main(int argc, char* argv[]){
     QApplication::processEvents();
     Typeset::Painter::init();
     #endif
+
+    Hope::initLogging();
+    Hope::logger->info("TEST_START");
 
     bool passing = true;
 
@@ -39,6 +43,8 @@ int main(int argc, char* argv[]){
     else printf("\nTEST(S) FAILED\n\n");
 
     if(passing) runBenchmark();
+
+    Hope::logger->info("TEST_END");
 
     return passing == false;
 }
