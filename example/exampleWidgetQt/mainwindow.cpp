@@ -388,7 +388,7 @@ void MainWindow::on_actionExit_triggered(){
 bool MainWindow::savePrompt(){
     if(!editor->isEnabled()) return false;
 
-    QString prompt_name = getLastDir() + "/untitled.txt";
+    QString prompt_name = path.isEmpty() ? getLastDir() + "/untitled.txt" : path;
     QString file_name = QFileDialog::getSaveFileName(nullptr, tr("Save File"),
                                 prompt_name,
                                 tr("Text (*.txt)"));
