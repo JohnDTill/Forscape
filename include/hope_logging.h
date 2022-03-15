@@ -30,6 +30,7 @@ namespace Hope {
 
 inline void initLogging(){
     logger = spdlog::basic_logger_mt("basic_logger", log_dir + "/log.txt");
+    logger->set_pattern("%v");
 }
 
 inline std::string cStr(const std::string& str){
