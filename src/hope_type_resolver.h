@@ -23,6 +23,7 @@ class SymbolTable;
 typedef size_t Type;
 
 class TypeResolver : private std::vector<size_t>{
+
 public:
     typedef size_t ParseNode;
     typedef std::vector<size_t> DeclareSignature;
@@ -31,7 +32,7 @@ public:
     static constexpr Type NUMERIC = UNINITIALISED-1;
     static constexpr Type STRING = UNINITIALISED-2;
     static constexpr Type BOOLEAN = UNINITIALISED-3;
-    static constexpr Type VOID = UNINITIALISED-4;
+    static constexpr Type VOID_TYPE = UNINITIALISED-4;
     static constexpr Type RECURSIVE_CYCLE = UNINITIALISED-5;
     static constexpr Type FAILURE = UNINITIALISED-6;
     static constexpr bool isAbstractFunctionGroup(size_t type) noexcept;

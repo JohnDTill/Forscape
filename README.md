@@ -42,6 +42,7 @@ make
 
 * [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) (Header-only linear algebra)
 * [readerwriterqueue](https://github.com/cameron314/readerwriterqueue) (Lock-free queue for single-producer/single-consumer messages)
+* [spdlog](https://github.com/gabime/spdlog) (Very fast, header-only/compiled, C++ logging library.)
 * Fonts with extensive unicode support:
   * [Computer Modern](https://www.fontsquirrel.com/fonts/computer-modern)
   * [Quivira](http://quivira-font.com/)

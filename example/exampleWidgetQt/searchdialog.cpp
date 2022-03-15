@@ -1,6 +1,7 @@
 #include "searchdialog.h"
 #include "ui_searchdialog.h"
 
+#include <hope_logging.h>
 #include <typeset_markerlink.h>
 #include <typeset_model.h>
 #include <typeset_phrase.h>
@@ -10,6 +11,8 @@
 #ifndef NDEBUG
 #include <iostream>
 #endif
+
+#define LOG_PREFIX "search_dialog->"
 
 SearchDialog::SearchDialog(QWidget* parent, Typeset::View* in, Typeset::View* out, QString fill_word) :
     QDialog(parent, Qt::WindowSystemMenuHint), ui(new Ui::SearchDialog), in(in), out(out){
@@ -31,11 +34,15 @@ SearchDialog::~SearchDialog(){
 }
 
 void SearchDialog::on_closeButton_clicked(){
+    logger->info(LOG_PREFIX "on_closeButton_clicked();");
+
     accept();
 }
 
 
 void SearchDialog::on_findNextButton_clicked(){
+    logger->info(LOG_PREFIX "on_findNextButton_clicked();");
+
     if(!hits.empty()){
         index++;
         if(index >= hits.size()) index = 0;
@@ -48,50 +55,28 @@ void SearchDialog::on_findNextButton_clicked(){
 
 
 void SearchDialog::on_findPrevButton_clicked(){
-    if(!hits.empty()){
-        index--;
-        if(index >= hits.size()) index = hits.size()-1;
-        in->getController() = hits[index];
-        in->ensureCursorVisible();
-    }
-    in->highlighted_words = hits;
-    in->repaint();
+    logger->info(LOG_PREFIX "on_findPrevButton_clicked();");
+    goToNext();
 }
-
 
 void SearchDialog::on_replaceAllButton_clicked(){
-    QString search_word = ui->findEdit->text();
-    std::string target = search_word.toStdString();
-    QString replace_word = ui->replaceEdit->text();
-    std::string replace = replace_word.toStdString();
-
-    in->rename(hits, replace);
-    hits.clear();
+    replaceAll(replaceStr());
 }
 
-
 void SearchDialog::on_replaceButton_clicked(){
-    if(hits.empty()) return;
-    if(index >= hits.size()) index = 0;
-
-    QString replace_word = ui->replaceEdit->text();
-    std::string replace = replace_word.toStdString();
-
-    in->getController() = hits[index];
-    in->getController().insertText(replace);
-
-    populateHits();
-    index--;
-    on_findNextButton_clicked();
+    if(!hits.empty()) replace(replaceStr());
 }
 
 void SearchDialog::populateHits(){
-    QString word = ui->findEdit->text();
-    if(word.isEmpty()){
+    populateHits(searchStr());
+}
+
+void SearchDialog::populateHits(const std::string& str){
+    logger->info(LOG_PREFIX "populateHits({});", cStr(str));
+
+    if(str.empty()){
         hits.clear();
     }else{
-        std::string str = word.toStdString();
-
         hits = ui->selectionBox->isChecked() ?
                sel.findCaseInsensitive(str) :
                in->getModel()->findCaseInsensitive(str);
@@ -100,6 +85,25 @@ void SearchDialog::populateHits(){
     }
 }
 
+void SearchDialog::replace(const std::string& str){
+    logger->info(LOG_PREFIX "replace({});", cStr(str));
+
+    if(index >= hits.size()) index = 0;
+
+    in->getController() = hits[index];
+    in->getController().insertText(str);
+
+    populateHits();
+    index--;
+    goToNext();
+}
+
+void SearchDialog::replaceAll(const std::string& str){
+    logger->info(LOG_PREFIX "replaceAll({});", cStr(str));
+
+    in->replaceAll(hits, str);
+    hits.clear();
+}
 
 void SearchDialog::on_findEdit_textChanged(const QString&){
     populateHits();
@@ -109,18 +113,19 @@ void SearchDialog::on_findEdit_textChanged(const QString&){
 
 
 void SearchDialog::on_findAllButton_clicked(){
-    QString search_word = ui->findEdit->text();
+    logger->info(LOG_PREFIX "on_findAllButton_clicked();");
+
     out->setFromSerial("");
+    std::string search_str = searchStr();
 
     Typeset::Model* m = out->getModel();
-    if(search_word.isEmpty()){
+    if(search_str.empty()){
         m->lastText()->str = "No input for search";
     }else{
-        std::string word = search_word.toStdString();
         static constexpr std::string_view lead = "Search results for \"";
-        m->lastText()->str = lead.data() + word + "\":";
+        m->lastText()->str = lead.data() + search_str + "\":";
         m->lastText()->tags.push_back( SemanticTag(lead.size()-1, SEM_STRING) );
-        m->lastText()->tags.push_back( SemanticTag(lead.size()+word.size()+1, SEM_DEFAULT) );
+        m->lastText()->tags.push_back( SemanticTag(lead.size()+search_str.size()+1, SEM_DEFAULT) );
 
         if(hits.empty()){
             m->appendLine();
@@ -138,5 +143,24 @@ void SearchDialog::on_findAllButton_clicked(){
 
     out->getController().moveToStartOfDocument();
     out->updateModel();
+}
+
+std::string SearchDialog::searchStr() const{
+    return ui->findEdit->text().toStdString();
+}
+
+std::string SearchDialog::replaceStr() const{
+    return ui->replaceEdit->text().toStdString();
+}
+
+void SearchDialog::goToNext(){
+    if(!hits.empty()){
+        index--;
+        if(index >= hits.size()) index = hits.size()-1;
+        in->getController() = hits[index];
+        in->ensureCursorVisible();
+    }
+    in->highlighted_words = hits;
+    in->repaint();
 }
 

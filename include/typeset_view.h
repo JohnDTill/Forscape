@@ -22,13 +22,14 @@ public:
     View();
     virtual ~View() override;
     void setFromSerial(const std::string& src);
+    std::string toSerial() const;
     Model* getModel() const noexcept;
     void setModel(Model* m, bool owned = true);
     void runThread(View* output);
     void setLineNumbersVisible(bool show);
     Controller& getController() noexcept;
     void setReadOnly(bool read_only) noexcept;
-    void rename(const std::vector<Selection>& targets, const std::string& name);
+    void replaceAll(const std::vector<Selection>& targets, const std::string& name);
     void ensureCursorVisible();
     void updateModel() noexcept;
     void zoomIn() noexcept;
@@ -38,6 +39,8 @@ public:
     bool scrolledToBottom() const noexcept;
     void scrollToBottom();
     bool lineNumbersShown() const noexcept;
+    void insertText(const std::string& str);
+    void insertSerial(const std::string& str);
 
     static QColor selection_box_color;
     static QColor selection_text_color;
@@ -134,6 +137,7 @@ private:
     void drawLinebox(double yT, double yB);
     void fillInScrollbarCorner();
     void handleResize();
+    void handleResize(int w, int h);
     void scrollUp();
     void scrollDown();
     void setTooltipError(const std::string& str);
@@ -151,6 +155,7 @@ public slots:
     void copy() const;
     void cut();
     void paste();
+    void del();
     void selectAll() noexcept;
 
 private slots:
@@ -158,6 +163,13 @@ private slots:
     void goToDef();
     void findUsages();
     void takeRecommendation(QListWidgetItem* item);
+
+private:
+    void handleKey(int key, int modifiers, const std::string& str);
+    void paste(const std::string& str);
+    void rename(const std::string& str);
+    void takeRecommendation(const std::string& str);
+    std::string_view logPrefix() const noexcept;
 
 public:
     QImage toPng() const;

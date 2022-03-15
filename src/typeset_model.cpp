@@ -80,7 +80,7 @@ std::string Model::run(){
     while(interpreter.message_queue.try_dequeue(ch))
         if(ch != '\0') str += ch;
 
-    if(interpreter.error_code != Code::ErrorCode::NO_ERROR){
+    if(interpreter.error_code != Code::ErrorCode::NO_ERROR_FOUND){
         Code::Error error(parser.parse_tree.getSelection(interpreter.error_node), interpreter.error_code);
         str += "\nLine " + error.line() + " - " + error.message();
     }

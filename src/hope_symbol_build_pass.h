@@ -71,6 +71,7 @@ private:
     void resolveSubscript(ParseNode pn);
     void resolveBig(ParseNode pn);
     bool defineLocalScope(ParseNode pn, bool immutable = true);
+    bool declared(ParseNode pn) const noexcept;
 
     struct Closure {
         ParseNode fn;

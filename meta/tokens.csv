@@ -45,11 +45,11 @@ EmptySet9∅9y9999
 EndOfFile9\099999
 Equals9=9y9999
 Equivalent9≡9y9999
-Error9ERR99999
+Scanner_Error9ERR99999
 Euro9€9y9999
 Exclam9!9y9999
 Exists9∃9y9999
-False9false99y999
+FalseLiteral9false99y999
 For9for99y999
 ForAll9∀9y9999
 Forwardslash9/99999
@@ -58,7 +58,7 @@ GreaterEqual9≥9y9999
 Hamiltonian9ℋ9y9999
 Identifier9ID999y99
 If9if99y999
-In9∈9y9999
+Member9∈9y9999
 Infty9∞9y9999
 Integer999999
 Integral9∫9y99y99
@@ -145,7 +145,7 @@ Times9×9y9999
 Transpose9⊤9y9999
 TripleGreater9⋙9y9999
 TripleLess9⋘9y9999
-True9true99y999
+TrueLiteral9true99y999
 Where9where99y999
 While9while99y999
 Length9len99y9y99

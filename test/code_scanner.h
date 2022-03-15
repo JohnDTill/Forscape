@@ -78,7 +78,7 @@ inline bool testScanner(){
     delete scanner;
 
     input = "x ∈ ℝ";
-    expected = {IDENTIFIER, IN, DOUBLESTRUCK_R, ENDOFFILE};
+    expected = {IDENTIFIER, MEMBER, DOUBLESTRUCK_R, ENDOFFILE};
     model = Typeset::Model::fromSerial(input);
     scanner = new Scanner(model);
     scanner->scanAll();
@@ -94,7 +94,7 @@ inline bool testScanner(){
     delete scanner;
 
     input = "if is_active { return false; }";
-    expected = {IF, IDENTIFIER, LEFTBRACKET, RETURN, FALSE, SEMICOLON, RIGHTBRACKET, ENDOFFILE};
+    expected = {IF, IDENTIFIER, LEFTBRACKET, RETURN, FALSELITERAL, SEMICOLON, RIGHTBRACKET, ENDOFFILE};
     model = Typeset::Model::fromSerial(input);
     scanner = new Scanner(model);
     scanner->scanAll();

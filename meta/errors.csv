@@ -1,5 +1,5 @@
 name,quote,msg
-NO_ERROR,,
+NO_ERROR_FOUND,,
 USER_STOP,,Script terminated by user
 UNRECOGNIZED_SYMBOL,y,Scanner error – unrecognized symbol
 EXPECTED_PRIMARY,,Expected value

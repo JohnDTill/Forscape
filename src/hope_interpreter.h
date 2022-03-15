@@ -35,13 +35,13 @@ public:
         CONTINUE = 1,
         BREAK = 3,
         RETURN = 7,
-        ERROR = 15,
+        RUNTIME_ERROR = 15,
         FINISHED = std::numeric_limits<size_t>::max(),
     };
 
     //These can be read from outside the interpreter
     Status status = NORMAL;
-    ErrorCode error_code = NO_ERROR;
+    ErrorCode error_code = NO_ERROR_FOUND;
     ParseNode error_node = ParseTree::EMPTY;
 
     void run(const ParseTree& parse_tree, SymbolTable symbol_table);
@@ -101,6 +101,7 @@ private:
     void printNode(const ParseNode& pn);
     static double dot(const Eigen::MatrixXd& a, const Eigen::MatrixXd& b) noexcept;
     static Eigen::MatrixXd hat(const Eigen::MatrixXd& a);
+    static Eigen::MatrixXd invHat(const Eigen::MatrixXd& a);
     Value pow(const Eigen::MatrixXd& a, double b, ParseNode pn);
     Value unitVector(ParseNode pn);
     static double pNorm(const Eigen::MatrixXd& a, double b) noexcept;

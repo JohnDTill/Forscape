@@ -1,6 +1,7 @@
 #ifndef TYPESET_MATRIX_H
 #define TYPESET_MATRIX_H
 
+#include <hope_logging.h>
 #include "typeset_command.h"
 #include "typeset_construct.h"
 #include "typeset_controller.h"
@@ -10,6 +11,8 @@
 #ifndef NDEBUG
 #include <iostream>
 #endif
+
+#define LOG_PREFIX "clickedMatrix()->"
 
 namespace Hope {
 
@@ -84,10 +87,9 @@ public:
     }
 
     virtual void updateChildPositions() override {
-        double xc = x + MATRIX_LPADDING + BRACKET_HOFFSET;
         double yc = y + BRACKET_TOP_OFFSET;
         for(uint16_t i = 0; i < rows; i++){
-            xc = x + MATRIX_LPADDING + BRACKET_HOFFSET;
+            double xc = x + MATRIX_LPADDING + BRACKET_HOFFSET;
             for(uint16_t j = 0; j < cols; j++){
                 Subphrase* e = arg(j+i*cols);
                 e->x = xc + (W[j]-e->width)/2;
@@ -225,11 +227,13 @@ public:
                 : mat(mat), row(row){
 
                 if(is_insert){
+                    logger->info(LOG_PREFIX "insertRow({});", row);
                     for(size_t i = 0; i < mat.cols; i++){
                         data.push_back( new Subphrase );
                         data.back()->setParent(&mat);
                     }
                 }else{
+                    logger->info(LOG_PREFIX "deleteRow({});", row);
                     for(size_t i = 0; i < mat.cols; i++){
                         data.push_back( mat.arg(mat.cols*row+i) );
                     }
@@ -277,11 +281,13 @@ public:
             : mat(mat), col(col){
 
             if(is_insert){
+                logger->info(LOG_PREFIX "insertCol({});", col);
                 for(size_t i = 0; i < mat.rows; i++){
                     data.push_back( new Subphrase );
                     data.back()->setParent(&mat);
                 }
             }else{
+                logger->info(LOG_PREFIX "deleteCol({});", col);
                 for(size_t i = 0; i < mat.rows; i++){
                     data.push_back( mat.arg(i*mat.cols + col) );
                 }

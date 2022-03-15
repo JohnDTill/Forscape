@@ -1,5 +1,6 @@
 #include <typeset_view.h>
 
+#include <hope_logging.h>
 #include <typeset_command_pair.h>
 #include <typeset_construct.h>
 #include <typeset_line.h>
@@ -18,9 +19,17 @@
 #include <QStyle>
 #include <QTimer>
 
-#ifndef NDEBUG
-#include <iostream>
-#endif
+static std::chrono::time_point throttle_time =
+        std::chrono::steady_clock::time_point{std::chrono::milliseconds{0}};
+
+static constexpr auto THROTTLE_WINDOW = std::chrono::milliseconds(200);
+
+#define THROTTLE(stmt) \
+    auto time = std::chrono::steady_clock::now(); \
+    if(time - throttle_time > THROTTLE_WINDOW){ \
+        throttle_time = time; \
+        stmt \
+    }
 
 namespace Hope {
 
@@ -112,6 +121,10 @@ void View::setFromSerial(const std::string& src){
     repaint();
 }
 
+std::string View::toSerial() const{
+    return model->toSerial();
+}
+
 Model* View::getModel() const noexcept{
     return model;
 }
@@ -139,6 +152,8 @@ void View::runThread(View* console){
 }
 
 void View::setLineNumbersVisible(bool show){
+    logger->info("{}setLineNumbersVisible({});", logPrefix(), show);
+
     if(show_line_nums == show) return;
     show_line_nums = show;
     update();
@@ -156,7 +171,7 @@ void View::setReadOnly(bool read_only) noexcept{
     else restartCursorBlink();
 }
 
-void View::rename(const std::vector<Selection>& targets, const std::string& name){
+void View::replaceAll(const std::vector<Selection>& targets, const std::string& name){
     model->rename(targets, name, controller);
 
     restartCursorBlink();
@@ -171,10 +186,12 @@ void View::dispatchClick(double x, double y, int xScreen, int yScreen, bool righ
         resolveTripleClick(y);
         mouse_hold_state = TripleClick;
     }else if(shift_held){
+        logger->info("{}resolveShiftClick({}, {});", logPrefix(), x, y);
         resolveShiftClick(x, y);
     }else if(ALLOW_SELECTION_DRAG && controller.contains(x, y)){
         mouse_hold_state = ClickedOnSelection;
     }else{
+        logger->info("{}dispatchClick({}, {}, {}, {}, {}, {});", logPrefix(), x, y, xScreen, yScreen, right_click, shift_held);
         resolveClick(x, y);
         mouse_hold_state = SingleClick;
     }
@@ -185,6 +202,8 @@ void View::dispatchClick(double x, double y, int xScreen, int yScreen, bool righ
 }
 
 void View::dispatchRelease(double x, double y){
+    logger->info("{}dispatchRelease({}, {});", logPrefix(), x, y);
+
     if(mouse_hold_state == ClickedOnSelection)
         resolveClick(x, y);
     else if(mouse_hold_state == SelectionDrag)
@@ -196,6 +215,8 @@ void View::dispatchRelease(double x, double y){
 }
 
 void View::dispatchDoubleClick(double x, double y){
+    logger->info("{}dispatchDoubleClick({}, {});", logPrefix(), x, y);
+
     if(!isInLineBox(x)){
         resolveWordClick(x, y);
         repaint();
@@ -210,7 +231,9 @@ void View::dispatchHover(double x, double y){
 
     switch(mouse_hold_state){
         case Hover: resolveTooltip(x, y); break;
-        case SingleClick: resolveShiftClick(x, y); repaint(); break;
+        case SingleClick:
+            logger->info("{}dispatchHover({}, {}); //Drag to select", logPrefix(), x, y);
+            resolveShiftClick(x, y); repaint(); break;
         case DoubleClick: resolveWordDrag(x, y); repaint(); break;
         case TripleClick: resolveLineDrag(y); repaint(); break;
         case ClickedOnSelection:
@@ -248,6 +271,8 @@ void View::resolveShiftClick(double x, double y) noexcept{
 }
 
 void View::resolveRightClick(double x, double y, int xScreen, int yScreen){
+    logger->info("{}resolveRightClick({}, {}, {}, {});", logPrefix(), x, y, xScreen, yScreen);
+
     QMenu menu;
 
     bool clicked_on_selection = controller.contains(x,y);
@@ -312,6 +337,8 @@ void View::resolveWordClick(double x, double y){
 }
 
 void View::resolveWordDrag(double x, double y) noexcept{
+    THROTTLE(logger->info("{}resolveWordDrag({}, {});", logPrefix(), x, y);)
+
     bool forward = controller.isForward();
 
     resolveShiftClick(x, y);
@@ -338,6 +365,8 @@ void View::resolveWordDrag(double x, double y) noexcept{
 }
 
 void View::resolveTripleClick(double y) noexcept{
+    logger->info("{}resolveTripleClick({});", logPrefix(), y);
+
     Line* l = model->nearestLine(y);
     controller.selectLine(l);
     updateXSetpoint();
@@ -346,6 +375,8 @@ void View::resolveTripleClick(double y) noexcept{
 }
 
 void View::resolveLineDrag(double y) noexcept{
+    THROTTLE(logger->info("{}resolveLineDrag({});", logPrefix(), y);)
+
     Line* active_line = model->nearestLine(y);
     Line* anchor_line = controller.anchorLine();
 
@@ -366,6 +397,8 @@ void View::resolveTooltip(double x, double y) noexcept{
 
     for(const Code::Error& err : model->errors){
         if(err.selection.containsWithEmptyMargin(x, y)){
+            THROTTLE(logger->info("{}resolveTooltip({}, {});", logPrefix(), x, y);)
+
             setTooltipError(err.message());
             return;
         }
@@ -380,6 +413,8 @@ void View::resolveTooltip(double x, double y) noexcept{
         //EVENTUALLY enable the assertion when idAt accurately reports identifier
         //assert(lookup != symbol_table.occurence_to_symbol_map.end() || model->errors.size());
         if(lookup != symbol_table.occurence_to_symbol_map.end()){
+            THROTTLE(logger->info("{}resolveTooltip({}, {});", logPrefix(), x, y);)
+
             const auto& symbol = symbol_table.symbols[lookup->second];
             QString tooltip = "<b>" + QString::fromStdString(c.selectedText()) + "</b> : "
                     + QString::fromStdString(model->type_resolver.typeString(symbol.type));
@@ -394,6 +429,8 @@ void View::resolveTooltip(double x, double y) noexcept{
 }
 
 void View::resolveSelectionDrag(double x, double y){
+    logger->info("{}resolveSelectionDrag({}, {});", logPrefix(), x, y);
+
     mouse_hold_state = Hover;
 
     if(controller.contains(x, y)) return;
@@ -439,14 +476,17 @@ double View::yScreen(double yModel) const noexcept{
 }
 
 void View::zoomIn() noexcept{
+    logger->info("{}zoomIn();", logPrefix());
     zoom = std::min(ZOOM_MAX, zoom*ZOOM_DELTA);
 }
 
 void View::zoomOut() noexcept{
+    logger->info("{}zoomOut();", logPrefix());
     zoom = std::max(ZOOM_MIN, zoom/ZOOM_DELTA);
 }
 
 void View::resetZoom() noexcept{
+    logger->info("{}resetZoom();", logPrefix());
     zoom = ZOOM_DEFAULT;
 }
 
@@ -483,6 +523,16 @@ void View::scrollToBottom(){
 
 bool View::lineNumbersShown() const noexcept{
     return show_line_nums;
+}
+
+void View::insertText(const std::string& str){
+    logger->info("{}insertText({});", logPrefix(), cStr(str));
+    controller.insertText(str);
+}
+
+void View::insertSerial(const std::string& str){
+    logger->info("{}insertSerial({});", logPrefix(), cStr(str));
+    controller.insertSerial(str);
 }
 
 void View::ensureCursorVisible(){
@@ -522,6 +572,8 @@ void View::updateModel() noexcept{
 }
 
 void View::followLink(size_t line_num){
+    logger->info("{}followLink({});", logPrefix(), line_num);
+
     if(line_num > model->lines.size()) return;
     controller.setBothToBackOf(model->lines[line_num]->back());
     ensureCursorVisible();
@@ -565,109 +617,7 @@ void View::recommend(){
 }
 
 void View::keyPressEvent(QKeyEvent* e){
-    constexpr int Ctrl = Qt::ControlModifier;
-    constexpr int Shift = Qt::ShiftModifier;
-    constexpr int CtrlShift = Qt::ControlModifier | Qt::ShiftModifier;
-
-    bool hide_recommender = true;
-
-    switch (e->key() | e->modifiers()) {
-        case Qt::Key_Z|Ctrl: if(allow_write) model->undo(controller); updateXSetpoint(); restartCursorBlink(); break;
-        case Qt::Key_Y|Ctrl: if(allow_write) model->redo(controller); updateXSetpoint(); restartCursorBlink(); break;
-        case Qt::Key_Right: controller.moveToNextChar(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_Left: controller.moveToPrevChar(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_Right|Ctrl: controller.moveToNextWord(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_Left|Ctrl: controller.moveToPrevWord(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_Down:
-            if(recommender->isVisible()){
-                recommender->setCurrentRow(0);
-                recommender->setFocus();
-                hide_recommender = false;
-            }else{
-                controller.moveToNextLine(x_setpoint); restartCursorBlink(); update();
-            }
-            break;
-        case Qt::Key_Up: controller.moveToPrevLine(x_setpoint); restartCursorBlink(); update(); break;
-        case Qt::Key_Home: controller.moveToStartOfLine(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_End: controller.moveToEndOfLine(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_PageDown: controller.moveToNextPage(x_setpoint, height()/zoom); restartCursorBlink(); break;
-        case Qt::Key_PageUp: controller.moveToPrevPage(x_setpoint, height()/zoom); restartCursorBlink(); break;
-        case Qt::Key_Home|Ctrl: controller.moveToStartOfDocument(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_End|Ctrl: controller.moveToEndOfDocument(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_Right|Shift: controller.selectNextChar(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_Left|Shift: controller.selectPrevChar(); updateXSetpoint(); restartCursorBlink(); update(); repaint(); break;
-        case Qt::Key_Right|CtrlShift: controller.selectNextWord(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_Left|CtrlShift: controller.selectPrevWord(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_Down|Shift: controller.selectNextLine(x_setpoint); restartCursorBlink(); update(); break;
-        case Qt::Key_Up|Shift: controller.selectPrevLine(x_setpoint); restartCursorBlink(); update(); break;
-        case Qt::Key_Home|Shift: controller.selectStartOfLine(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_End|Shift: controller.selectEndOfLine(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_Home|CtrlShift: controller.selectStartOfDocument(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_End|CtrlShift: controller.selectEndOfDocument(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_PageDown|Qt::ShiftModifier: controller.selectNextPage(x_setpoint, height()/zoom); restartCursorBlink(); break;
-        case Qt::Key_PageUp|Qt::ShiftModifier: controller.selectPrevPage(x_setpoint, height()/zoom); restartCursorBlink(); break;
-        case Qt::Key_A|Ctrl: controller.selectAll(); update(); break;
-        case 61|Qt::ControlModifier: zoomIn(); restartCursorBlink(); break;
-        case Qt::Key_Minus|Qt::ControlModifier: zoomOut(); restartCursorBlink(); break;
-        case Qt::Key_Insert: insert_mode = !insert_mode; break;
-        case Qt::Key_Delete: if(allow_write){
-            controller.del();
-            updateXSetpoint();
-            restartCursorBlink();
-        }
-            break;
-        case Qt::Key_Delete|Ctrl: if(allow_write){
-            controller.delWord();
-            updateXSetpoint();
-            restartCursorBlink();
-        }
-            break;
-        case Qt::Key_Backspace: if(allow_write){
-            controller.backspace();
-            updateXSetpoint();
-            restartCursorBlink();
-        }
-            break;
-        case Qt::Key_Backspace|Ctrl: if(allow_write){
-            controller.backspaceWord();
-            updateXSetpoint();
-            restartCursorBlink();
-        }
-            break;
-        case Qt::Key_Return: if(focusWidget() != this) return; if(allow_write) controller.newline(); updateXSetpoint(); restartCursorBlink(); break;
-        case Qt::Key_Return|Shift: if(allow_write) controller.newline(); updateXSetpoint(); restartCursorBlink(); break;
-        case Qt::Key_Tab: if(allow_write) controller.tab(); break;
-        #ifdef __EMSCRIPTEN__
-        case Qt::Key_Tab|Shift: if(allow_write) controller.detab(); break;
-        #else
-        case (Qt::Key_Tab|Shift)+1: if(allow_write) controller.detab(); break; //+1 offset glitch
-        #endif
-        case Qt::Key_C|Ctrl: copy(); break;
-            #ifndef __EMSCRIPTEN__
-        case Qt::Key_X|Ctrl: if(allow_write) cut(); updateXSetpoint(); restartCursorBlink(); break;
-            #endif
-        case Qt::Key_V|Ctrl: if(allow_write) paste(); updateXSetpoint(); restartCursorBlink(); break;
-        default:
-            std::string str = e->text().toStdString();
-            if(!allow_write || str.empty() || e->modifiers().testFlag(Qt::ControlModifier)) return;
-
-            if(insert_mode) controller.selectNextChar();
-            controller.keystroke(str);
-            updateXSetpoint();
-            restartCursorBlink();
-            recommend();
-            hide_recommender = false;
-    }
-
-    if(hide_recommender && recommender->isVisible()){
-        recommender->hide();
-        setFocus();
-    }
-    ensureCursorVisible();
-    updateHighlighting();
-    repaint();
-
-    emit textChanged();
+    handleKey(e->key(), e->modifiers(), e->text().toStdString());
 }
 
 void View::mousePressEvent(QMouseEvent* e){
@@ -742,12 +692,14 @@ void View::onBlink() noexcept{
 }
 
 void View::copy() const{
+    logger->info("{}copy();", logPrefix());
     if(!controller.hasSelection()) return;
     std::string str = controller.selectedText();
     QGuiApplication::clipboard()->setText(QString::fromStdString(str));
 }
 
 void View::cut(){
+    logger->info("{}cut();", logPrefix());
     if(!controller.hasSelection()) return;
     std::string str = controller.selectedText();
     QGuiApplication::clipboard()->setText(QString::fromStdString(str));
@@ -758,9 +710,12 @@ void View::cut(){
 
 void View::paste(){
     std::string str = QGuiApplication::clipboard()->text().toStdString();
-    model->mutate(controller.getInsertSerial(str), controller);
+    paste(str);
+}
 
-    emit textChanged();
+void View::del(){
+    logger->info("{}del();", logPrefix());
+    controller.del();
 }
 
 void View::setCursorAppearance(double x, double y){
@@ -850,7 +805,13 @@ void View::fillInScrollbarCorner(){
 
 void View::handleResize(){
     QSize sze = size();
-    int display_width = sze.width() - v_scroll->width();
+    handleResize(sze.width(), sze.height());
+}
+
+void View::handleResize(int w, int h){
+    THROTTLE(logger->info("{}handleResize({}, {});", logPrefix(), w, h);)
+
+    int display_width = w - v_scroll->width();
     int model_display_width = display_width - (getLineboxWidth() + MARGIN_LEFT + MARGIN_RIGHT)*zoom;
     v_scroll->move(display_width, 0);
     h_scroll->setFixedWidth(display_width);
@@ -861,7 +822,7 @@ void View::handleResize(){
     double w_diff_scrn = model_width - model_display_width;
     bool h_scroll_enabled = w_diff_scrn > 0;
     h_scroll->setVisible(h_scroll_enabled);
-    int display_height = sze.height() - h_scroll_enabled*h_scroll->height();
+    int display_height = h - h_scroll_enabled*h_scroll->height();
 
     if(h_scroll_enabled){
         h_scroll->setPageStep(model_display_width);
@@ -882,10 +843,14 @@ void View::handleResize(){
 }
 
 void View::scrollUp(){
+    logger->info("{}scrollUp();", logPrefix());
+
     v_scroll->setValue( v_scroll->value() - v_scroll->pageStep()/10 );
 }
 
 void View::scrollDown(){
+    logger->info("{}scrollDown();", logPrefix());
+
     v_scroll->setValue( v_scroll->value() + v_scroll->pageStep()/10 );
 }
 
@@ -900,6 +865,8 @@ void View::clearTooltip(){
 }
 
 void View::undo(){
+    logger->info("{}undo();", logPrefix());
+
     model->undo(controller);
     updateHighlighting();
     recommender->hide();
@@ -909,6 +876,8 @@ void View::undo(){
 }
 
 void View::redo(){
+    logger->info("{}redo();", logPrefix());
+
     model->redo(controller);
     updateHighlighting();
     recommender->hide();
@@ -918,6 +887,8 @@ void View::redo(){
 }
 
 void View::selectAll() noexcept{
+    logger->info("{}selectAll();", logPrefix());
+
     controller.selectAll();
 }
 
@@ -935,19 +906,12 @@ void View::rename(){
     if(!ok) return;
 
     std::string name = text.toStdString();
-
-    Controller c = model->idAt(controller.active);
-    assert(c.hasSelection());
-
-    auto& symbol_table = model->symbol_builder.symbol_table;
-    std::vector<Typeset::Selection> occurences;
-    symbol_table.getSymbolOccurences(c.getAnchor(), occurences);
-    rename(occurences, name);
-
-    emit textChanged();
+    rename(name);
 }
 
 void View::goToDef(){
+    logger->info("{}goToDef();", logPrefix());
+
     Controller c = model->idAt(controller.active);
     assert(c.hasSelection());
 
@@ -962,6 +926,8 @@ void View::goToDef(){
 }
 
 void View::findUsages(){
+    logger->info("{}findUsages();", logPrefix());
+
     assert(console);
 
     Controller c = model->idAt(controller.active);
@@ -990,10 +956,152 @@ void View::findUsages(){
 }
 
 void View::takeRecommendation(QListWidgetItem* item){
+    takeRecommendation(item->text().toStdString());
+}
+
+void View::handleKey(int key, int modifiers, const std::string& str){
+    constexpr int Ctrl = Qt::ControlModifier;
+    constexpr int Shift = Qt::ShiftModifier;
+    constexpr int CtrlShift = Qt::ControlModifier | Qt::ShiftModifier;
+    constexpr int Alt = Qt::AltModifier;
+
+    bool hide_recommender = true;
+
+    logger->info("{}handleKey({}, {}, {});", logPrefix(), key, modifiers, cStr(str));
+
+    switch (key | modifiers) {
+        case Qt::Key_Z|Ctrl: if(allow_write) model->undo(controller); updateXSetpoint(); restartCursorBlink(); break;
+        case Qt::Key_Y|Ctrl: if(allow_write) model->redo(controller); updateXSetpoint(); restartCursorBlink(); break;
+        case Qt::Key_Right: controller.moveToNextChar(); updateXSetpoint(); restartCursorBlink(); update(); break;
+        case Qt::Key_Left: controller.moveToPrevChar(); updateXSetpoint(); restartCursorBlink(); update(); break;
+        case Qt::Key_Right|Ctrl: controller.moveToNextWord(); updateXSetpoint(); restartCursorBlink(); update(); break;
+        case Qt::Key_Left|Ctrl: controller.moveToPrevWord(); updateXSetpoint(); restartCursorBlink(); update(); break;
+        case Qt::Key_Down:
+            if(recommender->isVisible()){
+                recommender->setCurrentRow(0);
+                recommender->setFocus();
+                hide_recommender = false;
+            }else{
+                controller.moveToNextLine(x_setpoint); restartCursorBlink(); update();
+            }
+            break;
+        case Qt::Key_Up: controller.moveToPrevLine(x_setpoint); restartCursorBlink(); update(); break;
+        case Qt::Key_Home: controller.moveToStartOfLine(); updateXSetpoint(); restartCursorBlink(); update(); break;
+        case Qt::Key_End: controller.moveToEndOfLine(); updateXSetpoint(); restartCursorBlink(); update(); break;
+        case Qt::Key_PageDown: controller.moveToNextPage(x_setpoint, height()/zoom); restartCursorBlink(); break;
+        case Qt::Key_PageUp: controller.moveToPrevPage(x_setpoint, height()/zoom); restartCursorBlink(); break;
+        case Qt::Key_Home|Ctrl: controller.moveToStartOfDocument(); updateXSetpoint(); restartCursorBlink(); update(); break;
+        case Qt::Key_End|Ctrl: controller.moveToEndOfDocument(); updateXSetpoint(); restartCursorBlink(); update(); break;
+        case Qt::Key_Right|Shift: controller.selectNextChar(); updateXSetpoint(); restartCursorBlink(); update(); break;
+        case Qt::Key_Left|Shift: controller.selectPrevChar(); updateXSetpoint(); restartCursorBlink(); update(); repaint(); break;
+        case Qt::Key_Right|CtrlShift: controller.selectNextWord(); updateXSetpoint(); restartCursorBlink(); update(); break;
+        case Qt::Key_Left|CtrlShift: controller.selectPrevWord(); updateXSetpoint(); restartCursorBlink(); update(); break;
+        case Qt::Key_Down|Shift: controller.selectNextLine(x_setpoint); restartCursorBlink(); update(); break;
+        case Qt::Key_Up|Shift: controller.selectPrevLine(x_setpoint); restartCursorBlink(); update(); break;
+        case Qt::Key_Home|Shift: controller.selectStartOfLine(); updateXSetpoint(); restartCursorBlink(); update(); break;
+        case Qt::Key_End|Shift: controller.selectEndOfLine(); updateXSetpoint(); restartCursorBlink(); update(); break;
+        case Qt::Key_Home|CtrlShift: controller.selectStartOfDocument(); updateXSetpoint(); restartCursorBlink(); update(); break;
+        case Qt::Key_End|CtrlShift: controller.selectEndOfDocument(); updateXSetpoint(); restartCursorBlink(); update(); break;
+        case Qt::Key_PageDown|Qt::ShiftModifier: controller.selectNextPage(x_setpoint, height()/zoom); restartCursorBlink(); break;
+        case Qt::Key_PageUp|Qt::ShiftModifier: controller.selectPrevPage(x_setpoint, height()/zoom); restartCursorBlink(); break;
+        case Qt::Key_A|Ctrl: controller.selectAll(); update(); break;
+        case 61|Qt::ControlModifier: zoomIn(); restartCursorBlink(); break;
+        case Qt::Key_Minus|Qt::ControlModifier: zoomOut(); restartCursorBlink(); break;
+        case Qt::Key_Insert: insert_mode = !insert_mode; break;
+        case Qt::Key_Delete:
+        case Qt::Key_Delete|Shift:
+        if(allow_write){
+            controller.del();
+            updateXSetpoint();
+            restartCursorBlink();
+        }
+            break;
+        case Qt::Key_Delete|Ctrl:
+        case Qt::Key_Delete|Ctrl|Shift:
+        if(allow_write){
+            controller.delWord();
+            updateXSetpoint();
+            restartCursorBlink();
+        }
+            break;
+        case Qt::Key_Backspace:
+        case Qt::Key_Backspace|Shift:
+        if(allow_write){
+            controller.backspace();
+            updateXSetpoint();
+            restartCursorBlink();
+        }
+            break;
+        case Qt::Key_Backspace|Ctrl:
+        case Qt::Key_Backspace|Ctrl|Shift:
+        if(allow_write){
+            controller.backspaceWord();
+            updateXSetpoint();
+            restartCursorBlink();
+        }
+            break;
+        case Qt::Key_Return: if(focusWidget() != this) return; if(allow_write) controller.newline(); updateXSetpoint(); restartCursorBlink(); break;
+        case Qt::Key_Return|Shift: if(allow_write) controller.newline(); updateXSetpoint(); restartCursorBlink(); break;
+        case Qt::Key_Tab: if(allow_write) controller.tab(); break;
+        #ifdef __EMSCRIPTEN__
+        case Qt::Key_Tab|Shift: if(allow_write) controller.detab(); break;
+        #else
+        case (Qt::Key_Tab|Shift)+1: if(allow_write) controller.detab(); break; //+1 offset glitch
+        #endif
+        case Qt::Key_C|Ctrl: copy(); break;
+            #ifndef __EMSCRIPTEN__
+        case Qt::Key_X|Ctrl: if(allow_write) cut(); updateXSetpoint(); restartCursorBlink(); break;
+            #endif
+        case Qt::Key_V|Ctrl: if(allow_write) paste(); updateXSetpoint(); restartCursorBlink(); break;
+        default:
+            bool alt_or_ctrl_pressed = (Alt|Ctrl) & modifiers;
+            if(!allow_write || alt_or_ctrl_pressed || str.empty()) return;
+
+            if(insert_mode) controller.selectNextChar();
+            controller.keystroke(str);
+            updateXSetpoint();
+            restartCursorBlink();
+            recommend();
+            hide_recommender = false;
+    }
+
+    if(hide_recommender && recommender->isVisible()){
+        recommender->hide();
+        setFocus();
+    }
+    ensureCursorVisible();
+    updateHighlighting();
+    repaint();
+
+    emit textChanged();
+}
+
+void View::paste(const std::string& str){
+    logger->info("{}paste({});", logPrefix(), cStr(str));
+    model->mutate(controller.getInsertSerial(str), controller);
+    emit textChanged();
+}
+
+void View::rename(const std::string& str){
+    logger->info("{}rename({});", logPrefix(), cStr(str));
+
+    Controller c = model->idAt(controller.active);
+    assert(c.hasSelection());
+
+    auto& symbol_table = model->symbol_builder.symbol_table;
+    std::vector<Typeset::Selection> occurences;
+    symbol_table.getSymbolOccurences(c.getAnchor(), occurences);
+    replaceAll(occurences, str);
+
+    emit textChanged();
+}
+
+void View::takeRecommendation(const std::string& str){
+    logger->info("{}takeRecommendation({});", logPrefix(), cStr(str));
+
     controller.selectPrevWord();
-    std::string to_insert = item->text().toStdString();
-    if(to_insert != controller.selectedText())
-        controller.insertSerial(item->text().toStdString());
+    if(str != controller.selectedText())
+        controller.insertSerial(str);
     else
         controller.consolidateToAnchor();
     model->performSemanticFormatting();
@@ -1020,7 +1128,12 @@ void View::paintEvent(QPaintEvent* event){
 }
 
 QImage View::toPng() const{
+    logger->info("{}toPng();", logPrefix());
     return controller.selection().toPng();
+}
+
+std::string_view Hope::Typeset::View::logPrefix() const noexcept{
+    return model->is_output ? "console->" : "editor->";
 }
 
 }

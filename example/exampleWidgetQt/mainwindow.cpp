@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 
+#include <hope_logging.h>
 #include <typeset_model.h>
 #include <typeset_painter.h>
 #include <typeset_view.h>
@@ -46,6 +47,8 @@
 #define WINDOW_GEOMETRY "geometry"
 #define WINDOW_STATE "window_state"
 #define LAST_DIRECTORY "last_dir"
+
+#define LOG_PREFIX "mainwindow->"
 
 using namespace Hope;
 
@@ -200,9 +203,8 @@ MainWindow::MainWindow(QWidget* parent)
     if(settings.contains(WINDOW_GEOMETRY))
         restoreGeometry(settings.value(WINDOW_GEOMETRY).toByteArray());
 
-    if(settings.contains(WINDOW_STATE)){
+    if(settings.contains(WINDOW_STATE))
         restoreState(settings.value(WINDOW_STATE).toByteArray());
-    }
 
     connect(&interpreter_poll_timer, SIGNAL(timeout()), this, SLOT(pollInterpreterThread()));
     connect(editor, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
@@ -243,6 +245,8 @@ bool MainWindow::isSavedDeepComparison() const{
 }
 
 void MainWindow::run(){
+    logger->info(LOG_PREFIX "run();");
+
     if(!editor->isEnabled()) return;
 
     console->setModel(Typeset::Model::fromSerial("", true));
@@ -264,6 +268,8 @@ void MainWindow::run(){
 }
 
 void MainWindow::stop(){
+    logger->info(LOG_PREFIX "stop(); //Note: potential for non-repeatable timing dependent behaviour.");
+
     if(editor->isEnabled()) return;
     editor->getModel()->stop();
     if(editor_had_focus) editor->setFocus();
@@ -293,7 +299,7 @@ void MainWindow::pollInterpreterThread(){
     if(interpreter.status == Hope::Code::Interpreter::FINISHED){
         auto output = console->getModel();
         switch(interpreter.error_code){
-            case Hope::Code::NO_ERROR: break;
+            case Hope::Code::NO_ERROR_FOUND: break;
             case Hope::Code::USER_STOP:
                 console->getController().insertSerial("\nScript terminated by user");
                 console->updateModel();
@@ -320,6 +326,7 @@ void MainWindow::pollInterpreterThread(){
 
 void MainWindow::parseTree(){
     #ifndef NDEBUG
+    logger->info(LOG_PREFIX "parseTree();");
     QString dot_src = QString::fromStdString(editor->getModel()->parseTreeDot());
     dot_src.replace("\\n", "\\\\n");
     QGraphvizCall::show(dot_src);
@@ -328,6 +335,7 @@ void MainWindow::parseTree(){
 
 void MainWindow::symbolTable(){
     #ifndef NDEBUG
+    logger->info(LOG_PREFIX "symbolTable();");
     Typeset::Model* m = editor->getModel();
     SymbolTreeView* view = new SymbolTreeView(m->symbol_builder.symbol_table, m->type_resolver);
     view->show();
@@ -339,6 +347,7 @@ void MainWindow::github(){
 }
 
 void MainWindow::on_actionNew_triggered(){
+    logger->info(LOG_PREFIX "on_actionNew_triggered();");
     if(!editor->isEnabled()) return;
     editor->setFromSerial("");
     setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
@@ -379,7 +388,7 @@ void MainWindow::on_actionExit_triggered(){
 bool MainWindow::savePrompt(){
     if(!editor->isEnabled()) return false;
 
-    QString prompt_name = getLastDir() + "/untitled.txt";
+    QString prompt_name = path.isEmpty() ? getLastDir() + "/untitled.txt" : path;
     QString file_name = QFileDialog::getSaveFileName(nullptr, tr("Save File"),
                                 prompt_name,
                                 tr("Text (*.txt)"));
@@ -389,6 +398,8 @@ bool MainWindow::savePrompt(){
 }
 
 bool MainWindow::saveAs(QString path){
+    logger->info(LOG_PREFIX "saveAs({});", cStr(path.toStdString()));
+
     if(!editor->isEnabled()) return false;
 
     QFile file(path);
@@ -411,6 +422,7 @@ bool MainWindow::saveAs(QString path){
     settings.setValue(ACTIVE_FILE, path);
     this->path = path;
     unsaved_changes = false;
+    out.flush();
     write_time = std::filesystem::last_write_time(path.toStdString());
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
 
@@ -418,6 +430,8 @@ bool MainWindow::saveAs(QString path){
 }
 
 void MainWindow::open(QString path){
+    logger->info("//" LOG_PREFIX "open({})", cStr(path.toStdString()));
+
     QFile file(path);
 
     if(!file.open(QIODevice::ReadOnly | QIODevice::Text)){
@@ -433,6 +447,7 @@ void MainWindow::open(QString path){
     #endif
 
     std::string src = in.readAll().toStdString();
+    logger->info("editor->setFromSerial({});", cStr(src));
     if(!Hope::isValidSerial(src)){
         QMessageBox messageBox;
         messageBox.critical(nullptr, "Error", "\"" + path + "\" is corrupted.");
@@ -459,7 +474,6 @@ QString MainWindow::getLastDir(){
     return QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
 }
 
-
 void MainWindow::on_actionFind_Replace_triggered(){
     if(!editor->isEnabled()) return;
 
@@ -469,7 +483,6 @@ void MainWindow::on_actionFind_Replace_triggered(){
     search.exec();
 }
 
-
 void MainWindow::on_actionUndo_triggered(){
     if(!editor->isEnabled()) return;
 
@@ -477,14 +490,12 @@ void MainWindow::on_actionUndo_triggered(){
     editor->updateModel();
 }
 
-
 void MainWindow::on_actionRedo_triggered(){
     if(!editor->isEnabled()) return;
 
     editor->redo();
     editor->updateModel();
 }
-
 
 void MainWindow::on_actionCut_triggered(){
     if(!editor->isEnabled()) return;
@@ -513,10 +524,9 @@ void MainWindow::on_actionPaste_triggered(){
 void MainWindow::on_actionDelete_triggered(){
     if(!editor->isEnabled()) return;
 
-    editor->getController().del();
+    editor->del();
     editor->updateModel();
 }
-
 
 void MainWindow::on_actionSelect_all_triggered(){
     if(!editor->isEnabled()) return;
@@ -525,11 +535,9 @@ void MainWindow::on_actionSelect_all_triggered(){
     editor->updateModel();
 }
 
-
 void MainWindow::on_actionRun_triggered(){
     run();
 }
-
 
 void MainWindow::on_actionZoom_in_triggered(){
     editor->zoomIn();
@@ -538,14 +546,12 @@ void MainWindow::on_actionZoom_in_triggered(){
     console->update();
 }
 
-
 void MainWindow::on_actionZoom_out_triggered(){
     editor->zoomOut();
     console->zoomOut();
     editor->update();
     console->update();
 }
-
 
 void MainWindow::on_actionReset_zoom_triggered(){
     editor->resetZoom();
@@ -554,7 +560,6 @@ void MainWindow::on_actionReset_zoom_triggered(){
     console->update();
 }
 
-
 void MainWindow::on_actionShow_line_numbers_toggled(bool checked){
     editor->setLineNumbersVisible(checked);
 }
@@ -562,7 +567,7 @@ void MainWindow::on_actionShow_line_numbers_toggled(bool checked){
 void MainWindow::insertFlatText(const QString &str){
     if(!editor->isEnabled()) return;
 
-    editor->getController().insertText(str.toStdString());
+    editor->insertText(str.toStdString());
     editor->update();
 
     onTextChanged();
@@ -571,7 +576,7 @@ void MainWindow::insertFlatText(const QString &str){
 void MainWindow::insertSerial(const QString& str){
     if(!editor->isEnabled()) return;
 
-    editor->getController().insertSerial(str.toStdString());
+    editor->insertSerial(str.toStdString());
     editor->update();
 
     onTextChanged();
@@ -581,7 +586,7 @@ void MainWindow::insertSerialSelection(const QString& A, const QString& B){
     if(!editor->isEnabled()) return;
 
     Typeset::Controller& c = editor->getController();
-    c.insertSerial(A.toStdString() + c.selectedText() + B.toStdString());
+    editor->insertSerial(A.toStdString() + c.selectedText() + B.toStdString());
     editor->update();
 
     onTextChanged();
@@ -621,6 +626,8 @@ void MainWindow::on_actionTeX_triggered(){
 }
 
 void MainWindow::on_actionUnicode_triggered(){
+    logger->info(LOG_PREFIX "on_actionUnicode_triggered();");
+
     std::string str = editor->getController().selectedText();
     if(UnicodeConverter::canConvert(str)){
         std::string uni = UnicodeConverter::convert(str);
@@ -659,6 +666,8 @@ void MainWindow::closeEvent(QCloseEvent* event){
         }
     }
 
+    logger->info("assert(editor->toSerial() == {});", cStr(editor->toSerial()));
+
     QMainWindow::closeEvent(event);
 }
 
@@ -691,3 +700,6 @@ void MainWindow::checkForChanges(){
     else onTextChanged();
 }
 
+void MainWindow::on_actionSee_log_triggered(){
+    openLogFile();
+}

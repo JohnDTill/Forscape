@@ -124,7 +124,7 @@ TokenType Scanner::close() {
 }
 
 TokenType Scanner::error(ErrorCode code) {
-    TokenType type = createToken(ERROR);
+    TokenType type = createToken(SCANNER_ERROR);
     errors.push_back(Error(Typeset::Selection(markers.back()), code));
     return type;
 }
