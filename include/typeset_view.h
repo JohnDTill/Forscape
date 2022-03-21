@@ -143,7 +143,8 @@ private:
     void setTooltipError(const std::string& str);
     void clearTooltip();
 
-    QScrollBar* v_scroll;
+    class VerticalScrollBar;
+    VerticalScrollBar* v_scroll;
     QScrollBar* h_scroll;
 
 signals:
