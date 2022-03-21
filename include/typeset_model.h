@@ -40,6 +40,8 @@ public:
     std::string run();
     void runThread();
     void stop();
+    double width() const noexcept;
+    double height() const noexcept;
 
     #ifdef HOPE_SEMANTIC_DEBUGGING
     std::string toSerialWithSemanticTags() const;
@@ -87,8 +89,6 @@ private:
     Line* nearestLine(double y) const noexcept;
     Line* nearestAbove(double y) const noexcept;
     Construct* constructAt(double x, double y) const noexcept;
-    double width() const noexcept;
-    double height() const noexcept;
     Selection idAt(double x, double y) noexcept;
     #endif
     void clearRedo();

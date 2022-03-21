@@ -35,6 +35,78 @@ namespace Hope {
 
 namespace Typeset {
 
+class View::VerticalScrollBar : public QScrollBar{
+private:
+    const View& view;
+    bool vScrollActive() const noexcept{
+        return singleStep() < maximum();
+    }
+
+    static constexpr int MAX_ERROR_HEIGHT = 10;
+    static constexpr size_t V_PADDING = 15;
+    static constexpr size_t H_PADDING = 6;
+
+    void paintErrorsProportional(){
+        const Model& m = *view.getModel();
+
+        QPainter p(this);
+        p.setBrush(QColor::fromRgb(255, 0, 0));
+        p.setPen(QColor::fromRgb(255, 0, 0));
+        for(const Code::Error& err : m.errors){
+            Line* l_start = err.selection.left.line();
+            Line* l_end = err.selection.right.line();
+            double y_start = l_start->y;
+            double y_end = l_end->yBottom();
+
+            size_t pixel_start = (y_start/m.height()) * (height() - 2*V_PADDING) + V_PADDING;
+            size_t pixel_end = (y_end/m.height()) * (height() - 2*V_PADDING) + V_PADDING;
+
+            int x = H_PADDING;
+            int w = width() - 2*H_PADDING;
+            int y = pixel_start;
+            int h = std::min<int>(pixel_end - pixel_start, MAX_ERROR_HEIGHT);
+            h = std::max<int>(h, 1);
+            p.drawRect(x, y, w, h);
+        }
+    }
+
+    void paintErrorsAbsolute(){
+        const Model& m = *view.getModel();
+
+        QPainter p(this);
+        p.setBrush(QColor::fromRgb(255, 0, 0));
+        p.setPen(QColor::fromRgb(255, 0, 0));
+        for(const Code::Error& err : m.errors){
+            Line* l_start = err.selection.left.line();
+            Line* l_end = err.selection.right.line();
+            double y_start = l_start->y;
+            double y_end = l_end->yBottom();
+
+            size_t pixel_start = view.yScreen(y_start);
+            size_t pixel_end = view.yScreen(y_end);
+
+            int x = H_PADDING;
+            int w = width() - 2*H_PADDING;
+            int y = pixel_start;
+            int h = std::min<int>(pixel_end - pixel_start, MAX_ERROR_HEIGHT);
+            h = std::max<int>(h, 1);
+            p.drawRect(x, y, w, h);
+        }
+    }
+
+public:
+    VerticalScrollBar(Qt::Orientation orientation, QWidget* parent, const View& view)
+        : QScrollBar(orientation, parent), view(view){}
+
+protected:
+    void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE{
+        QScrollBar::paintEvent(event);
+
+        if(vScrollActive()) paintErrorsProportional();
+        else paintErrorsAbsolute();
+    }
+};
+
 enum MouseHoldState{
     Hover,
     SingleClick,
@@ -90,7 +162,7 @@ View::View()
     recommender->setMinimumHeight(0);
     recommender->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::MinimumExpanding);
 
-    v_scroll = new QScrollBar(Qt::Vertical, this);
+    v_scroll = new VerticalScrollBar(Qt::Vertical, this, *this);
     h_scroll = new QScrollBar(Qt::Horizontal, this);
     connect(v_scroll, SIGNAL(valueChanged(int)), this, SLOT(repaint()));
     connect(h_scroll, SIGNAL(valueChanged(int)), this, SLOT(repaint()));
@@ -705,6 +777,12 @@ void View::cut(){
     QGuiApplication::clipboard()->setText(QString::fromStdString(str));
     controller.del();
 
+    ensureCursorVisible();
+    updateHighlighting();
+    repaint();
+    v_scroll->repaint();
+    qApp->processEvents();
+
     emit textChanged();
 }
 
@@ -716,6 +794,14 @@ void View::paste(){
 void View::del(){
     logger->info("{}del();", logPrefix());
     controller.del();
+
+    ensureCursorVisible();
+    updateHighlighting();
+    repaint();
+    v_scroll->repaint();
+    qApp->processEvents();
+
+    emit textChanged();
 }
 
 void View::setCursorAppearance(double x, double y){
@@ -817,7 +903,7 @@ void View::handleResize(int w, int h){
     h_scroll->setFixedWidth(display_width);
 
     double model_width = model->width()*zoom;
-    double model_heigth = (model->height() + MARGIN_TOP + MARGIN_BOT)*zoom;
+    double model_height = (model->height() + MARGIN_TOP + MARGIN_BOT)*zoom;
 
     double w_diff_scrn = model_width - model_display_width;
     bool h_scroll_enabled = w_diff_scrn > 0;
@@ -831,7 +917,7 @@ void View::handleResize(int w, int h){
     }
 
     v_scroll->setFixedHeight(display_height);
-    double h_diff_scrn = model_heigth - display_height;
+    double h_diff_scrn = model_height - display_height;
     bool v_scroll_enabled = h_diff_scrn > 0;
 
     if(v_scroll_enabled){
@@ -868,9 +954,13 @@ void View::undo(){
     logger->info("{}undo();", logPrefix());
 
     model->undo(controller);
+    ensureCursorVisible();
     updateHighlighting();
     recommender->hide();
     repaint();
+
+    v_scroll->repaint();
+    qApp->processEvents();
 
     emit textChanged();
 }
@@ -879,9 +969,12 @@ void View::redo(){
     logger->info("{}redo();", logPrefix());
 
     model->redo(controller);
+    ensureCursorVisible();
     updateHighlighting();
     recommender->hide();
     repaint();
+    v_scroll->repaint();
+    qApp->processEvents();
 
     emit textChanged();
 }
@@ -1072,6 +1165,8 @@ void View::handleKey(int key, int modifiers, const std::string& str){
     ensureCursorVisible();
     updateHighlighting();
     repaint();
+    v_scroll->repaint();
+    qApp->processEvents();
 
     emit textChanged();
 }
@@ -1079,6 +1174,13 @@ void View::handleKey(int key, int modifiers, const std::string& str){
 void View::paste(const std::string& str){
     logger->info("{}paste({});", logPrefix(), cStr(str));
     model->mutate(controller.getInsertSerial(str), controller);
+
+    ensureCursorVisible();
+    updateHighlighting();
+    repaint();
+    v_scroll->repaint();
+    qApp->processEvents();
+
     emit textChanged();
 }
 
@@ -1092,6 +1194,12 @@ void View::rename(const std::string& str){
     std::vector<Typeset::Selection> occurences;
     symbol_table.getSymbolOccurences(c.getAnchor(), occurences);
     replaceAll(occurences, str);
+
+    ensureCursorVisible();
+    updateHighlighting();
+    repaint();
+    v_scroll->repaint();
+    qApp->processEvents();
 
     emit textChanged();
 }
@@ -1109,6 +1217,12 @@ void View::takeRecommendation(const std::string& str){
     updateModel();
     recommender->hide();
     QTimer::singleShot(0, this, SLOT(setFocus())); //Delay 1 cycle to avoid whatever input activated item
+
+    ensureCursorVisible();
+    updateHighlighting();
+    repaint();
+    v_scroll->repaint();
+    qApp->processEvents();
 
     emit textChanged();
 }
