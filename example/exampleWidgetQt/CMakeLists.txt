@@ -176,6 +176,8 @@ set(PROJECT_SOURCES
     ${SRC}/typeset_subphrase.h
     ${SRC}/typeset_text.cpp
     ${SRC}/typeset_text.h
+    ${SRC}/typeset_themes.cpp
+    ${SRC}/typeset_themes.h
     ${SRC}/typeset_view.cpp
     ${INCLUDE}/typeset_view.h
     ${COMMAND}/typeset_command_indent.cpp

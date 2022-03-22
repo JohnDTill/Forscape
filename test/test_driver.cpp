@@ -7,11 +7,11 @@
 #include "typeset_mutability.h"
 #include "hope_benchmark.h"
 #include <hope_logging.h>
+#include <typeset_themes.h>
 
 #ifdef TEST_QT
 #include <QApplication>
 #include "typeset_graphics.h"
-#include "typeset_qpainter.h"
 #endif
 
 int main(int argc, char* argv[]){
@@ -23,6 +23,9 @@ int main(int argc, char* argv[]){
 
     Hope::initLogging();
     Hope::logger->info("TEST_START");
+    #ifndef HOPE_TYPESET_HEADLESS
+    Hope::Typeset::setDefaultTheme();
+    #endif
 
     bool passing = true;
 
@@ -36,7 +39,6 @@ int main(int argc, char* argv[]){
     passing &= testTypesetMutability();
     #ifdef TEST_QT
     passing &= testTypesetGraphics();
-    passing &= testTypesetQPainter();
     #endif
 
     if(passing) printf("\nAll passing\n\n");

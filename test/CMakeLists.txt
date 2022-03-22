@@ -157,6 +157,8 @@ set(SOURCES
     ${SRC}/typeset_subphrase.h
     ${SRC}/typeset_text.cpp
     ${SRC}/typeset_text.h
+    ${SRC}/typeset_themes.cpp
+    ${SRC}/typeset_themes.h
     ${COMMAND}/typeset_command_indent.cpp
     ${COMMAND}/typeset_command_indent.h
     ${COMMAND}/typeset_command_line.cpp
@@ -187,7 +189,6 @@ if (${TEST_QT})
     list(APPEND SOURCES
         ${EMBEDDED_RESOURCES}
         ${TEST}/typeset_graphics.h
-        ${TEST}/typeset_qpainter.h
         ${SRC}/typeset_painter.h
         ${SRC}/typeset_painter_qt.cpp
         ${SRC}/typeset_view.cpp

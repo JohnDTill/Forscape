@@ -9,6 +9,7 @@
 #include "typeset_shorthand.h"
 #include "typeset_subphrase.h"
 #include "typeset_text.h"
+#include "typeset_themes.h"
 #include <typeset_command_indent.h>
 #include <typeset_command_line.h>
 #include <typeset_command_pair.h>
@@ -277,8 +278,9 @@ void Controller::paintInsertCursor(Painter& painter) const{
     controller.consolidateToActive();
     controller.selectNextChar();
 
-    QColor selection_bak = View::selection_box_color;
-    View::selection_box_color = View::text_cursor_color;
+    QColor selection_bak = getColour<SelectionBox>();
+    QColor text_cursor_color = getColour<TextCursor>();
+    setColour(SelectionBox, text_cursor_color.red(), text_cursor_color.green(), text_cursor_color.blue());
 
     if(controller.hasSelection()){
         controller.paintSelection(painter);
@@ -290,7 +292,7 @@ void Controller::paintInsertCursor(Painter& painter) const{
         painter.drawSelection(x, y, w, h);
     }
 
-    View::selection_box_color = selection_bak;
+    setColour(SelectionBox, selection_bak.red(), selection_bak.green(), selection_bak.blue());
 }
 #endif
 

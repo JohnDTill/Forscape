@@ -6,6 +6,7 @@
 #include <typeset_line.h>
 #include <typeset_markerlink.h>
 #include <typeset_model.h>
+#include <typeset_themes.h>
 
 #include <chrono>
 
@@ -133,18 +134,6 @@ static void invalidateDoubleClickTime() noexcept {
 static void updateDoubleClickTime() noexcept {
     double_click_time = std::chrono::steady_clock::now();
 }
-
-QColor View::selection_box_color = QColor::fromRgb(0, 120, 215);
-QColor View::selection_text_color = Qt::white;
-QColor View::text_cursor_color = Qt::black;
-QColor View::error_background_color = QColor::fromRgb(255, 180, 180);
-QColor View::error_border_color = QColor::fromRgb(255, 50, 50);
-QColor View::line_box_fill_color = QColor::fromRgb(240, 240, 240);
-QColor View::line_box_border_color = Qt::lightGray;
-QColor View::line_num_active_color = Qt::black;
-QColor View::line_num_passive_color = Qt::darkGray;
-QColor View::grouping_highlight_color = QColor::fromRgb(255, 0, 0);
-QColor View::grouping_background_color = QColor::fromRgb(180, 238, 180);
 
 View::View()
     : model(Model::fromSerial("")),
@@ -817,7 +806,7 @@ void View::setCursorAppearance(double x, double y){
 
 void View::drawBackground(const QRect& rect){
     QPainter p(this);
-    p.fillRect(rect, isEnabled() ? background_color : disabled_background_color);
+    p.fillRect(rect, getColour(isEnabled() ? Background : DisabledBackground));
 }
 
 void View::drawModel(double xL, double yT, double xR, double yB){
@@ -847,8 +836,8 @@ void View::drawLinebox(double yT, double yB){
     if(!show_line_nums) return;
 
     QPainter p(this);
-    p.setBrush(line_box_fill_color);
-    p.setPen(line_box_border_color);
+    p.setBrush(getColour<LineBoxFill>());
+    p.setPen(getColour<LineBoxBorder>());
     p.drawRect(-1, -1, 1+LINEBOX_WIDTH*zoom, height()+2);
 
     QPainter qpainter(this);

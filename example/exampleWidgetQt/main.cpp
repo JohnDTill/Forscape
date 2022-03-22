@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 
 #include <hope_logging.h>
+#include <typeset_themes.h>
 #include <QApplication>
 
 int main(int argc, char* argv[]){
@@ -13,6 +14,7 @@ int main(int argc, char* argv[]){
     QApplication a(argc, argv);
     Hope::initLogging();
     Hope::logger->info("/* APP_SESSION_START */");
+    Hope::Typeset::setDefaultTheme();
     MainWindow w;
 
     w.show();
