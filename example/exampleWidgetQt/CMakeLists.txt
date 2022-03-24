@@ -121,9 +121,12 @@ set(PROJECT_SOURCES
     mainwindow.ui
     mathtoolbar.h
     mathtoolbar.cpp
+    preferences.cpp
+    preferences.h
+    preferences.ui
     qgraphvizcall.h
-    searchdialog.h
     searchdialog.cpp
+    searchdialog.h
     searchdialog.ui
     symboltreeview.cpp
     symboltreeview.h

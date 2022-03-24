@@ -24,6 +24,7 @@
 #include <QVBoxLayout>
 
 #include "mathtoolbar.h"
+#include "preferences.h"
 #include "searchdialog.h"
 #include "symboltreeview.h"
 
@@ -208,6 +209,8 @@ MainWindow::MainWindow(QWidget* parent)
 
     connect(&interpreter_poll_timer, SIGNAL(timeout()), this, SLOT(pollInterpreterThread()));
     connect(editor, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
+
+    preferences = new Preferences();
 }
 
 MainWindow::~MainWindow(){
@@ -703,3 +706,8 @@ void MainWindow::checkForChanges(){
 void MainWindow::on_actionSee_log_triggered(){
     openLogFile();
 }
+
+void MainWindow::on_actionPreferences_triggered(){
+    preferences->show();
+}
+
