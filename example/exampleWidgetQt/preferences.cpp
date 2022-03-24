@@ -8,9 +8,8 @@
 
 //DO THIS - generate roles and presets from csv file
 //DO THIS - make sure all colours have roles
+//DO THIS - make sure everything uses colour themes - toolbars, window, etcetera
 //DO THIS - cache colour preferences in settings
-
-#include <iostream>
 
 Preferences::Preferences(QWidget* parent) :
     QWidget(parent), ui(new Ui::Preferences){

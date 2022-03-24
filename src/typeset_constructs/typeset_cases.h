@@ -211,6 +211,8 @@ inline std::vector<Cases::ContextAction> Cases::actions {
 };
 #endif
 
+#undef LOG_PREFIX
+
 }
 
 }
