@@ -41,6 +41,8 @@ set(GEN_FILES
     ${GEN}/typeset_keywords.cpp
     ${GEN}/typeset_keywords.h
     ${GEN}/typeset_shorthand.h
+    ${GEN}/typeset_themes.cpp
+    ${GEN}/typeset_themes.h
     ${GEN}/unicode_subscripts.h
     ${GEN}/unicode_superscripts.h
 )
@@ -157,8 +159,6 @@ set(SOURCES
     ${SRC}/typeset_subphrase.h
     ${SRC}/typeset_text.cpp
     ${SRC}/typeset_text.h
-    ${SRC}/typeset_themes.cpp
-    ${SRC}/typeset_themes.h
     ${COMMAND}/typeset_command_indent.cpp
     ${COMMAND}/typeset_command_indent.h
     ${COMMAND}/typeset_command_line.cpp

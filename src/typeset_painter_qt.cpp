@@ -166,16 +166,16 @@ void Painter::drawText(double x, double y, const std::string& text, bool forward
 void Painter::drawHighlightedGrouping(double x, double y, double w, const std::string& text){
     x += x_offset;
 
-    painter.setPen(getColour<GroupingBackground>());
-    painter.setBrush(getColour<GroupingBackground>());
+    painter.setPen(getColour(COLOUR_GROUPINGBACKGROUND));
+    painter.setBrush(getColour(COLOUR_GROUPINGBACKGROUND));
     painter.drawRect(x, y, w, painter.fontMetrics().ascent());
 
-    painter.setPen(getColour<GroupingHighlight>());
+    painter.setPen(getColour(COLOUR_GROUPINGHIGHLIGHT));
     y += painter.fontMetrics().capHeight();
     painter.drawText(x, y, QString::fromStdString(text));
 
-    painter.setPen(getColour<TextCursor>());
-    painter.setBrush(getColour<TextCursor>());
+    painter.setPen(getColour(COLOUR_CURSOR));
+    painter.setBrush(getColour(COLOUR_CURSOR));
 }
 
 void Painter::drawSymbol(double x, double y, const std::string& text){
@@ -219,24 +219,24 @@ void Painter::drawRect(double x, double y, double w, double h){
 }
 
 void Painter::drawSelection(double x, double y, double w, double h){
-    painter.setPen(getColour<SelectionBox>());
-    painter.setBrush(getColour<SelectionBox>());
+    painter.setPen(getColour(COLOUR_SELECTION));
+    painter.setBrush(getColour(COLOUR_SELECTION));
 
     drawRect(x, y, w, h);
 
-    painter.setPen(getColour<SelectionText>());
-    painter.setBrush(getColour<SelectionText>());
+    painter.setPen(getColour(COLOUR_SELECTEDTEXT));
+    painter.setBrush(getColour(COLOUR_SELECTEDTEXT));
 }
 
 void Painter::drawError(double x, double y, double w, double h){
-    painter.setPen(getColour<ErrorBorder>());
-    painter.setBrush(getColour<ErrorBackground>());
+    painter.setPen(getColour(COLOUR_ERRORBORDER));
+    painter.setBrush(getColour(COLOUR_ERRORBACKGROUND));
 
     x += x_offset;
     painter.drawRoundedRect(x, y, w, h, 4, 4);
 
-    painter.setPen(getColour<TextCursor>());
-    painter.setBrush(getColour<TextCursor>());
+    painter.setPen(getColour(COLOUR_CURSOR));
+    painter.setBrush(getColour(COLOUR_CURSOR));
 }
 
 void Painter::drawEmptySubphrase(double x, double y, double w, double h){
@@ -288,13 +288,13 @@ void Painter::drawHighlight(double x, double y, double w, double h){
     //painter.drawRect(x, y, w, h);
     //painter.fillRect(x, y, w, h, grad);
 
-    painter.setPen(getColour<TextCursor>());
-    painter.setBrush(getColour<TextCursor>());
+    painter.setPen(getColour(COLOUR_CURSOR));
+    painter.setBrush(getColour(COLOUR_CURSOR));
 }
 
 void Painter::drawNarrowCursor(double x, double y, double h){
     x += x_offset;
-    painter.setPen(getColour<TextCursor>());
+    painter.setPen(getColour(COLOUR_CURSOR));
     painter.drawLine(x, y, x, y+h);
 }
 
@@ -321,8 +321,8 @@ double Painter::getWidth(const std::string& text){
 }
 
 void Painter::drawLineNumber(double y, size_t num, bool active){
-    if(active) painter.setPen(getColour<LineNumActive>());
-    else painter.setPen(getColour<LineNumPassive>());
+    if(active) painter.setPen(getColour(COLOUR_LINENUMACTIVE));
+    else painter.setPen(getColour(COLOUR_LINENUMPASSIVE));
 
     painter.setFont(line_font);
     QFontMetricsF fm (painter.font());

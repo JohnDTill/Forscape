@@ -806,7 +806,7 @@ void View::setCursorAppearance(double x, double y){
 
 void View::drawBackground(const QRect& rect){
     QPainter p(this);
-    p.fillRect(rect, getColour(isEnabled() ? Background : DisabledBackground));
+    p.fillRect(rect, getColour(isEnabled() ? COLOUR_BACKGROUND : COLOUR_BACKGROUNDDISABLED));
 }
 
 void View::drawModel(double xL, double yT, double xR, double yB){
@@ -836,8 +836,8 @@ void View::drawLinebox(double yT, double yB){
     if(!show_line_nums) return;
 
     QPainter p(this);
-    p.setBrush(getColour<LineBoxFill>());
-    p.setPen(getColour<LineBoxBorder>());
+    p.setBrush(getColour(COLOUR_LINEBOXFILL));
+    p.setPen(getColour(COLOUR_LINEBOXBORDER));
     p.drawRect(-1, -1, 1+LINEBOX_WIDTH*zoom, height()+2);
 
     QPainter qpainter(this);

@@ -278,9 +278,9 @@ void Controller::paintInsertCursor(Painter& painter) const{
     controller.consolidateToActive();
     controller.selectNextChar();
 
-    QColor selection_bak = getColour<SelectionBox>();
-    QColor text_cursor_color = getColour<TextCursor>();
-    setColour(SelectionBox, text_cursor_color.red(), text_cursor_color.green(), text_cursor_color.blue());
+    QColor selection_bak = getColour(COLOUR_SELECTION);
+    QColor text_cursor_color = getColour(COLOUR_CURSOR);
+    setColour(COLOUR_SELECTION, text_cursor_color);
 
     if(controller.hasSelection()){
         controller.paintSelection(painter);
@@ -292,7 +292,7 @@ void Controller::paintInsertCursor(Painter& painter) const{
         painter.drawSelection(x, y, w, h);
     }
 
-    setColour(SelectionBox, selection_bak.red(), selection_bak.green(), selection_bak.blue());
+    setColour(COLOUR_SELECTION, selection_bak);
 }
 #endif
 
