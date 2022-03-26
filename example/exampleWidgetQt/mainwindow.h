@@ -11,6 +11,7 @@ QT_END_NAMESPACE
 
 class MathToolbar;
 class Preferences;
+class QGroupBox;
 
 namespace Hope{ namespace Typeset { class View; } }
 
@@ -26,6 +27,7 @@ private:
     Ui::MainWindow* ui;
     Hope::Typeset::View* editor;
     Hope::Typeset::View* console;
+    QGroupBox* group_box;
     MathToolbar* math_toolbar;
     QToolBar* action_toolbar;
     Preferences* preferences;
@@ -76,6 +78,7 @@ private slots:
     void checkForChanges();
     void on_actionSee_log_triggered();
     void on_actionPreferences_triggered();
+    void onColourChanged();
 
 protected:
     virtual void closeEvent(QCloseEvent* event) override;

@@ -274,11 +274,12 @@ void Painter::drawHighlight(double x, double y, double w, double h){
     QLinearGradient grad;
     grad.setStart(x, y);
     grad.setFinalStop(x, y+h);
-    grad.setColorAt(0.0, Qt::white);
-    grad.setColorAt(0.6, QColor::fromRgb(230, 230, 230));
-    grad.setColorAt(1.0, Qt::white);
+    const QColor& primary = getColour(COLOUR_HIGHLIGHTPRIMARY);
+    grad.setColorAt(0.0, primary);
+    grad.setColorAt(0.6, getColour(COLOUR_HIGHLIGHTSECONDARY));
+    grad.setColorAt(1.0, primary);
 
-    QPen pen(Qt::darkGray);
+    QPen pen(getColour(COLOUR_HIGHLIGHTBORDER));
     pen.setWidthF(0.2);
     painter.setPen(pen);
     QBrush brush(grad);

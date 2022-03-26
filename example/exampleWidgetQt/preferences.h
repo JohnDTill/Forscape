@@ -20,6 +20,9 @@ private slots:
     void onPresetSelect(int index);
     void onColourSelect(QTableWidgetItem* item);
 
+signals:
+    void colourChanged();
+
 private:
     void addCustomDropdownIfNotPresent();
     void removeCustomDropdownIfPresent();

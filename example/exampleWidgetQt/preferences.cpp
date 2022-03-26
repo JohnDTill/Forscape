@@ -6,9 +6,6 @@
 #include <QSettings>
 #include <QWindow>
 
-//DO THIS - make sure all colours have roles
-//DO THIS - make sure everything uses colour themes - toolbars, window, etcetera
-
 Preferences::Preferences(QSettings& settings, QWidget* parent) :
     QWidget(parent), ui(new Ui::Preferences), settings(settings){
     ui->setupUi(this);
@@ -78,6 +75,7 @@ void Preferences::onPresetSelect(int index){
     }
 
     removeCustomDropdownIfPresent();
+    emit colourChanged();
     updateWindows();
 }
 
@@ -89,6 +87,7 @@ void Preferences::onColourSelect(QTableWidgetItem* item){
     item->setBackground(colour);
     Hope::Typeset::setColour(role, colour);
     addCustomDropdownIfNotPresent();
+    emit colourChanged();
     updateWindows();
 }
 
