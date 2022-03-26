@@ -721,7 +721,6 @@ void MainWindow::onColourChanged(){
     p.setColor(QPalette::Text, Hope::Typeset::getColour(Hope::Typeset::COLOUR_TEXT));
     p.setColor(QPalette::WindowText, Hope::Typeset::getColour(Hope::Typeset::COLOUR_TEXT));
     p.setColor(QPalette::PlaceholderText, Hope::Typeset::getColour(Hope::Typeset::COLOUR_TEXT));
-    p.setColor(QPalette::ButtonText, Hope::Typeset::getColour(Hope::Typeset::COLOUR_TEXT));
     p.setColor(QPalette::Dark, Hope::Typeset::getColour(Hope::Typeset::COLOUR_TEXT));
     p.setColor(QPalette::Highlight, Hope::Typeset::getColour(Hope::Typeset::COLOUR_SELECTION));
     p.setColor(QPalette::HighlightedText, Hope::Typeset::getColour(Hope::Typeset::COLOUR_SELECTEDTEXT));
@@ -729,12 +728,19 @@ void MainWindow::onColourChanged(){
     p.setColor(QPalette::Button, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINEBOXFILL));
     p.setColor(QPalette::Base, Hope::Typeset::getColour(Hope::Typeset::COLOUR_BACKGROUND));
     p.setColor(QPalette::Light, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LIGHT));
-
-    //DO THIS - eliminate make sure file menu visable, maybe apply theme to subwindows
+    p.setColor(QPalette::Link, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINK));
+    p.setColor(QPalette::LinkVisited, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINK));
     setPalette(p);
+
+    //Set colours which should not affect filebar
+    p.setColor(QPalette::ButtonText, Hope::Typeset::getColour(Hope::Typeset::COLOUR_TEXT));
+    //p.setColor(QPalette::Mid, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINEBOXFILL));
+    //p.setColor(QPalette::Midlight, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINEBOXFILL));
+    //p.setColor(QPalette::Shadow, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINEBOXFILL));
+    //p.setColor(QPalette::AlternateBase, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINEBOXFILL));
     group_box->setPalette(p);
     action_toolbar->setPalette(p);
     math_toolbar->setPalette(p);
-    //preferences->setPalette(p);
+    //preferences->setPalette(p); //EVENTUALLY: get themes to work with popup windows
 }
 
