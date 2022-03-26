@@ -1,6 +1,7 @@
 #ifndef PREFERENCES_H
 #define PREFERENCES_H
 
+class QSettings;
 class QTableWidgetItem;
 #include <QWidget>
 
@@ -12,7 +13,7 @@ class Preferences : public QWidget{
     Q_OBJECT
 
 public:
-    explicit Preferences(QWidget* parent = nullptr);
+    explicit Preferences(QSettings& settings, QWidget* parent = nullptr);
     ~Preferences();
 
 private slots:
@@ -24,6 +25,7 @@ private:
     void removeCustomDropdownIfPresent();
     void updateWindows() const;
     Ui::Preferences* ui;
+    QSettings& settings;
 };
 
 #endif // PREFERENCES_H

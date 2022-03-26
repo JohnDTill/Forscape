@@ -210,7 +210,7 @@ MainWindow::MainWindow(QWidget* parent)
     connect(&interpreter_poll_timer, SIGNAL(timeout()), this, SLOT(pollInterpreterThread()));
     connect(editor, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
 
-    preferences = new Preferences();
+    preferences = new Preferences(settings);
 }
 
 MainWindow::~MainWindow(){
@@ -221,6 +221,7 @@ MainWindow::~MainWindow(){
     settings.setValue(ACTION_TOOLBAR_VISIBLE, ui->actionShow_action_toolbar->isChecked());
     settings.setValue(WINDOW_GEOMETRY, saveGeometry());
     settings.setValue(WINDOW_STATE, saveState());
+    delete preferences;
     delete ui;
 }
 

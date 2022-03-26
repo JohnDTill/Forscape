@@ -8,18 +8,33 @@
 
 //DO THIS - make sure all colours have roles
 //DO THIS - make sure everything uses colour themes - toolbars, window, etcetera
-//DO THIS - cache colour preferences in settings
 
-Preferences::Preferences(QWidget* parent) :
-    QWidget(parent), ui(new Ui::Preferences){
+Preferences::Preferences(QSettings& settings, QWidget* parent) :
+    QWidget(parent), ui(new Ui::Preferences), settings(settings){
     ui->setupUi(this);
-
-    connect(ui->colour_dropdown, SIGNAL(activated(int)), this, SLOT(onPresetSelect(int)));
 
     for(int i = 0; i < Hope::Typeset::NUM_COLOUR_PRESETS; i++){
         std::string_view name = Hope::Typeset::getPresetName(i).data();
         ui->colour_dropdown->addItem(name.data());
     }
+
+    if(settings.contains("COLOUR_PRESET")){
+        QString colour_preset = settings.value("COLOUR_PRESET").toString();
+        if(colour_preset == "Custom") addCustomDropdownIfNotPresent();
+        else for(size_t i = 0; i < Hope::Typeset::NUM_COLOUR_PRESETS; i++)
+            if(colour_preset == Hope::Typeset::getPresetName(i).data()){
+                Hope::Typeset::setPreset(i);
+                ui->colour_dropdown->setCurrentIndex(i);
+            }
+    }
+
+    for(size_t i = 0; i < Hope::Typeset::NUM_COLOUR_ROLES; i++){
+        std::string_view name = Hope::Typeset::getColourName(i).data();
+        if(!settings.contains(name.data())) continue;
+        Hope::Typeset::setColour(i, settings.value(name.data()).value<QColor>());
+    }
+
+    connect(ui->colour_dropdown, SIGNAL(activated(int)), this, SLOT(onPresetSelect(int)));
 
     connect(ui->colour_table, SIGNAL(itemDoubleClicked(QTableWidgetItem*)),
             this, SLOT(onColourSelect(QTableWidgetItem*)) );
@@ -42,6 +57,13 @@ Preferences::Preferences(QWidget* parent) :
 }
 
 Preferences::~Preferences(){
+    settings.setValue("COLOUR_PRESET", ui->colour_dropdown->currentText());
+    for(size_t i = 0; i < Hope::Typeset::NUM_COLOUR_ROLES; i++){
+        std::string_view name = Hope::Typeset::getColourName(i).data();
+        const QColor& colour = Hope::Typeset::getColour(i);
+        settings.setValue(name.data(), colour);
+    }
+
     delete ui;
 }
 
