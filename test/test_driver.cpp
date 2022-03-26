@@ -24,7 +24,7 @@ int main(int argc, char* argv[]){
     Hope::initLogging();
     Hope::logger->info("TEST_START");
     #ifndef HOPE_TYPESET_HEADLESS
-    Hope::Typeset::setDefaultTheme();
+    Hope::Typeset::setPreset(0);
     #endif
 
     bool passing = true;

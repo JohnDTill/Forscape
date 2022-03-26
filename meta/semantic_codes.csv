@@ -1,16 +1,16 @@
-Name,Font,Family,r,g,b
-Default,Quivira,Regular,0,0,0
-Comment,Quivira,Regular,6,85,53
-String,Quivira,Regular,0,128,128
-Keyword,Quivira,Regular,196,147,22
-Number,CMU Serif,Roman,12,0,92
-Error,Quivira,Regular,231,30,40
-Id,CMU Serif,Italic,92,0,0
-Id_Fun_Impure,CMU Typewriter Text,Bold,231,30,40
-Link,Quivira,Regular,0,0,255
-PredefinedMat,CMU Serif,Bold Italic,131,52,235
-PredefinedMatNum,CMU Serif,Bold,131,52,235
-Id_Mat,CMU Serif,Bold Italic,92,0,0
-Id_Mat_Impure,CMU Typewriter Text,Bold,231,30,40
-Predef,CMU Serif,Italic,12,0,92
-Id_Ewise_Index,CMU Serif,Italic,196,147,22
+Name,Font,Family,Colour Role
+Default,Quivira,Regular,COLOUR_TEXT
+Comment,Quivira,Regular,COLOUR_COMMENT
+String,Quivira,Regular,COLOUR_STRING
+Keyword,Quivira,Regular,COLOUR_KEYWORD
+Number,CMU Serif,Roman,COLOUR_NUMBER
+Error,Quivira,Regular,COLOUR_ERRORTEXT
+Id,CMU Serif,Italic,COLOUR_ID
+Id_Fun_Impure,CMU Typewriter Text,Bold,COLOUR_IMPURE
+Link,Quivira,Regular,COLOUR_LINK
+PredefinedMat,CMU Serif,Bold Italic,COLOUR_PREDEFMAT
+PredefinedMatNum,CMU Serif,Bold,COLOUR_PREDEFMAT
+Id_Mat,CMU Serif,Bold Italic,COLOUR_ID
+Id_Mat_Impure,CMU Typewriter Text,Bold,COLOUR_IMPURE
+Predef,CMU Serif,Italic,COLOUR_PREDEF
+Id_Ewise_Index,CMU Serif,Italic,COLOUR_KEYWORD

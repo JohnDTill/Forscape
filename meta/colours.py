@@ -18,9 +18,8 @@ def main():
         name="themes",
         inner_namespace="Typeset",
         includes=["string_view", "QColor"],
+        extra_guards=["HOPE_TYPESET_HEADLESS"],
     )
-
-    header_writer.write("#ifndef HOPE_HEADLESS\n\n")
 
     for i in range(1, len(headers)):
         header = to_id(headers[i])
@@ -40,10 +39,10 @@ def main():
         "std::string_view getPresetName(size_t preset) noexcept;\n\n"
     )
 
-    header_writer.write("#endif HOPE_HEADLESS\n\n")
     header_writer.finalize()
 
     with open("../src/generated/typeset_themes.cpp", "w", encoding="utf-8") as codegen_file:
+        codegen_file.write("#ifndef HOPE_TYPESET_HEADLESS\n\n")
         codegen_file.write("#include \"typeset_themes.h\"\n\n")
         codegen_file.write("#include <array>\n\n")
 
@@ -94,7 +93,7 @@ def main():
             "}\n\n"
         )
 
-        codegen_file.write("\n}\n\n}\n")
+        codegen_file.write("\n}\n\n}\n\n#endif\n")
 
 
 if __name__ == "__main__":

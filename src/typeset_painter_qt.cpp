@@ -78,7 +78,7 @@ static const QFont& getFont(SemanticType type, uint8_t depth){
 }
 
 static QColor getColor(SemanticType type){
-    return QColor::fromRgb(r[type], g[type], b[type]);
+    return Typeset::getColour(sem_colours[type]);
 }
 
 static double getWidth(const QFont& font, const std::string& text){

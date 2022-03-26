@@ -709,5 +709,7 @@ void MainWindow::on_actionSee_log_triggered(){
 
 void MainWindow::on_actionPreferences_triggered(){
     preferences->show();
+    preferences->raise();  // for MacOS
+    preferences->activateWindow(); // for Windows
 }
 

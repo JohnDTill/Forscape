@@ -88,19 +88,24 @@ class HeaderWriter(Writer):
     """
     This is a class to generalize code generation for C++
     """
-    def __init__(self, name, inner_namespace=None, includes=()):
+    def __init__(self, name, inner_namespace=None, includes=(), extra_guards=()):
         super().__init__(inner_namespace, includes)
         self.name = name.lower()
         self.guard = (f"HOPE_{inner_namespace}_{name}_H" if inner_namespace else f"HOPE_{name}_H").upper()
+        self.extra_guards = extra_guards
         self.__head_boilerplate(includes)
         self.filename = (f"{self.inner_namespace}_{self.name}.h" if inner_namespace else f"{self.name}.h").lower()
 
     def finalize(self):
         self.__tail_boilerplate()
+        for _ in range(0, len(self.extra_guards)):
+            self.str += "#endif\n"
         with open(f"../src/generated/{self.filename}", "w", encoding="utf-8") as codegen_file:
             codegen_file.write(self.str)
 
     def __head_boilerplate(self, includes):
+        for guard in self.extra_guards:
+            self.str += f"#ifndef {guard}\n"
         self.__include_guard_start()
         self._inclusion_list(includes)
         self._outer_namespace_begin()
