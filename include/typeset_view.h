@@ -42,20 +42,6 @@ public:
     void insertText(const std::string& str);
     void insertSerial(const std::string& str);
 
-    static QColor selection_box_color;
-    static QColor selection_text_color;
-    static QColor text_cursor_color;
-    static QColor error_background_color;
-    static QColor error_border_color;
-    static QColor line_box_fill_color;
-    static QColor line_box_border_color;
-    static QColor line_num_active_color;
-    static QColor line_num_passive_color;
-    static QColor grouping_highlight_color;
-    static QColor grouping_background_color;
-    QColor background_color = Qt::white;
-    QColor disabled_background_color = QPalette().color(QPalette::Disabled, QPalette::Window);
-
     std::vector<Typeset::Selection> highlighted_words;
     View* console = nullptr;
 

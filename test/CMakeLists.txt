@@ -41,6 +41,8 @@ set(GEN_FILES
     ${GEN}/typeset_keywords.cpp
     ${GEN}/typeset_keywords.h
     ${GEN}/typeset_shorthand.h
+    ${GEN}/typeset_themes.cpp
+    ${GEN}/typeset_themes.h
     ${GEN}/unicode_subscripts.h
     ${GEN}/unicode_superscripts.h
 )
@@ -187,7 +189,6 @@ if (${TEST_QT})
     list(APPEND SOURCES
         ${EMBEDDED_RESOURCES}
         ${TEST}/typeset_graphics.h
-        ${TEST}/typeset_qpainter.h
         ${SRC}/typeset_painter.h
         ${SRC}/typeset_painter_qt.cpp
         ${SRC}/typeset_view.cpp

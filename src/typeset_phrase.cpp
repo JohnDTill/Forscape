@@ -277,7 +277,7 @@ void Phrase::updateSize() noexcept{
         width += texts[i+1]->getWidth();
     }
 
-    if(width == 0) width = EMPTY_PHRASE_WIDTH_RATIO*height();
+    if(width == 0 && !isLine()) width = EMPTY_PHRASE_WIDTH_RATIO*height();
 }
 
 void Phrase::updateLayout() noexcept{

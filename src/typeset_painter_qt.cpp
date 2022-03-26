@@ -1,5 +1,6 @@
 #include "typeset_painter.h"
 
+#include <typeset_themes.h>
 #include <typeset_view.h>
 
 #ifndef NDEBUG
@@ -77,7 +78,7 @@ static const QFont& getFont(SemanticType type, uint8_t depth){
 }
 
 static QColor getColor(SemanticType type){
-    return QColor::fromRgb(r[type], g[type], b[type]);
+    return Typeset::getColour(sem_colours[type]);
 }
 
 static double getWidth(const QFont& font, const std::string& text){
@@ -165,16 +166,16 @@ void Painter::drawText(double x, double y, const std::string& text, bool forward
 void Painter::drawHighlightedGrouping(double x, double y, double w, const std::string& text){
     x += x_offset;
 
-    painter.setPen(View::grouping_background_color);
-    painter.setBrush(View::grouping_background_color);
+    painter.setPen(getColour(COLOUR_GROUPINGBACKGROUND));
+    painter.setBrush(getColour(COLOUR_GROUPINGBACKGROUND));
     painter.drawRect(x, y, w, painter.fontMetrics().ascent());
 
-    painter.setPen(View::grouping_highlight_color);
+    painter.setPen(getColour(COLOUR_GROUPINGHIGHLIGHT));
     y += painter.fontMetrics().capHeight();
     painter.drawText(x, y, QString::fromStdString(text));
 
-    painter.setPen(View::text_cursor_color);
-    painter.setBrush(View::text_cursor_color);
+    painter.setPen(getColour(COLOUR_CURSOR));
+    painter.setBrush(getColour(COLOUR_CURSOR));
 }
 
 void Painter::drawSymbol(double x, double y, const std::string& text){
@@ -218,24 +219,24 @@ void Painter::drawRect(double x, double y, double w, double h){
 }
 
 void Painter::drawSelection(double x, double y, double w, double h){
-    painter.setPen(View::selection_box_color);
-    painter.setBrush(View::selection_box_color);
+    painter.setPen(getColour(COLOUR_SELECTION));
+    painter.setBrush(getColour(COLOUR_SELECTION));
 
     drawRect(x, y, w, h);
 
-    painter.setPen(View::selection_text_color);
-    painter.setBrush(View::selection_text_color);
+    painter.setPen(getColour(COLOUR_SELECTEDTEXT));
+    painter.setBrush(getColour(COLOUR_SELECTEDTEXT));
 }
 
 void Painter::drawError(double x, double y, double w, double h){
-    painter.setPen(View::View::error_border_color);
-    painter.setBrush(View::error_background_color);
+    painter.setPen(getColour(COLOUR_ERRORBORDER));
+    painter.setBrush(getColour(COLOUR_ERRORBACKGROUND));
 
     x += x_offset;
     painter.drawRoundedRect(x, y, w, h, 4, 4);
 
-    painter.setPen(View::text_cursor_color);
-    painter.setBrush(View::text_cursor_color);
+    painter.setPen(getColour(COLOUR_CURSOR));
+    painter.setBrush(getColour(COLOUR_CURSOR));
 }
 
 void Painter::drawEmptySubphrase(double x, double y, double w, double h){
@@ -273,11 +274,12 @@ void Painter::drawHighlight(double x, double y, double w, double h){
     QLinearGradient grad;
     grad.setStart(x, y);
     grad.setFinalStop(x, y+h);
-    grad.setColorAt(0.0, Qt::white);
-    grad.setColorAt(0.6, QColor::fromRgb(230, 230, 230));
-    grad.setColorAt(1.0, Qt::white);
+    const QColor& primary = getColour(COLOUR_HIGHLIGHTPRIMARY);
+    grad.setColorAt(0.0, primary);
+    grad.setColorAt(0.6, getColour(COLOUR_HIGHLIGHTSECONDARY));
+    grad.setColorAt(1.0, primary);
 
-    QPen pen(Qt::darkGray);
+    QPen pen(getColour(COLOUR_HIGHLIGHTBORDER));
     pen.setWidthF(0.2);
     painter.setPen(pen);
     QBrush brush(grad);
@@ -287,13 +289,13 @@ void Painter::drawHighlight(double x, double y, double w, double h){
     //painter.drawRect(x, y, w, h);
     //painter.fillRect(x, y, w, h, grad);
 
-    painter.setPen(View::text_cursor_color);
-    painter.setBrush(View::text_cursor_color);
+    painter.setPen(getColour(COLOUR_CURSOR));
+    painter.setBrush(getColour(COLOUR_CURSOR));
 }
 
 void Painter::drawNarrowCursor(double x, double y, double h){
     x += x_offset;
-    painter.setPen(View::text_cursor_color);
+    painter.setPen(getColour(COLOUR_CURSOR));
     painter.drawLine(x, y, x, y+h);
 }
 
@@ -320,8 +322,8 @@ double Painter::getWidth(const std::string& text){
 }
 
 void Painter::drawLineNumber(double y, size_t num, bool active){
-    if(active) painter.setPen(View::line_num_active_color);
-    else painter.setPen(View::line_num_passive_color);
+    if(active) painter.setPen(getColour(COLOUR_LINENUMACTIVE));
+    else painter.setPen(getColour(COLOUR_LINENUMPASSIVE));
 
     painter.setFont(line_font);
     QFontMetricsF fm (painter.font());

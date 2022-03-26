@@ -24,6 +24,7 @@
 #include <QVBoxLayout>
 
 #include "mathtoolbar.h"
+#include "preferences.h"
 #include "searchdialog.h"
 #include "symboltreeview.h"
 
@@ -77,7 +78,7 @@ MainWindow::MainWindow(QWidget* parent)
         open(settings.value(ACTIVE_FILE).toString());
     splitter->addWidget(editor);
 
-    QGroupBox* group_box = new QGroupBox(this);
+    group_box = new QGroupBox(this);
     group_box->setTitle("Console");
 
     QVBoxLayout* vbox = new QVBoxLayout();
@@ -208,6 +209,10 @@ MainWindow::MainWindow(QWidget* parent)
 
     connect(&interpreter_poll_timer, SIGNAL(timeout()), this, SLOT(pollInterpreterThread()));
     connect(editor, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
+
+    preferences = new Preferences(settings);
+    connect(preferences, SIGNAL(colourChanged()), this, SLOT(onColourChanged()));
+    onColourChanged();
 }
 
 MainWindow::~MainWindow(){
@@ -218,6 +223,7 @@ MainWindow::~MainWindow(){
     settings.setValue(ACTION_TOOLBAR_VISIBLE, ui->actionShow_action_toolbar->isChecked());
     settings.setValue(WINDOW_GEOMETRY, saveGeometry());
     settings.setValue(WINDOW_STATE, saveState());
+    delete preferences;
     delete ui;
 }
 
@@ -703,3 +709,38 @@ void MainWindow::checkForChanges(){
 void MainWindow::on_actionSee_log_triggered(){
     openLogFile();
 }
+
+void MainWindow::on_actionPreferences_triggered(){
+    preferences->show();
+    preferences->raise();  // for MacOS
+    preferences->activateWindow(); // for Windows
+}
+
+void MainWindow::onColourChanged(){
+    QPalette p = QGuiApplication::palette();
+    p.setColor(QPalette::Text, Hope::Typeset::getColour(Hope::Typeset::COLOUR_TEXT));
+    p.setColor(QPalette::WindowText, Hope::Typeset::getColour(Hope::Typeset::COLOUR_TEXT));
+    p.setColor(QPalette::PlaceholderText, Hope::Typeset::getColour(Hope::Typeset::COLOUR_TEXT));
+    p.setColor(QPalette::Dark, Hope::Typeset::getColour(Hope::Typeset::COLOUR_TEXT));
+    p.setColor(QPalette::Highlight, Hope::Typeset::getColour(Hope::Typeset::COLOUR_SELECTION));
+    p.setColor(QPalette::HighlightedText, Hope::Typeset::getColour(Hope::Typeset::COLOUR_SELECTEDTEXT));
+    p.setColor(QPalette::Window, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINEBOXFILL));
+    p.setColor(QPalette::Button, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINEBOXFILL));
+    p.setColor(QPalette::Base, Hope::Typeset::getColour(Hope::Typeset::COLOUR_BACKGROUND));
+    p.setColor(QPalette::Light, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LIGHT));
+    p.setColor(QPalette::Link, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINK));
+    p.setColor(QPalette::LinkVisited, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINK));
+    setPalette(p);
+
+    //Set colours which should not affect filebar
+    p.setColor(QPalette::ButtonText, Hope::Typeset::getColour(Hope::Typeset::COLOUR_TEXT));
+    //p.setColor(QPalette::Mid, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINEBOXFILL));
+    //p.setColor(QPalette::Midlight, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINEBOXFILL));
+    //p.setColor(QPalette::Shadow, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINEBOXFILL));
+    //p.setColor(QPalette::AlternateBase, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINEBOXFILL));
+    group_box->setPalette(p);
+    action_toolbar->setPalette(p);
+    math_toolbar->setPalette(p);
+    //preferences->setPalette(p); //EVENTUALLY: get themes to work with popup windows
+}
+

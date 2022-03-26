@@ -8,7 +8,7 @@ def main():
 
     header_writer = cpp.HeaderWriter(
         name="semantic_tags",
-        includes=["string_view"],
+        includes=["string_view", "typeset_themes.h"],
     )
 
     header_writer.write("enum SemanticType {\n")
@@ -33,11 +33,12 @@ def main():
 
     header_writer.write(f"constexpr size_t NUM_SEM_TYPES = {len(entries)};\n\n")
 
-    for ch in "rgb":
-        header_writer.write(f"constexpr uint8_t {ch}[NUM_SEM_TYPES] {{\n")
-        for e in entries:
-            header_writer.write(f"    {getattr(e, ch)},\n")
-        header_writer.write("};\n\n")
+    header_writer.write(f"")
+
+    header_writer.write("constexpr size_t sem_colours[NUM_SEM_TYPES] {\n")
+    for e in entries:
+        header_writer.write(f"    Typeset::{e.colour_role},\n")
+    header_writer.write("};\n\n")
 
     fonts = set()
     for e in entries:

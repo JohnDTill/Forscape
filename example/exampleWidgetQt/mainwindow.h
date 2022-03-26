@@ -10,6 +10,8 @@ namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
 class MathToolbar;
+class Preferences;
+class QGroupBox;
 
 namespace Hope{ namespace Typeset { class View; } }
 
@@ -25,8 +27,10 @@ private:
     Ui::MainWindow* ui;
     Hope::Typeset::View* editor;
     Hope::Typeset::View* console;
+    QGroupBox* group_box;
     MathToolbar* math_toolbar;
     QToolBar* action_toolbar;
+    Preferences* preferences;
     QString path;
     QTimer interpreter_poll_timer;
     static constexpr std::chrono::milliseconds INTERPETER_POLL_PERIOD = std::chrono::milliseconds(15);
@@ -72,8 +76,9 @@ private slots:
     void on_actionShow_action_toolbar_toggled(bool show);
     void on_actionShow_typesetting_toolbar_toggled(bool show);
     void checkForChanges();
-
     void on_actionSee_log_triggered();
+    void on_actionPreferences_triggered();
+    void onColourChanged();
 
 protected:
     virtual void closeEvent(QCloseEvent* event) override;
