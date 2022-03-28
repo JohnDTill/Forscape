@@ -42,6 +42,7 @@ public:
     void stop();
     double width() const noexcept;
     double height() const noexcept;
+    size_t numLines() const noexcept;
 
     #ifdef HOPE_SEMANTIC_DEBUGGING
     std::string toSerialWithSemanticTags() const;

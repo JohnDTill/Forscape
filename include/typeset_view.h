@@ -41,6 +41,9 @@ public:
     bool lineNumbersShown() const noexcept;
     void insertText(const std::string& str);
     void insertSerial(const std::string& str);
+    size_t numLines() const noexcept;
+    size_t currentLine() const noexcept;
+    void goToLine(size_t line_num);
 
     std::vector<Typeset::Selection> highlighted_words;
     View* console = nullptr;
@@ -69,7 +72,6 @@ private:
     double yScreen(double yModel) const noexcept;
     void restartCursorBlink() noexcept;
     void stopCursorBlink();
-    void followLink(size_t line_num);
     double xOrigin() const;
     double yOrigin() const;
     double getLineboxWidth() const noexcept;

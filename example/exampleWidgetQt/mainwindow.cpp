@@ -16,8 +16,10 @@
 #include <QDesktopServices>
 #include <QFileDialog>
 #include <QGroupBox>
+#include <QInputDialog>
 #include <QMessageBox>
 #include <QMimeData>
+#include <QSpinBox>
 #include <QSplitter>
 #include <QTextStream>
 #include <QToolBar>
@@ -744,3 +746,15 @@ void MainWindow::onColourChanged(){
     //preferences->setPalette(p); //EVENTUALLY: get themes to work with popup windows
 }
 
+void MainWindow::on_actionGo_to_line_triggered(){
+    QInputDialog dialog(this);
+    dialog.setWindowTitle("Go to line...");
+    dialog.setLabelText("Line:");
+    dialog.setIntRange(1, editor->numLines());
+    dialog.setIntValue(editor->currentLine()+1);
+    dialog.setIntStep(1);
+    QSpinBox* spinbox = dialog.findChild<QSpinBox*>();
+
+    if(dialog.exec() == QDialog::Accepted)
+        editor->goToLine(spinbox->value() - 1);
+}

@@ -41,7 +41,7 @@ public:
     MarkerLink(Line* line, View* view) : line_id(line->id), view(view) {}
 
     void clickThrough() const {
-        view->followLink(line_id);
+        view->goToLine(line_id);
     }
 
     virtual void updateSizeSpecific() noexcept override {
