@@ -55,6 +55,7 @@
     <addaction name="actionDelete"/>
     <addaction name="actionSelect_all"/>
     <addaction name="actionFind_Replace"/>
+    <addaction name="actionGo_to_line"/>
    </widget>
    <widget class="QMenu" name="menuCode">
     <property name="title">
@@ -277,6 +278,14 @@
   <action name="actionPreferences">
    <property name="text">
     <string>Preferences</string>
+   </property>
+  </action>
+  <action name="actionGo_to_line">
+   <property name="text">
+    <string>Go to line...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+G</string>
    </property>
   </action>
  </widget>

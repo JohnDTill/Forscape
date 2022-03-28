@@ -79,6 +79,7 @@ private slots:
     void on_actionSee_log_triggered();
     void on_actionPreferences_triggered();
     void onColourChanged();
+    void on_actionGo_to_line_triggered();
 
 protected:
     virtual void closeEvent(QCloseEvent* event) override;

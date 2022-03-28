@@ -286,6 +286,10 @@ double Model::height() const noexcept{
 }
 #endif
 
+size_t Model::numLines() const noexcept{
+    return lines.size();
+}
+
 void Model::mutate(Command* cmd, Controller& controller){
     premutate();
     cmd->redo(controller);

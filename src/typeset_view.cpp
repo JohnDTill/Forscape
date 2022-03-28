@@ -51,8 +51,8 @@ private:
         const Model& m = *view.getModel();
 
         QPainter p(this);
-        p.setBrush(QColor::fromRgb(255, 0, 0));
-        p.setPen(QColor::fromRgb(255, 0, 0));
+        p.setBrush(getColour(COLOUR_ERRORBORDER));
+        p.setPen(getColour(COLOUR_ERRORBORDER));
         for(const Code::Error& err : m.errors){
             Line* l_start = err.selection.left.line();
             Line* l_end = err.selection.right.line();
@@ -596,6 +596,14 @@ void View::insertSerial(const std::string& str){
     controller.insertSerial(str);
 }
 
+size_t View::numLines() const noexcept{
+    return model->numLines();
+}
+
+size_t View::currentLine() const noexcept{
+    return controller.activeLine()->id;
+}
+
 void View::ensureCursorVisible(){
     handleResize();
 
@@ -632,7 +640,7 @@ void View::updateModel() noexcept{
     update();
 }
 
-void View::followLink(size_t line_num){
+void View::goToLine(size_t line_num){
     logger->info("{}followLink({});", logPrefix(), line_num);
 
     if(line_num > model->lines.size()) return;
