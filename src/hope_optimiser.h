@@ -1,6 +1,8 @@
 #ifndef HOPE_OPTIMISER_H
 #define HOPE_OPTIMISER_H
 
+#include <inttypes.h>
+
 namespace Hope {
 
 namespace Code {
