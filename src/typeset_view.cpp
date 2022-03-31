@@ -51,13 +51,32 @@ private:
         const Model& m = *view.getModel();
 
         QPainter p(this);
+        p.setBrush(getColour(COLOUR_WARNINGBORDER));
+        p.setPen(getColour(COLOUR_WARNINGBORDER));
+        for(const Code::Error& err : m.warnings){
+            Phrase* p_start = err.selection.left.phrase();
+            Phrase* p_end = err.selection.right.phrase();
+            double y_start = p_start->y;
+            double y_end = p_end->yBottom();
+
+            size_t pixel_start = (y_start/m.height()) * (height() - 2*V_PADDING) + V_PADDING;
+            size_t pixel_end = (y_end/m.height()) * (height() - 2*V_PADDING) + V_PADDING;
+
+            int x = H_PADDING;
+            int w = width() - 2*H_PADDING;
+            int y = pixel_start;
+            int h = std::min<int>(pixel_end - pixel_start, MAX_ERROR_HEIGHT);
+            h = std::max<int>(h, 1);
+            p.drawRect(x, y, w, h);
+        }
+
         p.setBrush(getColour(COLOUR_ERRORBORDER));
         p.setPen(getColour(COLOUR_ERRORBORDER));
         for(const Code::Error& err : m.errors){
-            Line* l_start = err.selection.left.line();
-            Line* l_end = err.selection.right.line();
-            double y_start = l_start->y;
-            double y_end = l_end->yBottom();
+            Phrase* p_start = err.selection.left.phrase();
+            Phrase* p_end = err.selection.right.phrase();
+            double y_start = p_start->y;
+            double y_end = p_end->yBottom();
 
             size_t pixel_start = (y_start/m.height()) * (height() - 2*V_PADDING) + V_PADDING;
             size_t pixel_end = (y_end/m.height()) * (height() - 2*V_PADDING) + V_PADDING;
@@ -75,13 +94,32 @@ private:
         const Model& m = *view.getModel();
 
         QPainter p(this);
-        p.setBrush(QColor::fromRgb(255, 0, 0));
-        p.setPen(QColor::fromRgb(255, 0, 0));
+        p.setBrush(getColour(COLOUR_WARNINGBORDER));
+        p.setPen(getColour(COLOUR_WARNINGBORDER));
+        for(const Code::Error& err : m.warnings){
+            Phrase* p_start = err.selection.left.phrase();
+            Phrase* p_end = err.selection.right.phrase();
+            double y_start = p_start->y;
+            double y_end = p_end->yBottom();
+
+            size_t pixel_start = view.yScreen(y_start);
+            size_t pixel_end = view.yScreen(y_end);
+
+            int x = H_PADDING;
+            int w = width() - 2*H_PADDING;
+            int y = pixel_start;
+            int h = std::min<int>(pixel_end - pixel_start, MAX_ERROR_HEIGHT);
+            h = std::max<int>(h, 1);
+            p.drawRect(x, y, w, h);
+        }
+
+        p.setBrush(getColour(COLOUR_ERRORBORDER));
+        p.setPen(getColour(COLOUR_ERRORBORDER));
         for(const Code::Error& err : m.errors){
-            Line* l_start = err.selection.left.line();
-            Line* l_end = err.selection.right.line();
-            double y_start = l_start->y;
-            double y_end = l_end->yBottom();
+            Phrase* p_start = err.selection.left.phrase();
+            Phrase* p_end = err.selection.right.phrase();
+            double y_start = p_start->y;
+            double y_end = p_end->yBottom();
 
             size_t pixel_start = view.yScreen(y_start);
             size_t pixel_end = view.yScreen(y_end);
@@ -465,6 +503,15 @@ void View::resolveTooltip(double x, double y) noexcept{
         }
     }
 
+    for(const Code::Error& err : model->warnings){
+        if(err.selection.containsWithEmptyMargin(x, y)){
+            THROTTLE(logger->info("{}resolveTooltip({}, {});", logPrefix(), x, y);)
+
+            setTooltipWarning(err.message());
+            return;
+        }
+    }
+
     Controller c = model->idAt(x, y);
     if(c.hasSelection()){
         setToolTipDuration(std::numeric_limits<int>::max());
@@ -823,6 +870,19 @@ void View::drawModel(double xL, double yT, double xR, double yB){
     painter.setZoom(zoom);
     painter.setOffset(xOrigin(), yOrigin());
 
+    QColor error_background = getColour(COLOUR_ERRORBACKGROUND);
+    QColor error_border = getColour(COLOUR_ERRORBORDER);
+
+    //EVENTUALLY: get rid of this hack
+    setColour(COLOUR_ERRORBACKGROUND, getColour(COLOUR_WARNINGBACKGROUND));
+    setColour(COLOUR_ERRORBORDER, getColour(COLOUR_WARNINGBORDER));
+
+    for(const Code::Error& e : model->warnings)
+        e.selection.paintError(painter);
+
+    setColour(COLOUR_ERRORBACKGROUND, error_background);
+    setColour(COLOUR_ERRORBORDER, error_border);
+
     for(const Code::Error& e : model->errors)
         e.selection.paintError(painter);
 
@@ -940,6 +1000,11 @@ void View::scrollDown(){
 void View::setTooltipError(const std::string& str){
     setToolTipDuration(std::numeric_limits<int>::max());
     setToolTip("<b>Error</b><div style=\"color:red\">" + QString::fromStdString(str));
+}
+
+void View::setTooltipWarning(const std::string& str){
+    setToolTipDuration(std::numeric_limits<int>::max());
+    setToolTip("<b>Warning</b><div style=\"color:SandyBrown\">" + QString::fromStdString(str));
 }
 
 void View::clearTooltip(){

@@ -17,6 +17,7 @@ class ParseTree;
 class SymbolTableBuilder{
 private:
     std::vector<Error>& errors;
+    std::vector<Error>& warnings;
     ParseTree& parse_tree;
 
 public:

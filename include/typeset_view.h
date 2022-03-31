@@ -129,6 +129,7 @@ private:
     void scrollUp();
     void scrollDown();
     void setTooltipError(const std::string& str);
+    void setTooltipWarning(const std::string& str);
     void clearTooltip();
 
     class VerticalScrollBar;
