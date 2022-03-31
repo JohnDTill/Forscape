@@ -130,3 +130,9 @@ STEFAN_BOLTZMANN_CONSTANT,,,,5.670374419e-8f,,,,
 ACCENT_HAT,MatrixXd,,,hat(a),,,,((a.size()!=3) & (a.size() != 6)) | ((a.rows()>1) & (a.cols()>1))=>DIMENSION_MISMATCH
 PROXY,,,,interpretExpr(parse_tree.getFlag(pn)),,,,
 BIJECTIVE_MAPPING,MatrixXd,,,invHat(a),,,,((a.rows()!=3) | (a.cols() != 3)) & ((a.rows() != 4) | (a.cols() != 4))=>DIMENSION_MISMATCH
+INVERT,double,,,1/a,,,,
+INVERT,MatrixXd,,,a.inverse(),,,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
+LINEAR_SOLVE,double,double,,b/a,,,,
+LINEAR_SOLVE,double,MatrixXd,,b/a,,,,
+LINEAR_SOLVE,MatrixXd,double,,a.inverse()*b,,,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
+LINEAR_SOLVE,MatrixXd,MatrixXd,,a.colPivHouseholderQr().solve(b),,,,(a.cols()!=a.rows()) | (a.cols()!=b.rows())=>DIMENSION_MISMATCH
