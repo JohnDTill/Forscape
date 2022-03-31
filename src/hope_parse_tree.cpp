@@ -51,6 +51,15 @@ void ParseTree::setArg(ParseNode node, size_t index, ParseNode val) noexcept{
     (*this)[node+FIXED_FIELDS+index] = val;
 }
 
+double ParseTree::getFlagAsDouble(ParseNode pn) const noexcept{
+    size_t flag = getFlag(pn);
+    return *reinterpret_cast<double*>(&flag);
+}
+
+void ParseTree::setFlag(ParseNode pn, double val) noexcept{
+    setFlag(pn, *reinterpret_cast<size_t*>(&val));
+}
+
 template<size_t index>
 void ParseTree::setArg(ParseNode node, ParseNode val) noexcept{
     (*this)[node+FIXED_FIELDS+index] = val;

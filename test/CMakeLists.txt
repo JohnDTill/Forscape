@@ -121,6 +121,8 @@ set(SOURCES
     ${SRC}/hope_interpreter.cpp
     ${SRC}/hope_interpreter.h
     ${INCLUDE}/hope_logging.h
+    ${SRC}/hope_optimiser.cpp
+    ${SRC}/hope_optimiser.h
     ${SRC}/hope_parse_tree.cpp
     ${SRC}/hope_parse_tree.h
     ${SRC}/hope_parser.cpp
