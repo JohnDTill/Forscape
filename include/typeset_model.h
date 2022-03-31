@@ -32,6 +32,7 @@ public:
     Code::TypeResolver type_resolver = Code::TypeResolver(parser.parse_tree, symbol_builder.symbol_table, errors);
     Code::Interpreter interpreter;
     std::vector<Code::Error> errors;
+    std::vector<Code::Error> warnings;
 
     Model();
     ~Model();

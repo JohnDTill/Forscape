@@ -515,6 +515,7 @@ Parser::ParseNode Parser::parenGrouping() noexcept{
     builder.addNaryChild(nested);
     do{
         consume(COMMA);
+        if(!noErrors()) break;
         match(NEWLINE);
         builder.addNaryChild(disjunction());
         match(NEWLINE);
@@ -1002,6 +1003,7 @@ Parser::ParseNode Parser::twoDims(Op type) noexcept{
     if(!noErrors()) return error_node;
     if(!match(TIMES)) return error(ErrorCode::INVALID_ARGS, Typeset::Selection(rMarkPrev(), rMarkPrev()));
     ParseNode pn = parse_tree.addBinary(type, c, lhs, expression());
+    if(!noErrors()) return error_node;
     if(!match(ARGCLOSE)) return error(ErrorCode::INVALID_ARGS, Typeset::Selection(rMarkPrev(), rMarkPrev()));
     parsing_dims = false;
 

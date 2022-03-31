@@ -529,6 +529,7 @@ void Model::clearFormatting() noexcept{
     }
 
     errors.clear();
+    warnings.clear();
 }
 
 void Model::performSemanticFormatting(){

@@ -25,7 +25,7 @@ const std::unordered_map<std::string_view, Op> SymbolTableBuilder::predef {
 };
 
 SymbolTableBuilder::SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model)
-    : errors(model->errors), parse_tree(parse_tree), symbol_table(parse_tree) {}
+    : errors(model->errors), warnings(model->warnings), parse_tree(parse_tree), symbol_table(parse_tree) {}
 
 void SymbolTableBuilder::resolveSymbols(){
     reset();
@@ -37,13 +37,9 @@ void SymbolTableBuilder::resolveSymbols(){
 
     symbol_table.finalize();
 
-    if(errors.empty()){
-        for(size_t i = 0; i < symbol_table.symbols.size(); i++){
-            //EVENTUALLY: need warnings since some errors are pedantic
-            //if(!symbol_table.symbols[i].is_used)
-            //    errors.push_back(Error(symbol_table.getSel(i), UNUSED_VAR));
-        }
-    }
+    for(size_t i = 0; i < symbol_table.symbols.size(); i++)
+        if(!symbol_table.symbols[i].is_used)
+            warnings.push_back(Error(symbol_table.getSel(i), UNUSED_VAR));
 
     for(const Usage& usage : symbol_table.usages){
         const Symbol& sym = symbol_table.symbols[usage.var_id];
@@ -705,6 +701,7 @@ void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bo
 }
 
 void SymbolTableBuilder::appendEntry(size_t index, ParseNode pn, size_t prev, bool immutable){
+    warnings.push_back(Error(parse_tree.getSelection(pn), SHADOWING_VAR)); //EVENTUALLY: make this optional, probably default off
     symbol_table.usages.push_back(Usage(symbol_table.symbols.size(), pn, DECLARE));
     symbol_table.addSymbol(pn, lexical_depth, closure_depth, prev, immutable);
 }

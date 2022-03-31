@@ -664,7 +664,7 @@ void Selection::paintErrorText(Painter& painter) const{
     painter.drawError(x, y, w, h);
 }
 
-void Selection::paintErrorPhrase(Painter &painter) const{
+void Selection::paintErrorPhrase(Painter& painter) const{
     double x = tL->xGlobal(iL);
     double y = phrase()->y;
     double w = tR->xGlobal(iR) - x;
