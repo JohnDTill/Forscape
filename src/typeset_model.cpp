@@ -540,6 +540,7 @@ void Model::performSemanticFormatting(){
         parser.parseAll();
         symbol_builder.resolveSymbols();
         type_resolver.resolve();
+        if(errors.empty()) optimiser.optimise();
     }
 }
 

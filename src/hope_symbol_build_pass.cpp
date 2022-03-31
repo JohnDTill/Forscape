@@ -466,7 +466,7 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
         makeEntry(sel, name, true);
         parse_tree.setFlag(pn, NONE); //This is a kludge to tell the interpreter it's not a prototype
     }else{
-        parse_tree.setFlag(pn, 0);
+        parse_tree.setFlag(pn, size_t(0));
         size_t index = lookup->second;
         Symbol& sym = symbol_table.symbols[index];
         if(sym.declaration_lexical_depth == lexical_depth){
