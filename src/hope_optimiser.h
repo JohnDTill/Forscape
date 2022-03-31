@@ -1,7 +1,7 @@
 #ifndef HOPE_OPTIMISER_H
 #define HOPE_OPTIMISER_H
 
-#include <cinttypes>
+#include <stddef.h>
 
 namespace Hope {
 
