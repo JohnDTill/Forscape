@@ -255,7 +255,7 @@ bool MainWindow::isSavedDeepComparison() const{
 void MainWindow::run(){
     logger->info(LOG_PREFIX "run();");
 
-    if(!editor->isEnabled()) return;
+    if(editor->isRunning()) return;
 
     console->setModel(Typeset::Model::fromSerial("", true));
     editor->runThread(console);
@@ -270,7 +270,6 @@ void MainWindow::run(){
             setFocus(Qt::FocusReason::NoFocusReason);
         }
 
-        editor->setEnabled(false);
         editor->setReadOnly(true);
     }
 }
@@ -278,9 +277,8 @@ void MainWindow::run(){
 void MainWindow::stop(){
     logger->info(LOG_PREFIX "stop(); //Note: potential for non-repeatable timing dependent behaviour.");
 
-    if(editor->isEnabled()) return;
+    if(!editor->isRunning()) return;
     editor->getModel()->stop();
-    if(editor_had_focus) editor->setFocus();
 }
 
 void MainWindow::pollInterpreterThread(){
@@ -325,8 +323,7 @@ void MainWindow::pollInterpreterThread(){
                 console->scrollToBottom();
         }
 
-        editor->setEnabled(true);
-        editor->setReadOnly(false);
+        editor->reenable();
         interpreter_poll_timer.stop();
         if(editor_had_focus) editor->setFocus();
     }

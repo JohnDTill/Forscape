@@ -57,7 +57,7 @@ Value Interpreter::error(ErrorCode code, ParseNode pn) noexcept {
     }
     status = RUNTIME_ERROR;
 
-    return NIL;
+    return &error_code;
 }
 
 void Interpreter::interpretStmt(ParseNode pn){
@@ -264,7 +264,9 @@ Value Interpreter::implicitMult(ParseNode pn, size_t start){
             ans = stack.back();
             break;
         }
+        case RuntimeError: return &error_code;
         default:
+            if(error_code != NO_ERROR_FOUND) return &error_code; //EVENTUALLY: delete this
             assert(false);
     }
 
@@ -326,6 +328,7 @@ Value Interpreter::cases(ParseNode pn){
 
 bool Interpreter::evaluateCondition(ParseNode pn){
     Value v = interpretExpr(pn);
+    if(error_code != NO_ERROR_FOUND) return false;
     assert(v.index() == bool_index);
 
     return std::get<bool>(v);
@@ -620,6 +623,8 @@ Value Interpreter::matrix(ParseNode pn){
                 if(j==0) elem_rows[i] = 1;
                 else if(elem_rows[i] != 1) return error(ErrorCode::DIMENSION_MISMATCH, pn);
             }else{
+                if(error_code != NO_ERROR_FOUND) return &error_code;
+                if(error_code != NO_ERROR_FOUND) return &error_code;
                 assert(e.index() == MatrixXd_index);
                 const Eigen::MatrixXd& e_mat = std::get<Eigen::MatrixXd>(e);
                 if(i==0) elem_cols[j] = e_mat.cols();
@@ -645,6 +650,7 @@ Value Interpreter::matrix(ParseNode pn){
             if(e.index() == double_index){
                 mat(row, col) = std::get<double>(e);
             }else{
+                if(error_code != NO_ERROR_FOUND) return &error_code;
                 assert(e.index() == MatrixXd_index);
                 const Eigen::MatrixXd& e_mat = std::get<Eigen::MatrixXd>(e);
                 mat.block(row, col, e_mat.rows(), e_mat.cols()) = e_mat;
@@ -791,6 +797,8 @@ Value Interpreter::innerCall(ParseNode call, ParseNode params, Closure& closure,
             status = NORMAL;
         }
     }
+
+    if(error_code != NO_ERROR_FOUND) return &error_code;
 
     stack.trim(frames.back());
     frames.pop_back();

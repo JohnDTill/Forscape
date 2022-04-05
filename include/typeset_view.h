@@ -47,6 +47,8 @@ public:
 
     std::vector<Typeset::Selection> highlighted_words;
     View* console = nullptr;
+    bool isRunning() const noexcept;
+    void reenable() noexcept;
 
 private:
     void dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held);
@@ -103,6 +105,7 @@ private:
     bool model_owned = true;
     friend MarkerLink;
     public: double zoom = ZOOM_DEFAULT;
+    bool is_running = false;
 
 //Qt specific code
 protected:
