@@ -1,7 +1,7 @@
 alg findRoot(f, x, tol=10-12, max_iter = 100, λ=10-3, δ=10-6){
     for(iter ← 0; iter ≤ max_iter; iter ← iter + 1){
         r = f(x)
-        if(r⊤r < tol) return x
+        if(‖r‖2 < tol) return x
         J ← 0len(r)×len(x)
         J:,i ← f(x + δelen(x)×1i) - rδ //First-order finite difference, elementwise assignment
         x ← x - (J⊤J + λIlen(x)×len(x))-1 J⊤r //Levenberg-Marquardt step

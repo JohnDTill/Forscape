@@ -246,6 +246,8 @@ void View::runThread(View* console){
         result->updateLayout();
         console->setModel(result);
     }else{
+        is_running = true;
+        allow_write = false;
         model->runThread();
     }
 }
@@ -697,6 +699,16 @@ void View::goToLine(size_t line_num){
     repaint();
 }
 
+bool View::isRunning() const noexcept{
+    return is_running;
+}
+
+void View::reenable() noexcept{
+    assert(model->interpreter.status == Code::Interpreter::FINISHED);
+    is_running = false;
+    allow_write = true;
+}
+
 double View::xOrigin() const{
     return getLineboxWidth() + MARGIN_LEFT - h_scroll->value()/zoom;
 }
@@ -861,7 +873,7 @@ void View::setCursorAppearance(double x, double y){
 
 void View::drawBackground(const QRect& rect){
     QPainter p(this);
-    p.fillRect(rect, getColour(isEnabled() ? COLOUR_BACKGROUND : COLOUR_BACKGROUNDDISABLED));
+    p.fillRect(rect, getColour(is_running ? COLOUR_BACKGROUND : COLOUR_BACKGROUNDDISABLED));
 }
 
 void View::drawModel(double xL, double yT, double xR, double yB){

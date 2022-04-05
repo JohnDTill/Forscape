@@ -51,8 +51,8 @@ ParseNode Optimiser::visitNode(ParseNode pn){
                     double rhs_val = parse_tree.getFlagAsDouble(rhs);
 
                     ParseNode lhs = parse_tree.lhs(pn);
-                    if(parse_tree.getOp(lhs) == OP_INTEGER_LITERAL
-                       || parse_tree.getOp(lhs) == OP_DECIMAL_LITERAL){
+                    Code::Op lhs_op = parse_tree.getOp(lhs);
+                    if(lhs_op == OP_INTEGER_LITERAL || lhs_op == OP_DECIMAL_LITERAL){
                         double val = pow(parse_tree.getFlagAsDouble(lhs), rhs_val);
                         parse_tree.setFlag(pn, val);
                         parse_tree.setOp(pn, OP_DECIMAL_LITERAL);
@@ -64,6 +64,11 @@ ParseNode Optimiser::visitNode(ParseNode pn){
                         return visitNode(pn);
                     }else if(rhs_val == 1){
                         return parse_tree.lhs(pn);
+                    }else if(rhs_val == 2){
+                        if(lhs_op == OP_NORM){
+                            parse_tree.setOp(lhs, OP_NORM_SQUARED);
+                            return lhs;
+                        }
                     }
                     //Can only simplify x^0 to 1 assuming no NaN in LHS
                 }

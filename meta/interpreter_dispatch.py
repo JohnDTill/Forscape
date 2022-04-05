@@ -47,6 +47,7 @@ def main():
         codegen_file.write("namespace Code {\n\n")
 
         codegen_file.write("Value Interpreter::interpretExpr(ParseNode pn) {\n"
+                           "    if(error_code != NO_ERROR_FOUND) return &error_code;\n"
                            "    switch( parse_tree.getOp(pn) ){\n")
         for rule in nullary_rules:
             ops = rule.op.split('|')
