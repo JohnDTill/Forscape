@@ -8,8 +8,8 @@ namespace Hope {
 
 namespace Code {
 
-TypeResolver::TypeResolver(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors) noexcept
-    : parse_tree(parse_tree), symbol_table(symbol_table), errors(errors) {}
+TypeResolver::TypeResolver(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors, std::vector<Error>& warnings) noexcept
+    : parse_tree(parse_tree), symbol_table(symbol_table), errors(errors), warnings(warnings) {}
 
 void TypeResolver::resolve(){
     reset();
@@ -149,9 +149,16 @@ void TypeResolver::resolveStmt(size_t pn) noexcept{
             resolveStmt(parse_tree.arg(pn, 3));
             break;
 
-        case OP_EXPR_STMT:
-            resolveExpr(parse_tree.child(pn));
+        case OP_EXPR_STMT:{
+            ParseNode expr = parse_tree.child(pn);
+            resolveExpr(expr);
+            if(parse_tree.getOp(expr) != OP_CALL || !isAbstractFunctionGroup(resolveExpr(parse_tree.arg(expr, 0)))){
+                warnings.push_back(Error(parse_tree.getSelection(expr), ErrorCode::UNUSED_EXPRESSION));
+                parse_tree.setOp(pn, OP_DO_NOTHING);
+                //EVENTUALLY: check the call stmt has side effects
+            }
             break;
+        }
 
         case OP_ALGORITHM:{
             ParseNode params = parse_tree.paramList(pn);

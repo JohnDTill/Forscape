@@ -81,6 +81,7 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_RETURN: returnStmt(pn); break;
         case OP_BREAK: status = static_cast<Status>(status | BREAK); break;
         case OP_CONTINUE: status = static_cast<Status>(status | CONTINUE); break;
+        case OP_DO_NOTHING: break;
         default: error(UNRECOGNIZED_STMT, pn);
     }
 }
@@ -713,26 +714,12 @@ Value Interpreter::call(ParseNode call) {
 }
 
 void Interpreter::callStmt(ParseNode pn){
-    if(parse_tree.getOp(pn) != OP_CALL){
-        error(UNUSED_EXPRESSION, pn);
-        return;
-    }
-
     Value v = interpretExpr( parse_tree.arg(pn, 0) );
     size_t nargs = parse_tree.getNumArgs(pn)-1;
 
     switch (v.index()) {
         case Lambda_index:
-            error(UNUSED_EXPRESSION, pn); break;
-
-        case Unitialized_index:
-            error(USE_BEFORE_DEFINE, parse_tree.arg(pn, 0)); break;
-
-        case double_index:
-        case MatrixXd_index:
-            assert(nargs == 1);
-            error(UNUSED_EXPRESSION, pn);
-            break;
+            break; //No side effects, optimise away EVENTUALLY
 
         case Algorithm_index:{
             Algorithm& alg = std::get<Algorithm>(v);

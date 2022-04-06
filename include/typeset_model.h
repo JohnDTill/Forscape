@@ -30,7 +30,7 @@ public:
     Code::Scanner scanner = Code::Scanner(this);
     Code::Parser parser = Code::Parser(scanner, this);
     Code::SymbolTableBuilder symbol_builder = Code::SymbolTableBuilder(parser.parse_tree, this);
-    Code::TypeResolver type_resolver = Code::TypeResolver(parser.parse_tree, symbol_builder.symbol_table, errors);
+    Code::TypeResolver type_resolver = Code::TypeResolver(parser.parse_tree, symbol_builder.symbol_table, errors, warnings);
     Code::Optimiser optimiser = Code::Optimiser(parser.parse_tree);
     Code::Interpreter interpreter;
     std::vector<Code::Error> errors;
