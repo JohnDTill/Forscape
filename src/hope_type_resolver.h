@@ -82,7 +82,7 @@ private:
         std::stack<Type> return_types;
 
     public:
-        TypeResolver(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors) noexcept;
+        TypeResolver(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors, std::vector<Code::Error>& warnings) noexcept;
         void resolve();
 
     private:
@@ -98,7 +98,8 @@ private:
 
         ParseTree& parse_tree;
         SymbolTable& symbol_table;
-        std::vector<Code::Error>& errors;
+        std::vector<Error>& errors;
+        std::vector<Error>& warnings;
         std::vector<Type> old_val_cap;
         std::vector<Type> old_ref_cap;
         std::vector<Type> old_args;
