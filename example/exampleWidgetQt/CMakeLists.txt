@@ -161,6 +161,7 @@ set(PROJECT_SOURCES
     ${SRC}/hope_type_resolver.cpp
     ${SRC}/hope_type_resolver.h
     ${SRC}/hope_unicode.h
+    ${SRC}/hope_value.cpp
     ${SRC}/hope_value.h
     ${INCLUDE}/typeset_command.h
     ${SRC}/typeset_construct.cpp

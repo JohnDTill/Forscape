@@ -14,6 +14,7 @@ def main():
     header_writer = cpp.HeaderWriter(
         name="ast_fields",
         inner_namespace="Code",
+        includes=["hope_value.h"]
     )
 
     nodes = table_reader.csv_to_list_of_tuples(

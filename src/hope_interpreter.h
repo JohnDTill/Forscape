@@ -1,6 +1,7 @@
 #ifndef HOPE_INTERPRETER_H
 #define HOPE_INTERPRETER_H
 
+#include "hope_parse_tree.h"
 #include "hope_stack.h"
 #include <memory>
 #include <readerwriterqueue/readerwriterqueue.h>
