@@ -15,17 +15,45 @@ void Optimiser::optimise(){
     visitNode(parse_tree.root);
 }
 
+//DO THIS - static dimensions and values need to handle different instantiations of abstract functions
+
 ParseNode Optimiser::visitNode(ParseNode pn){
     if(pn == ParseTree::EMPTY) return ParseTree::EMPTY;
 
     for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
         parse_tree.setArg(pn, i, visitNode(parse_tree.arg(pn, i)));
 
+    static constexpr size_t UNKNOWN = std::numeric_limits<size_t>::max();
+    parse_tree.setRows(pn, UNKNOWN);
+    parse_tree.setCols(pn, UNKNOWN);
+
     switch (parse_tree.getOp(pn)) {
         case OP_INTEGER_LITERAL:
-        case OP_DECIMAL_LITERAL:
-            parse_tree.setFlag(pn, stod(parse_tree.str(pn)));
+        case OP_DECIMAL_LITERAL:{
+            double val = stod(parse_tree.str(pn));
+            parse_tree.setFlag(pn, val);
+            parse_tree.setRows(pn, 1);
+            parse_tree.setCols(pn, 1);
+            parse_tree.setValue(pn, val);
             break;
+        }
+
+        case OP_LENGTH:{
+            parse_tree.setRows(pn, 1);
+            parse_tree.setCols(pn, 1);
+
+            ParseNode arg = parse_tree.child(pn);
+            size_t rows = parse_tree.getRows(arg);
+            size_t cols = parse_tree.getCols(arg);
+
+            if(rows == UNKNOWN || cols == UNKNOWN) break;
+            else if(rows > 1 && cols > 1){ /* DO THIS: static error */ }
+            double val = rows*cols;
+            parse_tree.setValue(pn, val);
+            //DO THIS: the tree is a mess! how does partial evaluation work?
+            //         we need to simplify as much as possible, but retain information for the editor
+            //         and maybe derivatives
+        }
 
         case OP_UNARY_MINUS:{
             ParseNode child = parse_tree.child(pn);
