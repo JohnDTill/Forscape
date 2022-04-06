@@ -60,6 +60,11 @@ void ParseTree::setFlag(ParseNode pn, double val) noexcept{
     setFlag(pn, *reinterpret_cast<size_t*>(&val));
 }
 
+size_t ParseTree::setAndReturnType(ParseNode pn, size_t type) noexcept{
+    setType(pn, type);
+    return type;
+}
+
 template<size_t index>
 void ParseTree::setArg(ParseNode node, ParseNode val) noexcept{
     (*this)[node+FIXED_FIELDS+index] = val;
