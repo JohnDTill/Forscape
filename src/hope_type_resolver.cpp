@@ -285,9 +285,8 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
                 sig.push_back(t);
             }
 
-            Type t = declare(sig);
-
-            return makeFunctionSet(t);
+            Type t = makeFunctionSet(declare(sig));
+            return parse_tree.setAndReturnType(pn, t);
         }
         case OP_IDENTIFIER:
         case OP_READ_GLOBAL:
@@ -296,12 +295,12 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
             size_t sym_id = parse_tree.getFlag(var);
             Symbol& sym = symbol_table.symbols[sym_id];
 
-            return sym.type;
+            return parse_tree.setAndReturnType(pn, sym.type);
         }
         case OP_CALL:
-            return callSite(pn);
+            return parse_tree.setAndReturnType(pn, callSite(pn));
         case OP_IMPLICIT_MULTIPLY:
-            return implicitMult(pn);
+            return parse_tree.setAndReturnType(pn, implicitMult(pn));
         case OP_ADDITION:{
             size_t expected = resolveExpr(parse_tree.arg(pn, 0));
             if(expected != NUMERIC && expected != STRING) return error(parse_tree.arg(pn, 0), TYPE_NOT_ADDABLE);
@@ -309,14 +308,14 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
             for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++)
                 EXPECT(parse_tree.arg(pn, i), expected)
 
-            return expected;
+            return parse_tree.setAndReturnType(pn, expected);
         }
         case OP_SLICE:
             for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
                 EXPECT_OR(parse_tree.arg(pn, i), NUMERIC, BAD_READ_OR_SUBSCRIPT);
-            return NUMERIC;
+            return parse_tree.setAndReturnType(pn, NUMERIC);
         case OP_SLICE_ALL:
-            return NUMERIC;
+            return parse_tree.setAndReturnType(pn, NUMERIC);
         case OP_MULTIPLICATION:
         case OP_MATRIX:
         case OP_SUBSCRIPT_ACCESS:
@@ -347,10 +346,10 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
         case OP_ZERO_MATRIX:
             EXPECT(parse_tree.lhs(pn), NUMERIC)
             EXPECT(parse_tree.rhs(pn), NUMERIC)
-            return NUMERIC;
+            return parse_tree.setAndReturnType(pn, NUMERIC);
         case OP_LENGTH:
             EXPECT(parse_tree.child(pn), NUMERIC)
-            return NUMERIC;
+            return parse_tree.setAndReturnType(pn, NUMERIC);
         case OP_ARCCOSINE:
         case OP_ARCCOTANGENT:
         case OP_ARCSINE:
@@ -378,7 +377,7 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
         case OP_TRANSPOSE:
         case OP_UNARY_MINUS:
             EXPECT(parse_tree.child(pn), NUMERIC)
-            return NUMERIC;
+            return parse_tree.setAndReturnType(pn, NUMERIC);
         case OP_SUMMATION:
         case OP_PRODUCT:{
             ParseNode asgn = parse_tree.arg(pn, 0);
@@ -387,23 +386,23 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
             EXPECT(parse_tree.rhs(asgn), NUMERIC)
             EXPECT(parse_tree.arg(pn, 1), NUMERIC)
             EXPECT(parse_tree.arg(pn, 2), NUMERIC)
-            return NUMERIC;
+            return parse_tree.setAndReturnType(pn, NUMERIC);
         }
         case OP_LOGICAL_NOT:
             EXPECT(parse_tree.child(pn), BOOLEAN)
-            return BOOLEAN;
+            return parse_tree.setAndReturnType(pn, BOOLEAN);
         case OP_LOGICAL_AND:
         case OP_LOGICAL_OR:
             EXPECT(parse_tree.lhs(pn), BOOLEAN)
             EXPECT(parse_tree.rhs(pn), BOOLEAN)
-            return BOOLEAN;
+            return parse_tree.setAndReturnType(pn, BOOLEAN);
         case OP_GREATER:
         case OP_GREATER_EQUAL:
         case OP_LESS:
         case OP_LESS_EQUAL:
             EXPECT(parse_tree.lhs(pn), NUMERIC)
             EXPECT(parse_tree.rhs(pn), NUMERIC)
-            return BOOLEAN;
+            return parse_tree.setAndReturnType(pn, BOOLEAN);
         case OP_CASES:{
             for(size_t i = 1; i < parse_tree.getNumArgs(pn); i+=2)
                 EXPECT(parse_tree.arg(pn, i), BOOLEAN)
@@ -418,12 +417,12 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
             else
                 for(size_t i = 2; i < parse_tree.getNumArgs(pn); i+=2)
                     EXPECT(parse_tree.arg(pn, i), expected)
-            return expected;
+            return parse_tree.setAndReturnType(pn, expected);
         }
         case OP_EQUAL:
         case OP_NOT_EQUAL:{
             EXPECT(parse_tree.rhs(pn), resolveExpr(parse_tree.lhs(pn)))
-            return BOOLEAN;
+            return parse_tree.setAndReturnType(pn, BOOLEAN);
         }
         case OP_DECIMAL_LITERAL:
         case OP_INTEGER_LITERAL:
@@ -436,14 +435,14 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
         case OP_STEFAN_BOLTZMANN_CONSTANT:
         case OP_IDENTITY_AUTOSIZE:
         case OP_GRAVITY:
-            return NUMERIC;
+            return parse_tree.setAndReturnType(pn, NUMERIC);
         case OP_FALSE:
         case OP_TRUE:
-            return BOOLEAN;
+            return parse_tree.setAndReturnType(pn, BOOLEAN);
         case OP_STRING:
-            return STRING;
+            return parse_tree.setAndReturnType(pn, STRING);
         case OP_PROXY:
-            return resolveExpr(parse_tree.getFlag(pn));
+            return parse_tree.setAndReturnType(pn, resolveExpr(parse_tree.getFlag(pn)));
         default:
             assert(false);
             return BOOLEAN;

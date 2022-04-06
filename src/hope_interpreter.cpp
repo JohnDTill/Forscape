@@ -715,7 +715,6 @@ Value Interpreter::call(ParseNode call) {
 
 void Interpreter::callStmt(ParseNode pn){
     Value v = interpretExpr( parse_tree.arg(pn, 0) );
-    size_t nargs = parse_tree.getNumArgs(pn)-1;
 
     switch (v.index()) {
         case Lambda_index:

@@ -1,8 +1,8 @@
 test,avg runtime (ns)
-Serial validation,643.292000
-Load / delete,98653.000000
-Scanner,7713.100000
-Parser,11875.800000
-SymbolTable,15634.800000
-Interpreter,59139.600000
-Print Loop,144900.000000
+Serial validation,649.386000
+Load / delete,116083.000000
+Scanner,7448.600000
+Parser,13288.800000
+SymbolTable,16057.800000
+Interpreter,6859.400000
+Print Loop,117800.000000
