@@ -1,0 +1,16 @@
+alg getFunc(x){
+    alg func(a = x) return a
+    return func
+}
+f = getFunc(2)
+print(f(), "\n")
+print(f(3), "\n")
+
+alg getFunkyFunc(x){
+    alg func[x](a = x) return a
+    x ← 4
+    return func
+}
+h = getFunkyFunc(2)
+print(h(), "\n")
+print(h(3))

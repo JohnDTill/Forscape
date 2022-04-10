@@ -761,6 +761,12 @@ Value Interpreter::innerCall(ParseNode call, ParseNode params, Closure& closure,
             stack_vals.push_back({v, parse_tree.str(param)});
         }
     }
+
+    breakLocalClosureLinks(closure, captured, upvalues);
+    frames.push_back(stack.size());
+    Closure* old = active_closure;
+    active_closure = &closure;
+
     for(size_t i = nargs; (i < nparams)  & (status == NORMAL); i++){
         ParseNode defnode = parse_tree.arg(params, i);
         assert(parse_tree.getOp(defnode) == OP_EQUAL);
@@ -772,11 +778,6 @@ Value Interpreter::innerCall(ParseNode call, ParseNode params, Closure& closure,
             stack_vals.push_back({v, parse_tree.str(param)});
         }
     }
-
-    breakLocalClosureLinks(closure, captured, upvalues);
-    frames.push_back(stack.size());
-    Closure* old = active_closure;
-    active_closure = &closure;
 
     for(const auto& entry : stack_vals)
         stack.push(entry.first, entry.second);
