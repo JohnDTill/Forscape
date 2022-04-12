@@ -7,10 +7,8 @@ namespace Hope {
 
 namespace Code {
 
-Parser::Parser(const Scanner &scanner, Typeset::Model* model)
-    : tokens(scanner.tokens), markers(scanner.markers), errors(model->errors), model(model) {
-    //DO NOTHING
-}
+Parser::Parser(const Scanner& scanner, Typeset::Model* model)
+    : tokens(scanner.tokens), errors(model->errors), model(model) {}
 
 void Parser::parseAll(){
     reset();
@@ -22,7 +20,7 @@ void Parser::parseAll(){
         skipNewlines();
     }
 
-    Typeset::Selection c(markers.front().first, markers.back().second);
+    Typeset::Selection c(tokens.front().sel.left, tokens.back().sel.right);
     parse_tree.root = builder.finalize(c);
 }
 
@@ -1129,7 +1127,7 @@ void Parser::advance() noexcept{
 }
 
 bool Parser::match(TokenType type) noexcept{
-    if(tokens[index] == type){
+    if(tokens[index].type == type){
         advance();
         return true;
     }else{
@@ -1138,15 +1136,15 @@ bool Parser::match(TokenType type) noexcept{
 }
 
 bool Parser::peek(TokenType type) const noexcept{
-    return tokens[index] == type;
+    return tokens[index].type == type;
 }
 
 void Parser::require(TokenType type) noexcept{
-    if(tokens[index] != type) error(CONSUME);
+    if(tokens[index].type != type) error(CONSUME);
 }
 
 void Parser::consume(TokenType type) noexcept{
-    if(tokens[index] == type){
+    if(tokens[index].type == type){
         advance();
     }else{
         error(CONSUME);
@@ -1154,16 +1152,16 @@ void Parser::consume(TokenType type) noexcept{
 }
 
 void Parser::skipNewlines() noexcept{
-    while(tokens[index] == NEWLINE || tokens[index] == COMMENT) index++;
+    while(tokens[index].type == NEWLINE || tokens[index].type == COMMENT) index++;
 }
 
 void Parser::skipNewline() noexcept{
-    if(tokens[index] == COMMENT) index+=2;
-    else if(tokens[index] == NEWLINE) index++;
+    if(tokens[index].type == COMMENT) index+=2;
+    else if(tokens[index].type == NEWLINE) index++;
 }
 
 TokenType Parser::currentType() const noexcept{
-    return tokens[index];
+    return tokens[index].type;
 }
 
 Parser::ParseNode Parser::makeTerminalNode(size_t type) noexcept{
@@ -1178,27 +1176,27 @@ ParseNode Parser::terminalAndAdvance(size_t type) noexcept{
 }
 
 const Typeset::Selection Parser::selection() const noexcept{
-    return Typeset::Selection(markers[index]);
+    return tokens[index].sel;
 }
 
 const Typeset::Selection Parser::selectionPrev() const noexcept{
-    return Typeset::Selection(markers[index-1]);
+    return tokens[index-1].sel;
 }
 
 const Typeset::Marker& Parser::lMark() const noexcept{
-    return markers[index].first;
+    return tokens[index].sel.left;
 }
 
 const Typeset::Marker& Parser::rMark() const noexcept{
-    return markers[index].second;
+    return tokens[index].sel.right;
 }
 
 const Typeset::Marker& Parser::lMarkPrev() const noexcept{
-    return markers[index-1].first;
+    return tokens[index-1].sel.left;
 }
 
 const Typeset::Marker& Parser::rMarkPrev() const noexcept{
-    return markers[index-1].second;
+    return tokens[index-1].sel.right;
 }
 
 }

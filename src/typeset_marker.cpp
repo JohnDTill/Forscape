@@ -74,17 +74,21 @@ Subphrase* Marker::subphrase() const noexcept{
     return phrase()->asSubphrase();
 }
 
-Line* Marker::line() const noexcept{
+Line* Marker::getLine() const noexcept{
+    return text->getLine();
+}
+
+Line* Marker::parentAsLine() const noexcept{
     assert(isTopLevel());
     return phrase()->asLine();
 }
 
 Line* Marker::nextLine() const noexcept{
-    return line()->next();
+    return parentAsLine()->next();
 }
 
 Line* Marker::prevLine() const noexcept{
-    return line()->prev();
+    return parentAsLine()->prev();
 }
 
 bool Marker::atTextEnd() const noexcept{

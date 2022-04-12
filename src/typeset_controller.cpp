@@ -598,11 +598,11 @@ Subphrase* Controller::subphrase() const noexcept{
 }
 
 Line* Controller::activeLine() const noexcept{
-    return active.line();
+    return active.parentAsLine();
 }
 
 Line* Controller::anchorLine() const noexcept{
-    return anchor.line();
+    return anchor.parentAsLine();
 }
 
 Line* Controller::nextLine() const noexcept{

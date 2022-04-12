@@ -2,7 +2,7 @@
 #define HOPE_SCANNER_H
 
 #include "hope_error.h"
-#include <code_tokentype.h>
+#include "hope_token.h"
 #include <unordered_map>
 #include <vector>
 
@@ -18,24 +18,23 @@ class Scanner {
 public:
     Scanner(Typeset::Model* model);
     void scanAll();
-    TokenType scanToken();
+    void scanToken();
 
-    std::vector<TokenType> tokens;
-    std::vector<std::pair<Typeset::Marker, Typeset::Marker> > markers;
+    std::vector<Token> tokens;
 
 private:
-    TokenType scanString();
-    TokenType forwardSlash();
-    TokenType comment();
-    TokenType createToken(TokenType type);
-    TokenType scanNumber();
-    TokenType scanIdentifier();
-    TokenType unrecognizedSymbol();
-    TokenType scanConstruct(TokenType type);
-    TokenType close();
-    TokenType error(ErrorCode code);
-    TokenType newline();
-    TokenType endOfFile();
+    void scanString();
+    void forwardSlash();
+    void comment();
+    void createToken(TokenType type);
+    void scanNumber();
+    void scanIdentifier();
+    void unrecognizedSymbol();
+    void scanConstruct(TokenType type);
+    void close();
+    void error(ErrorCode code);
+    void newline();
+    void endOfFile();
     void incrementScope() noexcept;
     void decrementScope() noexcept;
 

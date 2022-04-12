@@ -104,8 +104,7 @@ private:
     const Typeset::Marker& lMarkPrev() const noexcept;
     const Typeset::Marker& rMarkPrev() const noexcept;
 
-    const std::vector<TokenType>& tokens;
-    const std::vector<std::pair<Typeset::Marker, Typeset::Marker>>& markers;
+    const std::vector<Token>& tokens;
     std::vector<Error>& errors;
     Typeset::Model* model;
     size_t index = 0;

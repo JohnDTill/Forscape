@@ -26,40 +26,40 @@ def main():
     header_writer.write("};\n\n")
 
     header_writer.write("#define HOPE_SCANNER_CASES \\\n")
-    header_writer.write("    case '\"': return scanString();\\\n")
+    header_writer.write("    case '\"': scanString(); break;\\\n")
     for token in [token for token in tokens if token.simple == 'y' and unicode.is_ascii(token.label)]:
         header_writer.write(f"    case '{token.label}':")
         if token.group == "open":
             header_writer.write(" incrementScope();")
         elif token.group == "close":
             header_writer.write(" decrementScope();")
-        header_writer.write(f" return createToken({token.enum.upper()});\\\n")
+        header_writer.write(f" createToken({token.enum.upper()}); break;\\\n")
     for token in [token for token in tokens if token.simple == 'y' and not unicode.is_ascii(token.label)]:
         header_writer.write(f"    case {unicode.to_num(token.label)}:")
         if token.group == "open":
             header_writer.write(" incrementScope();")
         elif token.group == "close":
             header_writer.write(" decrementScope();")
-        header_writer.write(f" return createToken({token.enum.upper()});\\\n")
+        header_writer.write(f" createToken({token.enum.upper()}); break;\\\n")
     for i in range(0, 10):
-        header_writer.write(f"    case '{i}': return scanNumber();\\\n")
+        header_writer.write(f"    case '{i}': scanNumber(); break;\\\n")
     for i in range(ord('a'), ord('z') + 1):
-        header_writer.write(f"    case '{chr(i)}': return scanIdentifier();\\\n")
+        header_writer.write(f"    case '{chr(i)}': scanIdentifier(); break;\\\n")
     for i in range(ord('A'), ord('Z') + 1):
-        header_writer.write(f"    case '{chr(i)}': return scanIdentifier();\\\n")
-    header_writer.write(f"    case '_': return scanIdentifier();\\\n")
+        header_writer.write(f"    case '{chr(i)}': scanIdentifier(); break;\\\n")
+    header_writer.write(f"    case '_': scanIdentifier(); break;\\\n")
     for i in range(945, 970):  # α-ω
         ch = chr(i)
         header_writer.write(
-            f"    case {unicode.to_num(ch)}: controller->formatBasicIdentifier(); return createToken(IDENTIFIER);\\\n")
+            f"    case {unicode.to_num(ch)}: controller->formatBasicIdentifier(); createToken(IDENTIFIER); break;\\\n")
     for i in range(913, 938):  # Α-Ω
         ch = chr(i)
         header_writer.write(
-            f"    case {unicode.to_num(ch)}: controller->formatBasicIdentifier(); return createToken(IDENTIFIER);\\\n")
+            f"    case {unicode.to_num(ch)}: controller->formatBasicIdentifier(); createToken(IDENTIFIER); break;\\\n")
     for con in constructs:
         header_writer.write(
-            f"    case (1 << 7) | {con.name.upper()}: return scanConstruct(TOKEN_{con.name.upper()});\\\n")
-    header_writer.write("    case '/': return forwardSlash();\n")
+            f"    case (1 << 7) | {con.name.upper()}: scanConstruct(TOKEN_{con.name.upper()}); break;\\\n")
+    header_writer.write("    case '/': forwardSlash(); break;\n")
     header_writer.write("\n")
 
     header_writer.write("#define HOPE_IMPLICIT_MULT_TOKENS ")

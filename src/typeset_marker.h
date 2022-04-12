@@ -32,7 +32,8 @@ struct Marker{
     char charLeft() const noexcept;
     Phrase* phrase() const noexcept;
     Subphrase* subphrase() const noexcept;
-    Line* line() const noexcept;
+    Line* getLine() const noexcept;
+    Line* parentAsLine() const noexcept;
     Line* nextLine() const noexcept;
     Line* prevLine() const noexcept;
     bool atTextEnd() const noexcept;

@@ -5,10 +5,10 @@
 using namespace Hope;
 using namespace Code;
 
-static bool sameTypes(const std::vector<TokenType>& tokens, const std::vector<TokenType>& expected){
+static bool sameTypes(const std::vector<Token>& tokens, const std::vector<TokenType>& expected){
     if(tokens.size() != expected.size()) return false;
     for(size_t i = 0; i < tokens.size(); i++){
-        if(tokens[i] != expected[i])
+        if(tokens[i].type != expected[i])
             return false;
     }
     return true;
@@ -19,6 +19,16 @@ static std::string toString(const std::vector<TokenType>& types){
     str += std::to_string(types.front());
     for(size_t i = 1; i < types.size(); i++)
         str += ", " + std::to_string(types[i]);
+    str += "}";
+
+    return str;
+}
+
+static std::string toString(const std::vector<Token>& tokens){
+    std::string str = "{";
+    str += std::to_string(tokens.front().type);
+    for(size_t i = 1; i < tokens.size(); i++)
+        str += ", " + std::to_string(tokens[i].type);
     str += "}";
 
     return str;
