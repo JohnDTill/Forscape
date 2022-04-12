@@ -22,20 +22,19 @@ Scanner::Scanner(Typeset::Model* model) :
 void Scanner::scanAll(){
     model->clearFormatting();
     tokens.clear();
-    markers.clear();
     scope_depth = 0;
 
     controller = new Typeset::Controller(model);
     controller->moveToStartOfDocument();
 
     do{
-        tokens.push_back(scanToken());
-    } while(tokens.back() != ENDOFFILE);
+        scanToken();
+    } while(tokens.back().type != ENDOFFILE);
 
     delete controller;
 }
 
-TokenType Scanner::scanToken(){
+void Scanner::scanToken(){
     controller->skipWhitespace();
 
     uint32_t code = controller->scan();
@@ -44,99 +43,95 @@ TokenType Scanner::scanToken(){
         HOPE_SCANNER_CASES
 
         #ifdef HOPE_IDENTIFIERS_USE_MULTIPLE_CHARS
-        case '_': return scanIdentifier();
+        case '_': scanIdentifier(); break;
         #endif
 
-        case CLOSE: return close();
-        case '\n': return newline();
-        case '\0': return endOfFile();
+        case CLOSE: close(); break;
+        case '\n': newline(); break;
+        case '\0': endOfFile(); break;
 
         default:
-            return unrecognizedSymbol();
+            unrecognizedSymbol();
     }
 }
 
-TokenType Scanner::scanString() {
+void Scanner::scanString() {
     if(controller->selectToStringEnd()){
         controller->formatString();
-        return createToken(STRING);
+        createToken(STRING);
     }else{
         controller->formatString();
-        return error(UNTERMINATED_STRING);
+        error(UNTERMINATED_STRING);
     }
 }
 
-TokenType Scanner::forwardSlash() {
-    if(controller->peek('/')) return comment();
-    else return createToken(FORWARDSLASH);
+void Scanner::forwardSlash() {
+    if(controller->peek('/')) comment();
+    else createToken(FORWARDSLASH);
 }
 
-TokenType Scanner::comment() {
+void Scanner::comment() {
     controller->selectEndOfLine();
     controller->formatComment();
     controller->anchor.index += 2;
 
-    return createToken(COMMENT);
+    createToken(COMMENT);
 }
 
-TokenType Scanner::createToken(TokenType type) {
-    markers.push_back( std::make_pair(controller->getAnchor(), controller->getActive()) );
-    return type;
+void Scanner::createToken(TokenType type) {
+    tokens.push_back( Token(Typeset::Selection(controller->anchor, controller->active), type) );
 }
 
-TokenType Scanner::scanNumber() {
+void Scanner::scanNumber() {
     controller->selectToNumberEnd();
-    return createToken(INTEGER);
+    createToken(INTEGER);
 }
 
 const std::unordered_map<std::string_view, TokenType> Scanner::keywords {
     HOPE_KEYWORD_MAP
 };
 
-TokenType Scanner::scanIdentifier() {
+void Scanner::scanIdentifier() {
     controller->selectToIdentifierEnd();
 
     auto lookup = keywords.find(controller->selectedFlatText());
     if(lookup != keywords.end()){
         controller->formatKeyword();
-        return createToken(lookup->second);
+        createToken(lookup->second);
     }else{
         controller->formatBasicIdentifier();
-        return createToken(IDENTIFIER);
+        createToken(IDENTIFIER);
     }
 }
 
-TokenType Scanner::unrecognizedSymbol(){
-    return error(UNRECOGNIZED_SYMBOL);
+void Scanner::unrecognizedSymbol(){
+    error(UNRECOGNIZED_SYMBOL);
 }
 
-TokenType Scanner::scanConstruct(TokenType type) {
-    TokenType t = createToken(type);
+void Scanner::scanConstruct(TokenType type) {
+    createToken(type);
     controller->consolidateToAnchor();
     controller->moveToNextChar();
-    return t;
 }
 
-TokenType Scanner::close() {
-    markers.push_back( std::make_pair(controller->getAnchor(), controller->getActive()) );
+void Scanner::close() {
+    createToken(ARGCLOSE);
     controller->consolidateToActive();
-    return ARGCLOSE;
 }
 
-TokenType Scanner::error(ErrorCode code) {
-    TokenType type = createToken(SCANNER_ERROR);
-    errors.push_back(Error(Typeset::Selection(markers.back()), code));
-    return type;
+void Scanner::error(ErrorCode code) {
+    createToken(SCANNER_ERROR);
+    errors.push_back(Error(tokens.back().sel, code));
 }
 
-TokenType Scanner::newline() {
+void Scanner::newline() {
     controller->anchorLine()->scope_depth = scope_depth;
-    return createToken(NEWLINE);
+    createToken(NEWLINE);
 }
 
-TokenType Scanner::endOfFile() {
+void Scanner::endOfFile() {
     controller->anchorLine()->scope_depth = scope_depth;
-    return createToken(ENDOFFILE);
+    createToken(ENDOFFILE);
 }
 
 void Scanner::incrementScope() noexcept{

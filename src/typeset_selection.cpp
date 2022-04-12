@@ -34,9 +34,9 @@ Selection::Selection() noexcept {}
 
 Selection::Selection(const Marker& left, const Marker& right) noexcept
     : right(right), left(left) {
-    //assert(inValidState());
+    //assert(inValidState()); //EVENTUALLY: re-enable this
     #ifndef NDEBUG
-    if(!inValidState()) std::cout << "INVALID SELECTION" << std::endl; //EVENTUALLY: eliminate invalid markers
+    //if(!inValidState()) std::cout << "INVALID SELECTION" << std::endl; //EVENTUALLY: eliminate invalid markers
     #endif
 }
 
