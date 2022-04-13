@@ -1,0 +1,9 @@
+θ = π6
+print(cos(θ), "\n")
+print(sinθ, "\n")
+print(cos2θ + sin2θ, "\n")
+print(arccos(cos(θ)), "\n")
+print(ln(e3), "\n")
+print(log(100), "\n")
+print(log216, "\n")
+print(erf(0.5))
