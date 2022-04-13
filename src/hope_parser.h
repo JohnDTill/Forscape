@@ -23,8 +23,6 @@ public:
     std::unordered_map<Typeset::Marker, Typeset::Marker> close_symbols;
 
 private:
-    //Predominant noexcept behavior requires elimination of dynamic allocation and recursion
-
     typedef size_t ParseNode;
 
     void reset() noexcept;

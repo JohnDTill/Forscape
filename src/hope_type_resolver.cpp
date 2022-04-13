@@ -355,8 +355,10 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
         case OP_ARCSINE:
         case OP_ARCTANGENT:
         case OP_BIJECTIVE_MAPPING:
+        case OP_COMP_ERR_FUNC:
         case OP_COSINE:
         case OP_DAGGER:
+        case OP_ERROR_FUNCTION:
         case OP_EXP:
         case OP_FACTORIAL:
         case OP_HYPERBOLIC_ARCCOSECANT:
