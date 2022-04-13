@@ -20,6 +20,7 @@ namespace Code {
 struct Error;
 class ParseTree;
 class SymbolTable;
+struct Symbol;
 typedef size_t Type;
 
 class TypeResolver : private std::vector<size_t>{
@@ -44,6 +45,7 @@ public:
     Type instantiate(const CallSignature& fn);
 
     std::string typeString(Type t) const;
+    std::string typeString(const Symbol& sym) const;
 
     void reset() noexcept;
     Type makeFunctionSet(ParseNode fn) noexcept;

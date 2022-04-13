@@ -8,7 +8,7 @@ namespace Hope {
 
 namespace Code {
 
-static constexpr size_t UNKNOWN = std::numeric_limits<size_t>::max();
+static constexpr size_t UNKNOWN_SIZE = 0;
 
 Optimiser::Optimiser(ParseTree& parse_tree)
     : parse_tree(parse_tree){}
@@ -23,8 +23,8 @@ ParseNode Optimiser::visitNode(ParseNode pn){
     for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
         parse_tree.setArg(pn, i, visitNode(parse_tree.arg(pn, i)));
 
-    parse_tree.setRows(pn, UNKNOWN);
-    parse_tree.setCols(pn, UNKNOWN);
+    parse_tree.setRows(pn, UNKNOWN_SIZE);
+    parse_tree.setCols(pn, UNKNOWN_SIZE);
     parse_tree.setValue(pn, NIL);
 
     switch (parse_tree.getOp(pn)) {
@@ -58,7 +58,7 @@ ParseNode Optimiser::visitLength(ParseNode pn){
     size_t rows = parse_tree.getRows(arg);
     size_t cols = parse_tree.getCols(arg);
 
-    if(rows == UNKNOWN || cols == UNKNOWN) return pn;
+    if(rows == UNKNOWN_SIZE || cols == UNKNOWN_SIZE) return pn;
     else if(rows > 1 && cols > 1){ /* DO THIS: static error */ }
     double val = rows*cols;
     parse_tree.setFlag(pn, val);

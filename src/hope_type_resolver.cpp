@@ -740,6 +740,52 @@ std::string TypeResolver::typeString(Type t) const{
     }
 }
 
+static void toSuperscript(const std::string& str, std::string& out){
+    for(size_t i = 0; i < str.size(); i++){
+        switch (str[i]) {
+            case '0': out += "⁰"; break;
+            case '1': out += "¹"; break;
+            case '2': out += "²"; break;
+            case '3': out += "³"; break;
+            case '4': out += "⁴"; break;
+            case '5': out += "⁵"; break;
+            case '6': out += "⁶"; break;
+            case '7': out += "⁷"; break;
+            case '8': out += "⁸"; break;
+            case '9': out += "⁹"; break;
+            default: assert(false);
+        }
+    }
+}
+
+std::string TypeResolver::typeString(const Symbol& sym) const{
+    if(sym.type == NUMERIC){
+        std::string str = "ℝ";
+        if(sym.rows == 1 && sym.cols == 1) return str;
+
+        if(sym.rows == UNKNOWN_SIZE){
+            str += "ⁿ";
+        }else{
+            std::string dim = std::to_string(sym.rows);
+            toSuperscript(dim, str);
+        }
+
+        if(sym.cols == 1) return str;
+
+        str += "˟";
+        if(sym.cols == UNKNOWN_SIZE){
+            str += "ᵐ";
+        }else{
+            std::string dim = std::to_string(sym.cols);
+            toSuperscript(dim, str);
+        }
+
+        return str;
+    }else{
+        return typeString(sym.type);
+    }
+}
+
 Type TypeResolver::makeFunctionSet(ParseNode pn) noexcept{
     std::vector<ParseNode> possible_fns = {pn};
 
