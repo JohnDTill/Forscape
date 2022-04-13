@@ -20,12 +20,15 @@ static constexpr size_t NONE = std::numeric_limits<size_t>::max();
 typedef size_t ParseNode;
 typedef size_t ScopeId;
 typedef size_t SymbolId;
+static constexpr size_t UNKNOWN_SIZE = 0;
 
 struct Symbol{
     size_t declaration_lexical_depth;
     size_t declaration_closure_depth;
     size_t flag;
     size_t type;
+    size_t rows = UNKNOWN_SIZE;
+    size_t cols = UNKNOWN_SIZE;
     size_t shadowed_var;
     size_t comment;
     bool is_const;
