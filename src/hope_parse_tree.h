@@ -59,6 +59,7 @@ public:
     ParseNode addQuadary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D);
     ParseNode addQuadary(Op type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C, ParseNode D);
     ParseNode addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E);
+    ParseNode clone(ParseNode pn);
 
     #ifndef NDEBUG
     std::string toGraphviz() const;

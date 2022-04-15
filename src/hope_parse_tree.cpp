@@ -300,6 +300,19 @@ ParseNode ParseTree::addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, 
     return pn;
 }
 
+ParseNode ParseTree::clone(ParseNode pn){
+    ParseNode cloned = size();
+    insert(end(), data()+pn, data()+pn+FIXED_FIELDS);
+    size_t nargs = getNumArgs(pn);
+    resize(size() + nargs);
+    for(size_t i = 0; i < nargs; i++){
+        ParseNode a = arg(pn, i);
+        setArg(cloned, i, a == EMPTY ? EMPTY : clone(a));
+    }
+
+    return cloned;
+}
+
 ParseTree::NaryBuilder ParseTree::naryBuilder(size_t type){
     return NaryBuilder(*this, type);
 }

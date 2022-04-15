@@ -23,11 +23,12 @@ void TypeResolver::resolve(){
 
     //Not sure about the soundness of the recursion handling strategy, so let's double check
     //EVENTUALLY: remove this check
-    const auto call_map_backup = called_func_map;
-    for(const auto& entry : call_map_backup){
-        called_func_map.erase(entry.first);
-        assert(instantiate(entry.first) == entry.second);
-    }
+    //DO THIS: reinstate this check after cloning
+    //const auto call_map_backup = called_func_map;
+    //for(const auto& entry : call_map_backup){
+    //    called_func_map.erase(entry.first);
+    //    assert(instantiate(entry.first) == entry.second);
+    //}
 }
 
 void TypeResolver::reset() noexcept{
@@ -611,7 +612,7 @@ Type TypeResolver::instantiate(const CallSignature& fn){
     called_func_map[fn] = RECURSIVE_CYCLE;
 
     const DeclareSignature& dec = declared(fn[0]);
-    ParseNode pn = dec[0];
+    ParseNode pn = parse_tree.clone(dec[0]);
 
     ParseNode val_list = parse_tree.valCapList(pn);
     ParseNode ref_list = parse_tree.refCapList(pn);
