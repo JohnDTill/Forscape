@@ -23,7 +23,7 @@ class SymbolTable;
 struct Symbol;
 typedef size_t Type;
 
-class TypeResolver : private std::vector<size_t>{
+class StaticPass : private std::vector<size_t>{
 
 public:
     typedef size_t ParseNode;
@@ -84,19 +84,29 @@ private:
         std::stack<Type> return_types;
 
     public:
-        TypeResolver(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors, std::vector<Code::Error>& warnings) noexcept;
+        StaticPass(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors, std::vector<Code::Error>& warnings) noexcept;
         void resolve();
 
     private:
-        void resolveStmt(size_t pn) noexcept;
+        ParseNode resolveStmt(size_t pn) noexcept;
         Type fillDefaultsAndInstantiate(ParseNode call_node, CallSignature sig);
-        size_t resolveExpr(size_t pn) noexcept;
+        ParseNode resolveExpr(size_t pn) noexcept;
         size_t callSite(size_t pn) noexcept;
         size_t implicitMult(size_t pn, size_t start = 0) noexcept;
         size_t instantiateSetOfFuncs(ParseNode call_node, Type fun_group, CallSignature& sig);
-        size_t error(size_t pn, ErrorCode code = ErrorCode::TYPE_ERROR) noexcept;
+        size_t error(ParseNode pn, ErrorCode code = ErrorCode::TYPE_ERROR) noexcept;
+        size_t errorType(ParseNode pn, ErrorCode code = ErrorCode::TYPE_ERROR) noexcept;
         ParseNode getFuncFromCallSig(const CallSignature& sig) const noexcept;
         ParseNode getFuncFromDeclSig(const DeclareSignature& sig) const noexcept;
+        ParseNode resolveAlg(ParseNode pn);
+        ParseNode resolveInverse(ParseNode pn);
+        ParseNode resolveLambda(ParseNode pn);
+        ParseNode resolveMatrix(ParseNode pn);
+        ParseNode resolveMult(ParseNode pn);
+        ParseNode resolvePower(ParseNode pn);
+        ParseNode resolveUnaryMinus(ParseNode pn);
+        ParseNode copyChildProperties(ParseNode pn) noexcept;
+        static bool dimsDisagree(size_t a, size_t b) noexcept;
 
         ParseTree& parse_tree;
         SymbolTable& symbol_table;

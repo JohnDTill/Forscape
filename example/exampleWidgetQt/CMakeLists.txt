@@ -140,8 +140,6 @@ set(PROJECT_SOURCES
     ${SRC}/hope_interpreter.cpp
     ${SRC}/hope_interpreter.h
     ${INCLUDE}/hope_logging.h
-    ${SRC}/hope_optimiser.cpp
-    ${SRC}/hope_optimiser.h
     ${SRC}/hope_parse_tree.cpp
     ${SRC}/hope_parse_tree.h
     ${SRC}/hope_parser.cpp
@@ -152,6 +150,8 @@ set(PROJECT_SOURCES
     ${INCLUDE}/hope_serial_unicode.h
     ${SRC}/hope_stack.cpp
     ${SRC}/hope_stack.h
+    ${SRC}/hope_static_pass.cpp
+    ${SRC}/hope_static_pass.h
     ${SRC}/hope_symbol_build_pass.cpp
     ${SRC}/hope_symbol_build_pass.h
     ${SRC}/hope_symbol_link_pass.cpp
@@ -159,8 +159,6 @@ set(PROJECT_SOURCES
     ${SRC}/hope_symbol_table.cpp
     ${SRC}/hope_symbol_table.h
     ${SRC}/hope_token.h
-    ${SRC}/hope_type_resolver.cpp
-    ${SRC}/hope_type_resolver.h
     ${SRC}/hope_unicode.h
     ${SRC}/hope_value.cpp
     ${SRC}/hope_value.h

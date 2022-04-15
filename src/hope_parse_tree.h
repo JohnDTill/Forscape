@@ -35,7 +35,6 @@ public:
     template<size_t index> void setArg(ParseNode node, ParseNode val) noexcept;
     double getFlagAsDouble(ParseNode pn) const noexcept;
     void setFlag(ParseNode pn, double val) noexcept;
-    size_t setAndReturnType(ParseNode pn, size_t type) noexcept;
     ParseNode lhs(ParseNode node) const noexcept;
     ParseNode rhs(ParseNode node) const noexcept;
     ParseNode child(ParseNode node) const noexcept;
@@ -60,6 +59,16 @@ public:
     ParseNode addQuadary(Op type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C, ParseNode D);
     ParseNode addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E);
     ParseNode clone(ParseNode pn);
+    bool definitelyScalar(ParseNode pn) const noexcept;
+    bool definitelyNotScalar(ParseNode pn) const noexcept;
+    bool definitelyMatrix(ParseNode pn) const noexcept;
+    bool definitelyR3(ParseNode pn) const noexcept;
+    bool nonSquare(ParseNode pn) const noexcept;
+    bool maybeR3(ParseNode pn) const noexcept;
+    void setScalar(ParseNode pn) noexcept;
+    void setR3(ParseNode pn) noexcept;
+    void copyDims(ParseNode dest, ParseNode src) noexcept;
+    void transposeDims(ParseNode dest, ParseNode src) noexcept;
 
     #ifndef NDEBUG
     std::string toGraphviz() const;

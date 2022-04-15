@@ -1,6 +1,7 @@
 #include "hope_parse_tree.h"
 
 #include <code_parsenode_ops.h>
+#include <hope_static_pass.h>
 #include "typeset_selection.h"
 
 #ifndef NDEBUG
@@ -11,6 +12,8 @@
 namespace Hope {
 
 namespace Code {
+
+static constexpr size_t UNKNOWN_SIZE = 0;
 
 void ParseTree::clear() noexcept {
     std::vector<size_t>::clear();
@@ -58,11 +61,6 @@ double ParseTree::getFlagAsDouble(ParseNode pn) const noexcept{
 
 void ParseTree::setFlag(ParseNode pn, double val) noexcept{
     setFlag(pn, *reinterpret_cast<size_t*>(&val));
-}
-
-size_t ParseTree::setAndReturnType(ParseNode pn, size_t type) noexcept{
-    setType(pn, type);
-    return type;
 }
 
 template<size_t index>
@@ -311,6 +309,55 @@ ParseNode ParseTree::clone(ParseNode pn){
     }
 
     return cloned;
+}
+
+bool ParseTree::definitelyScalar(ParseNode pn) const noexcept{
+    return getRows(pn) == 1 && getCols(pn) == 1;
+}
+
+bool ParseTree::definitelyNotScalar(ParseNode pn) const noexcept{
+    return getRows(pn) > 1 || getCols(pn) > 1;
+}
+
+bool ParseTree::definitelyMatrix(ParseNode pn) const noexcept{
+    return getRows(pn) > 1 && getCols(pn) > 1;
+}
+
+bool ParseTree::definitelyR3(ParseNode pn) const noexcept{
+    return getRows(pn) == 3 && getCols(pn) == 1;
+}
+
+bool ParseTree::nonSquare(ParseNode pn) const noexcept{
+    size_t rows = getRows(pn);
+    size_t cols = getCols(pn);
+    return rows != UNKNOWN_SIZE && cols != UNKNOWN_SIZE && rows != cols;
+}
+
+bool ParseTree::maybeR3(ParseNode pn) const noexcept{
+    size_t rows = getRows(pn);
+    size_t cols = getCols(pn);
+    return (rows == 3 || rows == UNKNOWN_SIZE) && (cols == 1 || cols == UNKNOWN_SIZE);
+}
+
+void ParseTree::setScalar(ParseNode pn) noexcept{
+    setType(pn, StaticPass::NUMERIC);
+    setRows(pn, 1);
+    setCols(pn, 1);
+}
+
+void ParseTree::setR3(ParseNode pn) noexcept{
+    setRows(pn, 3);
+    setCols(pn, 1);
+}
+
+void ParseTree::copyDims(ParseNode dest, ParseNode src) noexcept{
+    setRows(dest, getRows(src));
+    setCols(dest, getCols(src));
+}
+
+void ParseTree::transposeDims(ParseNode dest, ParseNode src) noexcept{
+    setRows(dest, getCols(src));
+    setCols(dest, getRows(src));
 }
 
 ParseTree::NaryBuilder ParseTree::naryBuilder(size_t type){

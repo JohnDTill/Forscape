@@ -329,7 +329,7 @@ void MainWindow::symbolTable(){
     #ifndef NDEBUG
     logger->info(LOG_PREFIX "symbolTable();");
     Typeset::Model* m = editor->getModel();
-    SymbolTreeView* view = new SymbolTreeView(m->symbol_builder.symbol_table, m->type_resolver);
+    SymbolTreeView* view = new SymbolTreeView(m->symbol_builder.symbol_table, m->static_pass);
     view->show();
     #endif
 }
