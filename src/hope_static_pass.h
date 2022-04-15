@@ -72,8 +72,17 @@ private:
     std::string abstractFunctionSetString(Type t) const;
     std::vector<DeclareSignature> declared_funcs;
 
+    struct CallResult{
+        Type type;
+        ParseNode instantiated;
+
+        CallResult(){}
+        CallResult(Type type, ParseNode instantiated)
+            : type(type), instantiated(instantiated) {}
+    };
+
     std::unordered_map<DeclareSignature, size_t, vectorOfIntHash> declared_func_map;
-    std::unordered_map<CallSignature, size_t, vectorOfIntHash> called_func_map;
+    std::unordered_map<CallSignature, CallResult, vectorOfIntHash> called_func_map;
 
     std::string declFunctionString(size_t i) const;
     std::string instFunctionString(const CallSignature& sig) const;
@@ -93,7 +102,7 @@ private:
         ParseNode resolveExpr(size_t pn) noexcept;
         size_t callSite(size_t pn) noexcept;
         size_t implicitMult(size_t pn, size_t start = 0) noexcept;
-        size_t instantiateSetOfFuncs(ParseNode call_node, Type fun_group, CallSignature& sig);
+        Type instantiateSetOfFuncs(ParseNode call_node, Type fun_group, CallSignature& sig);
         size_t error(ParseNode pn, ErrorCode code = ErrorCode::TYPE_ERROR) noexcept;
         size_t errorType(ParseNode pn, ErrorCode code = ErrorCode::TYPE_ERROR) noexcept;
         ParseNode getFuncFromCallSig(const CallSignature& sig) const noexcept;

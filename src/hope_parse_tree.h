@@ -43,6 +43,7 @@ public:
     void setRefList(ParseNode fn, ParseNode list) noexcept;
     ParseNode paramList(ParseNode node) const noexcept;
     ParseNode body(ParseNode node) const noexcept;
+    void setBody(ParseNode node, ParseNode body) noexcept;
     ParseNode algName(ParseNode node) const noexcept;
     size_t valListSize(ParseNode node) const noexcept;
     std::string str(ParseNode node) const;

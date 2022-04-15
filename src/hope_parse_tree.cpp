@@ -108,6 +108,11 @@ ParseNode ParseTree::body(ParseNode node) const noexcept{
     return arg<3>(node);
 }
 
+void ParseTree::setBody(ParseNode node, ParseNode body) noexcept{
+    assert(getOp(node) == OP_ALGORITHM || getOp(node) == OP_LAMBDA);
+    setArg<3>(node, body);
+}
+
 ParseNode ParseTree::algName(ParseNode node) const noexcept{
     assert(getOp(node) == OP_ALGORITHM);
     return arg<4>(node);

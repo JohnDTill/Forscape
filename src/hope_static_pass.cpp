@@ -17,7 +17,7 @@ void StaticPass::resolve(){
     parse_tree.root = resolveStmt(parse_tree.root);
 
     for(const auto& entry : called_func_map)
-        if(entry.second == RECURSIVE_CYCLE)
+        if(entry.second.type == RECURSIVE_CYCLE)
             error(getFuncFromCallSig(entry.first), RECURSIVE_TYPE);
     if(!errors.empty()) return;
 
@@ -26,7 +26,7 @@ void StaticPass::resolve(){
     const auto call_map_backup = called_func_map;
     for(const auto& entry : call_map_backup){
         called_func_map.erase(entry.first);
-        assert(instantiate(entry.first) == entry.second);
+        assert(instantiate(entry.first) == entry.second.type);
     }
 
     //EVENTUALLY: replace this with something less janky
@@ -257,7 +257,16 @@ Type StaticPass::fillDefaultsAndInstantiate(ParseNode call_node, StaticPass::Cal
     ParseNode params = parse_tree.paramList(fn);
 
     size_t n_params = parse_tree.getNumArgs(params);
-    size_t n_args = sig.size()-1;
+    size_t n_args = 0;
+    for(size_t i = 1; i < sig.size();){
+        n_args++;
+        if(sig[i] == NUMERIC){
+            i += 3;
+        }else{
+            i++;
+        }
+    }
+
     if(n_args > n_params) return errorType(call_node, TOO_MANY_ARGS);
 
     //Resolve default args
@@ -266,8 +275,13 @@ Type StaticPass::fillDefaultsAndInstantiate(ParseNode call_node, StaticPass::Cal
         if(parse_tree.getOp(param) != OP_EQUAL) return errorType(call_node, TOO_FEW_ARGS);
         ParseNode default_var = parse_tree.lhs(param);
         size_t sym_id = parse_tree.getFlag(default_var);
-        Type t = symbol_table.symbols[sym_id].type;
+        const Symbol& sym = symbol_table.symbols[sym_id];
+        Type t = sym.type;
         sig.push_back(t);
+        if(t == NUMERIC){
+            sig.push_back(sym.rows);
+            sig.push_back(sym.cols);
+        }
     }
 
     return instantiate(sig);
@@ -586,7 +600,12 @@ size_t StaticPass::callSite(size_t pn) noexcept{
     for(size_t i = 1; i < node_size; i++){
         ParseNode arg = resolveExpr(parse_tree.arg(pn, i));
         parse_tree.setArg(pn, i, arg);
-        sig.push_back(parse_tree.getType(arg));
+        Type t = parse_tree.getType(arg);
+        sig.push_back(t);
+        if(t == NUMERIC){
+            sig.push_back(parse_tree.getRows(arg));
+            sig.push_back(parse_tree.getCols(arg));
+        }
     }
 
     parse_tree.setType(pn, instantiateSetOfFuncs(pn, callable_type, sig));
@@ -616,6 +635,10 @@ size_t StaticPass::implicitMult(size_t pn, size_t start) noexcept{
     ParseNode rhs = implicitMult(pn, start+1);
     Type tr = parse_tree.getType(rhs);
     sig.push_back(tr);
+    if(tr == NUMERIC){
+        sig.push_back(parse_tree.getRows(rhs));
+        sig.push_back(parse_tree.getCols(rhs));
+    }
 
     ParseNode call = parse_tree.addBinary(OP_CALL, lhs, rhs);
     parse_tree.setType(call, instantiateSetOfFuncs(pn, tl, sig));
@@ -623,7 +646,7 @@ size_t StaticPass::implicitMult(size_t pn, size_t start) noexcept{
     return call;
 }
 
-size_t StaticPass::instantiateSetOfFuncs(ParseNode call_node, Type fun_group, CallSignature& sig){
+Type StaticPass::instantiateSetOfFuncs(ParseNode call_node, Type fun_group, CallSignature& sig){
     Type expected = RECURSIVE_CYCLE;
     size_t expected_index;
 
@@ -721,6 +744,10 @@ StaticPass::ParseNode StaticPass::resolveAlg(ParseNode pn){
         const Symbol& outer = symbol_table.symbols[inner.shadowed_var];
         Type t = outer.type;
         sig.push_back(t);
+        if(t == NUMERIC){
+            sig.push_back(outer.rows);
+            sig.push_back(outer.cols);
+        }
     }
 
     ParseNode ref_list = parse_tree.refCapList(pn);
@@ -728,8 +755,13 @@ StaticPass::ParseNode StaticPass::resolveAlg(ParseNode pn){
         ParseNode ref = parse_tree.arg(ref_list, i);
         if(parse_tree.getOp(ref) != OP_READ_UPVALUE) continue;
         size_t sym_id = parse_tree.getFlag(ref);
-        Type t = symbol_table.symbols[sym_id].type;
+        const Symbol& sym = symbol_table.symbols[sym_id];
+        Type t = sym.type;
         sig.push_back(t);
+        if(t == NUMERIC){
+            sig.push_back(sym.rows);
+            sig.push_back(sym.cols);
+        }
     }
 
     Type t = makeFunctionSet(declare(sig));
@@ -769,6 +801,10 @@ ParseNode StaticPass::resolveLambda(ParseNode pn){
         const Symbol& outer = symbol_table.symbols[inner.shadowed_var];
         Type t = outer.type;
         sig.push_back(t);
+        if(t == NUMERIC){
+            sig.push_back(outer.rows);
+            sig.push_back(outer.cols);
+        }
     }
 
     ParseNode ref_list = parse_tree.refCapList(pn);
@@ -776,8 +812,13 @@ ParseNode StaticPass::resolveLambda(ParseNode pn){
         ParseNode ref = parse_tree.arg(ref_list, i);
         if(parse_tree.getOp(ref) != OP_READ_UPVALUE) continue;
         size_t sym_id = parse_tree.getFlag(ref);
-        Type t = symbol_table.symbols[sym_id].type;
+        const Symbol& sym = symbol_table.symbols[sym_id];
+        Type t = sym.type;
         sig.push_back(t);
+        if(t == NUMERIC){
+            sig.push_back(sym.rows);
+            sig.push_back(sym.cols);
+        }
     }
 
     Type t = makeFunctionSet(declare(sig));
@@ -966,7 +1007,7 @@ Type StaticPass::declare(const DeclareSignature& fn){
 Type StaticPass::instantiate(const CallSignature& fn){
     auto lookup = called_func_map.find(fn);
     if(lookup != called_func_map.end()){
-        Type return_type = lookup->second;
+        Type return_type = lookup->second.type;
         retry_at_recursion |= (return_type == RECURSIVE_CYCLE && first_attempt); //revisited in process of instantiation
         return return_type;
     }
@@ -979,7 +1020,7 @@ Type StaticPass::instantiate(const CallSignature& fn){
     size_t old_args_index = old_args.size();
 
     //Instantiate
-    called_func_map[fn] = RECURSIVE_CYCLE;
+    called_func_map[fn] = CallResult(RECURSIVE_CYCLE, ParseTree::EMPTY);
 
     const DeclareSignature& dec = declared(fn[0]);
     ParseNode pn = parse_tree.clone(dec[0]);
@@ -988,9 +1029,9 @@ Type StaticPass::instantiate(const CallSignature& fn){
     ParseNode val_list = parse_tree.valCapList(pn);
     ParseNode ref_list = parse_tree.refCapList(pn);
     ParseNode params = parse_tree.paramList(pn);
-    ParseNode body = parse_tree.body(pn);
     size_t N_vals = parse_tree.valListSize(val_list);
 
+    size_t type_index = 0;
     if(val_list != ParseTree::EMPTY){
         size_t scope_index = parse_tree.getFlag(val_list);
         const ScopeSegment& scope = symbol_table.scopes[scope_index];
@@ -998,7 +1039,12 @@ Type StaticPass::instantiate(const CallSignature& fn){
             size_t sym_id = scope.sym_begin + i;
             Symbol& sym = symbol_table.symbols[sym_id];
             old_val_cap.push_back(sym.type);
-            sym.type = dec[1+i];
+            sym.type = dec[1+type_index];
+            type_index++;
+            if(sym.type == NUMERIC){
+                sym.rows = dec[1+type_index++];
+                sym.cols = dec[1+type_index++];
+            }
         }
     }
 
@@ -1009,18 +1055,28 @@ Type StaticPass::instantiate(const CallSignature& fn){
         size_t sym_id = parse_tree.getFlag(ref);
         Symbol& sym = symbol_table.symbols[sym_id];
         old_ref_cap.push_back(sym.type);
-        sym.type = dec[1+N_vals+j];
+        sym.type = dec[1+type_index];
+        type_index++;
+        if(sym.type == NUMERIC){
+            sym.rows = dec[1+type_index++];
+            sym.cols = dec[1+type_index++];
+        }
         j++;
     }
 
+    type_index = 0;
     for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
         ParseNode param = parse_tree.arg(params, i);
         if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
         size_t sym_id = parse_tree.getFlag(param);
         Symbol& sym = symbol_table.symbols[sym_id];
         old_args.push_back(sym.type);
-        sym.type = fn[1+i];
-        parse_tree.setType(param, fn[1+i]);
+        sym.type = fn[1+type_index++];
+        parse_tree.setType(param, sym.type);
+        if(sym.type == NUMERIC){
+            sym.rows = fn[1+type_index++];
+            sym.cols = fn[1+type_index++];
+        }
     }
 
     Type return_type;
@@ -1029,16 +1085,18 @@ Type StaticPass::instantiate(const CallSignature& fn){
 
     if(is_alg){
         return_types.push(UNINITIALISED);
-        resolveStmt(body);
+        ParseNode body = resolveStmt(parse_tree.body(pn));
+        parse_tree.setBody(pn, body);
         return_type = return_types.top();
         if(return_type == UNINITIALISED) return_type = VOID_TYPE; //Function with no return statement
         return_types.pop();
     }else{
-        resolveExpr(body);
+        ParseNode body = resolveExpr(parse_tree.body(pn));
+        parse_tree.setBody(pn, body);
         return_type = parse_tree.getType(body);
     }
 
-    called_func_map[fn] = return_type;
+    called_func_map[fn] = CallResult(return_type, pn);
 
     if(recursion_fallback == &fn){
         if(retry_at_recursion){
@@ -1047,16 +1105,19 @@ Type StaticPass::instantiate(const CallSignature& fn){
 
             if(is_alg){
                 return_types.push(UNINITIALISED);
-                resolveStmt(body);
+                ParseNode body = resolveStmt(parse_tree.body(pn));
+                parse_tree.setBody(pn, body);
                 return_type = return_types.top();
                 if(return_type == UNINITIALISED) return_type = VOID_TYPE; //Function with no return statement
                 return_types.pop();
             }else{
-                return_type = resolveExpr(body);
+                ParseNode body = resolveExpr(parse_tree.body(pn));
+                parse_tree.setBody(pn, body);
+                return_type = parse_tree.getType(body);
             }
 
             first_attempt = true;
-            called_func_map[fn] = return_type;
+            called_func_map[fn] = CallResult(return_type, pn);
         }
 
         recursion_fallback = nullptr;
