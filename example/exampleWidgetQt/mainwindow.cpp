@@ -684,6 +684,7 @@ void MainWindow::closeEvent(QCloseEvent* event){
     QMainWindow::closeEvent(event);
 }
 
+void MainWindow::checkOutput(){
     auto& interpreter = editor->getModel()->interpreter;
     auto& message_queue = interpreter.message_queue;
     char ch;
