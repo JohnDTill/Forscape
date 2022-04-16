@@ -19,11 +19,12 @@ namespace Hope {
 
 namespace Code {
 
-void Interpreter::run(const ParseTree& parse_tree, SymbolTable symbol_table){
+void Interpreter::run(const ParseTree& parse_tree, SymbolTable symbol_table, const InstantiationLookup& inst_lookup){
     assert(parse_tree.getOp(parse_tree.root) == OP_BLOCK);
     reset();
 
     this->parse_tree = parse_tree;
+    this->inst_lookup = inst_lookup;
     SymbolTableLinker linker(symbol_table, this->parse_tree);
     linker.link();
 
@@ -31,9 +32,9 @@ void Interpreter::run(const ParseTree& parse_tree, SymbolTable symbol_table){
     status = FINISHED;
 }
 
-void Interpreter::runThread(const ParseTree& parse_tree, SymbolTable symbol_table){
+void Interpreter::runThread(const ParseTree& parse_tree, SymbolTable symbol_table, const InstantiationLookup& inst_lookup){
     status = NORMAL;
-    std::thread(&Interpreter::run, this, parse_tree, symbol_table).detach();
+    std::thread(&Interpreter::run, this, parse_tree, symbol_table, inst_lookup).detach();
 }
 
 void Interpreter::stop(){
@@ -690,12 +691,12 @@ Value Interpreter::call(ParseNode call) {
     switch (v.index()) {
         case Lambda_index:{
             Lambda& f = std::get<Lambda>(v);
-            return innerCall(call, f.params(parse_tree), f.closure, f.valCap(parse_tree), f.refCap(parse_tree), f.expr(parse_tree), true, true);
+            return innerCall(call, f.closure, f.expr(parse_tree), true, true);
         }
 
         case Algorithm_index:{
             Algorithm& alg = std::get<Algorithm>(v);
-            return innerCall(call, alg.params(parse_tree), alg.closure, alg.valCap(parse_tree), alg.refCap(parse_tree), alg.body(parse_tree), true, false);
+            return innerCall(call, alg.closure, alg.body(parse_tree), true, false);
         }
 
         case Unitialized_index:
@@ -722,7 +723,7 @@ void Interpreter::callStmt(ParseNode pn){
 
         case Algorithm_index:{
             Algorithm& alg = std::get<Algorithm>(v);
-            innerCall(pn, alg.params(parse_tree), alg.closure, alg.valCap(parse_tree), alg.refCap(parse_tree), alg.body(parse_tree), false, false);
+            innerCall(pn, alg.closure, alg.body(parse_tree), false, false);
             break;
         }
 
@@ -731,7 +732,16 @@ void Interpreter::callStmt(ParseNode pn){
     }
 }
 
-Value Interpreter::innerCall(ParseNode call, ParseNode params, Closure& closure, ParseNode captured, ParseNode upvalues, ParseNode body, bool expect, bool is_lambda){
+Value Interpreter::innerCall(ParseNode call, Closure& closure, ParseNode body, bool expect, bool is_lambda){
+    auto inst_result = inst_lookup.find(std::make_pair(body, call));
+    assert(inst_result != inst_lookup.end());
+    ParseNode inst_fn = inst_result->second;
+
+    ParseNode val_cap = parse_tree.valCapList(inst_fn);
+    ParseNode ref_cap = parse_tree.refCapList(inst_fn);
+    ParseNode params = parse_tree.paramList(inst_fn);
+    body = parse_tree.body(inst_fn);
+
     size_t nargs = parse_tree.getNumArgs(call)-1;
     size_t nparams = parse_tree.getNumArgs(params);
     if(nargs > nparams) return error(INVALID_ARGS, call);
@@ -748,7 +758,7 @@ Value Interpreter::innerCall(ParseNode call, ParseNode params, Closure& closure,
         }
     }
 
-    breakLocalClosureLinks(closure, captured, upvalues);
+    breakLocalClosureLinks(closure, val_cap, ref_cap);
     frames.push_back(stack.size());
     Closure* old = active_closure;
     active_closure = &closure;

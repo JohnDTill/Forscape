@@ -26,7 +26,7 @@ void StaticPass::resolve(){
     const auto call_map_backup = called_func_map;
     for(const auto& entry : call_map_backup){
         called_func_map.erase(entry.first);
-        assert(instantiate(entry.first) == entry.second.type);
+        assert(instantiate(ParseTree::EMPTY, entry.first) == entry.second.type);
     }
 
     //EVENTUALLY: replace this with something less janky
@@ -284,7 +284,7 @@ Type StaticPass::fillDefaultsAndInstantiate(ParseNode call_node, StaticPass::Cal
         }
     }
 
-    return instantiate(sig);
+    return instantiate(call_node, sig);
 }
 
 ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
@@ -712,7 +712,7 @@ size_t StaticPass::errorType(ParseNode pn, ErrorCode code) noexcept{
     return FAILURE;
 }
 
-StaticPass::ParseNode StaticPass::getFuncFromCallSig(const CallSignature& sig) const noexcept{
+ParseNode StaticPass::getFuncFromCallSig(const CallSignature& sig) const noexcept{
     size_t decl_index = sig[0];
     const DeclareSignature& dec = declared(decl_index);
 
@@ -723,7 +723,7 @@ ParseNode StaticPass::getFuncFromDeclSig(const DeclareSignature& sig) const noex
     return sig[0];
 }
 
-StaticPass::ParseNode StaticPass::resolveAlg(ParseNode pn){
+ParseNode StaticPass::resolveAlg(ParseNode pn){
     ParseNode params = parse_tree.paramList(pn);
     for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
         ParseNode param = parse_tree.arg(params, i);
@@ -827,7 +827,7 @@ ParseNode StaticPass::resolveLambda(ParseNode pn){
     return pn;
 }
 
-StaticPass::ParseNode StaticPass::resolveMatrix(ParseNode pn){
+ParseNode StaticPass::resolveMatrix(ParseNode pn){
     parse_tree.setType(pn, NUMERIC);
     size_t nargs = parse_tree.getNumArgs(pn);
     for(size_t i = 0; i < nargs; i++){
@@ -1004,7 +1004,7 @@ Type StaticPass::declare(const DeclareSignature& fn){
     return result.first->second;
 }
 
-Type StaticPass::instantiate(const CallSignature& fn){
+Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
     auto lookup = called_func_map.find(fn);
     if(lookup != called_func_map.end()){
         Type return_type = lookup->second.type;
@@ -1023,12 +1023,12 @@ Type StaticPass::instantiate(const CallSignature& fn){
     called_func_map[fn] = CallResult(RECURSIVE_CYCLE, ParseTree::EMPTY);
 
     const DeclareSignature& dec = declared(fn[0]);
-    ParseNode pn = parse_tree.clone(dec[0]);
-    //ParseNode pn = dec[0]; //DO THIS - delete and get instantiation working
+    ParseNode abstract_fn = dec[0];
+    ParseNode instantiated_fn = parse_tree.clone(abstract_fn);
 
-    ParseNode val_list = parse_tree.valCapList(pn);
-    ParseNode ref_list = parse_tree.refCapList(pn);
-    ParseNode params = parse_tree.paramList(pn);
+    ParseNode val_list = parse_tree.valCapList(instantiated_fn);
+    ParseNode ref_list = parse_tree.refCapList(instantiated_fn);
+    ParseNode params = parse_tree.paramList(instantiated_fn);
     size_t N_vals = parse_tree.valListSize(val_list);
 
     size_t type_index = 0;
@@ -1081,22 +1081,22 @@ Type StaticPass::instantiate(const CallSignature& fn){
 
     Type return_type;
 
-    bool is_alg = parse_tree.getOp(pn) != OP_LAMBDA;
+    bool is_alg = parse_tree.getOp(instantiated_fn) != OP_LAMBDA;
 
     if(is_alg){
         return_types.push(UNINITIALISED);
-        ParseNode body = resolveStmt(parse_tree.body(pn));
-        parse_tree.setBody(pn, body);
+        ParseNode body = resolveStmt(parse_tree.body(instantiated_fn));
+        parse_tree.setBody(instantiated_fn, body);
         return_type = return_types.top();
         if(return_type == UNINITIALISED) return_type = VOID_TYPE; //Function with no return statement
         return_types.pop();
     }else{
-        ParseNode body = resolveExpr(parse_tree.body(pn));
-        parse_tree.setBody(pn, body);
+        ParseNode body = resolveExpr(parse_tree.body(instantiated_fn));
+        parse_tree.setBody(instantiated_fn, body);
         return_type = parse_tree.getType(body);
     }
 
-    called_func_map[fn] = CallResult(return_type, pn);
+    called_func_map[fn] = CallResult(return_type, instantiated_fn);
 
     if(recursion_fallback == &fn){
         if(retry_at_recursion){
@@ -1105,19 +1105,19 @@ Type StaticPass::instantiate(const CallSignature& fn){
 
             if(is_alg){
                 return_types.push(UNINITIALISED);
-                ParseNode body = resolveStmt(parse_tree.body(pn));
-                parse_tree.setBody(pn, body);
+                ParseNode body = resolveStmt(parse_tree.body(instantiated_fn));
+                parse_tree.setBody(instantiated_fn, body);
                 return_type = return_types.top();
                 if(return_type == UNINITIALISED) return_type = VOID_TYPE; //Function with no return statement
                 return_types.pop();
             }else{
-                ParseNode body = resolveExpr(parse_tree.body(pn));
-                parse_tree.setBody(pn, body);
+                ParseNode body = resolveExpr(parse_tree.body(instantiated_fn));
+                parse_tree.setBody(instantiated_fn, body);
                 return_type = parse_tree.getType(body);
             }
 
             first_attempt = true;
-            called_func_map[fn] = CallResult(return_type, pn);
+            called_func_map[fn] = CallResult(return_type, instantiated_fn);
         }
 
         recursion_fallback = nullptr;
@@ -1153,6 +1153,10 @@ Type StaticPass::instantiate(const CallSignature& fn){
         sym.type = old_args[i+old_args_index];
     }
     old_args.resize(old_args_index);
+
+    auto dynamic_key = std::make_pair(parse_tree.body(abstract_fn), call_node);
+    assert(instantiation_lookup.find(dynamic_key) == instantiation_lookup.end());
+    instantiation_lookup[dynamic_key] = instantiated_fn;
 
     return return_type;
 }
@@ -1285,7 +1289,7 @@ size_t StaticPass::numElements(size_t index) const noexcept{
     return v(index+1);
 }
 
-StaticPass::ParseNode StaticPass::arg(size_t index, size_t n) const noexcept{
+ParseNode StaticPass::arg(size_t index, size_t n) const noexcept{
     assert(n < numElements(index));
     return v(index + 2 + n);
 }

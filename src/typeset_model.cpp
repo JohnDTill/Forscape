@@ -72,7 +72,7 @@ std::string Model::toSerial() const {
 std::string Model::run(){
     assert(errors.empty());
 
-    interpreter.run(parser.parse_tree, symbol_builder.symbol_table);
+    interpreter.run(parser.parse_tree, symbol_builder.symbol_table, static_pass.instantiation_lookup);
 
     std::string str;
     str.reserve(interpreter.message_queue.size_approx());
@@ -90,7 +90,7 @@ std::string Model::run(){
 
 void Model::runThread(){
     assert(errors.empty());
-    interpreter.runThread(parser.parse_tree, symbol_builder.symbol_table);
+    interpreter.runThread(parser.parse_tree, symbol_builder.symbol_table, static_pass.instantiation_lookup);
 }
 
 void Model::stop(){

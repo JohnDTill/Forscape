@@ -17,6 +17,14 @@ namespace Hope {
 
 namespace Code {
 
+typedef size_t ParseNode;
+struct PairHash{
+    size_t operator()(const std::pair<ParseNode, ParseNode>& in) const noexcept {
+        return std::hash<size_t>{}(in.first ^ (in.second << 32));
+    }
+};
+typedef std::unordered_map<std::pair<ParseNode, ParseNode>, ParseNode, PairHash> InstantiationLookup;
+
 struct Error;
 class ParseTree;
 class SymbolTable;
@@ -26,7 +34,7 @@ typedef size_t Type;
 class StaticPass : private std::vector<size_t>{
 
 public:
-    typedef size_t ParseNode;
+    InstantiationLookup instantiation_lookup;
     typedef std::vector<size_t> DeclareSignature;
     typedef std::vector<size_t> CallSignature;
     static constexpr Type UNINITIALISED = std::numeric_limits<size_t>::max();
@@ -42,7 +50,7 @@ public:
     const CallSignature* recursion_fallback = nullptr;
 
     Type declare(const DeclareSignature& fn);
-    Type instantiate(const CallSignature& fn);
+    Type instantiate(ParseNode call_node,const CallSignature& fn);
 
     std::string typeString(Type t) const;
     std::string typeString(const Symbol& sym) const;
