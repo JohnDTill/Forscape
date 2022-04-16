@@ -580,8 +580,10 @@ size_t StaticPass::callSite(size_t pn) noexcept{
             ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
             parse_tree.setArg<1>(pn, rhs);
             if(parse_tree.getType(rhs) == NUMERIC){
-                parse_tree.setOp(pn, OP_MULTIPLICATION);
-                return resolveMult(pn);
+                //parse_tree.setOp(pn, OP_MULTIPLICATION);
+                //return resolveMult(pn);
+                //DO THIS - broken
+                return resolveMult(parse_tree.addBinary(OP_MULTIPLICATION, call_expr, rhs));
             }else{
                 return error(rhs);
             }
@@ -621,8 +623,15 @@ size_t StaticPass::implicitMult(size_t pn, size_t start) noexcept{
     if(start == parse_tree.getNumArgs(pn)-1) return lhs;
     else if(tl == NUMERIC){
         ParseNode rhs = implicitMult(pn, start+1);
-        if(parse_tree.getType(rhs) != NUMERIC) return error(rhs);
-        return resolveExpr(parse_tree.addBinary(OP_MULTIPLICATION, lhs, rhs));
+        Type tl = parse_tree.getType(rhs);
+        if(tl != NUMERIC) return error(rhs);
+        //return resolveExpr(parse_tree.addBinary(OP_MULTIPLICATION, lhs, rhs));
+        //parse_tree.setType(pn, NUMERIC);
+        //return pn;
+        //DO THIS - fix this mess
+        ParseNode mult = parse_tree.addBinary(OP_MULTIPLICATION, lhs, rhs);
+        parse_tree.setType(mult, NUMERIC);
+        return mult;
     }else if(tl == UNINITIALISED){
         return error(lhs, CALL_BEFORE_DEFINE);
     }else if(!isAbstractFunctionGroup(tl)){
@@ -642,7 +651,7 @@ size_t StaticPass::implicitMult(size_t pn, size_t start) noexcept{
     }
 
     ParseNode call = parse_tree.addBinary(OP_CALL, lhs, rhs);
-    parse_tree.setType(call, instantiateSetOfFuncs(pn, tl, sig));
+    parse_tree.setType(call, instantiateSetOfFuncs(call, tl, sig));
 
     return call;
 }
@@ -651,9 +660,11 @@ Type StaticPass::instantiateSetOfFuncs(ParseNode call_node, Type fun_group, Call
     Type expected = RECURSIVE_CYCLE;
     size_t expected_index;
 
-    for(expected_index = 0; expected_index < numElements(fun_group) && expected == RECURSIVE_CYCLE; expected_index++){
+    for(expected_index = 0; expected_index < numElements(fun_group); expected_index++){
         sig[0] = arg(fun_group, expected_index);
         expected = fillDefaultsAndInstantiate(call_node, sig);
+
+        if(expected != RECURSIVE_CYCLE) break;
     }
 
     if(expected == RECURSIVE_CYCLE){
@@ -702,12 +713,17 @@ Type StaticPass::instantiateSetOfFuncs(ParseNode call_node, Type fun_group, Call
 
 size_t StaticPass::error(ParseNode pn, ErrorCode code) noexcept{
     if(retry_at_recursion) parse_tree.setType(pn, RECURSIVE_CYCLE);
-    else if(errors.empty()) errors.push_back(Error(parse_tree.getSelection(pn), code));
+    else if(errors.empty()){
+        assert(false);
+        errors.push_back(Error(parse_tree.getSelection(pn), code));
+    }
     return pn;
 }
 
 size_t StaticPass::errorType(ParseNode pn, ErrorCode code) noexcept{
     if(retry_at_recursion) return RECURSIVE_CYCLE;
+
+    assert(false);
 
     if(errors.empty()) errors.push_back(Error(parse_tree.getSelection(pn), code));
     return FAILURE;
@@ -890,7 +906,8 @@ ParseNode StaticPass::resolveMatrix(ParseNode pn){
 ParseNode StaticPass::resolveMult(ParseNode pn){
     ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
     parse_tree.setArg<0>(pn, lhs);
-    if(parse_tree.getType(lhs) != NUMERIC) return error(lhs);
+    Type lhs_type = parse_tree.getType(lhs);
+    if(lhs_type != NUMERIC) return error(lhs);
     ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
     parse_tree.setArg<1>(pn, rhs);
     if(parse_tree.getType(rhs) != NUMERIC) return error(rhs);
@@ -1016,6 +1033,18 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
 
         auto dynamic_key = std::make_pair(parse_tree.body(abstract_fn), call_node);
         instantiation_lookup[dynamic_key] = lookup->second.instantiated;
+
+        //DO THIS - delete
+        //std::cout << "Register " << parse_tree.body(abstract_fn) << ", " << call_node <<
+        //             " as " << lookup->second.instantiated << std::endl;
+
+        ParseNode instantiated_fn = lookup->second.instantiated;
+        if(instantiated_fn != ParseTree::EMPTY){
+            instantiation_lookup[std::make_pair(parse_tree.body(instantiated_fn), call_node)] = instantiated_fn;
+            //DO THIS - delete
+            //std::cout << "Register " << parse_tree.body(instantiated_fn) << ", " << call_node <<
+            //             " as " << instantiated_fn << std::endl;
+        }
 
         return return_type;
     }
@@ -1160,11 +1189,16 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
     }
     old_args.resize(old_args_index);
 
+    assert(parse_tree.getOp(call_node) == OP_CALL);
     auto dynamic_key = std::make_pair(parse_tree.body(abstract_fn), call_node);
     //assert(instantiation_lookup.find(dynamic_key) == instantiation_lookup.end());
     instantiation_lookup[dynamic_key] = instantiated_fn;
 
-    std::cout << call_node << " has key " << dynamic_key.first << ", " << dynamic_key.second << std::endl;
+    //DO THIS - delete
+    //std::cout << "Register " << parse_tree.body(abstract_fn) << ", " << call_node << std::endl;
+
+    //instantiation_lookup[std::make_pair(parse_tree.body(instantiated_fn), call_node)] = instantiated_fn;
+    //std::cout << "Register " << parse_tree.body(instantiated_fn) << ", " << call_node << std::endl;
 
     return return_type;
 }

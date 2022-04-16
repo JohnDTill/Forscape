@@ -312,6 +312,7 @@ ParseNode ParseTree::clone(ParseNode pn){
         case OP_READ_GLOBAL:
         case OP_READ_UPVALUE:
         case OP_ALGORITHM:
+        case OP_PROTOTYPE_ALG:
             cloned_vars.push_back(std::make_pair(pn, cloned));
     }
 
@@ -320,7 +321,13 @@ ParseNode ParseTree::clone(ParseNode pn){
     resize(size() + nargs);
     for(size_t i = 0; i < nargs; i++){
         ParseNode a = arg(pn, i);
-        setArg(cloned, i, a == EMPTY ? EMPTY : clone(a));
+        if(a == EMPTY){
+            setArg(cloned, i, EMPTY);
+        }else if(getOp(a) == OP_CALL){
+            setArg(cloned, i, a);
+        }else{
+            setArg(cloned, i, clone(a));
+        }
     }
 
     return cloned;

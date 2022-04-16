@@ -736,9 +736,14 @@ void Interpreter::callStmt(ParseNode pn){
 }
 
 Value Interpreter::innerCall(ParseNode call, Closure& closure, ParseNode body, bool expect, bool is_lambda){
+    assert(parse_tree.getOp(call) == OP_CALL);
+
     auto inst_result = inst_lookup.find(std::make_pair(body, call));
     assert(inst_result != inst_lookup.end());
     ParseNode inst_fn = inst_result->second;
+
+    //DO THIS - delete
+    //std::cout << "Looking up " << body << ", " << call << " as " << inst_fn << std::endl;
 
     ParseNode val_cap = parse_tree.valCapList(inst_fn);
     ParseNode ref_cap = parse_tree.refCapList(inst_fn);
