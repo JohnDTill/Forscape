@@ -498,11 +498,17 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
                 if(parse_tree.getType(cond) != BOOLEAN) return error(cond, EXPECT_BOOLEAN);
             }
 
-            ParseNode arg0 = resolveExpr(parse_tree.arg(pn, 0));
-            parse_tree.setArg<0>(pn, arg0);
-            Type expected = parse_tree.getType(arg0);
+            Type expected = UNINITIALISED;
+            size_t expected_index;
+            for(expected_index = 0; expected_index < parse_tree.getNumArgs(pn); expected_index+=2){
+                ParseNode arg = resolveExpr(parse_tree.arg(pn, expected_index));
+                parse_tree.setArg(pn, expected_index , arg);
+                expected = parse_tree.getType(arg);
+                if(expected != RECURSIVE_CYCLE) break;
+            }
+
             if(isAbstractFunctionGroup(expected))
-                for(size_t i = 2; i < parse_tree.getNumArgs(pn); i+=2){
+                for(size_t i = expected_index+2; i < parse_tree.getNumArgs(pn); i+=2){
                     ParseNode arg = resolveExpr(parse_tree.arg(pn, i));
                     parse_tree.setArg(pn, i , arg);
                     Type t = parse_tree.getType(arg);
@@ -510,7 +516,7 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
                     expected = functionSetUnion(expected, t);
                 }
             else
-                for(size_t i = 2; i < parse_tree.getNumArgs(pn); i+=2){
+                for(size_t i = expected_index+2; i < parse_tree.getNumArgs(pn); i+=2){
                     ParseNode arg = resolveExpr(parse_tree.arg(pn, i));
                     parse_tree.setArg(pn, i , arg);
                     Type t = parse_tree.getType(arg);
