@@ -12,6 +12,8 @@ namespace Hope {
 
 namespace Code {
 
+static constexpr size_t UNKNOWN_SIZE = 0;
+
 void ParseTree::clear() noexcept {
     std::vector<size_t>::clear();
 }
@@ -58,6 +60,31 @@ double ParseTree::getFlagAsDouble(ParseNode pn) const noexcept{
 
 void ParseTree::setFlag(ParseNode pn, double val) noexcept{
     setFlag(pn, *reinterpret_cast<size_t*>(&val));
+}
+
+void ParseTree::setScalar(ParseNode pn) noexcept{
+    setRows(pn, 1);
+    setCols(pn, 1);
+}
+
+void ParseTree::copyDims(ParseNode pn, ParseNode src) noexcept{
+    setRows(pn, getRows(src));
+    setCols(pn, getCols(src));
+}
+
+void ParseTree::transposeDims(ParseNode pn, ParseNode src) noexcept{
+    setRows(pn, getCols(src));
+    setCols(pn, getRows(src));
+}
+
+bool ParseTree::isScalar(ParseNode pn) const noexcept{
+    return getRows(pn) == 1 && getCols(pn) == 1;
+}
+
+bool ParseTree::isNonsquare(ParseNode pn) const noexcept{
+    size_t rows = getRows(pn);
+    size_t cols = getCols(pn);
+    return rows != UNKNOWN_SIZE && cols != UNKNOWN_SIZE && rows != cols;
 }
 
 size_t ParseTree::setAndReturnType(ParseNode pn, size_t type) noexcept{
@@ -110,6 +137,11 @@ ParseNode ParseTree::body(ParseNode node) const noexcept{
     return arg<3>(node);
 }
 
+void ParseTree::setBody(ParseNode node, ParseNode body) noexcept{
+    assert(getOp(node) == OP_ALGORITHM || getOp(node) == OP_LAMBDA);
+    return setArg<3>(node, body);
+}
+
 ParseNode ParseTree::algName(ParseNode node) const noexcept{
     assert(getOp(node) == OP_ALGORITHM);
     return arg<4>(node);
@@ -129,6 +161,8 @@ size_t ParseTree::addTerminal(size_t type, const Typeset::Selection& c){
     resize(size() + FIXED_FIELDS);
     setOp(pn, type);
     setFlag(pn, EMPTY);
+    setRows(pn, UNKNOWN_SIZE);
+    setCols(pn, UNKNOWN_SIZE);
     setSelection(pn, c);
     setNumArgs(pn, 0);
 
@@ -141,6 +175,8 @@ size_t ParseTree::addUnary(size_t type, const Typeset::Selection& c, size_t chil
     resize(size() + FIXED_FIELDS + 1);
     setOp(pn, type);
     setFlag(pn, EMPTY);
+    setRows(pn, UNKNOWN_SIZE);
+    setCols(pn, UNKNOWN_SIZE);
     setSelection(pn, c);
     setNumArgs(pn, 1);
     setArg<0>(pn, child);
@@ -154,6 +190,8 @@ size_t ParseTree::addUnary(size_t type, size_t child){
     resize(size() + FIXED_FIELDS + 1);
     setOp(pn, type);
     setFlag(pn, EMPTY);
+    setRows(pn, UNKNOWN_SIZE);
+    setCols(pn, UNKNOWN_SIZE);
     setSelection(pn, getSelection(child));
     setNumArgs(pn, 1);
     setArg<0>(pn, child);
@@ -167,6 +205,8 @@ size_t ParseTree::addLeftUnary(size_t type, const Typeset::Marker& left, size_t 
     resize(size() + FIXED_FIELDS + 1);
     setOp(pn, type);
     setFlag(pn, EMPTY);
+    setRows(pn, UNKNOWN_SIZE);
+    setCols(pn, UNKNOWN_SIZE);
     setLeft(pn, left);
     setRight(pn, getRight(child));
     setNumArgs(pn, 1);
@@ -181,6 +221,8 @@ size_t ParseTree::addRightUnary(size_t type, const Typeset::Marker& right, size_
     resize(size() + FIXED_FIELDS + 1);
     setOp(pn, type);
     setFlag(pn, EMPTY);
+    setRows(pn, UNKNOWN_SIZE);
+    setCols(pn, UNKNOWN_SIZE);
     setLeft(pn, getLeft(child));
     setRight(pn, right);
     setNumArgs(pn, 1);
@@ -195,6 +237,8 @@ size_t ParseTree::addBinary(size_t type, const Typeset::Selection& c, size_t lhs
     resize(size() + FIXED_FIELDS + 2);
     setOp(pn, type);
     setFlag(pn, EMPTY);
+    setRows(pn, UNKNOWN_SIZE);
+    setCols(pn, UNKNOWN_SIZE);
     setSelection(pn, c);
     setNumArgs(pn, 2);
     setArg<0>(pn, lhs);
@@ -209,6 +253,8 @@ size_t ParseTree::addBinary(size_t type, size_t lhs, size_t rhs){
     resize(size() + FIXED_FIELDS + 2);
     setOp(pn, type);
     setFlag(pn, EMPTY);
+    setRows(pn, UNKNOWN_SIZE);
+    setCols(pn, UNKNOWN_SIZE);
     setLeft(pn, getLeft(lhs));
     setRight(pn, getRight(rhs));
     setNumArgs(pn, 2);
@@ -224,6 +270,8 @@ size_t ParseTree::addTernary(size_t type, const Typeset::Selection& c, size_t A,
     resize(size() + FIXED_FIELDS + 3);
     setOp(pn, type);
     setFlag(pn, EMPTY);
+    setRows(pn, UNKNOWN_SIZE);
+    setCols(pn, UNKNOWN_SIZE);
     setSelection(pn, c);
     setNumArgs(pn, 3);
     setArg<0>(pn, A);
@@ -239,6 +287,8 @@ ParseNode ParseTree::addTernary(Op type, ParseNode A, ParseNode B, ParseNode C){
     resize(size() + FIXED_FIELDS + 3);
     setOp(pn, type);
     setFlag(pn, EMPTY);
+    setRows(pn, UNKNOWN_SIZE);
+    setCols(pn, UNKNOWN_SIZE);
     setLeft(pn, getLeft(A));
     setRight(pn, getRight(C));
     setNumArgs(pn, 3);
@@ -255,6 +305,8 @@ ParseNode ParseTree::addQuadary(Op type, ParseNode A, ParseNode B, ParseNode C, 
     resize(size() + FIXED_FIELDS + 4);
     setOp(pn, type);
     setFlag(pn, EMPTY);
+    setRows(pn, UNKNOWN_SIZE);
+    setCols(pn, UNKNOWN_SIZE);
     setLeft(pn, getLeft(A));
     setRight(pn, getRight(D));
     setNumArgs(pn, 4);
@@ -272,6 +324,8 @@ ParseNode ParseTree::addQuadary(Op type, const Typeset::Selection &c, ParseNode 
     resize(size() + FIXED_FIELDS + 4);
     setOp(pn, type);
     setFlag(pn, EMPTY);
+    setRows(pn, UNKNOWN_SIZE);
+    setCols(pn, UNKNOWN_SIZE);
     setSelection(pn, c);
     setNumArgs(pn, 4);
     setArg<0>(pn, A);
@@ -288,6 +342,8 @@ ParseNode ParseTree::addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, 
     resize(size() + FIXED_FIELDS + 5);
     setOp(pn, type);
     setFlag(pn, EMPTY);
+    setRows(pn, UNKNOWN_SIZE);
+    setCols(pn, UNKNOWN_SIZE);
     setLeft(pn, getLeft(A));
     setRight(pn, getRight(E));
     setNumArgs(pn, 5);
@@ -348,6 +404,8 @@ size_t ParseTree::NaryBuilder::finalize(){
     tree.resize(tree.size() + FIXED_FIELDS);
     tree.setOp(pn, type);
     tree.setFlag(pn, EMPTY);
+    tree.setRows(pn, UNKNOWN_SIZE);
+    tree.setCols(pn, UNKNOWN_SIZE);
     tree.setLeft(pn, tree.getLeft(children.front()));
     tree.setRight(pn, tree.getRight(children.back()));
     tree.setNumArgs(pn, children.size());
@@ -367,6 +425,8 @@ size_t ParseTree::NaryBuilder::finalize(const Typeset::Marker& right){
     tree.resize(tree.size() + FIXED_FIELDS);
     tree.setOp(pn, type);
     tree.setFlag(pn, EMPTY);
+    tree.setRows(pn, UNKNOWN_SIZE);
+    tree.setCols(pn, UNKNOWN_SIZE);
     tree.setLeft(pn, tree.getLeft(children.front()));
     tree.setRight(pn, right);
     tree.setNumArgs(pn, children.size());
@@ -386,6 +446,8 @@ size_t ParseTree::NaryBuilder::finalize(const Typeset::Selection& c){
     tree.resize(tree.size() + FIXED_FIELDS);
     tree.setOp(pn, type);
     tree.setFlag(pn, EMPTY);
+    tree.setRows(pn, UNKNOWN_SIZE);
+    tree.setCols(pn, UNKNOWN_SIZE);
     tree.setSelection(pn, c);
     tree.setNumArgs(pn, children.size());
     tree.insert(tree.end(), children.begin(), children.end());

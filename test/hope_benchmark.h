@@ -58,9 +58,10 @@ void runBenchmark(){
     }
     report("SymbolTable", ITER_SYMBOL_TABLE);
 
-    Code::ParseNode root = parser.parse_tree.root;
     Code::SymbolTableBuilder sym_table(parser.parse_tree, m);
     sym_table.resolveSymbols();
+    Code::Optimiser optimiser(parser.parse_tree, sym_table.symbol_table, m->errors, m->warnings);
+    optimiser.optimise();
     Code::Interpreter interpreter;
 
     startClock();

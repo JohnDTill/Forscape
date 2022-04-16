@@ -35,6 +35,11 @@ public:
     template<size_t index> void setArg(ParseNode node, ParseNode val) noexcept;
     double getFlagAsDouble(ParseNode pn) const noexcept;
     void setFlag(ParseNode pn, double val) noexcept;
+    void setScalar(ParseNode pn) noexcept;
+    void copyDims(ParseNode pn, ParseNode src) noexcept;
+    void transposeDims(ParseNode pn, ParseNode src) noexcept;
+    bool isScalar(ParseNode pn) const noexcept;
+    bool isNonsquare(ParseNode pn) const noexcept;
     size_t setAndReturnType(ParseNode pn, size_t type) noexcept;
     ParseNode lhs(ParseNode node) const noexcept;
     ParseNode rhs(ParseNode node) const noexcept;
@@ -44,6 +49,7 @@ public:
     void setRefList(ParseNode fn, ParseNode list) noexcept;
     ParseNode paramList(ParseNode node) const noexcept;
     ParseNode body(ParseNode node) const noexcept;
+    void setBody(ParseNode node, ParseNode body) noexcept;
     ParseNode algName(ParseNode node) const noexcept;
     size_t valListSize(ParseNode node) const noexcept;
     std::string str(ParseNode node) const;

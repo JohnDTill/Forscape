@@ -252,6 +252,10 @@ void Selection::formatSimple(SemanticType type) const noexcept{
     tL->tags.push_back( SemanticTag(iR, SEM_DEFAULT) );
 }
 
+SemanticType Selection::getFormat() const noexcept{
+    return tL->getTypeLeftOf(iL);
+}
+
 #ifdef QT_CORE_LIB
 QImage Selection::toPng() const{
     constexpr double UPSCALE = 4;

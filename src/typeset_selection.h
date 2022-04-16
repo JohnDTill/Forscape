@@ -51,6 +51,7 @@ public:
     void formatString() const noexcept;
     void format(SemanticType type) const noexcept;
     void formatSimple(SemanticType type) const noexcept;
+    SemanticType getFormat() const noexcept;
 
     #ifndef HOPE_TYPESET_HEADLESS
     bool contains(double x, double y) const noexcept;
