@@ -398,19 +398,27 @@ size_t TypeResolver::resolveExpr(size_t pn) noexcept{
             EXPECT(parse_tree.rhs(pn), NUMERIC)
             return BOOLEAN;
         case OP_CASES:{
-            for(size_t i = 1; i < parse_tree.getNumArgs(pn); i+=2)
+            for(size_t i = 1; i < parse_tree.getNumArgs(pn); i+=2){
                 EXPECT(parse_tree.arg(pn, i), BOOLEAN)
+            }
 
-            size_t expected = resolveExpr(parse_tree.arg(pn, 0));
+            Type expected = UNINITIALISED;
+            size_t expected_index;
+            for(expected_index = 0; expected_index < parse_tree.getNumArgs(pn); expected_index+=2){
+                expected = resolveExpr(parse_tree.arg(pn, expected_index));
+                if(expected != RECURSIVE_CYCLE) break;
+            }
             if(isAbstractFunctionGroup(expected))
-                for(size_t i = 2; i < parse_tree.getNumArgs(pn); i+=2){
+                for(size_t i = expected_index+2; i < parse_tree.getNumArgs(pn); i+=2){
                     Type t = resolveExpr(parse_tree.arg(pn, i));
                     if(!isAbstractFunctionGroup(t)) return error(parse_tree.arg(pn, i));
                     expected = functionSetUnion(expected, t);
                 }
             else
-                for(size_t i = 2; i < parse_tree.getNumArgs(pn); i+=2)
-                    EXPECT(parse_tree.arg(pn, i), expected)
+                for(size_t i = expected_index+2; i < parse_tree.getNumArgs(pn); i+=2){
+                    Type t = resolveExpr(parse_tree.arg(pn, i));
+                    if(t != expected && t != RECURSIVE_CYCLE) return error(parse_tree.arg(pn, i));
+                }
             return expected;
         }
         case OP_EQUAL:
@@ -508,7 +516,7 @@ size_t TypeResolver::instantiateSetOfFuncs(ParseNode call_node, Type fun_group, 
             const DeclareSignature& dec = declared(decl_index);
             ParseNode fn = getFuncFromDeclSig(dec);
             if(parse_tree.getOp(fn) != OP_LAMBDA) fn = parse_tree.arg(fn, 0);
-            error(fn, RECURSIVE_TYPE);
+            //error(fn, RECURSIVE_TYPE);
         }
         return error(call_node, RECURSIVE_TYPE);
     }
@@ -548,6 +556,8 @@ size_t TypeResolver::instantiateSetOfFuncs(ParseNode call_node, Type fun_group, 
 
 size_t TypeResolver::error(size_t pn, ErrorCode code) noexcept{
     if(retry_at_recursion) return RECURSIVE_CYCLE;
+
+    assert(false);
 
     errors.push_back(Error(parse_tree.getSelection(pn), code));
     return TypeResolver::FAILURE;
