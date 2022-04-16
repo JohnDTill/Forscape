@@ -662,9 +662,20 @@ ParseNode Parser::integer() noexcept{
             const Typeset::Selection sel(left, rMark());
             sel.formatNumber();
             ParseNode decimal = terminalAndAdvance(OP_INTEGER_LITERAL);
-            return parse_tree.addBinary(OP_DECIMAL_LITERAL, sel, n, decimal);
+            ParseNode pn = parse_tree.addBinary(OP_DECIMAL_LITERAL, sel, n, decimal);
+            double val = stod(parse_tree.str(pn));
+            parse_tree.setFlag(pn, val);
+            parse_tree.setRows(pn, 1);
+            parse_tree.setCols(pn, 1);
+            parse_tree.setValue(pn, val);
+            return pn;
         }
         default:
+            double val = stod(parse_tree.str(n));
+            parse_tree.setFlag(n, val);
+            parse_tree.setRows(n, 1);
+            parse_tree.setCols(n, 1);
+            parse_tree.setValue(n, val);
             sel.formatNumber();
             return n;
     }

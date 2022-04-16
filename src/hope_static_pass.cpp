@@ -33,7 +33,7 @@ void StaticPass::resolve(){
     for(const Usage& usage : symbol_table.usages){
         const Symbol& sym = symbol_table.symbols[usage.var_id];
 
-        if(sym.type == StaticPass::NUMERIC && (sym.rows != 1 || sym.cols != 1)){
+        if(sym.type == StaticPass::NUMERIC && (sym.rows > 1 || sym.cols > 1)){
             Typeset::Selection sel = parse_tree.getSelection(usage.pn);
             switch (sel.getFormat()) {
                 case SEM_ID: sel.format(SEM_ID_MAT); break;
@@ -723,8 +723,6 @@ size_t StaticPass::error(ParseNode pn, ErrorCode code) noexcept{
 size_t StaticPass::errorType(ParseNode pn, ErrorCode code) noexcept{
     if(retry_at_recursion) return RECURSIVE_CYCLE;
 
-    assert(false);
-
     if(errors.empty()) errors.push_back(Error(parse_tree.getSelection(pn), code));
     return FAILURE;
 }
@@ -954,6 +952,7 @@ ParseNode StaticPass::resolvePower(ParseNode pn){
             if(lhs_op == OP_INTEGER_LITERAL || lhs_op == OP_DECIMAL_LITERAL){
                 double val = pow(parse_tree.getFlagAsDouble(lhs), rhs_val);
                 parse_tree.setFlag(pn, val);
+                parse_tree.setValue(pn, val);
                 parse_tree.setOp(pn, OP_DECIMAL_LITERAL);
                 parse_tree.setNumArgs(pn, 0);
                 parse_tree.setScalar(pn);

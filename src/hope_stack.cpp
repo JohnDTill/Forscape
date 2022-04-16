@@ -84,8 +84,14 @@ void Stack::print(){
     assert(size() == stack_names.size());
 
     std::cout << "STACK {\n";
-    for(size_t i = 0; i < size(); i++)
-        std::cout << "    " << stack_names[i] << ",\n";
+    for(size_t i = 0; i < size(); i++){
+        std::cout << "    " << stack_names[i];
+        switch (at(i).index()) {
+            case double_index:
+                std::cout << ": " << std::to_string(std::get<double>(at(i))); break;
+        }
+        std::cout << ",\n";
+    }
     std::cout << "}\n" << std::endl;
 }
 #endif
