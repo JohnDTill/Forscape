@@ -30,6 +30,18 @@ void StaticPass::resolve(){
     //}
 
     //EVENTUALLY: replace this with something less janky
+    parse_tree.patchClonedTypes();
+    for(Usage& usage : symbol_table.usages){
+        if(usage.type == DECLARE){
+            Symbol& sym = symbol_table.symbols[usage.var_id];
+            if(sym.type == UNINITIALISED || sym.type == RECURSIVE_CYCLE){
+                sym.type = parse_tree.getType(usage.pn);
+                sym.rows = parse_tree.getRows(usage.pn);
+                sym.cols = parse_tree.getCols(usage.pn);
+            }
+        }
+    }
+
     for(const Usage& usage : symbol_table.usages){
         const Symbol& sym = symbol_table.symbols[usage.var_id];
 
@@ -92,9 +104,9 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
                 for(size_t i = 0; i < parse_tree.getNumArgs(lhs); i++){
                     ParseNode arg = resolveExpr(parse_tree.arg(lhs, i));
                     parse_tree.setArg(lhs, i, arg);
-                    if(parse_tree.getType(arg) != NUMERIC) return error(arg);
+                    if(parse_tree.getType(arg) != NUMERIC) return error(pn, arg);
                 }
-                if(parse_tree.getType(rhs) != NUMERIC) return error(rhs);
+                if(parse_tree.getType(rhs) != NUMERIC) return error(pn, rhs);
 
                 parse_tree.setType(pn, OP_REASSIGN_SUBSCRIPT);
                 return pn;
@@ -104,13 +116,13 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
                 if(isAbstractFunctionGroup(sym.type)){
                     Type t = parse_tree.getType(rhs);
                     if(!isAbstractFunctionGroup(t)){
-                        return error(parse_tree.rhs(pn));
+                        return error(pn, parse_tree.rhs(pn));
                     }else{
                         sym.type = functionSetUnion(sym.type, t);
                         return pn;
                     }
                 }else{
-                    if(parse_tree.getType(rhs) != sym.type) return error(rhs);
+                    if(parse_tree.getType(rhs) != sym.type) return error(pn, rhs);
                     return pn;
                 }
             }
@@ -119,19 +131,20 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
         case OP_RETURN:{
             assert(!return_types.empty());
             ParseNode child = resolveExpr(parse_tree.child(pn));
-            //parse_tree.setArg<0>(pn, child); //DO THIS - broken
+            parse_tree.setArg<0>(pn, child);
             Type child_type = parse_tree.getType(child);
             Type expected = return_types.top();
+
             if(expected == UNINITIALISED || expected == RECURSIVE_CYCLE){
                 return_types.top() = child_type;
             }else if(isAbstractFunctionGroup(expected)){
                 if(!isAbstractFunctionGroup(child_type)){
-                    error(child);
+                    error(pn, child);
                 }else{
                     return_types.top() = functionSetUnion(expected, child_type);
                 }
             }else{
-                if(child_type != expected) error(pn);
+                if(child_type != expected) error(pn, pn);
             }
             return pn;
         }
@@ -141,7 +154,7 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
             if(return_types.top() == UNINITIALISED){
                 return_types.top() = VOID_TYPE;
             }else if(return_types.top() != VOID_TYPE){
-                error(pn);
+                error(pn, pn);
             }
             return pn;
         }
@@ -150,7 +163,7 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
             ParseNode lhs = parse_tree.lhs(pn);
             ParseNode var = resolveExpr(parse_tree.arg<0>(lhs));
             parse_tree.setArg<0>(lhs, var);
-            if(parse_tree.getType(var) != NUMERIC) return error(var);
+            if(parse_tree.getType(var) != NUMERIC) return error(pn, var);
 
             for(size_t i = 1; i < parse_tree.getNumArgs(lhs); i++){
                 ParseNode sub = parse_tree.arg(lhs, i);
@@ -161,13 +174,13 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
                 }else{
                     sub = resolveExpr(sub);
                     parse_tree.setArg(lhs, i, sub);
-                    if(parse_tree.getType(sub) != NUMERIC) return error(sub);
+                    if(parse_tree.getType(sub) != NUMERIC) return error(pn, sub);
                 }
             }
 
             ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
             parse_tree.setArg<1>(pn, rhs);
-            if(parse_tree.getType(rhs) != NUMERIC) return error(rhs);
+            if(parse_tree.getType(rhs) != NUMERIC) return error(pn, rhs);
 
             return pn;
         }
@@ -176,7 +189,7 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
         case OP_WHILE:{
             ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
             parse_tree.setArg<0>(pn, lhs);
-            EXPECT_TYPE(lhs, BOOLEAN)
+            if(parse_tree.getType(lhs) != BOOLEAN) return error(pn, lhs);
 
             parse_tree.setArg<1>(pn, resolveStmt(parse_tree.arg<1>(pn)));
             return pn;
@@ -185,7 +198,7 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
         case OP_IF_ELSE:{
             ParseNode cond = resolveExpr(parse_tree.arg<0>(pn));
             parse_tree.setArg<0>(pn, cond);
-            EXPECT_TYPE(cond, BOOLEAN)
+            if(parse_tree.getType(cond) != BOOLEAN) return error(pn, cond);
 
             parse_tree.setArg<1>(pn, resolveStmt(parse_tree.arg<1>(pn)));
             parse_tree.setArg<2>(pn, resolveStmt(parse_tree.arg<2>(pn)));
@@ -196,7 +209,7 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
             parse_tree.setArg<0>(pn, resolveStmt(parse_tree.arg<0>(pn)));
             ParseNode cond = resolveExpr(parse_tree.arg<1>(pn));
             parse_tree.setArg<1>(pn, cond);
-            EXPECT_TYPE(cond, BOOLEAN)
+            if(parse_tree.getType(cond) != BOOLEAN) return error(pn, cond);
             parse_tree.setArg<2>(pn, resolveStmt(parse_tree.arg<2>(pn)));
             parse_tree.setArg<3>(pn, resolveStmt(parse_tree.arg<3>(pn)));
             return pn;
@@ -239,7 +252,7 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
         case OP_ASSERT:{
             ParseNode child = resolveExpr(parse_tree.child(pn));
             parse_tree.setArg<0>(pn, child);
-            EXPECT_TYPE(child, BOOLEAN)
+            if(parse_tree.getType(child) != BOOLEAN) return error(pn, child);
             return pn;
         }
 
@@ -321,13 +334,13 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
             ParseNode arg0 = resolveExpr(parse_tree.arg(pn, 0));
             parse_tree.setArg<0>(pn, arg0);
             Type expected = parse_tree.getType(arg0);
-            if(expected != NUMERIC && expected != STRING) return error(arg0, TYPE_NOT_ADDABLE);
+            if(expected != NUMERIC && expected != STRING) return error(pn, arg0, TYPE_NOT_ADDABLE);
             parse_tree.setType(pn, expected);
 
             for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++){
                 ParseNode arg = resolveExpr(parse_tree.arg(pn, i));
                 parse_tree.setArg(pn, i, arg);
-                if(parse_tree.getType(arg) != expected) return error(arg, TYPE_NOT_ADDABLE);
+                if(parse_tree.getType(arg) != expected) return error(pn, arg, TYPE_NOT_ADDABLE);
             }
 
             return pn;
@@ -336,9 +349,9 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
             for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
                 ParseNode arg = resolveExpr(parse_tree.arg(pn, i));
                 parse_tree.setArg(pn, i, arg);
-                if(parse_tree.getType(arg) != NUMERIC) return error(arg, BAD_READ_OR_SUBSCRIPT);
-                if(dimsDisagree(parse_tree.getRows(arg), 1)) return error(arg, DIMENSION_MISMATCH);
-                if(dimsDisagree(parse_tree.getCols(arg), 1)) return error(arg, DIMENSION_MISMATCH);
+                if(parse_tree.getType(arg) != NUMERIC) return error(pn, arg, BAD_READ_OR_SUBSCRIPT);
+                if(dimsDisagree(parse_tree.getRows(arg), 1)) return error(pn, arg, DIMENSION_MISMATCH);
+                if(dimsDisagree(parse_tree.getCols(arg), 1)) return error(pn, arg, DIMENSION_MISMATCH);
             }
             parse_tree.setScalar(pn);
             return pn;
@@ -353,7 +366,7 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
             for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
                 ParseNode arg = resolveExpr(parse_tree.arg(pn, i));
                 parse_tree.setArg(pn, i, arg);
-                if(parse_tree.getType(arg) != NUMERIC) return error(arg);
+                if(parse_tree.getType(arg) != NUMERIC) return error(pn, arg);
             }
             parse_tree.setType(pn, NUMERIC);
             return pn;
@@ -382,10 +395,10 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
         case OP_ZERO_MATRIX:{
             ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
             parse_tree.setArg<0>(pn, lhs);
-            if(parse_tree.getType(lhs) != NUMERIC) return error(lhs);
+            if(parse_tree.getType(lhs) != NUMERIC) return error(pn, lhs);
             ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
             parse_tree.setArg<1>(pn, rhs);
-            if(parse_tree.getType(rhs) != NUMERIC) return error(rhs);
+            if(parse_tree.getType(rhs) != NUMERIC) return error(pn, rhs);
             parse_tree.setType(pn, NUMERIC);
             return pn;
         }
@@ -393,7 +406,7 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
             parse_tree.setScalar(pn);
             ParseNode child = resolveExpr(parse_tree.child(pn));
             parse_tree.setArg<0>(pn, child);
-            if(parse_tree.getType(child) != NUMERIC) return error(child);
+            if(parse_tree.getType(child) != NUMERIC) return error(pn, child);
             return pn;
         }
         case OP_ARCCOSINE:
@@ -425,12 +438,12 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
         {
             parse_tree.setScalar(pn);
             ParseNode child = resolveExpr(parse_tree.child(pn));
-            if(parse_tree.getType(child) != NUMERIC) return error(child);
+            if(parse_tree.getType(child) != NUMERIC) return error(pn, child);
             return pn;
         }
         case OP_TRANSPOSE:{
             ParseNode child = resolveExpr(parse_tree.child(pn));
-            if(parse_tree.getType(child) != NUMERIC) return error(child);
+            if(parse_tree.getType(child) != NUMERIC) return error(pn, child);
             parse_tree.setType(pn, NUMERIC);
             parse_tree.transposeDims(pn, child);
             if(parse_tree.definitelyScalar(child)) return child;
@@ -444,17 +457,17 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
             symbol_table.symbols[parse_tree.getFlag(parse_tree.lhs(asgn))].type = NUMERIC;
             ParseNode initialiser = resolveExpr(parse_tree.rhs(asgn));
             parse_tree.setArg<1>(asgn, initialiser);
-            if(parse_tree.getType(initialiser) != NUMERIC) return error(initialiser);
+            if(parse_tree.getType(initialiser) != NUMERIC) return error(pn, initialiser);
             parse_tree.setScalar(parse_tree.lhs(asgn));
 
             ParseNode final = resolveExpr(parse_tree.arg<1>(pn));
             parse_tree.setArg<1>(pn, final);
-            if(parse_tree.getType(final) != NUMERIC) return error(initialiser);
+            if(parse_tree.getType(final) != NUMERIC) return error(pn, initialiser);
 
             ParseNode body = resolveExpr(parse_tree.arg<2>(pn));
             parse_tree.setArg<2>(pn, body);
-            if(parse_tree.getType(body) != NUMERIC) return error(body);
-            if(parse_tree.getOp(pn) == OP_PRODUCT && parse_tree.nonSquare(body)) return error(body, DIMENSION_MISMATCH);
+            if(parse_tree.getType(body) != NUMERIC) return error(pn, body);
+            if(parse_tree.getOp(pn) == OP_PRODUCT && parse_tree.nonSquare(body)) return error(pn, body, DIMENSION_MISMATCH);
 
             parse_tree.setType(pn, NUMERIC);
             parse_tree.copyDims(pn, body);
@@ -463,7 +476,7 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
         case OP_LOGICAL_NOT:{
             ParseNode child = resolveExpr(parse_tree.child(pn));
             parse_tree.setArg<0>(pn, child);
-            if(parse_tree.getType(child) != BOOLEAN) return error(child);
+            if(parse_tree.getType(child) != BOOLEAN) return error(pn, child);
             parse_tree.setType(pn, BOOLEAN);
             return pn;
         }
@@ -471,10 +484,10 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
         case OP_LOGICAL_OR:{
             ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
             parse_tree.setArg<0>(pn, lhs);
-            if(parse_tree.getType(lhs) != BOOLEAN) return error(lhs);
+            if(parse_tree.getType(lhs) != BOOLEAN) return error(pn, lhs);
             ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
             parse_tree.setArg<1>(pn, rhs);
-            if(parse_tree.getType(rhs) != BOOLEAN) return error(rhs);
+            if(parse_tree.getType(rhs) != BOOLEAN) return error(pn, rhs);
             parse_tree.setType(pn, BOOLEAN);
             return pn;
         }
@@ -484,10 +497,10 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
         case OP_LESS_EQUAL:{
             ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
             parse_tree.setArg<0>(pn, lhs);
-            if(parse_tree.getType(lhs) != NUMERIC) return error(lhs);
+            if(parse_tree.getType(lhs) != NUMERIC) return error(pn, lhs);
             ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
             parse_tree.setArg<1>(pn, rhs);
-            if(parse_tree.getType(rhs) != NUMERIC) return error(rhs);
+            if(parse_tree.getType(rhs) != NUMERIC) return error(pn, rhs);
             parse_tree.setType(pn, BOOLEAN);
             return pn;
         }
@@ -495,7 +508,7 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
             for(size_t i = 1; i < parse_tree.getNumArgs(pn); i+=2){
                 ParseNode cond = resolveExpr(parse_tree.arg(pn, i));
                 parse_tree.setArg(pn, i, cond);
-                if(parse_tree.getType(cond) != BOOLEAN) return error(cond, EXPECT_BOOLEAN);
+                if(parse_tree.getType(cond) != BOOLEAN) return error(pn, cond, EXPECT_BOOLEAN);
             }
 
             Type expected = UNINITIALISED;
@@ -512,7 +525,7 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
                     ParseNode arg = resolveExpr(parse_tree.arg(pn, i));
                     parse_tree.setArg(pn, i , arg);
                     Type t = parse_tree.getType(arg);
-                    if(!isAbstractFunctionGroup(t)) return error(arg);
+                    if(!isAbstractFunctionGroup(t)) return error(pn, arg);
                     expected = functionSetUnion(expected, t);
                 }
             else
@@ -520,7 +533,7 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
                     ParseNode arg = resolveExpr(parse_tree.arg(pn, i));
                     parse_tree.setArg(pn, i , arg);
                     Type t = parse_tree.getType(arg);
-                    if(t != expected) return error(arg);
+                    if(t != expected) return error(pn, arg);
                 }
             parse_tree.setType(pn, expected);
             return pn;
@@ -531,7 +544,7 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
             parse_tree.setArg<0>(pn, lhs);
             ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
             parse_tree.setArg<1>(pn, rhs);
-            if(parse_tree.getType(lhs) != parse_tree.getType(rhs)) return error(pn);
+            if(parse_tree.getType(lhs) != parse_tree.getType(rhs)) return error(pn, pn);
             parse_tree.setType(pn, BOOLEAN);
             return pn;
         }
@@ -591,15 +604,15 @@ size_t StaticPass::callSite(size_t pn) noexcept{
                 //DO THIS - broken
                 return resolveMult(parse_tree.addBinary(OP_MULTIPLICATION, call_expr, rhs));
             }else{
-                return error(rhs);
+                return error(pn, rhs);
             }
         }else{
-            return error(pn, NOT_CALLABLE);
+            return error(pn, pn, NOT_CALLABLE);
         }
     }else if(callable_type == UNINITIALISED){
-        return error(call_expr, CALL_BEFORE_DEFINE);
+        return error(pn, call_expr, CALL_BEFORE_DEFINE);
     }else if(!isAbstractFunctionGroup(callable_type)){
-        return error(call_expr, NOT_CALLABLE);
+        return error(pn, call_expr, NOT_CALLABLE);
     }
 
     CallSignature sig;
@@ -630,7 +643,7 @@ size_t StaticPass::implicitMult(size_t pn, size_t start) noexcept{
     else if(tl == NUMERIC){
         ParseNode rhs = implicitMult(pn, start+1);
         Type tl = parse_tree.getType(rhs);
-        if(tl != NUMERIC) return error(rhs);
+        if(tl != NUMERIC) return error(pn, rhs);
         //return resolveExpr(parse_tree.addBinary(OP_MULTIPLICATION, lhs, rhs));
         //parse_tree.setType(pn, NUMERIC);
         //return pn;
@@ -639,9 +652,9 @@ size_t StaticPass::implicitMult(size_t pn, size_t start) noexcept{
         parse_tree.setType(mult, NUMERIC);
         return mult;
     }else if(tl == UNINITIALISED){
-        return error(lhs, CALL_BEFORE_DEFINE);
+        return error(pn, lhs, CALL_BEFORE_DEFINE);
     }else if(!isAbstractFunctionGroup(tl)){
-        return error(lhs, NOT_CALLABLE);
+        return error(pn, lhs, NOT_CALLABLE);
     }
 
     std::vector<size_t> sig;
@@ -717,11 +730,11 @@ Type StaticPass::instantiateSetOfFuncs(ParseNode call_node, Type fun_group, Call
     return expected;
 }
 
-size_t StaticPass::error(ParseNode pn, ErrorCode code) noexcept{
+size_t StaticPass::error(ParseNode pn, ParseNode sel, ErrorCode code) noexcept{
     if(retry_at_recursion) parse_tree.setType(pn, RECURSIVE_CYCLE);
     else if(errors.empty()){
         assert(false);
-        errors.push_back(Error(parse_tree.getSelection(pn), code));
+        errors.push_back(Error(parse_tree.getSelection(sel), code));
     }
     return pn;
 }
@@ -796,7 +809,7 @@ ParseNode StaticPass::resolveAlg(ParseNode pn){
 
 ParseNode StaticPass::resolveInverse(ParseNode pn){
     ParseNode child = parse_tree.child(pn);
-    if(dimsDisagree(parse_tree.getRows(child), parse_tree.getCols(child))) return error(pn, DIMENSION_MISMATCH);
+    if(dimsDisagree(parse_tree.getRows(child), parse_tree.getCols(child))) return error(pn, pn, DIMENSION_MISMATCH);
     parse_tree.copyDims(pn, child);
     return pn;
 }
@@ -854,7 +867,7 @@ ParseNode StaticPass::resolveMatrix(ParseNode pn){
     for(size_t i = 0; i < nargs; i++){
         ParseNode arg = resolveExpr(parse_tree.arg(pn, i));
         parse_tree.setArg(pn, i, arg);
-        if(parse_tree.getType(arg) != NUMERIC) return error(arg);
+        if(parse_tree.getType(arg) != NUMERIC) return error(pn, arg);
     }
 
     if(nargs == 1) return copyChildProperties(pn);
@@ -875,11 +888,11 @@ ParseNode StaticPass::resolveMatrix(ParseNode pn){
 
             if(i==0) elem_cols[j] = parse_tree.getCols(arg);
             else if(elem_cols[j] == UNKNOWN_SIZE) elem_cols[j] = parse_tree.getCols(arg);
-            else if(dimsDisagree(elem_cols[j], parse_tree.getCols(arg))) return error(pn);
+            else if(dimsDisagree(elem_cols[j], parse_tree.getCols(arg))) return error(pn, pn);
 
             if(j==0) elem_rows[i] = parse_tree.getRows(arg);
             else if(elem_rows[i] == UNKNOWN_SIZE) elem_rows[i] = parse_tree.getRows(arg);
-            else if(dimsDisagree(elem_rows[i], parse_tree.getRows(arg))) return error(pn);
+            else if(dimsDisagree(elem_rows[i], parse_tree.getRows(arg))) return error(pn, pn);
         }
     }
 
@@ -911,10 +924,10 @@ ParseNode StaticPass::resolveMult(ParseNode pn){
     ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
     parse_tree.setArg<0>(pn, lhs);
     Type lhs_type = parse_tree.getType(lhs);
-    if(lhs_type != NUMERIC) return error(lhs);
+    if(lhs_type != NUMERIC) return error(pn, lhs);
     ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
     parse_tree.setArg<1>(pn, rhs);
-    if(parse_tree.getType(rhs) != NUMERIC) return error(rhs);
+    if(parse_tree.getType(rhs) != NUMERIC) return error(pn, rhs);
     parse_tree.setType(pn, NUMERIC);
 
     if(parse_tree.definitelyScalar(lhs)){
@@ -924,7 +937,7 @@ ParseNode StaticPass::resolveMult(ParseNode pn){
     }else if(parse_tree.definitelyNotScalar(lhs) && parse_tree.definitelyNotScalar(rhs)){
         parse_tree.setRows(pn, parse_tree.getRows(lhs));
         parse_tree.setCols(pn, parse_tree.getCols(rhs));
-        if(dimsDisagree(parse_tree.getCols(lhs), parse_tree.getRows(rhs))) return error(pn, DIMENSION_MISMATCH);
+        if(dimsDisagree(parse_tree.getCols(lhs), parse_tree.getRows(rhs))) return error(pn, pn, DIMENSION_MISMATCH);
     }
 
     if(parse_tree.getOp(lhs) == OP_INVERT){
@@ -938,10 +951,10 @@ ParseNode StaticPass::resolveMult(ParseNode pn){
 ParseNode StaticPass::resolvePower(ParseNode pn){
     ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
     parse_tree.setArg<0>(pn, lhs);
-    if(parse_tree.getType(lhs) != NUMERIC) return error(lhs);
+    if(parse_tree.getType(lhs) != NUMERIC) return error(pn, lhs);
     ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
     parse_tree.setArg<1>(pn, rhs);
-    if(parse_tree.getType(rhs) != NUMERIC) return error(rhs);
+    if(parse_tree.getType(rhs) != NUMERIC) return error(pn, rhs);
     parse_tree.setType(pn, NUMERIC);
 
     if(parse_tree.definitelyScalar(rhs)){
@@ -986,7 +999,7 @@ ParseNode StaticPass::resolveUnaryMinus(ParseNode pn){
     ParseNode child = resolveExpr(parse_tree.child(pn));
     parse_tree.setArg<0>(pn, child);
     parse_tree.copyDims(pn, child);
-    if(parse_tree.getType(child) != NUMERIC) return error(pn);
+    if(parse_tree.getType(child) != NUMERIC) return error(pn, pn);
     parse_tree.setType(pn, NUMERIC);
 
     switch (parse_tree.getOp(child)) {
@@ -1039,16 +1052,10 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
         auto dynamic_key = std::make_pair(parse_tree.body(abstract_fn), call_node);
         instantiation_lookup[dynamic_key] = lookup->second.instantiated;
 
-        //DO THIS - delete
-        //std::cout << "Register " << parse_tree.body(abstract_fn) << ", " << call_node <<
-        //             " as " << lookup->second.instantiated << std::endl;
-
         ParseNode instantiated_fn = lookup->second.instantiated;
         if(instantiated_fn != ParseTree::EMPTY){
+            //DO THIS - is necessary?
             instantiation_lookup[std::make_pair(parse_tree.body(instantiated_fn), call_node)] = instantiated_fn;
-            //DO THIS - delete
-            //std::cout << "Register " << parse_tree.body(instantiated_fn) << ", " << call_node <<
-            //             " as " << instantiated_fn << std::endl;
         }
 
         return return_type;
@@ -1136,10 +1143,6 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
         return_type = parse_tree.getType(body);
     }
 
-    //std::cout << parse_tree.toGraphviz(parse_tree.body(abstract_fn)) << std::endl << std::endl << "vs" << std::endl;
-    //std::cout << parse_tree.toGraphviz(parse_tree.body(instantiated_fn)) << std::endl;
-    //exit(0);
-
     called_func_map[fn] = CallResult(return_type, instantiated_fn);
 
     if(recursion_fallback == &fn){
@@ -1202,12 +1205,6 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
     auto dynamic_key = std::make_pair(parse_tree.body(abstract_fn), call_node);
     //assert(instantiation_lookup.find(dynamic_key) == instantiation_lookup.end());
     instantiation_lookup[dynamic_key] = instantiated_fn;
-
-    //DO THIS - delete
-    //std::cout << "Register " << parse_tree.body(abstract_fn) << ", " << call_node << std::endl;
-
-    //instantiation_lookup[std::make_pair(parse_tree.body(instantiated_fn), call_node)] = instantiated_fn;
-    //std::cout << "Register " << parse_tree.body(instantiated_fn) << ", " << call_node << std::endl;
 
     return return_type;
 }
@@ -1335,7 +1332,7 @@ Type StaticPass::functionSetUnion(Type a, Type b){
 }
 
 size_t StaticPass::numElements(size_t index) const noexcept{
-    assert(v(index) == TYPE_FUNCTION_SET);
+    //assert(v(index) == TYPE_FUNCTION_SET); //DO THIS - fix
 
     return v(index+1);
 }
@@ -1364,7 +1361,7 @@ size_t StaticPass::last(size_t index) const noexcept{
 }
 
 std::string StaticPass::abstractFunctionSetString(Type t) const{
-    assert(v(t) == TYPE_FUNCTION_SET);
+    //assert(v(t) == TYPE_FUNCTION_SET); //DO THIS - fix
 
     if(numElements(t) == 1) return declFunctionString( v(first(t)) );
 

@@ -102,6 +102,7 @@ public:
     NaryBuilder naryBuilder(Op type);
 
     void patchClones() noexcept;
+    void patchClonedTypes() noexcept;
 
 private:
     static constexpr size_t UNITIALIZED = std::numeric_limits<size_t>::max();

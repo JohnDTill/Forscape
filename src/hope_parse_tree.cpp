@@ -396,6 +396,17 @@ void ParseTree::patchClones() noexcept{
     }
 }
 
+void ParseTree::patchClonedTypes() noexcept{
+    for(const auto& entry : cloned_vars){
+        ParseNode orig = entry.first;
+        ParseNode clone = entry.second;
+
+        setType(orig, getType(clone));
+        setRows(orig, getRows(clone));
+        setCols(orig, getCols(clone));
+    }
+}
+
 #ifndef NDEBUG
 std::string ParseTree::toGraphviz() const{
     std::string src = "digraph {\n\trankdir=TB\n\n";
