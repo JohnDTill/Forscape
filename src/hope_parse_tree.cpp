@@ -17,6 +17,7 @@ static constexpr size_t UNKNOWN_SIZE = 0;
 
 void ParseTree::clear() noexcept {
     std::vector<size_t>::clear();
+    cloned_vars.clear();
 }
 
 bool ParseTree::empty() const noexcept{
@@ -305,6 +306,15 @@ ParseNode ParseTree::addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, 
 
 ParseNode ParseTree::clone(ParseNode pn){
     ParseNode cloned = size();
+
+    switch (getOp(pn)) {
+        case OP_IDENTIFIER:
+        case OP_READ_GLOBAL:
+        case OP_READ_UPVALUE:
+        case OP_ALGORITHM:
+            cloned_vars.push_back(std::make_pair(pn, cloned));
+    }
+
     insert(end(), data()+pn, data()+pn+FIXED_FIELDS);
     size_t nargs = getNumArgs(pn);
     resize(size() + nargs);
@@ -367,6 +377,16 @@ void ParseTree::transposeDims(ParseNode dest, ParseNode src) noexcept{
 
 ParseTree::NaryBuilder ParseTree::naryBuilder(size_t type){
     return NaryBuilder(*this, type);
+}
+
+void ParseTree::patchClones() noexcept{
+    for(const auto& entry : cloned_vars){
+        ParseNode orig = entry.first;
+        ParseNode clone = entry.second;
+
+        setOp(clone, getOp(orig));
+        setFlag(clone, getFlag(orig));
+    }
 }
 
 #ifndef NDEBUG

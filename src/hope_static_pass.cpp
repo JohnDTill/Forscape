@@ -23,11 +23,11 @@ void StaticPass::resolve(){
 
     //Not sure about the soundness of the recursion handling strategy, so let's double check
     //EVENTUALLY: remove this check
-    const auto call_map_backup = called_func_map;
-    for(const auto& entry : call_map_backup){
-        called_func_map.erase(entry.first);
-        assert(instantiate(ParseTree::EMPTY, entry.first) == entry.second.type);
-    }
+    //const auto call_map_backup = called_func_map;
+    //for(const auto& entry : call_map_backup){
+    //    called_func_map.erase(entry.first);
+    //    assert(instantiate(ParseTree::EMPTY, entry.first) == entry.second.type);
+    //}
 
     //EVENTUALLY: replace this with something less janky
     for(const Usage& usage : symbol_table.usages){
@@ -51,6 +51,7 @@ void StaticPass::reset() noexcept{
     declared_funcs.clear();
     declared_func_map.clear();
     called_func_map.clear();
+    instantiation_lookup.clear();
     assert(return_types.empty());
     assert(retry_at_recursion == false);
     assert(first_attempt == true);
@@ -1005,10 +1006,17 @@ Type StaticPass::declare(const DeclareSignature& fn){
 }
 
 Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
+    const DeclareSignature& dec = declared(fn[0]);
+    ParseNode abstract_fn = dec[0];
+
     auto lookup = called_func_map.find(fn);
     if(lookup != called_func_map.end()){
         Type return_type = lookup->second.type;
         retry_at_recursion |= (return_type == RECURSIVE_CYCLE && first_attempt); //revisited in process of instantiation
+
+        auto dynamic_key = std::make_pair(parse_tree.body(abstract_fn), call_node);
+        instantiation_lookup[dynamic_key] = lookup->second.instantiated;
+
         return return_type;
     }
 
@@ -1022,8 +1030,6 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
     //Instantiate
     called_func_map[fn] = CallResult(RECURSIVE_CYCLE, ParseTree::EMPTY);
 
-    const DeclareSignature& dec = declared(fn[0]);
-    ParseNode abstract_fn = dec[0];
     ParseNode instantiated_fn = parse_tree.clone(abstract_fn);
 
     ParseNode val_list = parse_tree.valCapList(instantiated_fn);
@@ -1155,8 +1161,10 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
     old_args.resize(old_args_index);
 
     auto dynamic_key = std::make_pair(parse_tree.body(abstract_fn), call_node);
-    assert(instantiation_lookup.find(dynamic_key) == instantiation_lookup.end());
+    //assert(instantiation_lookup.find(dynamic_key) == instantiation_lookup.end());
     instantiation_lookup[dynamic_key] = instantiated_fn;
+
+    std::cout << call_node << " has key " << dynamic_key.first << ", " << dynamic_key.second << std::endl;
 
     return return_type;
 }

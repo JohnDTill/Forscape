@@ -27,6 +27,7 @@ void Interpreter::run(const ParseTree& parse_tree, SymbolTable symbol_table, con
     this->inst_lookup = inst_lookup;
     SymbolTableLinker linker(symbol_table, this->parse_tree);
     linker.link();
+    this->parse_tree.patchClones();
 
     blockStmt(this->parse_tree.root);
     status = FINISHED;
@@ -51,6 +52,8 @@ void Interpreter::reset() noexcept {
 }
 
 Value Interpreter::error(ErrorCode code, ParseNode pn) noexcept {
+    assert(false);
+
     if(status < RUNTIME_ERROR){
         directive = STOP;
         error_code = code;

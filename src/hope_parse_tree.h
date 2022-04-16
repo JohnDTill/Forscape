@@ -100,6 +100,8 @@ public:
 
     NaryBuilder naryBuilder(Op type);
 
+    void patchClones() noexcept;
+
 private:
     static constexpr size_t UNITIALIZED = std::numeric_limits<size_t>::max();
     static constexpr size_t LEFT_MARKER_OFFSET = SELECTION_OFFSET + 2;
@@ -110,6 +112,8 @@ private:
     void graphvizHelper(std::string& src, ParseNode n, size_t& size) const;
     void writeType(std::string& src, ParseNode n) const;
     #endif
+
+    std::vector<std::pair<ParseNode, ParseNode>> cloned_vars;
 };
 
 }
