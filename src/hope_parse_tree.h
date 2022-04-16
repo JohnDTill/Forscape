@@ -73,6 +73,7 @@ public:
 
     #ifndef NDEBUG
     std::string toGraphviz() const;
+    std::string toGraphviz(ParseNode pn) const;
     #endif
 
     size_t root;

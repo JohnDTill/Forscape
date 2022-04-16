@@ -748,7 +748,9 @@ Value Interpreter::innerCall(ParseNode call, Closure& closure, ParseNode body, b
     ParseNode val_cap = parse_tree.valCapList(inst_fn);
     ParseNode ref_cap = parse_tree.refCapList(inst_fn);
     ParseNode params = parse_tree.paramList(inst_fn);
-    body = parse_tree.body(inst_fn);
+    body = parse_tree.body(inst_fn); //DO THIS - this line makes the difference
+    //std::cout << parse_tree.toGraphviz(body) << std::endl << std::endl;
+    //exit(0);
 
     size_t nargs = parse_tree.getNumArgs(call)-1;
     size_t nparams = parse_tree.getNumArgs(params);

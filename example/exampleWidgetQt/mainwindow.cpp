@@ -684,31 +684,9 @@ void MainWindow::closeEvent(QCloseEvent* event){
     QMainWindow::closeEvent(event);
 }
 
-void MainWindow::checkOutput(){
-    auto& interpreter = editor->getModel()->interpreter;
-    auto& message_queue = interpreter.message_queue;
-    char ch;
-    while(message_queue.try_dequeue(ch))
-        if(ch == '\0'){
-            print_buffer += out;
-            out.clear();
-        }else{
-            out += ch;
-        }
-
-    if(!print_buffer.empty()){
-        bool at_bottom = console->scrolledToBottom();
-        console->getController().insertSerial(print_buffer);
-        console->updateModel();
-        if(at_bottom) console->scrollToBottom();
-        print_buffer.clear();
-    }
-}
-
 void MainWindow::on_actionShow_action_toolbar_toggled(bool show){
     action_toolbar->setVisible(show);
 }
-
 
 void MainWindow::on_actionShow_typesetting_toolbar_toggled(bool show){
     math_toolbar->setVisible(show);

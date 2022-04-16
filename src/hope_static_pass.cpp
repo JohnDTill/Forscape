@@ -119,7 +119,7 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
         case OP_RETURN:{
             assert(!return_types.empty());
             ParseNode child = resolveExpr(parse_tree.child(pn));
-            parse_tree.setArg<0>(pn, child);
+            //parse_tree.setArg<0>(pn, child); //DO THIS - broken
             Type child_type = parse_tree.getType(child);
             Type expected = return_types.top();
             if(expected == UNINITIALISED || expected == RECURSIVE_CYCLE){
@@ -131,7 +131,7 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
                     return_types.top() = functionSetUnion(expected, child_type);
                 }
             }else{
-                EXPECT_TYPE(child, expected)
+                if(child_type != expected) error(pn);
             }
             return pn;
         }
@@ -1135,6 +1135,10 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
         parse_tree.setBody(instantiated_fn, body);
         return_type = parse_tree.getType(body);
     }
+
+    //std::cout << parse_tree.toGraphviz(parse_tree.body(abstract_fn)) << std::endl << std::endl << "vs" << std::endl;
+    //std::cout << parse_tree.toGraphviz(parse_tree.body(instantiated_fn)) << std::endl;
+    //exit(0);
 
     called_func_map[fn] = CallResult(return_type, instantiated_fn);
 

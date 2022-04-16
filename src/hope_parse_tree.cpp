@@ -406,6 +406,15 @@ std::string ParseTree::toGraphviz() const{
     return src;
 }
 
+std::string ParseTree::toGraphviz(ParseNode pn) const{
+    std::string src = "digraph {\n\trankdir=TB\n\n";
+    size_t sze = 0;
+    graphvizHelper(src, pn, sze);
+    src += "}\n";
+
+    return src;
+}
+
 void ParseTree::graphvizHelper(std::string& src, ParseNode n, size_t& size) const{
     std::string id = std::to_string(size++);
     src += "\tn" + id + " [label=";
