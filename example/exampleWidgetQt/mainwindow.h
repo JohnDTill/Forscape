@@ -35,6 +35,7 @@ private:
     QTimer interpreter_poll_timer;
     static constexpr std::chrono::milliseconds INTERPETER_POLL_PERIOD = std::chrono::milliseconds(15);
     std::string print_buffer; //Need an extra layer of buffering so we don't try to parse incomplete constructs
+    std::string out;
     bool editor_had_focus;
     bool unsaved_changes = false;
     bool isSavedDeepComparison() const;
@@ -85,6 +86,7 @@ protected:
     virtual void closeEvent(QCloseEvent* event) override;
 
 private:
+    void checkOutput();
     bool savePrompt();
     bool saveAs(QString name);
     void open(QString path);

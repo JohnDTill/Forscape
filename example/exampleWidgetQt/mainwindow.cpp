@@ -283,26 +283,10 @@ void MainWindow::stop(){
 
 void MainWindow::pollInterpreterThread(){
     auto& interpreter = editor->getModel()->interpreter;
-    auto& message_queue = interpreter.message_queue;
-    std::string out;
-    char ch;
-    while(message_queue.try_dequeue(ch))
-        if(ch == '\0'){
-            print_buffer += out;
-            out.clear();
-        }else{
-            out += ch;
-        }
-
-    if(!print_buffer.empty()){
-        bool at_bottom = console->scrolledToBottom();
-        console->getController().insertSerial(print_buffer);
-        console->updateModel();
-        if(at_bottom) console->scrollToBottom();
-        print_buffer.clear();
-    }
 
     if(interpreter.status == Hope::Code::Interpreter::FINISHED){
+        checkOutput();
+
         auto output = console->getModel();
         switch(interpreter.error_code){
             case Hope::Code::NO_ERROR_FOUND: break;
@@ -323,9 +307,12 @@ void MainWindow::pollInterpreterThread(){
                 console->scrollToBottom();
         }
 
+        out.clear();
         editor->reenable();
         interpreter_poll_timer.stop();
         if(editor_had_focus) editor->setFocus();
+    }else{
+        checkOutput();
     }
 }
 
@@ -388,6 +375,27 @@ void MainWindow::on_actionSave_As_triggered(){
 
 void MainWindow::on_actionExit_triggered(){
     close();
+}
+
+void MainWindow::checkOutput(){
+    auto& interpreter = editor->getModel()->interpreter;
+    auto& message_queue = interpreter.message_queue;
+    char ch;
+    while(message_queue.try_dequeue(ch))
+        if(ch == '\0'){
+            print_buffer += out;
+            out.clear();
+        }else{
+            out += ch;
+        }
+
+    if(!print_buffer.empty()){
+        bool at_bottom = console->scrolledToBottom();
+        console->getController().insertSerial(print_buffer);
+        console->updateModel();
+        if(at_bottom) console->scrollToBottom();
+        print_buffer.clear();
+    }
 }
 
 bool MainWindow::savePrompt(){

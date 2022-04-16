@@ -557,8 +557,6 @@ size_t TypeResolver::instantiateSetOfFuncs(ParseNode call_node, Type fun_group, 
 size_t TypeResolver::error(size_t pn, ErrorCode code) noexcept{
     if(retry_at_recursion) return RECURSIVE_CYCLE;
 
-    assert(false);
-
     errors.push_back(Error(parse_tree.getSelection(pn), code));
     return TypeResolver::FAILURE;
 }
