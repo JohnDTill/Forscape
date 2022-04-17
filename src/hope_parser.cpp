@@ -690,7 +690,7 @@ ParseNode Parser::identifier() noexcept{
         case TOKEN_SUBSCRIPT:
             if(parse_tree.str(id) == "e"){
                 parse_tree.getSelection(id).format(SEM_PREDEFINEDMAT);
-                return oneDim(OP_UNIT_VECTOR);
+                return oneDim(OP_UNIT_VECTOR_AUTOSIZE);
             }else if(parse_tree.str(id) == "I" && noErrors()){
                 size_t index_backup = index;
                 ParseNode pn = twoDims(OP_IDENTITY_MATRIX);

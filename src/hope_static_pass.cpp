@@ -78,12 +78,6 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
 
     assert(pn != ParseTree::EMPTY);
 
-    #define EXPECT_TYPE(node, expected) \
-        if(parse_tree.getType(node) != expected){ \
-            error(node); \
-            return pn; \
-        }
-
     switch (parse_tree.getOp(pn)) {
         case OP_ASSIGN:
         case OP_EQUAL:{
@@ -260,8 +254,6 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
             assert(false);
             return pn;
     }
-
-    #undef EXPECT_TYPE
 }
 
 Type StaticPass::fillDefaultsAndInstantiate(ParseNode call_node, StaticPass::CallSignature sig){
@@ -305,12 +297,6 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
     assert(pn != ParseTree::EMPTY);
 
     if(!errors.empty()) return pn;
-
-    #define EXPECT_OR(node, expected, code) \
-        if(resolveExpr(node) != expected) return error(node, code);
-
-    #define EXPECT(node, expected) \
-        if(resolveExpr(node) != expected) return error(node);
 
     switch (parse_tree.getOp(pn)) {
         case OP_LAMBDA: return resolveLambda(pn);
@@ -403,12 +389,38 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
             parse_tree.setArg<1>(pn, rhs);
             return pn;
         }
+        case OP_BINOMIAL:{
+            parse_tree.setScalar(pn);
+            ParseNode n = enforcePositiveInt(parse_tree.lhs(pn));
+            parse_tree.setArg<0>(pn, n);
+            ParseNode k = enforcePositiveInt(parse_tree.rhs(pn));
+            parse_tree.setArg<1>(pn, k);
+            return pn;
+        }
         case OP_BACKSLASH:
-        case OP_BINOMIAL:
-        case OP_CROSS:
         case OP_DIVIDE:
-        case OP_DOT:
-        case OP_FRACTION:
+        case OP_FRACTION:{
+            parse_tree.setType(pn, NUMERIC);
+            ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
+            parse_tree.setArg<0>(pn, lhs);
+            if(parse_tree.getType(lhs) != NUMERIC) return error(pn, lhs);
+            parse_tree.copyDims(pn, lhs);
+            ParseNode rhs = enforceScalar(parse_tree.rhs(pn));
+            parse_tree.setArg<1>(pn, rhs);
+            return pn;
+        }
+        case OP_DOT:{
+            parse_tree.setScalar(pn);
+            ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
+            parse_tree.setArg<0>(pn, lhs);
+            if(parse_tree.getType(lhs) != NUMERIC) return error(pn, lhs);
+            ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
+            parse_tree.setArg<1>(pn, rhs);
+            if(parse_tree.getType(rhs) != NUMERIC) return error(pn, rhs);
+            return pn;
+        }
+
+        case OP_CROSS:
         case OP_FORWARDSLASH:
         case OP_LOGARITHM_BASE:
         case OP_MODULUS:
@@ -437,7 +449,6 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
         case OP_COMP_ERR_FUNC:
         case OP_COSINE:
         case OP_ERROR_FUNCTION:
-        case OP_FACTORIAL:
         case OP_HYPERBOLIC_ARCCOSECANT:
         case OP_HYPERBOLIC_ARCCOSINE:
         case OP_HYPERBOLIC_ARCCOTANGENT:
@@ -454,8 +465,12 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
             parse_tree.setArg<0>(pn, child);
             return pn;
         }
-        case OP_BIJECTIVE_MAPPING:
-        case OP_DAGGER:
+        case OP_FACTORIAL:{
+            parse_tree.setScalar(pn);
+            ParseNode child = enforcePositiveInt(parse_tree.child(pn));
+            parse_tree.setArg<0>(pn, child);
+            return pn;
+        }
         case OP_EXP:
         case OP_LOGARITHM:
         case OP_NATURAL_LOG:
@@ -469,10 +484,33 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
             if(parse_tree.getType(child) != NUMERIC) return error(pn, child);
             return pn;
         }
+        case OP_BIJECTIVE_MAPPING:{
+            parse_tree.setType(pn, NUMERIC);
+            ParseNode child = resolveExpr(parse_tree.child(pn));
+            parse_tree.setArg<0>(pn, child);
+            if(parse_tree.getType(child) != NUMERIC) return error(pn, child);
+            return pn;
+        }
+        case OP_DAGGER:{
+            parse_tree.setType(pn, NUMERIC);
+            ParseNode child = resolveExpr(parse_tree.child(pn));
+            parse_tree.setArg<0>(pn, child);
+            if(parse_tree.getType(child) != NUMERIC) return error(pn, child);
+            parse_tree.transposeDims(pn, child);
+            return pn;
+        }
+        case OP_PSEUDO_INVERSE:{
+            parse_tree.setType(pn, NUMERIC);
+            ParseNode child = resolveExpr(parse_tree.child(pn));
+            parse_tree.setArg<0>(pn, child);
+            if(parse_tree.getType(child) != NUMERIC) return error(pn, child);
+            parse_tree.transposeDims(pn, child);
+            return pn;
+        }
         case OP_TRANSPOSE:{
+            parse_tree.setType(pn, NUMERIC);
             ParseNode child = resolveExpr(parse_tree.child(pn));
             if(parse_tree.getType(child) != NUMERIC) return error(pn, child);
-            parse_tree.setType(pn, NUMERIC);
             parse_tree.transposeDims(pn, child);
             if(parse_tree.definitelyScalar(child)) return child;
             return pn;
@@ -592,9 +630,10 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
             parse_tree.setScalar(pn);
             return pn;
         case OP_IDENTITY_AUTOSIZE:
+        case OP_UNIT_VECTOR_AUTOSIZE:
         case OP_GRAVITY:
             parse_tree.setType(pn, NUMERIC);
-            return pn;
+            return error(pn, pn, AUTOSIZE);
         case OP_FALSE:
         case OP_TRUE:
             parse_tree.setType(pn, BOOLEAN);
@@ -1299,6 +1338,7 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
     if(recursion_fallback == nullptr)
         recursion_fallback = &fn;
 
+    //EVENTUALLY: should probably backup and restore entire lexical scope
     size_t old_val_cap_index = old_val_cap.size();
     size_t old_ref_cap_index = old_ref_cap.size();
     size_t old_args_index = old_args.size();
