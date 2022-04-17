@@ -32,6 +32,7 @@ private:
     static constexpr size_t GLOBAL_DEPTH = 0;
     size_t lexical_depth = GLOBAL_DEPTH;
     size_t closure_depth = 0;
+    size_t cutoff = std::numeric_limits<size_t>::max();
 
     //EVENTUALLY: redesign nesting allocation
     //This should probably be some kind of map to intrusive linked list, like for symbols in general

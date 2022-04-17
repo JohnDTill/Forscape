@@ -304,6 +304,8 @@ void SymbolTableBuilder::resolveReference(ParseNode pn){
 
 void SymbolTableBuilder::resolveReference(ParseNode pn, const Typeset::Selection& c, size_t sym_id){
     assert(parse_tree.getOp(pn) == OP_IDENTIFIER);
+    if(sym_id >= cutoff) errors.push_back(Error(parse_tree.getSelection(pn), BAD_DEFAULT_ARG));
+
     Symbol& sym = symbol_table.symbols[sym_id];
     parse_tree.setFlag(pn, sym.flag);
     sym.is_used = true;
@@ -496,12 +498,13 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
 
     for(size_t i = 0; i < val_cap_size; i++){
         ParseNode capture = parse_tree.arg(val_cap, i);
-        defineLocalScope(capture, false);
+        defineLocalScope(capture, false); //EVENTUALLY: don't warn about shadowing value captures
         symbol_table.symbols.back().is_captured_by_value = true;
         symbol_table.symbols.back().is_closure_nested = true;
     }
 
     bool expect_default = false;
+    cutoff = symbol_table.symbols.size();
     for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
         ParseNode param = parse_tree.arg(params, i);
         if(parse_tree.getOp(param) == OP_EQUAL){
@@ -519,6 +522,7 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
             parse_tree.setFlag(param, NONE);
         }
     }
+    cutoff = std::numeric_limits<size_t>::max();
 
     resolveStmt(body);
 
