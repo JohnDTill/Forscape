@@ -59,8 +59,8 @@ FLOOR,MatrixXd,,MatrixXd,a.array().floor(),y,,,
 NORM|NORM_INFTY|NORM_1,double,,double,std::abs(a),,,,
 NORM_p,double,double,double,std::abs(a),,,,
 NORM,MatrixXd,,double,a.norm(),,,,(a.cols() > 1) & (a.rows() > 1)=>DIMENSION_MISMATCH
-NORM_1,MatrixXd,,double,a.cwiseAbs().sum(),,,,(a.cols() > 1) & (a.rows() > 1)=>DIMENSION_MISMATCH
-NORM_INFTY,MatrixXd,,double,a.cwiseAbs().maxCoeff(),,,,(a.cols() > 1) & (a.rows() > 1)=>DIMENSION_MISMATCH
+NORM_1,MatrixXd,,double,a.lpNorm<1>(),,,,(a.cols() > 1) & (a.rows() > 1)=>DIMENSION_MISMATCH
+NORM_INFTY,MatrixXd,,double,a.lpNorm<Eigen::Infinity>(),,,,(a.cols() > 1) & (a.rows() > 1)=>DIMENSION_MISMATCH
 NORM_p,MatrixXd,double,double,"pNorm(a, b)",,,,(a.cols() > 1) & (a.rows() > 1)=>DIMENSION_MISMATCH
 GROUP_PAREN|GROUP_BRACKET,,,,interpretExpr(parse_tree.child(pn)),,,,
 SUBSCRIPT_ACCESS,,,,elementAccess(pn),,,,
@@ -74,9 +74,9 @@ DECIMAL_LITERAL|INTEGER_LITERAL,,,,parse_tree.getFlagAsDouble(pn),,,,
 STRING,,,,str(pn),,,,
 LAMBDA,,,,anonFun(pn),,,,
 CALL,,,,call(pn),,,,
-ZERO_MATRIX,double,double,MatrixXd|double,"a*b == 1 ? Value(0.0) : MatrixXd::Zero(static_cast<Index>(a), static_cast<Index>(b))",,,,(a < 1) | (b < 1)=>DIMENSION_MISMATCH
-ONES_MATRIX,double,double,MatrixXd|double,"a*b == 1 ? Value(1.0) : MatrixXd::Ones(static_cast<Index>(a), static_cast<Index>(b))",,,,(a < 1) | (b < 1)=>DIMENSION_MISMATCH
-IDENTITY_MATRIX,double,double,MatrixXd|double,"a*b == 1 ? Value(1.0) : MatrixXd::Identity(static_cast<Index>(a), static_cast<Index>(b))",,,,(a < 1) | (b < 1)=>DIMENSION_MISMATCH
+ZERO_MATRIX,double,double,MatrixXd|double,"a*b == 1 ? Value(0.0) : MatrixXd::Zero(static_cast<Index>(a), static_cast<Index>(b))",,,,
+ONES_MATRIX,double,double,MatrixXd|double,"a*b == 1 ? Value(1.0) : MatrixXd::Ones(static_cast<Index>(a), static_cast<Index>(b))",,,,
+IDENTITY_MATRIX,double,double,MatrixXd|double,"a*b == 1 ? Value(1.0) : MatrixXd::Identity(static_cast<Index>(a), static_cast<Index>(b))",,,,
 UNIT_VECTOR,,,,unitVector(pn),,,,
 LENGTH,double,,double,static_cast<double>(1),,,,
 LENGTH,string,,double,static_cast<double>(a.size()),,,,
@@ -140,3 +140,10 @@ NORM_SQUARED,double,,,a*a,,,,
 NORM_SQUARED,MatrixXd,,,a.squaredNorm(),,,,((a.rows()>1) & (a.cols()>1))=>DIMENSION_MISMATCH
 CHECK_SCALAR,double,,,a,,,,
 CHECK_SCALAR,MatrixXd,,,"error(EXPECT_SCALAR, pn)",,,,
+CHECK_ZERO,double,,,a,,,,a!=0=>INDEX_OUT_OF_RANGE
+CHECK_ZERO,MatrixXd,,,"error(EXPECT_SCALAR, pn)",,,,
+CHECK_NAT,double,,,a,,,,a<1=>DIMENSION_MISMATCH
+CHECK_NAT,MatrixXd,,,"error(EXPECT_SCALAR, pn)",,,,
+CHECK_POSITIVE_INT,double,,,a,,,,a<0=>DIMENSION_MISMATCH
+CHECK_POSITIVE_INT,MatrixXd,,,"error(EXPECT_SCALAR, pn)",,,,
+MATRIX_LITERAL,,,,std::get<MatrixXd>(parse_tree.getValue(pn)),,,,

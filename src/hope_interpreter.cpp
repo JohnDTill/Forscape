@@ -1007,24 +1007,16 @@ Value Interpreter::unitVector(ParseNode pn){
     Eigen::Index r = std::get<double>(rows);
     Eigen::Index c = std::get<double>(cols);
 
-    if(r < 0){
-        error(TYPE_ERROR, parse_tree.arg(pn, 1));
-        return NIL;
-    }
-    if(c < 0){
-        error(TYPE_ERROR, parse_tree.arg(pn, 2));
-        return NIL;
-    }
+    assert(r >= 1);
+    assert(c >= 1);
+
     if(r > 1 && c > 1){
         error(DIMENSION_MISMATCH, pn);
         return NIL;
     }
 
     Eigen::Index e = std::get<double>(elem);
-    if(e < 0){
-        error(TYPE_ERROR, parse_tree.arg(pn, 0));
-        return NIL;
-    }
+    assert(e >= 0);
     if(e >= r*c){
         error(DIMENSION_MISMATCH, pn);
         return NIL;
@@ -1036,6 +1028,8 @@ Value Interpreter::unitVector(ParseNode pn){
 }
 
 double Interpreter::pNorm(const Eigen::MatrixXd& a, double b) noexcept{
+    //EVENTUALLY: eigen has a templated version of lpNorm<b>() for codegen
+
     double sum = 0;
     for(Eigen::Index i = 0; i < a.size(); i++)
         sum += std::pow(std::abs(a(i)), b);
