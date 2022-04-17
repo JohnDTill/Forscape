@@ -1,7 +1,9 @@
 #ifndef HOPE_INTERPRETER_H
 #define HOPE_INTERPRETER_H
 
+#include "hope_parse_tree.h"
 #include "hope_stack.h"
+#include "hope_static_pass.h"
 #include <memory>
 #include <readerwriterqueue/readerwriterqueue.h>
 #include <unordered_map>
@@ -44,13 +46,14 @@ public:
     ErrorCode error_code = NO_ERROR_FOUND;
     ParseNode error_node = ParseTree::EMPTY;
 
-    void run(const ParseTree& parse_tree, SymbolTable symbol_table);
-    void runThread(const ParseTree& parse_tree, SymbolTable symbol_table);
+    void run(const ParseTree& parse_tree, SymbolTable symbol_table, const InstantiationLookup& inst_lookup);
+    void runThread(const ParseTree& parse_tree, SymbolTable symbol_table, const InstantiationLookup& inst_lookup);
     void stop();
 
 private:
     std::vector<size_t> frames;
     ParseTree parse_tree;
+    InstantiationLookup inst_lookup;
     Closure* active_closure = nullptr;
     Stack stack;
 
@@ -91,7 +94,7 @@ private:
     Value anonFun(ParseNode pn);
     Value call(ParseNode pn);
     void callStmt(ParseNode pn);
-    Value innerCall(ParseNode call, ParseNode params, Closure& closure, ParseNode captured, ParseNode upvalues, ParseNode body, bool expect, bool is_lambda);
+    Value innerCall(ParseNode call, Closure& closure, ParseNode body, bool expect, bool is_lambda);
     Value elementAccess(ParseNode pn);
     typedef Eigen::ArithmeticSequence<Eigen::Index, Eigen::Index, Eigen::Index> Slice;
     Slice readSubscript(ParseNode pn, Eigen::Index max);

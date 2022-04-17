@@ -132,6 +132,11 @@ void SymbolTableBuilder::resolveExpr(ParseNode pn){
             resolveBig(pn);
             break;
 
+        case OP_DERIVATIVE:
+        case OP_PARTIAL:
+            errors.push_back(Error(parse_tree.getSelection(pn), DERIVATIVE));
+            break;
+
         default: resolveDefault(pn);
     }
 }

@@ -66,3 +66,7 @@ TOO_MANY_ARGS,,Too many arguments at call site
 TOO_FEW_ARGS,,Too few arguments at call site
 SHADOWING_VAR,,Declaration here shadows a variable in an outer scope
 BAD_DEFAULT_ARG,y,Previous parameter cannot be used in default arg
+EXPECT_BOOLEAN,,Expected boolean in conditional
+EXPECT_SCALAR,,Expected scalar
+DERIVATIVE,,Derivatives are not supported yet
+AUTOSIZE,,Autosize not supported yet

@@ -7,10 +7,8 @@ namespace Hope {
 
 namespace Code {
 
-Parser::Parser(const Scanner &scanner, Typeset::Model* model)
-    : tokens(scanner.tokens), markers(scanner.markers), errors(model->errors), model(model) {
-    //DO NOTHING
-}
+Parser::Parser(const Scanner& scanner, Typeset::Model* model)
+    : tokens(scanner.tokens), errors(model->errors), model(model) {}
 
 void Parser::parseAll(){
     reset();
@@ -22,7 +20,7 @@ void Parser::parseAll(){
         skipNewlines();
     }
 
-    Typeset::Selection c(markers.front().first, markers.back().second);
+    Typeset::Selection c(tokens.front().sel.left, tokens.back().sel.right);
     parse_tree.root = builder.finalize(c);
 }
 
@@ -664,9 +662,20 @@ ParseNode Parser::integer() noexcept{
             const Typeset::Selection sel(left, rMark());
             sel.formatNumber();
             ParseNode decimal = terminalAndAdvance(OP_INTEGER_LITERAL);
-            return parse_tree.addBinary(OP_DECIMAL_LITERAL, sel, n, decimal);
+            ParseNode pn = parse_tree.addBinary(OP_DECIMAL_LITERAL, sel, n, decimal);
+            double val = stod(parse_tree.str(pn));
+            parse_tree.setFlag(pn, val);
+            parse_tree.setRows(pn, 1);
+            parse_tree.setCols(pn, 1);
+            parse_tree.setValue(pn, val);
+            return pn;
         }
         default:
+            double val = stod(parse_tree.str(n));
+            parse_tree.setFlag(n, val);
+            parse_tree.setRows(n, 1);
+            parse_tree.setCols(n, 1);
+            parse_tree.setValue(n, val);
             sel.formatNumber();
             return n;
     }
@@ -681,7 +690,7 @@ ParseNode Parser::identifier() noexcept{
         case TOKEN_SUBSCRIPT:
             if(parse_tree.str(id) == "e"){
                 parse_tree.getSelection(id).format(SEM_PREDEFINEDMAT);
-                return oneDim(OP_UNIT_VECTOR);
+                return oneDim(OP_UNIT_VECTOR_AUTOSIZE);
             }else if(parse_tree.str(id) == "I" && noErrors()){
                 size_t index_backup = index;
                 ParseNode pn = twoDims(OP_IDENTITY_MATRIX);
@@ -795,6 +804,42 @@ ParseNode Parser::fraction() noexcept{
     Typeset::Selection c = selection();
     advance();
 
+    switch (currentType()) {
+        case DOUBLESTRUCK_D: return fractionDeriv(c, OP_DERIVATIVE, DOUBLESTRUCK_D);
+        case PARTIAL: return fractionDeriv(c, OP_PARTIAL, PARTIAL);
+        default: return fractionDefault(c);
+    }
+}
+
+Parser::ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, TokenType tt) noexcept{
+    advance();
+    if(match(ARGCLOSE)){
+        consume(tt);
+        if(!errors.empty()) return error_node;
+        ParseNode id = isolatedIdentifier();
+        if(!errors.empty()) return error_node;
+        consume(ARGCLOSE);
+        if(!errors.empty()) return error_node;
+        ParseNode expr = multiplication();
+        if(!errors.empty()) return error_node;
+        Typeset::Selection sel(c.left, rMarkPrev());
+        return parse_tree.addBinary(type, sel, expr, id);
+    }else{
+        ParseNode expr = multiplication();
+        if(!errors.empty()) return error_node;
+        consume(ARGCLOSE);
+        if(!errors.empty()) return error_node;
+        consume(tt);
+        if(!errors.empty()) return error_node;
+        ParseNode id = isolatedIdentifier();
+        if(!errors.empty()) return error_node;
+        consume(ARGCLOSE);
+        if(!errors.empty()) return error_node;
+        return parse_tree.addBinary(type, c, expr, id);
+    }
+}
+
+Parser::ParseNode Parser::fractionDefault(const Typeset::Selection& c) noexcept{
     ParseNode num = expression();
     consume(ARGCLOSE);
     ParseNode den = expression();
@@ -1129,7 +1174,7 @@ void Parser::advance() noexcept{
 }
 
 bool Parser::match(TokenType type) noexcept{
-    if(tokens[index] == type){
+    if(tokens[index].type == type){
         advance();
         return true;
     }else{
@@ -1138,15 +1183,15 @@ bool Parser::match(TokenType type) noexcept{
 }
 
 bool Parser::peek(TokenType type) const noexcept{
-    return tokens[index] == type;
+    return tokens[index].type == type;
 }
 
 void Parser::require(TokenType type) noexcept{
-    if(tokens[index] != type) error(CONSUME);
+    if(tokens[index].type != type) error(CONSUME);
 }
 
 void Parser::consume(TokenType type) noexcept{
-    if(tokens[index] == type){
+    if(tokens[index].type == type){
         advance();
     }else{
         error(CONSUME);
@@ -1154,16 +1199,16 @@ void Parser::consume(TokenType type) noexcept{
 }
 
 void Parser::skipNewlines() noexcept{
-    while(tokens[index] == NEWLINE || tokens[index] == COMMENT) index++;
+    while(tokens[index].type == NEWLINE || tokens[index].type == COMMENT) index++;
 }
 
 void Parser::skipNewline() noexcept{
-    if(tokens[index] == COMMENT) index+=2;
-    else if(tokens[index] == NEWLINE) index++;
+    if(tokens[index].type == COMMENT) index+=2;
+    else if(tokens[index].type == NEWLINE) index++;
 }
 
 TokenType Parser::currentType() const noexcept{
-    return tokens[index];
+    return tokens[index].type;
 }
 
 Parser::ParseNode Parser::makeTerminalNode(size_t type) noexcept{
@@ -1178,27 +1223,28 @@ ParseNode Parser::terminalAndAdvance(size_t type) noexcept{
 }
 
 const Typeset::Selection Parser::selection() const noexcept{
-    return Typeset::Selection(markers[index]);
+    if(tokens[index].type == ARGCLOSE) return Typeset::Selection(tokens[index].sel.left, tokens[index].sel.left);
+    return tokens[index].sel;
 }
 
 const Typeset::Selection Parser::selectionPrev() const noexcept{
-    return Typeset::Selection(markers[index-1]);
+    return tokens[index-1].sel;
 }
 
 const Typeset::Marker& Parser::lMark() const noexcept{
-    return markers[index].first;
+    return tokens[index].sel.left;
 }
 
 const Typeset::Marker& Parser::rMark() const noexcept{
-    return markers[index].second;
+    return tokens[index].sel.right;
 }
 
 const Typeset::Marker& Parser::lMarkPrev() const noexcept{
-    return markers[index-1].first;
+    return tokens[index-1].sel.left;
 }
 
 const Typeset::Marker& Parser::rMarkPrev() const noexcept{
-    return markers[index-1].second;
+    return tokens[index-1].sel.right;
 }
 
 }

@@ -19,21 +19,23 @@ namespace Hope {
 
 namespace Code {
 
-void Interpreter::run(const ParseTree& parse_tree, SymbolTable symbol_table){
+void Interpreter::run(const ParseTree& parse_tree, SymbolTable symbol_table, const InstantiationLookup& inst_lookup){
     assert(parse_tree.getOp(parse_tree.root) == OP_BLOCK);
     reset();
 
     this->parse_tree = parse_tree;
+    this->inst_lookup = inst_lookup;
     SymbolTableLinker linker(symbol_table, this->parse_tree);
     linker.link();
+    this->parse_tree.patchClones();
 
     blockStmt(this->parse_tree.root);
     status = FINISHED;
 }
 
-void Interpreter::runThread(const ParseTree& parse_tree, SymbolTable symbol_table){
+void Interpreter::runThread(const ParseTree& parse_tree, SymbolTable symbol_table, const InstantiationLookup& inst_lookup){
     status = NORMAL;
-    std::thread(&Interpreter::run, this, parse_tree, symbol_table).detach();
+    std::thread(&Interpreter::run, this, parse_tree, symbol_table, inst_lookup).detach();
 }
 
 void Interpreter::stop(){
@@ -50,6 +52,8 @@ void Interpreter::reset() noexcept {
 }
 
 Value Interpreter::error(ErrorCode code, ParseNode pn) noexcept {
+    assert(false);
+
     if(status < RUNTIME_ERROR){
         directive = STOP;
         error_code = code;
@@ -81,6 +85,7 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_RETURN: returnStmt(pn); break;
         case OP_BREAK: status = static_cast<Status>(status | BREAK); break;
         case OP_CONTINUE: status = static_cast<Status>(status | CONTINUE); break;
+        case OP_DO_NOTHING: break;
         default: error(UNRECOGNIZED_STMT, pn);
     }
 }
@@ -689,12 +694,12 @@ Value Interpreter::call(ParseNode call) {
     switch (v.index()) {
         case Lambda_index:{
             Lambda& f = std::get<Lambda>(v);
-            return innerCall(call, f.params(parse_tree), f.closure, f.valCap(parse_tree), f.refCap(parse_tree), f.expr(parse_tree), true, true);
+            return innerCall(call, f.closure, f.expr(parse_tree), true, true);
         }
 
         case Algorithm_index:{
             Algorithm& alg = std::get<Algorithm>(v);
-            return innerCall(call, alg.params(parse_tree), alg.closure, alg.valCap(parse_tree), alg.refCap(parse_tree), alg.body(parse_tree), true, false);
+            return innerCall(call, alg.closure, alg.body(parse_tree), true, false);
         }
 
         case Unitialized_index:
@@ -713,30 +718,15 @@ Value Interpreter::call(ParseNode call) {
 }
 
 void Interpreter::callStmt(ParseNode pn){
-    if(parse_tree.getOp(pn) != OP_CALL){
-        error(UNUSED_EXPRESSION, pn);
-        return;
-    }
-
     Value v = interpretExpr( parse_tree.arg(pn, 0) );
-    size_t nargs = parse_tree.getNumArgs(pn)-1;
 
     switch (v.index()) {
         case Lambda_index:
-            error(UNUSED_EXPRESSION, pn); break;
-
-        case Unitialized_index:
-            error(USE_BEFORE_DEFINE, parse_tree.arg(pn, 0)); break;
-
-        case double_index:
-        case MatrixXd_index:
-            assert(nargs == 1);
-            error(UNUSED_EXPRESSION, pn);
-            break;
+            break; //No side effects, optimise away EVENTUALLY
 
         case Algorithm_index:{
             Algorithm& alg = std::get<Algorithm>(v);
-            innerCall(pn, alg.params(parse_tree), alg.closure, alg.valCap(parse_tree), alg.refCap(parse_tree), alg.body(parse_tree), false, false);
+            innerCall(pn, alg.closure, alg.body(parse_tree), false, false);
             break;
         }
 
@@ -745,7 +735,18 @@ void Interpreter::callStmt(ParseNode pn){
     }
 }
 
-Value Interpreter::innerCall(ParseNode call, ParseNode params, Closure& closure, ParseNode captured, ParseNode upvalues, ParseNode body, bool expect, bool is_lambda){
+Value Interpreter::innerCall(ParseNode call, Closure& closure, ParseNode body, bool expect, bool is_lambda){
+    assert(parse_tree.getOp(call) == OP_CALL);
+
+    auto inst_result = inst_lookup.find(std::make_pair(body, call));
+    assert(inst_result != inst_lookup.end());
+    ParseNode inst_fn = inst_result->second;
+
+    ParseNode val_cap = parse_tree.valCapList(inst_fn);
+    ParseNode ref_cap = parse_tree.refCapList(inst_fn);
+    ParseNode params = parse_tree.paramList(inst_fn);
+    body = parse_tree.body(inst_fn);
+
     size_t nargs = parse_tree.getNumArgs(call)-1;
     size_t nparams = parse_tree.getNumArgs(params);
     if(nargs > nparams) return error(INVALID_ARGS, call);
@@ -762,7 +763,7 @@ Value Interpreter::innerCall(ParseNode call, ParseNode params, Closure& closure,
         }
     }
 
-    breakLocalClosureLinks(closure, captured, upvalues);
+    breakLocalClosureLinks(closure, val_cap, ref_cap);
     frames.push_back(stack.size());
     Closure* old = active_closure;
     active_closure = &closure;
@@ -994,45 +995,28 @@ Value Interpreter::pow(const Eigen::MatrixXd& a, double b, ParseNode pn){
 }
 
 Value Interpreter::unitVector(ParseNode pn){
-    Value elem = interpretExpr(parse_tree.arg(pn, 0));
-    if(elem.index() != double_index){
-        error(DIMENSION_MISMATCH, parse_tree.arg(pn, 0));
-        return NIL;
-    }
+    Value elem = interpretExpr(parse_tree.unitVectorElem(pn));
+    assert(elem.index() == double_index);
 
-    Value rows = interpretExpr(parse_tree.arg(pn, 1));
-    if(rows.index() != double_index){
-        error(DIMENSION_MISMATCH, parse_tree.arg(pn, 1));
-        return NIL;
-    }
+    Value rows = interpretExpr(parse_tree.unitVectorRows(pn));
+    assert(rows.index() == double_index);
 
-    Value cols = interpretExpr(parse_tree.arg(pn, 2));
-    if(cols.index() != double_index){
-        error(DIMENSION_MISMATCH, parse_tree.arg(pn, 2));
-        return NIL;
-    }
+    Value cols = interpretExpr(parse_tree.unitVectorCols(pn));
+    assert(cols.index() == double_index);
 
     Eigen::Index r = std::get<double>(rows);
     Eigen::Index c = std::get<double>(cols);
 
-    if(r < 0){
-        error(TYPE_ERROR, parse_tree.arg(pn, 1));
-        return NIL;
-    }
-    if(c < 0){
-        error(TYPE_ERROR, parse_tree.arg(pn, 2));
-        return NIL;
-    }
+    assert(r >= 1);
+    assert(c >= 1);
+
     if(r > 1 && c > 1){
         error(DIMENSION_MISMATCH, pn);
         return NIL;
     }
 
     Eigen::Index e = std::get<double>(elem);
-    if(e < 0){
-        error(TYPE_ERROR, parse_tree.arg(pn, 0));
-        return NIL;
-    }
+    assert(e >= 0);
     if(e >= r*c){
         error(DIMENSION_MISMATCH, pn);
         return NIL;
@@ -1044,6 +1028,8 @@ Value Interpreter::unitVector(ParseNode pn){
 }
 
 double Interpreter::pNorm(const Eigen::MatrixXd& a, double b) noexcept{
+    //EVENTUALLY: eigen has a templated version of lpNorm<b>() for codegen
+
     double sum = 0;
     for(Eigen::Index i = 0; i < a.size(); i++)
         sum += std::pow(std::abs(a(i)), b);

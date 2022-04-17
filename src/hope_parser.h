@@ -23,8 +23,6 @@ public:
     std::unordered_map<Typeset::Marker, Typeset::Marker> close_symbols;
 
 private:
-    //Predominant noexcept behavior requires elimination of dynamic allocation and recursion
-
     typedef size_t ParseNode;
 
     void reset() noexcept;
@@ -67,6 +65,8 @@ private:
     ParseNode call(const ParseNode& id) noexcept;
     ParseNode lambda(const ParseNode& params) noexcept;
     ParseNode fraction() noexcept;
+    ParseNode fractionDeriv(const Typeset::Selection& c, Op type, TokenType tt) noexcept;
+    ParseNode fractionDefault(const Typeset::Selection& c) noexcept;
     ParseNode binomial() noexcept;
     ParseNode superscript(const ParseNode& lhs) noexcept;
     ParseNode subscript(const ParseNode& lhs, const Typeset::Marker& right) noexcept;
@@ -104,8 +104,7 @@ private:
     const Typeset::Marker& lMarkPrev() const noexcept;
     const Typeset::Marker& rMarkPrev() const noexcept;
 
-    const std::vector<TokenType>& tokens;
-    const std::vector<std::pair<Typeset::Marker, Typeset::Marker>>& markers;
+    const std::vector<Token>& tokens;
     std::vector<Error>& errors;
     Typeset::Model* model;
     size_t index = 0;

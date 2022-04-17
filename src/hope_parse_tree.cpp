@@ -1,6 +1,7 @@
 #include "hope_parse_tree.h"
 
 #include <code_parsenode_ops.h>
+#include <hope_static_pass.h>
 #include "typeset_selection.h"
 
 #ifndef NDEBUG
@@ -12,8 +13,11 @@ namespace Hope {
 
 namespace Code {
 
+static constexpr size_t UNKNOWN_SIZE = 0;
+
 void ParseTree::clear() noexcept {
     std::vector<size_t>::clear();
+    cloned_vars.clear();
 }
 
 bool ParseTree::empty() const noexcept{
@@ -105,6 +109,11 @@ ParseNode ParseTree::body(ParseNode node) const noexcept{
     return arg<3>(node);
 }
 
+void ParseTree::setBody(ParseNode node, ParseNode body) noexcept{
+    assert(getOp(node) == OP_ALGORITHM || getOp(node) == OP_LAMBDA);
+    setArg<3>(node, body);
+}
+
 ParseNode ParseTree::algName(ParseNode node) const noexcept{
     assert(getOp(node) == OP_ALGORITHM);
     return arg<4>(node);
@@ -112,6 +121,30 @@ ParseNode ParseTree::algName(ParseNode node) const noexcept{
 
 size_t ParseTree::valListSize(ParseNode node) const noexcept{
     return node == EMPTY ? 0 : getNumArgs(node);
+}
+
+ParseNode ParseTree::unitVectorElem(ParseNode node) const noexcept{
+    return arg<0>(node);
+}
+
+void ParseTree::setUnitVectorElem(ParseNode node, ParseNode val) noexcept{
+    setArg<0>(node, val);
+}
+
+ParseNode ParseTree::unitVectorRows(ParseNode node) const noexcept{
+    return arg<1>(node);
+}
+
+void ParseTree::setUnitVectorRows(ParseNode node, ParseNode val) noexcept{
+    setArg<1>(node, val);
+}
+
+ParseNode ParseTree::unitVectorCols(ParseNode node) const noexcept{
+    return arg<2>(node);
+}
+
+void ParseTree::setUnitVectorCols(ParseNode node, ParseNode val) noexcept{
+    setArg<2>(node, val);
 }
 
 std::string ParseTree::str(ParseNode node) const{
@@ -295,8 +328,123 @@ ParseNode ParseTree::addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, 
     return pn;
 }
 
+ParseNode ParseTree::clone(ParseNode pn){
+    ParseNode cloned = size();
+
+    switch (getOp(pn)) {
+        case OP_IDENTIFIER:
+        case OP_READ_GLOBAL:
+        case OP_READ_UPVALUE:
+        case OP_ALGORITHM:
+        case OP_PROTOTYPE_ALG:
+            cloned_vars.push_back(std::make_pair(pn, cloned));
+    }
+
+    insert(end(), data()+pn, data()+pn+FIXED_FIELDS);
+    size_t nargs = getNumArgs(pn);
+    resize(size() + nargs);
+    for(size_t i = 0; i < nargs; i++){
+        ParseNode a = arg(pn, i);
+        if(a == EMPTY){
+            setArg(cloned, i, EMPTY);
+        }else if(getOp(a) == OP_CALL){
+            setArg(cloned, i, a);
+        }else{
+            setArg(cloned, i, clone(a));
+        }
+    }
+
+    return cloned;
+}
+
+ParseNode ParseTree::getZero(const Typeset::Selection& sel){
+    ParseNode pn = addTerminal(OP_INTEGER_LITERAL, sel);
+    setFlag(pn, 0.0);
+    setScalar(pn);
+
+    return pn;
+}
+
+ParseNode ParseTree::getOne(const Typeset::Selection& sel){
+    ParseNode pn = addTerminal(OP_INTEGER_LITERAL, sel);
+    setFlag(pn, 1.0);
+    setScalar(pn);
+
+    return pn;
+}
+
+bool ParseTree::definitelyScalar(ParseNode pn) const noexcept{
+    return getRows(pn) == 1 && getCols(pn) == 1;
+}
+
+bool ParseTree::definitelyNotScalar(ParseNode pn) const noexcept{
+    return getRows(pn) > 1 || getCols(pn) > 1;
+}
+
+bool ParseTree::definitelyMatrix(ParseNode pn) const noexcept{
+    return getRows(pn) > 1 && getCols(pn) > 1;
+}
+
+bool ParseTree::definitelyR3(ParseNode pn) const noexcept{
+    return getRows(pn) == 3 && getCols(pn) == 1;
+}
+
+bool ParseTree::nonSquare(ParseNode pn) const noexcept{
+    size_t rows = getRows(pn);
+    size_t cols = getCols(pn);
+    return rows != UNKNOWN_SIZE && cols != UNKNOWN_SIZE && rows != cols;
+}
+
+bool ParseTree::maybeR3(ParseNode pn) const noexcept{
+    size_t rows = getRows(pn);
+    size_t cols = getCols(pn);
+    return (rows == 3 || rows == UNKNOWN_SIZE) && (cols == 1 || cols == UNKNOWN_SIZE);
+}
+
+void ParseTree::setScalar(ParseNode pn) noexcept{
+    setType(pn, StaticPass::NUMERIC);
+    setRows(pn, 1);
+    setCols(pn, 1);
+}
+
+void ParseTree::setR3(ParseNode pn) noexcept{
+    setRows(pn, 3);
+    setCols(pn, 1);
+}
+
+void ParseTree::copyDims(ParseNode dest, ParseNode src) noexcept{
+    setRows(dest, getRows(src));
+    setCols(dest, getCols(src));
+}
+
+void ParseTree::transposeDims(ParseNode dest, ParseNode src) noexcept{
+    setRows(dest, getCols(src));
+    setCols(dest, getRows(src));
+}
+
 ParseTree::NaryBuilder ParseTree::naryBuilder(size_t type){
     return NaryBuilder(*this, type);
+}
+
+void ParseTree::patchClones() noexcept{
+    for(const auto& entry : cloned_vars){
+        ParseNode orig = entry.first;
+        ParseNode clone = entry.second;
+
+        setOp(clone, getOp(orig));
+        setFlag(clone, getFlag(orig));
+    }
+}
+
+void ParseTree::patchClonedTypes() noexcept{
+    for(const auto& entry : cloned_vars){
+        ParseNode orig = entry.first;
+        ParseNode clone = entry.second;
+
+        setType(orig, getType(clone));
+        setRows(orig, getRows(clone));
+        setCols(orig, getCols(clone));
+    }
 }
 
 #ifndef NDEBUG
@@ -304,6 +452,15 @@ std::string ParseTree::toGraphviz() const{
     std::string src = "digraph {\n\trankdir=TB\n\n";
     size_t sze = 0;
     graphvizHelper(src, root, sze);
+    src += "}\n";
+
+    return src;
+}
+
+std::string ParseTree::toGraphviz(ParseNode pn) const{
+    std::string src = "digraph {\n\trankdir=TB\n\n";
+    size_t sze = 0;
+    graphvizHelper(src, pn, sze);
     src += "}\n";
 
     return src;

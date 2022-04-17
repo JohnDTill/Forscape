@@ -17,15 +17,24 @@ namespace Hope {
 
 namespace Code {
 
+typedef size_t ParseNode;
+struct PairHash{
+    size_t operator()(const std::pair<ParseNode, ParseNode>& in) const noexcept {
+        return std::hash<size_t>{}(in.first ^ (in.second << 32));
+    }
+};
+typedef std::unordered_map<std::pair<ParseNode, ParseNode>, ParseNode, PairHash> InstantiationLookup;
+
 struct Error;
 class ParseTree;
 class SymbolTable;
+struct Symbol;
 typedef size_t Type;
 
-class TypeResolver : private std::vector<size_t>{
+class StaticPass : private std::vector<size_t>{
 
 public:
-    typedef size_t ParseNode;
+    InstantiationLookup instantiation_lookup;
     typedef std::vector<size_t> DeclareSignature;
     typedef std::vector<size_t> CallSignature;
     static constexpr Type UNINITIALISED = std::numeric_limits<size_t>::max();
@@ -41,9 +50,10 @@ public:
     const CallSignature* recursion_fallback = nullptr;
 
     Type declare(const DeclareSignature& fn);
-    Type instantiate(const CallSignature& fn);
+    Type instantiate(ParseNode call_node,const CallSignature& fn);
 
     std::string typeString(Type t) const;
+    std::string typeString(const Symbol& sym) const;
 
     void reset() noexcept;
     Type makeFunctionSet(ParseNode fn) noexcept;
@@ -69,9 +79,19 @@ private:
     size_t last(size_t index) const noexcept;
     std::string abstractFunctionSetString(Type t) const;
     std::vector<DeclareSignature> declared_funcs;
+    static std::string numTypeString(size_t rows, size_t cols);
+
+    struct CallResult{
+        Type type;
+        ParseNode instantiated;
+
+        CallResult(){}
+        CallResult(Type type, ParseNode instantiated)
+            : type(type), instantiated(instantiated) {}
+    };
 
     std::unordered_map<DeclareSignature, size_t, vectorOfIntHash> declared_func_map;
-    std::unordered_map<CallSignature, size_t, vectorOfIntHash> called_func_map;
+    std::unordered_map<CallSignature, CallResult, vectorOfIntHash> called_func_map;
 
     std::string declFunctionString(size_t i) const;
     std::string instFunctionString(const CallSignature& sig) const;
@@ -82,26 +102,56 @@ private:
         std::stack<Type> return_types;
 
     public:
-        TypeResolver(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors) noexcept;
+        StaticPass(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors, std::vector<Code::Error>& warnings) noexcept;
         void resolve();
 
     private:
-        void resolveStmt(size_t pn) noexcept;
+        ParseNode resolveStmt(size_t pn) noexcept;
         Type fillDefaultsAndInstantiate(ParseNode call_node, CallSignature sig);
-        size_t resolveExpr(size_t pn) noexcept;
+        ParseNode resolveExpr(size_t pn) noexcept;
         size_t callSite(size_t pn) noexcept;
         size_t implicitMult(size_t pn, size_t start = 0) noexcept;
-        size_t instantiateSetOfFuncs(ParseNode call_node, Type fun_group, CallSignature& sig);
-        size_t error(size_t pn, ErrorCode code = ErrorCode::TYPE_ERROR) noexcept;
+        Type instantiateSetOfFuncs(ParseNode call_node, Type fun_group, CallSignature& sig);
+        size_t error(ParseNode pn, ParseNode sel, ErrorCode code = ErrorCode::TYPE_ERROR) noexcept;
+        size_t errorType(ParseNode pn, ErrorCode code = ErrorCode::TYPE_ERROR) noexcept;
         ParseNode getFuncFromCallSig(const CallSignature& sig) const noexcept;
         ParseNode getFuncFromDeclSig(const DeclareSignature& sig) const noexcept;
+        ParseNode resolveAlg(ParseNode pn);
+        ParseNode resolveIdentity(ParseNode pn);
+        ParseNode resolveInverse(ParseNode pn);
+        ParseNode resolveLambda(ParseNode pn);
+        ParseNode resolveMatrix(ParseNode pn);
+        ParseNode resolveMult(ParseNode pn);
+        ParseNode resolveOnesMatrix(ParseNode pn);
+        ParseNode resolvePower(ParseNode pn);
+        ParseNode resolveUnaryMinus(ParseNode pn);
+        ParseNode resolveUnitVector(ParseNode pn);
+        ParseNode resolveZeroMatrix(ParseNode pn);
+        ParseNode copyChildProperties(ParseNode pn) noexcept;
+        ParseNode enforceScalar(ParseNode pn);
+        ParseNode enforceZero(ParseNode pn);
+        ParseNode enforceNaturalNumber(ParseNode pn);
+        ParseNode enforcePositiveInt(ParseNode pn);
+        static bool dimsDisagree(size_t a, size_t b) noexcept;
 
         ParseTree& parse_tree;
         SymbolTable& symbol_table;
-        std::vector<Code::Error>& errors;
-        std::vector<Type> old_val_cap;
-        std::vector<Type> old_ref_cap;
-        std::vector<Type> old_args;
+        std::vector<Error>& errors;
+        std::vector<Error>& warnings;
+
+        struct CachedInfo{
+            Type type;
+            size_t rows;
+            size_t cols;
+
+            CachedInfo() noexcept {}
+            CachedInfo(const Symbol& sym) noexcept;
+            void restore(Symbol& sym) const noexcept;
+        };
+
+        std::vector<CachedInfo> old_val_cap;
+        std::vector<CachedInfo> old_ref_cap;
+        std::vector<CachedInfo> old_args;
 };
 
 }

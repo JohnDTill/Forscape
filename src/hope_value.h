@@ -2,7 +2,6 @@
 #define HOPE_VALUE_H
 
 #include "hope_error.h"
-#include "hope_parse_tree.h"
 #include <memory>
 #include <variant>
 #include <vector>
@@ -13,23 +12,17 @@ namespace Hope {
 
 namespace Code {
 
+class ParseTree;
 typedef std::vector<std::shared_ptr<void>> Closure;
+typedef size_t ParseNode;
 
 struct Lambda{
     Closure closure;
     ParseNode def;
-    ParseNode valCap(const ParseTree& parse_tree) const noexcept{
-        return parse_tree.valCapList(def);
-    }
-    ParseNode refCap(const ParseTree& parse_tree) const noexcept{
-        return parse_tree.refCapList(def);
-    }
-    ParseNode params(const ParseTree& parse_tree) const noexcept{
-        return parse_tree.paramList(def);
-    }
-    ParseNode expr(const ParseTree& parse_tree) const noexcept{
-        return parse_tree.body(def);
-    }
+    ParseNode valCap(const ParseTree& parse_tree) const noexcept;
+    ParseNode refCap(const ParseTree& parse_tree) const noexcept;
+    ParseNode params(const ParseTree& parse_tree) const noexcept;
+    ParseNode expr(const ParseTree& parse_tree) const noexcept;
 
     Lambda(ParseNode def)
         : def(def) {}
@@ -39,21 +32,11 @@ struct Algorithm{
     Closure closure;
     ParseNode def;
 
-    ParseNode name(const ParseTree& parse_tree) const noexcept{
-        return parse_tree.algName(def);
-    }
-    ParseNode valCap(const ParseTree& parse_tree) const noexcept{
-        return parse_tree.valCapList(def);
-    }
-    ParseNode refCap(const ParseTree& parse_tree) const noexcept{
-        return parse_tree.refCapList(def);
-    }
-    ParseNode params(const ParseTree& parse_tree) const noexcept{
-        return parse_tree.paramList(def);
-    }
-    ParseNode body(const ParseTree& parse_tree) const noexcept{
-        return parse_tree.body(def);
-    }
+    ParseNode name(const ParseTree& parse_tree) const noexcept;
+    ParseNode valCap(const ParseTree& parse_tree) const noexcept;
+    ParseNode refCap(const ParseTree& parse_tree) const noexcept;
+    ParseNode params(const ParseTree& parse_tree) const noexcept;
+    ParseNode body(const ParseTree& parse_tree) const noexcept;
 
     Algorithm(ParseNode def)
         : def(def){}
@@ -69,6 +52,8 @@ typedef std::variant<
     Algorithm,
     void*
 > Value;
+
+constexpr size_t ValueSize = sizeof(Value);
 
 static const Value NIL = static_cast<void*>(nullptr);
 

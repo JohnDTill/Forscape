@@ -34,9 +34,9 @@ Selection::Selection() noexcept {}
 
 Selection::Selection(const Marker& left, const Marker& right) noexcept
     : right(right), left(left) {
-    //assert(inValidState());
+    //assert(inValidState()); //EVENTUALLY: re-enable this
     #ifndef NDEBUG
-    if(!inValidState()) std::cout << "INVALID SELECTION" << std::endl; //EVENTUALLY: eliminate invalid markers
+    //if(!inValidState()) std::cout << "INVALID SELECTION" << std::endl; //EVENTUALLY: eliminate invalid markers
     #endif
 }
 
@@ -250,6 +250,10 @@ void Selection::formatSimple(SemanticType type) const noexcept{
         tL->tags.push_back( SemanticTag(iL, type) );
 
     tL->tags.push_back( SemanticTag(iR, SEM_DEFAULT) );
+}
+
+SemanticType Selection::getFormat() const noexcept{
+    return tL->getTypeLeftOf(iL);
 }
 
 #ifdef QT_CORE_LIB

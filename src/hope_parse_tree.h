@@ -43,8 +43,15 @@ public:
     void setRefList(ParseNode fn, ParseNode list) noexcept;
     ParseNode paramList(ParseNode node) const noexcept;
     ParseNode body(ParseNode node) const noexcept;
+    void setBody(ParseNode node, ParseNode body) noexcept;
     ParseNode algName(ParseNode node) const noexcept;
     size_t valListSize(ParseNode node) const noexcept;
+    ParseNode unitVectorElem(ParseNode node) const noexcept;
+    void setUnitVectorElem(ParseNode node, ParseNode val) noexcept;
+    ParseNode unitVectorRows(ParseNode node) const noexcept;
+    void setUnitVectorRows(ParseNode node, ParseNode val) noexcept;
+    ParseNode unitVectorCols(ParseNode node) const noexcept;
+    void setUnitVectorCols(ParseNode node, ParseNode val) noexcept;
     std::string str(ParseNode node) const;
     ParseNode addTerminal(Op type, const Typeset::Selection& c);
     ParseNode addUnary(Op type, const Typeset::Selection& c, ParseNode child);
@@ -58,9 +65,23 @@ public:
     ParseNode addQuadary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D);
     ParseNode addQuadary(Op type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C, ParseNode D);
     ParseNode addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E);
+    ParseNode clone(ParseNode pn);
+    ParseNode getZero(const Typeset::Selection& sel);
+    ParseNode getOne(const Typeset::Selection& sel);
+    bool definitelyScalar(ParseNode pn) const noexcept;
+    bool definitelyNotScalar(ParseNode pn) const noexcept;
+    bool definitelyMatrix(ParseNode pn) const noexcept;
+    bool definitelyR3(ParseNode pn) const noexcept;
+    bool nonSquare(ParseNode pn) const noexcept;
+    bool maybeR3(ParseNode pn) const noexcept;
+    void setScalar(ParseNode pn) noexcept;
+    void setR3(ParseNode pn) noexcept;
+    void copyDims(ParseNode dest, ParseNode src) noexcept;
+    void transposeDims(ParseNode dest, ParseNode src) noexcept;
 
     #ifndef NDEBUG
     std::string toGraphviz() const;
+    std::string toGraphviz(ParseNode pn) const;
     #endif
 
     size_t root;
@@ -88,6 +109,9 @@ public:
 
     NaryBuilder naryBuilder(Op type);
 
+    void patchClones() noexcept;
+    void patchClonedTypes() noexcept;
+
 private:
     static constexpr size_t UNITIALIZED = std::numeric_limits<size_t>::max();
     static constexpr size_t LEFT_MARKER_OFFSET = SELECTION_OFFSET + 2;
@@ -98,6 +122,8 @@ private:
     void graphvizHelper(std::string& src, ParseNode n, size_t& size) const;
     void writeType(std::string& src, ParseNode n) const;
     #endif
+
+    std::vector<std::pair<ParseNode, ParseNode>> cloned_vars;
 };
 
 }
