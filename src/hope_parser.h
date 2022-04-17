@@ -65,6 +65,8 @@ private:
     ParseNode call(const ParseNode& id) noexcept;
     ParseNode lambda(const ParseNode& params) noexcept;
     ParseNode fraction() noexcept;
+    ParseNode fractionDeriv(const Typeset::Selection& c, Op type, TokenType tt) noexcept;
+    ParseNode fractionDefault(const Typeset::Selection& c) noexcept;
     ParseNode binomial() noexcept;
     ParseNode superscript(const ParseNode& lhs) noexcept;
     ParseNode subscript(const ParseNode& lhs, const Typeset::Marker& right) noexcept;

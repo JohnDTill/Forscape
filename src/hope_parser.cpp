@@ -804,6 +804,42 @@ ParseNode Parser::fraction() noexcept{
     Typeset::Selection c = selection();
     advance();
 
+    switch (currentType()) {
+        case DOUBLESTRUCK_D: return fractionDeriv(c, OP_DERIVATIVE, DOUBLESTRUCK_D);
+        case PARTIAL: return fractionDeriv(c, OP_PARTIAL, PARTIAL);
+        default: return fractionDefault(c);
+    }
+}
+
+Parser::ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, TokenType tt) noexcept{
+    advance();
+    if(match(ARGCLOSE)){
+        consume(tt);
+        if(!errors.empty()) return error_node;
+        ParseNode id = isolatedIdentifier();
+        if(!errors.empty()) return error_node;
+        consume(ARGCLOSE);
+        if(!errors.empty()) return error_node;
+        ParseNode expr = multiplication();
+        if(!errors.empty()) return error_node;
+        Typeset::Selection sel(c.left, rMarkPrev());
+        return parse_tree.addBinary(type, sel, expr, id);
+    }else{
+        ParseNode expr = multiplication();
+        if(!errors.empty()) return error_node;
+        consume(ARGCLOSE);
+        if(!errors.empty()) return error_node;
+        consume(tt);
+        if(!errors.empty()) return error_node;
+        ParseNode id = isolatedIdentifier();
+        if(!errors.empty()) return error_node;
+        consume(ARGCLOSE);
+        if(!errors.empty()) return error_node;
+        return parse_tree.addBinary(type, c, expr, id);
+    }
+}
+
+Parser::ParseNode Parser::fractionDefault(const Typeset::Selection& c) noexcept{
     ParseNode num = expression();
     consume(ARGCLOSE);
     ParseNode den = expression();
@@ -1187,6 +1223,7 @@ ParseNode Parser::terminalAndAdvance(size_t type) noexcept{
 }
 
 const Typeset::Selection Parser::selection() const noexcept{
+    if(tokens[index].type == ARGCLOSE) return Typeset::Selection(tokens[index].sel.left, tokens[index].sel.left);
     return tokens[index].sel;
 }
 

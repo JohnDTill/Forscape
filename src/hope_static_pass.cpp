@@ -345,6 +345,17 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
 
             return pn;
         }
+        case OP_DERIVATIVE:
+        case OP_PARTIAL:{
+            parse_tree.setType(pn, NUMERIC);
+            ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
+            parse_tree.setArg<0>(pn, lhs);
+            if(parse_tree.getType(lhs) != NUMERIC) return error(pn, lhs);
+            ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
+            parse_tree.setArg<1>(pn, rhs);
+            if(parse_tree.getType(rhs) != NUMERIC) return error(pn, rhs);
+            return error(pn, pn, DERIVATIVE);
+        }
         case OP_SLICE:
             for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
                 ParseNode arg = resolveExpr(parse_tree.arg(pn, i));
@@ -403,13 +414,13 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
         case OP_MODULUS:
         case OP_NORM_p:
         case OP_SUBTRACTION:{
+            parse_tree.setType(pn, NUMERIC);
             ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
             parse_tree.setArg<0>(pn, lhs);
             if(parse_tree.getType(lhs) != NUMERIC) return error(pn, lhs);
             ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
             parse_tree.setArg<1>(pn, rhs);
             if(parse_tree.getType(rhs) != NUMERIC) return error(pn, rhs);
-            parse_tree.setType(pn, NUMERIC);
             return pn;
         }
         case OP_LENGTH:{
