@@ -632,7 +632,7 @@ size_t StaticPass::callSite(size_t pn) noexcept{
             if(parse_tree.getType(rhs) == NUMERIC){
                 //parse_tree.setOp(pn, OP_MULTIPLICATION);
                 //return resolveMult(pn);
-                //DO THIS - broken
+                //EVENTUALLY: need to create a new node since the call isn't cloned
                 return resolveMult(parse_tree.addBinary(OP_MULTIPLICATION, call_expr, rhs));
             }else{
                 return error(pn, rhs);
@@ -675,13 +675,8 @@ size_t StaticPass::implicitMult(size_t pn, size_t start) noexcept{
         ParseNode rhs = implicitMult(pn, start+1);
         Type tl = parse_tree.getType(rhs);
         if(tl != NUMERIC) return error(pn, rhs);
-        //return resolveExpr(parse_tree.addBinary(OP_MULTIPLICATION, lhs, rhs));
-        //parse_tree.setType(pn, NUMERIC);
-        //return pn;
-        //DO THIS - fix this mess
         ParseNode mult = parse_tree.addBinary(OP_MULTIPLICATION, lhs, rhs);
-        parse_tree.setType(mult, NUMERIC);
-        return mult;
+        return resolveMult(mult);
     }else if(tl == UNINITIALISED){
         return error(pn, lhs, CALL_BEFORE_DEFINE);
     }else if(!isAbstractFunctionGroup(tl)){
@@ -1297,12 +1292,6 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
 
         auto dynamic_key = std::make_pair(parse_tree.body(abstract_fn), call_node);
         instantiation_lookup[dynamic_key] = lookup->second.instantiated;
-
-        ParseNode instantiated_fn = lookup->second.instantiated;
-        if(instantiated_fn != ParseTree::EMPTY){
-            //DO THIS - is necessary?
-            instantiation_lookup[std::make_pair(parse_tree.body(instantiated_fn), call_node)] = instantiated_fn;
-        }
 
         return return_type;
     }
