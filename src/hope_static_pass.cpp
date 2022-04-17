@@ -1320,9 +1320,8 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
         for(size_t i = 0; i < N_vals; i++){
             size_t sym_id = scope.sym_begin + i;
             Symbol& sym = symbol_table.symbols[sym_id];
-            old_val_cap.push_back(sym.type);
-            sym.type = dec[1+type_index];
-            type_index++;
+            old_val_cap.push_back(sym);
+            sym.type = dec[1+type_index++];
             if(sym.type == NUMERIC){
                 sym.rows = dec[1+type_index++];
                 sym.cols = dec[1+type_index++];
@@ -1330,20 +1329,17 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
         }
     }
 
-    size_t j = 0;
     for(size_t i = 0; i < parse_tree.getNumArgs(ref_list); i++){
         ParseNode ref = parse_tree.arg(ref_list, i);
         if(parse_tree.getOp(ref) != OP_READ_UPVALUE) continue;
         size_t sym_id = parse_tree.getFlag(ref);
         Symbol& sym = symbol_table.symbols[sym_id];
-        old_ref_cap.push_back(sym.type);
-        sym.type = dec[1+type_index];
-        type_index++;
+        old_ref_cap.push_back(sym);
+        sym.type = dec[1+type_index++];
         if(sym.type == NUMERIC){
             sym.rows = dec[1+type_index++];
             sym.cols = dec[1+type_index++];
         }
-        j++;
     }
 
     type_index = 0;
@@ -1352,7 +1348,7 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
         if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
         size_t sym_id = parse_tree.getFlag(param);
         Symbol& sym = symbol_table.symbols[sym_id];
-        old_args.push_back(sym.type);
+        old_args.push_back(sym);
         sym.type = fn[1+type_index++];
         parse_tree.setType(param, sym.type);
         if(sym.type == NUMERIC){
@@ -1412,17 +1408,17 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
         ParseNode val = parse_tree.arg(val_list, i);
         size_t sym_id = parse_tree.getFlag(val);
         Symbol& sym = symbol_table.symbols[sym_id];
-        sym.type = old_val_cap[i+old_val_cap_index];
+        old_val_cap[i+old_val_cap_index].restore(sym);
     }
     old_val_cap.resize(old_val_cap_index);
 
-    j = 0;
+    size_t j = 0;
     for(size_t i = 0; i < parse_tree.getNumArgs(ref_list); i++){
         ParseNode ref = parse_tree.arg(ref_list, i);
         if(parse_tree.getOp(ref) != OP_READ_UPVALUE) continue;
         size_t sym_id = parse_tree.getFlag(ref);
         Symbol& sym = symbol_table.symbols[sym_id];
-        sym.type = old_ref_cap[j+old_ref_cap_index];
+        old_ref_cap[j+old_ref_cap_index].restore(sym);
         j++;
     }
     old_ref_cap.resize(old_ref_cap_index);
@@ -1432,7 +1428,7 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
         if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
         size_t sym_id = parse_tree.getFlag(param);
         Symbol& sym = symbol_table.symbols[sym_id];
-        sym.type = old_args[i+old_args_index];
+        old_args[i+old_args_index].restore(sym);
     }
     old_args.resize(old_args_index);
 
@@ -1462,50 +1458,9 @@ std::string StaticPass::typeString(Type t) const{
     }
 }
 
-static void toSuperscript(const std::string& str, std::string& out){
-    for(size_t i = 0; i < str.size(); i++){
-        switch (str[i]) {
-            case '0': out += "⁰"; break;
-            case '1': out += "¹"; break;
-            case '2': out += "²"; break;
-            case '3': out += "³"; break;
-            case '4': out += "⁴"; break;
-            case '5': out += "⁵"; break;
-            case '6': out += "⁶"; break;
-            case '7': out += "⁷"; break;
-            case '8': out += "⁸"; break;
-            case '9': out += "⁹"; break;
-            default: assert(false);
-        }
-    }
-}
-
 std::string StaticPass::typeString(const Symbol& sym) const{
-    if(sym.type == NUMERIC){
-        std::string str = "ℝ";
-        if(sym.rows == 1 && sym.cols == 1) return str;
-
-        if(sym.rows == UNKNOWN_SIZE){
-            str += "ⁿ";
-        }else{
-            std::string dim = std::to_string(sym.rows);
-            toSuperscript(dim, str);
-        }
-
-        if(sym.cols == 1) return str;
-
-        str += "˟";
-        if(sym.cols == UNKNOWN_SIZE){
-            str += "ᵐ";
-        }else{
-            std::string dim = std::to_string(sym.cols);
-            toSuperscript(dim, str);
-        }
-
-        return str;
-    }else{
-        return typeString(sym.type);
-    }
+    if(sym.type == NUMERIC) return numTypeString(sym.rows, sym.cols);
+    else return typeString(sym.type);
 }
 
 Type StaticPass::makeFunctionSet(ParseNode pn) noexcept{
@@ -1609,6 +1564,48 @@ std::string StaticPass::abstractFunctionSetString(Type t) const{
     return str;
 }
 
+static void toSuperscript(const std::string& str, std::string& out){
+    for(size_t i = 0; i < str.size(); i++){
+        switch (str[i]) {
+            case '0': out += "⁰"; break;
+            case '1': out += "¹"; break;
+            case '2': out += "²"; break;
+            case '3': out += "³"; break;
+            case '4': out += "⁴"; break;
+            case '5': out += "⁵"; break;
+            case '6': out += "⁶"; break;
+            case '7': out += "⁷"; break;
+            case '8': out += "⁸"; break;
+            case '9': out += "⁹"; break;
+            default: assert(false);
+        }
+    }
+}
+
+std::string StaticPass::numTypeString(size_t rows, size_t cols){
+    std::string str = "ℝ";
+    if(rows == 1 && cols == 1) return str;
+
+    if(rows == UNKNOWN_SIZE){
+        str += "ⁿ";
+    }else{
+        std::string dim = std::to_string(rows);
+        toSuperscript(dim, str);
+    }
+
+    if(cols == 1) return str;
+
+    str += "˟";
+    if(cols == UNKNOWN_SIZE){
+        str += "ᵐ";
+    }else{
+        std::string dim = std::to_string(cols);
+        toSuperscript(dim, str);
+    }
+
+    return str;
+}
+
 std::string StaticPass::declFunctionString(size_t i) const{
     assert(i < declared_funcs.size());
     const DeclareSignature& fn = declared_funcs[i];
@@ -1622,10 +1619,17 @@ std::string StaticPass::declFunctionString(size_t i) const{
                       : parse_tree.str(parse_tree.algName(pn));
     if(fn.size() >= 2){
         str += '[';
-        str += typeString(fn[1]);
-        for(size_t i = 2; i < fn.size(); i++){
+        if(fn[1] == NUMERIC) str += numTypeString(fn[2], fn[3]);
+        else str += typeString(fn[1]);
+
+        for(size_t i = 2+2*(fn[1] == NUMERIC); i < fn.size(); i++){
             str += ", ";
-            str += typeString(fn[i]);
+            if(fn[i] == NUMERIC){
+                str += numTypeString(fn[i+1], fn[i+2]);
+                i += 2;
+            }else{
+                str += typeString(fn[i]);
+            }
         }
         str += ']';
     }
@@ -1648,6 +1652,15 @@ std::string StaticPass::instFunctionString(const CallSignature& sig) const{
     str += ')';
 
     return str;
+}
+
+StaticPass::CachedInfo::CachedInfo(const Symbol& sym) noexcept
+    : type(sym.type), rows(sym.rows), cols(sym.cols){}
+
+void StaticPass::CachedInfo::restore(Symbol& sym) const noexcept{
+    sym.type = type;
+    sym.rows = rows;
+    sym.cols = cols;
 }
 
 }

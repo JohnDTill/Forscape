@@ -79,6 +79,7 @@ private:
     size_t last(size_t index) const noexcept;
     std::string abstractFunctionSetString(Type t) const;
     std::vector<DeclareSignature> declared_funcs;
+    static std::string numTypeString(size_t rows, size_t cols);
 
     struct CallResult{
         Type type;
@@ -137,9 +138,20 @@ private:
         SymbolTable& symbol_table;
         std::vector<Error>& errors;
         std::vector<Error>& warnings;
-        std::vector<Type> old_val_cap;
-        std::vector<Type> old_ref_cap;
-        std::vector<Type> old_args;
+
+        struct CachedInfo{
+            Type type;
+            size_t rows;
+            size_t cols;
+
+            CachedInfo() noexcept {}
+            CachedInfo(const Symbol& sym) noexcept;
+            void restore(Symbol& sym) const noexcept;
+        };
+
+        std::vector<CachedInfo> old_val_cap;
+        std::vector<CachedInfo> old_ref_cap;
+        std::vector<CachedInfo> old_args;
 };
 
 }
