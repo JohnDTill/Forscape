@@ -995,23 +995,14 @@ Value Interpreter::pow(const Eigen::MatrixXd& a, double b, ParseNode pn){
 }
 
 Value Interpreter::unitVector(ParseNode pn){
-    Value elem = interpretExpr(parse_tree.arg(pn, 0));
-    if(elem.index() != double_index){
-        error(DIMENSION_MISMATCH, parse_tree.arg(pn, 0));
-        return NIL;
-    }
+    Value elem = interpretExpr(parse_tree.unitVectorElem(pn));
+    assert(elem.index() == double_index);
 
-    Value rows = interpretExpr(parse_tree.arg(pn, 1));
-    if(rows.index() != double_index){
-        error(DIMENSION_MISMATCH, parse_tree.arg(pn, 1));
-        return NIL;
-    }
+    Value rows = interpretExpr(parse_tree.unitVectorRows(pn));
+    assert(rows.index() == double_index);
 
-    Value cols = interpretExpr(parse_tree.arg(pn, 2));
-    if(cols.index() != double_index){
-        error(DIMENSION_MISMATCH, parse_tree.arg(pn, 2));
-        return NIL;
-    }
+    Value cols = interpretExpr(parse_tree.unitVectorCols(pn));
+    assert(cols.index() == double_index);
 
     Eigen::Index r = std::get<double>(rows);
     Eigen::Index c = std::get<double>(cols);

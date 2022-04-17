@@ -123,6 +123,30 @@ size_t ParseTree::valListSize(ParseNode node) const noexcept{
     return node == EMPTY ? 0 : getNumArgs(node);
 }
 
+ParseNode ParseTree::unitVectorElem(ParseNode node) const noexcept{
+    return arg<0>(node);
+}
+
+void ParseTree::setUnitVectorElem(ParseNode node, ParseNode val) noexcept{
+    setArg<0>(node, val);
+}
+
+ParseNode ParseTree::unitVectorRows(ParseNode node) const noexcept{
+    return arg<1>(node);
+}
+
+void ParseTree::setUnitVectorRows(ParseNode node, ParseNode val) noexcept{
+    setArg<1>(node, val);
+}
+
+ParseNode ParseTree::unitVectorCols(ParseNode node) const noexcept{
+    return arg<2>(node);
+}
+
+void ParseTree::setUnitVectorCols(ParseNode node, ParseNode val) noexcept{
+    setArg<2>(node, val);
+}
+
 std::string ParseTree::str(ParseNode node) const{
     return getSelection(node).str();
 }
@@ -331,6 +355,22 @@ ParseNode ParseTree::clone(ParseNode pn){
     }
 
     return cloned;
+}
+
+ParseNode ParseTree::getZero(const Typeset::Selection& sel){
+    ParseNode pn = addTerminal(OP_INTEGER_LITERAL, sel);
+    setFlag(pn, 0.0);
+    setScalar(pn);
+
+    return pn;
+}
+
+ParseNode ParseTree::getOne(const Typeset::Selection& sel){
+    ParseNode pn = addTerminal(OP_INTEGER_LITERAL, sel);
+    setFlag(pn, 1.0);
+    setScalar(pn);
+
+    return pn;
 }
 
 bool ParseTree::definitelyScalar(ParseNode pn) const noexcept{

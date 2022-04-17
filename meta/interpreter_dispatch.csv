@@ -138,3 +138,5 @@ LINEAR_SOLVE,MatrixXd,double,,a.inverse()*b,,,,a.cols()!=a.rows()=>DIMENSION_MIS
 LINEAR_SOLVE,MatrixXd,MatrixXd,,a.colPivHouseholderQr().solve(b),,,,(a.cols()!=a.rows()) | (a.cols()!=b.rows())=>DIMENSION_MISMATCH
 NORM_SQUARED,double,,,a*a,,,,
 NORM_SQUARED,MatrixXd,,,a.squaredNorm(),,,,((a.rows()>1) & (a.cols()>1))=>DIMENSION_MISMATCH
+CHECK_SCALAR,double,,,a,,,,
+CHECK_SCALAR,MatrixXd,,,"error(EXPECT_SCALAR, pn)",,,,

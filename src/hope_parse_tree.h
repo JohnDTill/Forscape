@@ -46,6 +46,12 @@ public:
     void setBody(ParseNode node, ParseNode body) noexcept;
     ParseNode algName(ParseNode node) const noexcept;
     size_t valListSize(ParseNode node) const noexcept;
+    ParseNode unitVectorElem(ParseNode node) const noexcept;
+    void setUnitVectorElem(ParseNode node, ParseNode val) noexcept;
+    ParseNode unitVectorRows(ParseNode node) const noexcept;
+    void setUnitVectorRows(ParseNode node, ParseNode val) noexcept;
+    ParseNode unitVectorCols(ParseNode node) const noexcept;
+    void setUnitVectorCols(ParseNode node, ParseNode val) noexcept;
     std::string str(ParseNode node) const;
     ParseNode addTerminal(Op type, const Typeset::Selection& c);
     ParseNode addUnary(Op type, const Typeset::Selection& c, ParseNode child);
@@ -60,6 +66,8 @@ public:
     ParseNode addQuadary(Op type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C, ParseNode D);
     ParseNode addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E);
     ParseNode clone(ParseNode pn);
+    ParseNode getZero(const Typeset::Selection& sel);
+    ParseNode getOne(const Typeset::Selection& sel);
     bool definitelyScalar(ParseNode pn) const noexcept;
     bool definitelyNotScalar(ParseNode pn) const noexcept;
     bool definitelyMatrix(ParseNode pn) const noexcept;

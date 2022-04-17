@@ -362,7 +362,6 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
         case OP_MULTIPLICATION: return resolveMult(pn);
         case OP_SUBSCRIPT_ACCESS:
         case OP_ELEMENTWISE_ASSIGNMENT:
-        case OP_UNIT_VECTOR:
             for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
                 ParseNode arg = resolveExpr(parse_tree.arg(pn, i));
                 parse_tree.setArg(pn, i, arg);
@@ -370,14 +369,29 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
             }
             parse_tree.setType(pn, NUMERIC);
             return pn;
+        case OP_IDENTITY_MATRIX: return resolveIdentity(pn);
+        case OP_ONES_MATRIX: return resolveOnesMatrix(pn);
+        case OP_UNIT_VECTOR: return resolveUnitVector(pn);
+        case OP_ZERO_MATRIX: return resolveZeroMatrix(pn);
         case OP_GROUP_BRACKET:
         case OP_GROUP_PAREN:{
             ParseNode expr = resolveExpr(parse_tree.child(pn));
             parse_tree.copyDims(pn, expr);
             return expr;
         }
+        case OP_PROXY:
+            return resolveExpr(parse_tree.getFlag(pn));
         case OP_POWER: return resolvePower(pn);
         case OP_ARCTANGENT2:
+        case OP_ROOT:
+        {
+            parse_tree.setScalar(pn);
+            ParseNode lhs = enforceScalar(parse_tree.lhs(pn));
+            parse_tree.setArg<0>(pn, lhs);
+            ParseNode rhs = enforceScalar(parse_tree.rhs(pn));
+            parse_tree.setArg<1>(pn, rhs);
+            return pn;
+        }
         case OP_BACKSLASH:
         case OP_BINOMIAL:
         case OP_CROSS:
@@ -385,14 +399,10 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
         case OP_DOT:
         case OP_FRACTION:
         case OP_FORWARDSLASH:
-        case OP_IDENTITY_MATRIX:
         case OP_LOGARITHM_BASE:
         case OP_MODULUS:
         case OP_NORM_p:
-        case OP_ONES_MATRIX:
-        case OP_ROOT:
-        case OP_SUBTRACTION:
-        case OP_ZERO_MATRIX:{
+        case OP_SUBTRACTION:{
             ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
             parse_tree.setArg<0>(pn, lhs);
             if(parse_tree.getType(lhs) != NUMERIC) return error(pn, lhs);
@@ -413,12 +423,9 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
         case OP_ARCCOTANGENT:
         case OP_ARCSINE:
         case OP_ARCTANGENT:
-        case OP_BIJECTIVE_MAPPING:
         case OP_COMP_ERR_FUNC:
         case OP_COSINE:
-        case OP_DAGGER:
         case OP_ERROR_FUNCTION:
-        case OP_EXP:
         case OP_FACTORIAL:
         case OP_HYPERBOLIC_ARCCOSECANT:
         case OP_HYPERBOLIC_ARCCOSINE:
@@ -427,17 +434,27 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
         case OP_HYPERBOLIC_ARCSINE:
         case OP_HYPERBOLIC_ARCTANGENT:
         case OP_HYPERBOLIC_COSECANT:
-        case OP_LOGARITHM:
-        case OP_NATURAL_LOG:
-        case OP_NORM:
-        case OP_NORM_1:
-        case OP_NORM_INFTY:
         case OP_SINE:
         case OP_SQRT:
         case OP_TANGENT:
         {
             parse_tree.setScalar(pn);
+            ParseNode child = enforceScalar(parse_tree.child(pn));
+            parse_tree.setArg<0>(pn, child);
+            return pn;
+        }
+        case OP_BIJECTIVE_MAPPING:
+        case OP_DAGGER:
+        case OP_EXP:
+        case OP_LOGARITHM:
+        case OP_NATURAL_LOG:
+        case OP_NORM:
+        case OP_NORM_1:
+        case OP_NORM_INFTY:
+        {
+            parse_tree.setScalar(pn);
             ParseNode child = resolveExpr(parse_tree.child(pn));
+            parse_tree.setArg<0>(pn, child);
             if(parse_tree.getType(child) != NUMERIC) return error(pn, child);
             return pn;
         }
@@ -474,34 +491,32 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
             return pn;
         }
         case OP_LOGICAL_NOT:{
+            parse_tree.setType(pn, BOOLEAN);
             ParseNode child = resolveExpr(parse_tree.child(pn));
             parse_tree.setArg<0>(pn, child);
             if(parse_tree.getType(child) != BOOLEAN) return error(pn, child);
-            parse_tree.setType(pn, BOOLEAN);
             return pn;
         }
         case OP_LOGICAL_AND:
         case OP_LOGICAL_OR:{
+            parse_tree.setType(pn, BOOLEAN);
             ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
             parse_tree.setArg<0>(pn, lhs);
             if(parse_tree.getType(lhs) != BOOLEAN) return error(pn, lhs);
             ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
             parse_tree.setArg<1>(pn, rhs);
             if(parse_tree.getType(rhs) != BOOLEAN) return error(pn, rhs);
-            parse_tree.setType(pn, BOOLEAN);
             return pn;
         }
         case OP_GREATER:
         case OP_GREATER_EQUAL:
         case OP_LESS:
         case OP_LESS_EQUAL:{
-            ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
-            parse_tree.setArg<0>(pn, lhs);
-            if(parse_tree.getType(lhs) != NUMERIC) return error(pn, lhs);
-            ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
-            parse_tree.setArg<1>(pn, rhs);
-            if(parse_tree.getType(rhs) != NUMERIC) return error(pn, rhs);
             parse_tree.setType(pn, BOOLEAN);
+            ParseNode lhs = enforceScalar(parse_tree.lhs(pn));
+            parse_tree.setArg<0>(pn, lhs);
+            ParseNode rhs = enforceScalar(parse_tree.rhs(pn));
+            parse_tree.setArg<1>(pn, rhs);
             return pn;
         }
         case OP_CASES:{
@@ -540,12 +555,12 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
         }
         case OP_EQUAL:
         case OP_NOT_EQUAL:{
+            parse_tree.setType(pn, BOOLEAN);
             ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
             parse_tree.setArg<0>(pn, lhs);
             ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
             parse_tree.setArg<1>(pn, rhs);
             if(parse_tree.getType(lhs) != parse_tree.getType(rhs)) return error(pn, pn);
-            parse_tree.setType(pn, BOOLEAN);
             return pn;
         }
         case OP_DECIMAL_LITERAL:
@@ -563,6 +578,8 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
         case OP_PLANCK_CONSTANT:
         case OP_REDUCED_PLANCK_CONSTANT:
         case OP_STEFAN_BOLTZMANN_CONSTANT:
+            parse_tree.setScalar(pn);
+            return pn;
         case OP_IDENTITY_AUTOSIZE:
         case OP_GRAVITY:
             parse_tree.setType(pn, NUMERIC);
@@ -574,17 +591,17 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
         case OP_STRING:
             parse_tree.setType(pn, STRING);
             return pn;
-        case OP_PROXY:
-            return resolveExpr(parse_tree.getFlag(pn));
         case OP_INVERT:
         case OP_LINEAR_SOLVE:
             return pn;
         case OP_NORM_SQUARED:
             parse_tree.setScalar(pn);
             return pn;
+        case OP_CHECK_SCALAR:
+            return pn;
         default:
             assert(false);
-            return BOOLEAN;
+            return pn;
     }
 }
 
@@ -733,7 +750,7 @@ Type StaticPass::instantiateSetOfFuncs(ParseNode call_node, Type fun_group, Call
 size_t StaticPass::error(ParseNode pn, ParseNode sel, ErrorCode code) noexcept{
     if(retry_at_recursion) parse_tree.setType(pn, RECURSIVE_CYCLE);
     else if(errors.empty()){
-        assert(false);
+        //assert(false); //DO THIS - delete
         errors.push_back(Error(parse_tree.getSelection(sel), code));
     }
     return pn;
@@ -807,6 +824,33 @@ ParseNode StaticPass::resolveAlg(ParseNode pn){
     return pn;
 }
 
+ParseNode StaticPass::resolveIdentity(ParseNode pn){
+    parse_tree.setType(pn, NUMERIC);
+
+    ParseNode rows = enforceScalar(parse_tree.arg<0>(pn));
+    parse_tree.setArg<0>(pn, rows);
+    ParseNode cols = enforceScalar(parse_tree.arg<1>(pn));
+    parse_tree.setArg<1>(pn, cols);
+
+    if(parse_tree.getOp(rows) == OP_INTEGER_LITERAL || parse_tree.getOp(rows) == OP_DECIMAL_LITERAL){
+        double r = parse_tree.getFlagAsDouble(rows);
+        if(r < 1) return error(pn, rows, DIMENSION_MISMATCH);
+        parse_tree.setRows(pn, r);
+    }
+
+    if(parse_tree.getOp(cols) == OP_INTEGER_LITERAL || parse_tree.getOp(cols) == OP_DECIMAL_LITERAL){
+        double c = parse_tree.getFlagAsDouble(cols);
+        if(c < 1) return error(pn, cols, DIMENSION_MISMATCH);
+        parse_tree.setCols(pn, c);
+    }
+
+    if(parse_tree.definitelyScalar(pn)) return parse_tree.getOne(parse_tree.getSelection(pn));
+
+    //DO THIS - keep going
+
+    return pn;
+}
+
 ParseNode StaticPass::resolveInverse(ParseNode pn){
     ParseNode child = parse_tree.child(pn);
     if(dimsDisagree(parse_tree.getRows(child), parse_tree.getCols(child))) return error(pn, pn, DIMENSION_MISMATCH);
@@ -876,10 +920,9 @@ ParseNode StaticPass::resolveMatrix(ParseNode pn){
     size_t typeset_cols = nargs/typeset_rows;
     assert(typeset_cols*typeset_rows == nargs);
 
-    //EVENTUALLY: break nested allocation
-    std::vector<size_t> elem_cols; elem_cols.resize(typeset_cols);
-    std::vector<size_t> elem_rows; elem_rows.resize(typeset_rows);
-    std::vector<ParseNode> elements; elements.resize(nargs);
+    static std::vector<size_t> elem_cols; elem_cols.resize(typeset_cols);
+    static std::vector<size_t> elem_rows; elem_rows.resize(typeset_rows);
+    static std::vector<ParseNode> elements; elements.resize(nargs);
 
     size_t curr = 0;
     for(size_t i = 0; i < typeset_rows; i++){
@@ -944,6 +987,33 @@ ParseNode StaticPass::resolveMult(ParseNode pn){
         parse_tree.setArg(pn, 0, parse_tree.child(lhs));
         parse_tree.setOp(pn, OP_LINEAR_SOLVE);
     }
+
+    return pn;
+}
+
+ParseNode StaticPass::resolveOnesMatrix(ParseNode pn){
+    parse_tree.setType(pn, NUMERIC);
+
+    ParseNode rows = enforceScalar(parse_tree.arg<0>(pn));
+    parse_tree.setArg<0>(pn, rows);
+    ParseNode cols = enforceScalar(parse_tree.arg<1>(pn));
+    parse_tree.setArg<1>(pn, cols);
+
+    if(parse_tree.getOp(rows) == OP_INTEGER_LITERAL || parse_tree.getOp(rows) == OP_DECIMAL_LITERAL){
+        double r = parse_tree.getFlagAsDouble(rows);
+        if(r < 1) return error(pn, rows, DIMENSION_MISMATCH);
+        parse_tree.setRows(pn, r);
+    }
+
+    if(parse_tree.getOp(cols) == OP_INTEGER_LITERAL || parse_tree.getOp(cols) == OP_DECIMAL_LITERAL){
+        double c = parse_tree.getFlagAsDouble(cols);
+        if(c < 1) return error(pn, cols, DIMENSION_MISMATCH);
+        parse_tree.setCols(pn, c);
+    }
+
+    if(parse_tree.definitelyScalar(pn)) return parse_tree.getOne(parse_tree.getSelection(pn));
+
+    //DO THIS - keep going
 
     return pn;
 }
@@ -1016,6 +1086,60 @@ ParseNode StaticPass::resolveUnaryMinus(ParseNode pn){
     }
 }
 
+ParseNode StaticPass::resolveUnitVector(ParseNode pn){
+    parse_tree.setType(pn, NUMERIC);
+
+    ParseNode elem = enforceScalar(parse_tree.unitVectorElem(pn));
+    parse_tree.setUnitVectorElem(pn, elem);
+    ParseNode rows = enforceScalar(parse_tree.unitVectorRows(pn));
+    parse_tree.setUnitVectorRows(pn, rows);
+    ParseNode cols = enforceScalar(parse_tree.unitVectorCols(pn));
+    parse_tree.setUnitVectorCols(pn, cols);
+
+    if(parse_tree.getOp(rows) == OP_INTEGER_LITERAL || parse_tree.getOp(rows) == OP_DECIMAL_LITERAL){
+        double r = parse_tree.getFlagAsDouble(rows);
+        if(r < 1) return error(pn, rows, DIMENSION_MISMATCH);
+        parse_tree.setRows(pn, r);
+    }
+
+    if(parse_tree.getOp(cols) == OP_INTEGER_LITERAL || parse_tree.getOp(cols) == OP_DECIMAL_LITERAL){
+        double c = parse_tree.getFlagAsDouble(cols);
+        if(c < 1) return error(pn, cols, DIMENSION_MISMATCH);
+        parse_tree.setCols(pn, c);
+    }
+
+    //DO THIS - keep going
+
+    return pn;
+}
+
+ParseNode StaticPass::resolveZeroMatrix(ParseNode pn){
+    parse_tree.setType(pn, NUMERIC);
+
+    ParseNode rows = enforceScalar(parse_tree.arg<0>(pn));
+    parse_tree.setArg<0>(pn, rows);
+    ParseNode cols = enforceScalar(parse_tree.arg<1>(pn));
+    parse_tree.setArg<1>(pn, cols);
+
+    if(parse_tree.getOp(rows) == OP_INTEGER_LITERAL || parse_tree.getOp(rows) == OP_DECIMAL_LITERAL){
+        double r = parse_tree.getFlagAsDouble(rows);
+        if(r < 1) return error(pn, rows, DIMENSION_MISMATCH);
+        parse_tree.setRows(pn, r);
+    }
+
+    if(parse_tree.getOp(cols) == OP_INTEGER_LITERAL || parse_tree.getOp(cols) == OP_DECIMAL_LITERAL){
+        double c = parse_tree.getFlagAsDouble(cols);
+        if(c < 1) return error(pn, cols, DIMENSION_MISMATCH);
+        parse_tree.setCols(pn, c);
+    }
+
+    if(parse_tree.definitelyScalar(pn)) return parse_tree.getZero(parse_tree.getSelection(pn));
+
+    //DO THIS - keep going
+
+    return pn;
+}
+
 ParseNode StaticPass::copyChildProperties(ParseNode pn) noexcept{
     ParseNode child = parse_tree.child(pn);
     parse_tree.setRows(pn, parse_tree.getRows(child));
@@ -1023,6 +1147,21 @@ ParseNode StaticPass::copyChildProperties(ParseNode pn) noexcept{
     parse_tree.setValue(pn, parse_tree.getValue(child));
 
     return child;
+}
+
+ParseNode StaticPass::enforceScalar(ParseNode pn){
+    pn = resolveExpr(pn);
+
+    if(parse_tree.getType(pn) != NUMERIC)
+        return error(pn, pn, TYPE_ERROR);
+    if(parse_tree.getRows(pn) > 1 || parse_tree.getCols(pn) > 1)
+        return error(pn, pn, EXPECT_SCALAR);
+    if(parse_tree.getRows(pn) == UNKNOWN_SIZE || parse_tree.getCols(pn) == UNKNOWN_SIZE){
+        pn = parse_tree.addUnary(OP_CHECK_SCALAR, pn);
+        parse_tree.setScalar(pn);
+    }
+
+    return pn;
 }
 
 bool StaticPass::dimsDisagree(size_t a, size_t b) noexcept{

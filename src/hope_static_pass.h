@@ -116,13 +116,18 @@ private:
         ParseNode getFuncFromCallSig(const CallSignature& sig) const noexcept;
         ParseNode getFuncFromDeclSig(const DeclareSignature& sig) const noexcept;
         ParseNode resolveAlg(ParseNode pn);
+        ParseNode resolveIdentity(ParseNode pn);
         ParseNode resolveInverse(ParseNode pn);
         ParseNode resolveLambda(ParseNode pn);
         ParseNode resolveMatrix(ParseNode pn);
         ParseNode resolveMult(ParseNode pn);
+        ParseNode resolveOnesMatrix(ParseNode pn);
         ParseNode resolvePower(ParseNode pn);
         ParseNode resolveUnaryMinus(ParseNode pn);
+        ParseNode resolveUnitVector(ParseNode pn);
+        ParseNode resolveZeroMatrix(ParseNode pn);
         ParseNode copyChildProperties(ParseNode pn) noexcept;
+        ParseNode enforceScalar(ParseNode pn);
         static bool dimsDisagree(size_t a, size_t b) noexcept;
 
         ParseTree& parse_tree;
