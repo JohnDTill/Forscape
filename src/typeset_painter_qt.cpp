@@ -137,6 +137,10 @@ void Painter::setType(SemanticType type) {
     if(color_can_change) painter.setPen(getColor(type));
 }
 
+void Painter::setTypeIfAppropriate(SemanticType type){
+    if(this->type != SEM_COMMENT && this->type != SEM_STRING) setType(type);
+}
+
 void Painter::setScriptLevel(uint8_t depth){
     this->depth = depth;
     painter.setFont(getFont(type, depth));

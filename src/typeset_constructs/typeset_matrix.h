@@ -101,7 +101,7 @@ public:
     }
 
     virtual void paintSpecific(Painter& painter) const override {
-        painter.setType(SEM_DEFAULT);
+        painter.setTypeIfAppropriate(SEM_DEFAULT);
 
         double h = height();
 
