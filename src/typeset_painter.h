@@ -31,6 +31,7 @@ public:
     Painter(WrappedPainter& painter);
     void setZoom(double zoom);
     void setType(SemanticType type);
+    void setTypeIfAppropriate(SemanticType type);
     void setScriptLevel(uint8_t depth);
     void setOffset(double x, double y);
     void drawText(double x, double y, const std::string& text, bool forward = true);

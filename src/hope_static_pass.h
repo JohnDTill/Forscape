@@ -117,6 +117,7 @@ private:
         ParseNode getFuncFromCallSig(const CallSignature& sig) const noexcept;
         ParseNode getFuncFromDeclSig(const DeclareSignature& sig) const noexcept;
         ParseNode resolveAlg(ParseNode pn);
+        ParseNode resolveDeriv(ParseNode pn);
         ParseNode resolveIdentity(ParseNode pn);
         ParseNode resolveInverse(ParseNode pn);
         ParseNode resolveLambda(ParseNode pn);

@@ -332,16 +332,8 @@ ParseNode StaticPass::resolveExpr(size_t pn) noexcept{
             return pn;
         }
         case OP_DERIVATIVE:
-        case OP_PARTIAL:{
-            parse_tree.setType(pn, NUMERIC);
-            ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
-            parse_tree.setArg<0>(pn, lhs);
-            if(parse_tree.getType(lhs) != NUMERIC) return error(pn, lhs);
-            ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
-            parse_tree.setArg<1>(pn, rhs);
-            if(parse_tree.getType(rhs) != NUMERIC) return error(pn, rhs);
-            return error(pn, pn, DERIVATIVE);
-        }
+        case OP_PARTIAL:
+            return resolveDeriv(pn);
         case OP_SLICE:
             for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
                 ParseNode arg = resolveExpr(parse_tree.arg(pn, i));
@@ -865,6 +857,39 @@ ParseNode StaticPass::resolveAlg(ParseNode pn){
     size_t sym_id = parse_tree.getFlag(parse_tree.algName(pn));
     symbol_table.symbols[sym_id].type = t;
     parse_tree.setType(pn, t);
+
+    return pn;
+}
+
+ParseNode StaticPass::resolveDeriv(ParseNode pn){
+    parse_tree.setType(pn, NUMERIC);
+
+    ParseNode expr = parse_tree.arg<0>(pn);
+    ParseNode wrt = parse_tree.arg<1>(pn);
+    ParseNode val = parse_tree.arg<2>(pn);
+
+    if(val == NONE) return error(pn, wrt, BAD_READ); //EVENTUALLY: treat deriv as func (known & restricted ℝ ↦ ℝ)
+    val = resolveExpr(val);
+    parse_tree.setArg<2>(pn, val);
+    if(parse_tree.getType(val) != NUMERIC) return error(pn, wrt);
+
+    Symbol& wrt_sym = symbol_table.symbols[parse_tree.getFlag(wrt)];
+    wrt_sym.type = NUMERIC;
+    wrt_sym.rows = parse_tree.getRows(val);
+    wrt_sym.cols = parse_tree.getCols(val);
+
+    expr = resolveExpr(expr); //EVENTUALLY: symbolically take the derivative
+    parse_tree.setArg<0>(pn, expr);
+    if(parse_tree.getType(expr) != NUMERIC) return error(pn, expr);
+
+    if(parse_tree.definitelyScalar(val)){
+        parse_tree.copyDims(pn, expr);
+    }else if(parse_tree.getCols(val) > 1 || parse_tree.getCols(expr) > 1){
+        return error(pn, pn, DIMENSION_MISMATCH);
+    }else if(parse_tree.getRows(val) > 1){
+        parse_tree.setRows(pn, parse_tree.getRows(val));
+        parse_tree.setCols(pn, parse_tree.getRows(expr));
+    }
 
     return pn;
 }

@@ -134,7 +134,7 @@ void SymbolTableBuilder::resolveExpr(ParseNode pn){
 
         case OP_DERIVATIVE:
         case OP_PARTIAL:
-            errors.push_back(Error(parse_tree.getSelection(pn), DERIVATIVE));
+            resolveDerivative(pn);
             break;
 
         default: resolveDefault(pn);
@@ -583,6 +583,22 @@ void SymbolTableBuilder::resolveBig(ParseNode pn){
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
+void SymbolTableBuilder::resolveDerivative(ParseNode pn){
+    ParseNode id = parse_tree.arg<1>(pn);
+    size_t id_index = symIndex(id);
+    if(id_index != NONE) resolveReference(parse_tree.arg<2>(pn));
+    else parse_tree.setArg<2>(pn, NONE);
+
+    increaseLexicalDepth(symbol_table.deriv(), parse_tree.getLeft(pn));
+
+    defineLocalScope(id, true);
+    if(id_index != NONE) warnings.pop_back(); //EVENTUALLY: stupid hack to not warn shadowing
+    ParseNode expr = parse_tree.arg<0>(pn);
+    resolveExpr(expr);
+
+    decreaseLexicalDepth(parse_tree.getRight(pn));
+}
+
 bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable){
     Typeset::Selection c = parse_tree.getSelection(pn);
 
@@ -617,6 +633,11 @@ bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable){
 
 bool SymbolTableBuilder::declared(ParseNode pn) const noexcept{
     return map.find(parse_tree.getSelection(pn)) != map.end();
+}
+
+size_t SymbolTableBuilder::symIndex(ParseNode pn) const noexcept{
+    const auto& lookup = map.find(parse_tree.getSelection(pn));
+    return lookup == map.end() ? NONE : lookup->second;
 }
 
 void SymbolTableBuilder::increaseLexicalDepth(const Typeset::Selection& name, const Typeset::Marker& begin){
