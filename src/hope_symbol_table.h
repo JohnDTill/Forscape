@@ -110,6 +110,7 @@ public:
     Typeset::Text while_name;
     Typeset::Text for_name;
     Typeset::Text big_name;
+    Typeset::Text deriv_name;
 
     SymbolTable(ParseTree& parse_tree)
         : parse_tree(parse_tree) {
@@ -121,6 +122,7 @@ public:
         while_name.str = "while";
         for_name.str = "for";
         big_name.str = "big symbol";
+        deriv_name.str = "derivative";
     }
 
     void addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed, bool is_const);
@@ -160,6 +162,10 @@ public:
 
     Typeset::Selection big() noexcept{
         return Typeset::Selection(&big_name, 0, big_name.size());
+    }
+
+    Typeset::Selection deriv() noexcept{
+        return Typeset::Selection(&deriv_name, 0, deriv_name.size());
     }
 
     ScopeId head(ScopeId index) const noexcept;

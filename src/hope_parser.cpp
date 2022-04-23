@@ -823,7 +823,8 @@ Parser::ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, To
         ParseNode expr = multiplication();
         if(!errors.empty()) return error_node;
         Typeset::Selection sel(c.left, rMarkPrev());
-        return parse_tree.addBinary(type, sel, expr, id);
+        ParseNode val = parse_tree.addTerminal(OP_IDENTIFIER, parse_tree.getSelection(id));
+        return parse_tree.addTernary(type, sel, expr, id, val);
     }else{
         ParseNode expr = multiplication();
         if(!errors.empty()) return error_node;
@@ -835,7 +836,8 @@ Parser::ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, To
         if(!errors.empty()) return error_node;
         consume(ARGCLOSE);
         if(!errors.empty()) return error_node;
-        return parse_tree.addBinary(type, c, expr, id);
+        ParseNode val = parse_tree.addTerminal(OP_IDENTIFIER, parse_tree.getSelection(id));
+        return parse_tree.addTernary(type, c, expr, id, val);
     }
 }
 

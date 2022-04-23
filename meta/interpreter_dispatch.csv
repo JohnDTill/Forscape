@@ -147,3 +147,4 @@ CHECK_NAT,MatrixXd,,,"error(EXPECT_SCALAR, pn)",,,,
 CHECK_POSITIVE_INT,double,,,a,,,,a<0=>DIMENSION_MISMATCH
 CHECK_POSITIVE_INT,MatrixXd,,,"error(EXPECT_SCALAR, pn)",,,,
 MATRIX_LITERAL,,,,std::get<MatrixXd>(parse_tree.getValue(pn)),,,,
+DERIVATIVE|PARTIAL,,,,finiteDiff(pn),,,,

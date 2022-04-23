@@ -1,15 +1,12 @@
-alg findRoot(f, x, tol=10-12, max_iter = 100, λ=10-3, δ=10-6){
+alg findRoot(f, x, tol=10-12, max_iter = 100, λ=10-3){
     for(iter ← 0; iter ≤ max_iter; iter ← iter + 1){
         r = f(x)
         if(‖r‖2 < tol) return x
-        J ← 0len(r)×len(x)
-        J:,i ← f(x + δelen(x)×1i) - rδ //First-order finite difference, elementwise assignment
+        J = ∂f(x)∂x //Objective function Jacobian
         x ← x - (J⊤J + λIlen(x)×len(x))-1 J⊤r //Levenberg-Marquardt step
     }
     assert(false) //Fail to meet tolerance in allowed iterations
 }
-
-print("Root of x^2 - 4x + 3 with guess 0:  x=", findRoot((x ↦ x2 - 4x + 3), 0))
-print("\nRoot of x^2 - 4x + 3 with guess 10:  x=", findRoot((x ↦ x2 - 4x + 3), 10))
-x = findRoot(x ↦ 2341x - 7-1, 02×1)
-print("\nRoot of [2, 3; 4, 1]x - [7; -1] with guess [0; 0]:  x=[", x0, "; ", x1, "]")
+print("Root of x2 - 4x + 3 with guess 0:  x = ", findRoot((x ↦ x2 - 4x + 3), 0))
+print("\nRoot of x2 - 4x + 3 with guess 10:  x = ", findRoot((x ↦ x2 - 4x + 3), 10))
+print("\nRoot of 2341x - 7-1 with guess 02×1:  x = ", findRoot(x ↦ 2341x - 7-1, 02×1))

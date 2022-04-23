@@ -1027,6 +1027,62 @@ Value Interpreter::unitVector(ParseNode pn){
     else return 1.0f;
 }
 
+Value Interpreter::finiteDiff(ParseNode pn){
+    ParseNode val_pn = parse_tree.arg<2>(pn);
+    Value val = interpretExpr(val_pn);
+    stack.push(val, parse_tree.str(val_pn));
+    ParseNode expr = parse_tree.arg<0>(pn);
+    Value f = interpretExpr(expr);
+
+    static constexpr double INCR = 1e-9;
+
+    Value ans;
+
+    if(val.index() == double_index){
+        std::get<double>(stack.back()) += INCR;
+        Value f_incr = interpretExpr(expr);
+        if(f.index() == double_index){
+            ans = (std::get<double>(f_incr) - std::get<double>(f)) / INCR;
+        }else{
+            assert(f.index() == MatrixXd_index);
+            ans = (std::get<Eigen::MatrixXd>(f_incr) - std::get<Eigen::MatrixXd>(f)) / INCR;
+        }
+    }else{
+        assert(val.index() == MatrixXd_index);
+        const Eigen::MatrixXd& v = std::get<Eigen::MatrixXd>(val);
+        if(v.cols() != 1) return error(DIMENSION_MISMATCH, val_pn);
+
+        if(f.index() == double_index){
+            Eigen::MatrixXd a(1, v.rows());
+            for(Eigen::Index i = 0; i < v.rows(); i++){
+                double orig = std::get<Eigen::MatrixXd>(stack.back())(i);
+                std::get<Eigen::MatrixXd>(stack.back())(i) += INCR;
+                Value f_incr = interpretExpr(expr);
+                a(i) = (std::get<double>(f_incr) - std::get<double>(f)) / INCR;
+                std::get<Eigen::MatrixXd>(stack.back())(i) = orig;
+            }
+            ans = a;
+        }else{
+            assert(f.index() == MatrixXd_index);
+            const Eigen::MatrixXd& m = std::get<Eigen::MatrixXd>(f);
+            if(m.cols() != 1) return error(DIMENSION_MISMATCH, expr);
+            Eigen::MatrixXd a(m.rows(), v.rows());
+            for(Eigen::Index i = 0; i < v.rows(); i++){
+                double orig = std::get<Eigen::MatrixXd>(stack.back())(i);
+                std::get<Eigen::MatrixXd>(stack.back())(i) += INCR;
+                Value f_incr = interpretExpr(expr);
+                a.col(i) = (std::get<Eigen::MatrixXd>(f_incr) - std::get<Eigen::MatrixXd>(f)) / INCR;
+                std::get<Eigen::MatrixXd>(stack.back())(i) = orig;
+            }
+            ans = a;
+        }
+    }
+
+    stack.pop();
+
+    return ans;
+}
+
 double Interpreter::pNorm(const Eigen::MatrixXd& a, double b) noexcept{
     //EVENTUALLY: eigen has a templated version of lpNorm<b>() for codegen
 
