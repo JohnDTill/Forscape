@@ -48,6 +48,8 @@ public:
     bool retry_at_recursion = false;
     bool first_attempt = true;
     const CallSignature* recursion_fallback = nullptr;
+    bool encountered_autosize = false;
+    bool second_dim_attempt = false;
 
     Type declare(const DeclareSignature& fn);
     Type instantiate(ParseNode call_node,const CallSignature& fn);
@@ -108,7 +110,8 @@ private:
     private:
         ParseNode resolveStmt(size_t pn) noexcept;
         Type fillDefaultsAndInstantiate(ParseNode call_node, CallSignature sig);
-        ParseNode resolveExpr(size_t pn) noexcept;
+        ParseNode resolveExprTop(size_t pn, size_t rows_expected = 0, size_t cols_expected = 0);
+        ParseNode resolveExpr(size_t pn, size_t rows_expected = 0, size_t cols_expected = 0) noexcept;
         size_t callSite(size_t pn) noexcept;
         size_t implicitMult(size_t pn, size_t start = 0) noexcept;
         Type instantiateSetOfFuncs(ParseNode call_node, Type fun_group, CallSignature& sig);
@@ -122,7 +125,7 @@ private:
         ParseNode resolveInverse(ParseNode pn);
         ParseNode resolveLambda(ParseNode pn);
         ParseNode resolveMatrix(ParseNode pn);
-        ParseNode resolveMult(ParseNode pn);
+        ParseNode resolveMult(ParseNode pn, size_t rows_expected = 0, size_t cols_expected = 0);
         ParseNode resolveOnesMatrix(ParseNode pn);
         ParseNode resolvePower(ParseNode pn);
         ParseNode resolveUnaryMinus(ParseNode pn);

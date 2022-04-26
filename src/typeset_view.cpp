@@ -873,7 +873,7 @@ void View::setCursorAppearance(double x, double y){
 
 void View::drawBackground(const QRect& rect){
     QPainter p(this);
-    p.fillRect(rect, getColour(is_running ? COLOUR_BACKGROUND : COLOUR_BACKGROUNDDISABLED));
+    p.fillRect(rect, getColour(COLOUR_BACKGROUND));
 }
 
 void View::drawModel(double xL, double yT, double xR, double yB){
@@ -1290,6 +1290,7 @@ void View::takeRecommendation(const std::string& str){
     updateXSetpoint();
     updateModel();
     recommender->hide();
+    //EVENTUALLY: this isn't working. The recommender will need to be a custom class (it will need to be for typesetting anyway)
     QTimer::singleShot(0, this, SLOT(setFocus())); //Delay 1 cycle to avoid whatever input activated item
 
     ensureCursorVisible();
