@@ -48,9 +48,11 @@ public:
     bool retry_at_recursion = false;
     bool first_attempt = true;
     const CallSignature* recursion_fallback = nullptr;
+    bool encountered_autosize = false;
+    bool second_dim_attempt = false;
 
     Type declare(const DeclareSignature& fn);
-    Type instantiate(ParseNode call_node,const CallSignature& fn);
+    Type instantiate(ParseNode call_node, const CallSignature& fn);
 
     std::string typeString(Type t) const;
     std::string typeString(const Symbol& sym) const;
@@ -83,15 +85,19 @@ private:
 
     struct CallResult{
         Type type;
+        size_t rows;
+        size_t cols;
         ParseNode instantiated;
 
         CallResult(){}
-        CallResult(Type type, ParseNode instantiated)
-            : type(type), instantiated(instantiated) {}
+        CallResult(Type type, size_t rows, size_t cols, ParseNode instantiated)
+            : type(type), rows(rows), cols(cols), instantiated(instantiated) {}
     };
 
     std::unordered_map<DeclareSignature, size_t, vectorOfIntHash> declared_func_map;
     std::unordered_map<CallSignature, CallResult, vectorOfIntHash> called_func_map;
+
+    std::vector<std::pair<ParseNode, CallSignature>> all_calls;
 
     std::string declFunctionString(size_t i) const;
     std::string instFunctionString(const CallSignature& sig) const;
@@ -99,7 +105,16 @@ private:
     std::unordered_map<std::vector<ParseNode>, Type, vectorOfIntHash> memoized_abstract_function_groups;
 
     private:
-        std::stack<Type> return_types;
+        struct ReturnType{
+            Type type;
+            size_t rows = 0;
+            size_t cols = 0;
+
+            ReturnType() noexcept {}
+            ReturnType(Type type) noexcept
+                : type(type) {}
+        };
+        std::stack<ReturnType> return_types;
 
     public:
         StaticPass(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors, std::vector<Code::Error>& warnings) noexcept;
@@ -108,7 +123,8 @@ private:
     private:
         ParseNode resolveStmt(size_t pn) noexcept;
         Type fillDefaultsAndInstantiate(ParseNode call_node, CallSignature sig);
-        ParseNode resolveExpr(size_t pn) noexcept;
+        ParseNode resolveExprTop(size_t pn, size_t rows_expected = 0, size_t cols_expected = 0);
+        ParseNode resolveExpr(size_t pn, size_t rows_expected = 0, size_t cols_expected = 0) noexcept;
         size_t callSite(size_t pn) noexcept;
         size_t implicitMult(size_t pn, size_t start = 0) noexcept;
         Type instantiateSetOfFuncs(ParseNode call_node, Type fun_group, CallSignature& sig);
@@ -122,7 +138,7 @@ private:
         ParseNode resolveInverse(ParseNode pn);
         ParseNode resolveLambda(ParseNode pn);
         ParseNode resolveMatrix(ParseNode pn);
-        ParseNode resolveMult(ParseNode pn);
+        ParseNode resolveMult(ParseNode pn, size_t rows_expected = 0, size_t cols_expected = 0);
         ParseNode resolveOnesMatrix(ParseNode pn);
         ParseNode resolvePower(ParseNode pn);
         ParseNode resolveUnaryMinus(ParseNode pn);
