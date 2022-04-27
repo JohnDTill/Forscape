@@ -333,6 +333,31 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
     if(!errors.empty()) return pn;
 
     switch (parse_tree.getOp(pn)) {
+        case OP_GRAVITY:{
+            static constexpr double GRAVITY = -9.8067;
+
+            parse_tree.setType(pn, NUMERIC);
+            if(rows_expected == 1 && cols_expected == 1){
+                parse_tree.setScalar(pn);
+                parse_tree.setOp(pn, OP_DECIMAL_LITERAL);
+                parse_tree.setFlag(pn, GRAVITY);
+                parse_tree.setValue(pn, GRAVITY);
+                return pn;
+            }else if(rows_expected == 3 && cols_expected == 1){
+                parse_tree.setRows(pn, 3);
+                parse_tree.setCols(pn, 1);
+                parse_tree.setOp(pn, OP_MATRIX_LITERAL);
+                parse_tree.setValue(pn, Eigen::Vector3d(0, 0, GRAVITY));
+                parse_tree.getSelection(pn).format(SEM_PREDEFINEDMAT);
+                return pn;
+            }else if(rows_expected == UNKNOWN_SIZE || cols_expected == UNKNOWN_SIZE){
+                encountered_autosize = true;
+                if(second_dim_attempt) return error(pn, pn, AUTOSIZE);
+                return pn;
+            }else{
+                return error(pn, pn, DIMENSION_MISMATCH);
+            }
+        }
         case OP_IDENTITY_AUTOSIZE:
             parse_tree.setType(pn, NUMERIC);
             parse_tree.setRows(pn, rows_expected);
@@ -380,9 +405,6 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
                 return resolveUnitVector(parse_tree.addTernary(OP_UNIT_VECTOR, sel, child, rows, cols));
             }
         }
-        case OP_GRAVITY:
-            parse_tree.setType(pn, NUMERIC);
-            return error(pn, pn, AUTOSIZE); //DO THIS: support scalar and vector gravity
         case OP_LAMBDA: return resolveLambda(pn);
         case OP_IDENTIFIER:
         case OP_READ_GLOBAL:
@@ -628,7 +650,7 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
         }
         case OP_PSEUDO_INVERSE:{
             parse_tree.setType(pn, NUMERIC);
-            ParseNode child = resolveExpr(parse_tree.child(pn));
+            ParseNode child = resolveExpr(parse_tree.child(pn), cols_expected, rows_expected);
             parse_tree.setArg<0>(pn, child);
             if(parse_tree.getType(child) != NUMERIC) return error(pn, child);
             parse_tree.transposeDims(pn, child);
@@ -636,7 +658,7 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
         }
         case OP_TRANSPOSE:{
             parse_tree.setType(pn, NUMERIC);
-            ParseNode child = resolveExpr(parse_tree.child(pn));
+            ParseNode child = resolveExpr(parse_tree.child(pn), cols_expected, rows_expected);
             if(parse_tree.getType(child) != NUMERIC) return error(pn, child);
             parse_tree.transposeDims(pn, child);
             if(parse_tree.definitelyScalar(child)) return child;
@@ -1174,11 +1196,16 @@ ParseNode StaticPass::resolveMatrix(ParseNode pn){
 }
 
 ParseNode StaticPass::resolveMult(ParseNode pn, size_t rows_expected, size_t cols_expected){
+    //EVENTUALLY: the expectations are all wrong. This is dang tricky since matrix-matrix
+    //            multiplication uses the same notation as matrix scale-by-scalar
+
     ParseNode lhs = resolveExpr(parse_tree.lhs(pn), rows_expected);
     parse_tree.setArg<0>(pn, lhs);
     Type lhs_type = parse_tree.getType(lhs);
     if(lhs_type != NUMERIC) return error(pn, lhs);
-    ParseNode rhs = resolveExpr(parse_tree.rhs(pn), UNKNOWN_SIZE, cols_expected);
+    size_t rhs_rows_expected = UNKNOWN_SIZE;
+    if(parse_tree.definitelyScalar(lhs)) rhs_rows_expected = rows_expected;
+    ParseNode rhs = resolveExpr(parse_tree.rhs(pn), rhs_rows_expected, cols_expected);
     parse_tree.setArg<1>(pn, rhs);
     if(parse_tree.getType(rhs) != NUMERIC) return error(pn, rhs);
     parse_tree.setType(pn, NUMERIC);
