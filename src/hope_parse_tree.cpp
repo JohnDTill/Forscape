@@ -347,8 +347,6 @@ ParseNode ParseTree::clone(ParseNode pn){
         ParseNode a = arg(pn, i);
         if(a == EMPTY){
             setArg(cloned, i, EMPTY);
-        }else if(getOp(a) == OP_CALL){
-            setArg(cloned, i, a);
         }else{
             setArg(cloned, i, clone(a));
         }

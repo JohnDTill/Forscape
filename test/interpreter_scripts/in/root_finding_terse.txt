@@ -3,7 +3,7 @@ alg findRoot(f, x, tol=10-12, max_iter = 100, λ=10-3){
         r = f(x)
         if(‖r‖2 < tol) return x
         J = ∂f(x)∂x //Objective function Jacobian
-        x ← x - (J⊤J + λIlen(x)×len(x))-1 J⊤r //Levenberg-Marquardt step
+        x ← x - (J⊤J + λI)-1 J⊤r //Levenberg-Marquardt step
     }
     assert(false) //Fail to meet tolerance in allowed iterations
 }

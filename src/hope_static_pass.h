@@ -52,7 +52,7 @@ public:
     bool second_dim_attempt = false;
 
     Type declare(const DeclareSignature& fn);
-    Type instantiate(ParseNode call_node,const CallSignature& fn);
+    Type instantiate(ParseNode call_node, const CallSignature& fn);
 
     std::string typeString(Type t) const;
     std::string typeString(const Symbol& sym) const;
@@ -85,15 +85,19 @@ private:
 
     struct CallResult{
         Type type;
+        size_t rows;
+        size_t cols;
         ParseNode instantiated;
 
         CallResult(){}
-        CallResult(Type type, ParseNode instantiated)
-            : type(type), instantiated(instantiated) {}
+        CallResult(Type type, size_t rows, size_t cols, ParseNode instantiated)
+            : type(type), rows(rows), cols(cols), instantiated(instantiated) {}
     };
 
     std::unordered_map<DeclareSignature, size_t, vectorOfIntHash> declared_func_map;
     std::unordered_map<CallSignature, CallResult, vectorOfIntHash> called_func_map;
+
+    std::vector<std::pair<ParseNode, CallSignature>> all_calls;
 
     std::string declFunctionString(size_t i) const;
     std::string instFunctionString(const CallSignature& sig) const;
@@ -101,7 +105,16 @@ private:
     std::unordered_map<std::vector<ParseNode>, Type, vectorOfIntHash> memoized_abstract_function_groups;
 
     private:
-        std::stack<Type> return_types;
+        struct ReturnType{
+            Type type;
+            size_t rows = 0;
+            size_t cols = 0;
+
+            ReturnType() noexcept {}
+            ReturnType(Type type) noexcept
+                : type(type) {}
+        };
+        std::stack<ReturnType> return_types;
 
     public:
         StaticPass(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors, std::vector<Code::Error>& warnings) noexcept;

@@ -21,6 +21,14 @@ void StaticPass::resolve(){
             error(getFuncFromCallSig(entry.first), RECURSIVE_TYPE);
     if(!errors.empty()) return;
 
+    for(const auto& entry : all_calls){
+        ParseNode call = entry.first;
+        const CallSignature& fn = entry.second;
+        const DeclareSignature& dec = declared(fn[0]);
+        ParseNode abstract_fn = dec[0];
+        instantiation_lookup[std::make_pair(abstract_fn, call)] = called_func_map[fn].instantiated;
+    }
+
     //Not sure about the soundness of the recursion handling strategy, so let's double check
     //EVENTUALLY: remove this check
     //const auto call_map_backup = called_func_map;
@@ -64,6 +72,7 @@ void StaticPass::reset() noexcept{
     declared_func_map.clear();
     called_func_map.clear();
     instantiation_lookup.clear();
+    all_calls.clear();
     assert(return_types.empty());
     assert(retry_at_recursion == false);
     assert(first_attempt == true);
@@ -132,27 +141,33 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
             ParseNode child = resolveExprTop(parse_tree.child(pn));
             parse_tree.setArg<0>(pn, child);
             Type child_type = parse_tree.getType(child);
-            Type expected = return_types.top();
+            ReturnType& rt = return_types.top();
+            Type expected = rt.type;
 
             if(expected == UNINITIALISED || expected == RECURSIVE_CYCLE){
-                return_types.top() = child_type;
+                rt.type = child_type;
             }else if(isAbstractFunctionGroup(expected)){
                 if(!isAbstractFunctionGroup(child_type)){
                     error(pn, child);
                 }else{
-                    return_types.top() = functionSetUnion(expected, child_type);
+                    rt.type = functionSetUnion(expected, child_type);
                 }
             }else{
                 if(child_type != expected) error(pn, pn);
             }
+
+            size_t child_rows = parse_tree.getRows(child);
+            if(rt.rows == UNKNOWN_SIZE) rt.rows = child_rows;
+            else if(rt.rows != child_rows && child_rows != UNKNOWN_SIZE) return error(pn, child, DIMENSION_MISMATCH);
+
             return pn;
         }
 
         case OP_RETURN_EMPTY:{
             assert(!return_types.empty());
-            if(return_types.top() == UNINITIALISED){
-                return_types.top() = VOID_TYPE;
-            }else if(return_types.top() != VOID_TYPE){
+            if(return_types.top().type == UNINITIALISED){
+                return_types.top().type = VOID_TYPE;
+            }else if(return_types.top().type != VOID_TYPE){
                 error(pn, pn);
             }
             return pn;
@@ -328,6 +343,7 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
             }else if(parse_tree.definitelyScalar(pn)){
                 return parse_tree.getOne(parse_tree.getSelection(pn));
             }else{
+                parse_tree.getSelection(pn).format(SEM_PREDEFINEDMAT);
                 parse_tree.setValue(pn, Eigen::MatrixXd::Identity(rows_expected, cols_expected));
                 parse_tree.setOp(pn, OP_MATRIX_LITERAL);
             }
@@ -391,22 +407,30 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
             if(expected != NUMERIC && expected != STRING) return error(pn, arg0, TYPE_NOT_ADDABLE);
             parse_tree.setType(pn, expected);
             size_t arg0_rows = parse_tree.getRows(arg0);
-            if(rows_expected == UNKNOWN_SIZE) rows_expected = arg0_rows;
-            else if(rows_expected != arg0_rows && arg0_rows != UNKNOWN_SIZE) return error(pn, arg0, DIMENSION_MISMATCH);
+            if(rows_expected == UNKNOWN_SIZE){
+                rows_expected = arg0_rows;
+                parse_tree.setRows(pn, arg0_rows);
+            }else if(rows_expected != arg0_rows && arg0_rows != UNKNOWN_SIZE) return error(pn, arg0, DIMENSION_MISMATCH);
             size_t arg0_cols = parse_tree.getCols(arg0);
-            if(cols_expected == UNKNOWN_SIZE) cols_expected = arg0_cols;
-            else if(cols_expected != arg0_cols && arg0_cols != UNKNOWN_SIZE) return error(pn, arg0, DIMENSION_MISMATCH);
+            if(cols_expected == UNKNOWN_SIZE){
+                cols_expected = arg0_cols;
+                parse_tree.setCols(pn, arg0_cols);
+            }else if(cols_expected != arg0_cols && arg0_cols != UNKNOWN_SIZE) return error(pn, arg0, DIMENSION_MISMATCH);
 
             for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++){
                 ParseNode arg = resolveExpr(parse_tree.arg(pn, i), rows_expected, cols_expected);
                 parse_tree.setArg(pn, i, arg);
                 if(parse_tree.getType(arg) != expected) return error(pn, arg, TYPE_NOT_ADDABLE);
                 size_t arg_rows = parse_tree.getRows(arg);
-                if(rows_expected == UNKNOWN_SIZE) rows_expected = arg_rows;
-                else if(rows_expected != arg_rows && arg_rows != UNKNOWN_SIZE) return error(pn, arg, DIMENSION_MISMATCH);
+                if(rows_expected == UNKNOWN_SIZE){
+                    rows_expected = arg_rows;
+                    parse_tree.setRows(pn, arg_rows);
+                }else if(rows_expected != arg_rows && arg_rows != UNKNOWN_SIZE) return error(pn, arg, DIMENSION_MISMATCH);
                 size_t arg_cols = parse_tree.getCols(arg);
-                if(cols_expected == UNKNOWN_SIZE) cols_expected = arg_cols;
-                else if(cols_expected != arg_cols && arg_cols != UNKNOWN_SIZE) return error(pn, arg, DIMENSION_MISMATCH);
+                if(cols_expected == UNKNOWN_SIZE){
+                    cols_expected = arg_cols;
+                    parse_tree.setCols(pn, arg_cols);
+                }else if(cols_expected != arg_cols && arg_cols != UNKNOWN_SIZE) return error(pn, arg, DIMENSION_MISMATCH);
             }
 
             return pn;
@@ -495,8 +519,26 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
         case OP_CROSS:
         case OP_FORWARDSLASH:
         case OP_LOGARITHM_BASE:
-        case OP_MODULUS:
-        case OP_NORM_p:
+        case OP_MODULUS:{
+            parse_tree.setType(pn, NUMERIC);
+            ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
+            parse_tree.setArg<0>(pn, lhs);
+            if(parse_tree.getType(lhs) != NUMERIC) return error(pn, lhs);
+            ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
+            parse_tree.setArg<1>(pn, rhs);
+            if(parse_tree.getType(rhs) != NUMERIC) return error(pn, rhs);
+            return pn;
+        }
+        case OP_NORM_p:{
+            parse_tree.setScalar(pn);
+            ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
+            parse_tree.setArg<0>(pn, lhs);
+            if(parse_tree.getType(lhs) != NUMERIC) return error(pn, lhs);
+            ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
+            parse_tree.setArg<1>(pn, rhs);
+            if(parse_tree.getType(rhs) != NUMERIC) return error(pn, rhs);
+            return pn;
+        }
         case OP_SUBTRACTION:{
             parse_tree.setType(pn, NUMERIC);
             ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
@@ -505,6 +547,19 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
             ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
             parse_tree.setArg<1>(pn, rhs);
             if(parse_tree.getType(rhs) != NUMERIC) return error(pn, rhs);
+
+            size_t r_lhs = parse_tree.getRows(lhs);
+            size_t r_rhs = parse_tree.getRows(rhs);
+            if(r_lhs == UNKNOWN_SIZE) parse_tree.setRows(pn, r_rhs);
+            else if(r_rhs == UNKNOWN_SIZE || r_rhs == r_lhs) parse_tree.setRows(pn, r_lhs);
+            else return error(pn, pn, DIMENSION_MISMATCH);
+
+            size_t c_lhs = parse_tree.getCols(lhs);
+            size_t c_rhs = parse_tree.getCols(rhs);
+            if(c_lhs == UNKNOWN_SIZE) parse_tree.setCols(pn, c_rhs);
+            else if(c_rhs == UNKNOWN_SIZE || c_lhs == c_rhs) parse_tree.setCols(pn, c_lhs);
+            else return error(pn, pn, DIMENSION_MISMATCH);
+
             return pn;
         }
         case OP_LENGTH:{
@@ -731,6 +786,7 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
 }
 
 size_t StaticPass::callSite(size_t pn) noexcept{
+    //pn = parse_tree.clone(pn);
     ParseNode call_expr = resolveExpr(parse_tree.arg<0>(pn));
     parse_tree.setArg<0>(pn, call_expr);
     size_t node_size = parse_tree.getNumArgs(pn);
@@ -1081,15 +1137,15 @@ ParseNode StaticPass::resolveMatrix(ParseNode pn){
     size_t curr = 0;
     for(size_t i = 0; i < typeset_rows; i++){
         for(size_t j = 0; j < typeset_cols; j++){
-            ParseNode arg = parse_tree.arg(pn, curr);
+            ParseNode arg = parse_tree.arg(pn, curr++);
 
             if(i==0) elem_cols[j] = parse_tree.getCols(arg);
             else if(elem_cols[j] == UNKNOWN_SIZE) elem_cols[j] = parse_tree.getCols(arg);
-            else if(dimsDisagree(elem_cols[j], parse_tree.getCols(arg))) return error(pn, pn);
+            else if(dimsDisagree(elem_cols[j], parse_tree.getCols(arg))) return error(pn, pn, DIMENSION_MISMATCH);
 
             if(j==0) elem_rows[i] = parse_tree.getRows(arg);
             else if(elem_rows[i] == UNKNOWN_SIZE) elem_rows[i] = parse_tree.getRows(arg);
-            else if(dimsDisagree(elem_rows[i], parse_tree.getRows(arg))) return error(pn, pn);
+            else if(dimsDisagree(elem_rows[i], parse_tree.getRows(arg))) return error(pn, pn, DIMENSION_MISMATCH);
         }
     }
 
@@ -1122,14 +1178,16 @@ ParseNode StaticPass::resolveMult(ParseNode pn, size_t rows_expected, size_t col
     parse_tree.setArg<0>(pn, lhs);
     Type lhs_type = parse_tree.getType(lhs);
     if(lhs_type != NUMERIC) return error(pn, lhs);
-    ParseNode rhs = resolveExpr(parse_tree.rhs(pn), parse_tree.getCols(lhs), cols_expected);
+    ParseNode rhs = resolveExpr(parse_tree.rhs(pn), UNKNOWN_SIZE, cols_expected);
     parse_tree.setArg<1>(pn, rhs);
     if(parse_tree.getType(rhs) != NUMERIC) return error(pn, rhs);
     parse_tree.setType(pn, NUMERIC);
 
     if(parse_tree.definitelyScalar(lhs)){
+        if(parse_tree.getRows(rhs) == UNKNOWN_SIZE) parse_tree.setRows(rhs, rows_expected);
         parse_tree.copyDims(pn, rhs);
     }else if(parse_tree.definitelyScalar(rhs)){
+        if(parse_tree.getCols(lhs) == UNKNOWN_SIZE) parse_tree.setCols(rhs, cols_expected);
         parse_tree.copyDims(pn, lhs);
     }else if(parse_tree.definitelyNotScalar(lhs) && parse_tree.definitelyNotScalar(rhs)){
         parse_tree.setRows(pn, parse_tree.getRows(lhs));
@@ -1426,6 +1484,8 @@ Type StaticPass::declare(const DeclareSignature& fn){
 }
 
 Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
+    all_calls.push_back(std::make_pair(call_node, fn));
+
     const DeclareSignature& dec = declared(fn[0]);
     ParseNode abstract_fn = dec[0];
 
@@ -1434,8 +1494,17 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
         Type return_type = lookup->second.type;
         retry_at_recursion |= (return_type == RECURSIVE_CYCLE && first_attempt); //revisited in process of instantiation
 
-        auto dynamic_key = std::make_pair(parse_tree.body(abstract_fn), call_node);
-        instantiation_lookup[dynamic_key] = lookup->second.instantiated;
+        if(parse_tree.getRows(call_node) == UNKNOWN_SIZE)
+            parse_tree.setRows(call_node, lookup->second.rows);
+        else if(lookup->second.rows != UNKNOWN_SIZE
+                && lookup->second.rows != parse_tree.getRows(call_node))
+            errorType(call_node, DIMENSION_MISMATCH);
+
+        if(parse_tree.getCols(call_node) == UNKNOWN_SIZE)
+            parse_tree.setCols(call_node, lookup->second.cols);
+        else if(lookup->second.cols != UNKNOWN_SIZE
+                && lookup->second.cols != parse_tree.getCols(call_node))
+            errorType(call_node, DIMENSION_MISMATCH);
 
         return return_type;
     }
@@ -1449,7 +1518,7 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
     size_t old_args_index = old_args.size();
 
     //Instantiate
-    called_func_map[fn] = CallResult(RECURSIVE_CYCLE, ParseTree::EMPTY);
+    called_func_map[fn] = CallResult(RECURSIVE_CYCLE, UNKNOWN_SIZE, UNKNOWN_SIZE, ParseTree::EMPTY);
 
     ParseNode instantiated_fn = parse_tree.clone(abstract_fn);
 
@@ -1503,6 +1572,8 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
     }
 
     Type return_type;
+    size_t rows;
+    size_t cols;
 
     bool is_alg = parse_tree.getOp(instantiated_fn) != OP_LAMBDA;
 
@@ -1510,16 +1581,20 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
         return_types.push(UNINITIALISED);
         ParseNode body = resolveStmt(parse_tree.body(instantiated_fn));
         parse_tree.setBody(instantiated_fn, body);
-        return_type = return_types.top();
+        return_type = return_types.top().type;
         if(return_type == UNINITIALISED) return_type = VOID_TYPE; //Function with no return statement
+        rows = return_types.top().rows;
+        cols = return_types.top().cols;
         return_types.pop();
     }else{
         ParseNode body = resolveExpr(parse_tree.body(instantiated_fn));
         parse_tree.setBody(instantiated_fn, body);
         return_type = parse_tree.getType(body);
+        rows = parse_tree.getRows(body);
+        cols = parse_tree.getCols(body);
     }
 
-    called_func_map[fn] = CallResult(return_type, instantiated_fn);
+    called_func_map[fn] = CallResult(return_type, rows, cols, instantiated_fn);
 
     if(recursion_fallback == &fn){
         if(retry_at_recursion){
@@ -1530,17 +1605,21 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
                 return_types.push(UNINITIALISED);
                 ParseNode body = resolveStmt(parse_tree.body(instantiated_fn));
                 parse_tree.setBody(instantiated_fn, body);
-                return_type = return_types.top();
+                return_type = return_types.top().type;
                 if(return_type == UNINITIALISED) return_type = VOID_TYPE; //Function with no return statement
+                rows = return_types.top().rows;
+                cols = return_types.top().cols;
                 return_types.pop();
             }else{
                 ParseNode body = resolveExpr(parse_tree.body(instantiated_fn));
                 parse_tree.setBody(instantiated_fn, body);
                 return_type = parse_tree.getType(body);
+                rows = parse_tree.getRows(body);
+                cols = parse_tree.getCols(body);
             }
 
             first_attempt = true;
-            called_func_map[fn] = CallResult(return_type, instantiated_fn);
+            called_func_map[fn] = CallResult(return_type, rows, cols, instantiated_fn);
         }
 
         recursion_fallback = nullptr;
@@ -1578,9 +1657,16 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
     old_args.resize(old_args_index);
 
     assert(parse_tree.getOp(call_node) == OP_CALL);
-    auto dynamic_key = std::make_pair(parse_tree.body(abstract_fn), call_node);
-    //assert(instantiation_lookup.find(dynamic_key) == instantiation_lookup.end());
-    instantiation_lookup[dynamic_key] = instantiated_fn;
+
+    if(parse_tree.getRows(call_node) == UNKNOWN_SIZE)
+        parse_tree.setRows(call_node, rows);
+    else if(rows != UNKNOWN_SIZE && rows != parse_tree.getRows(call_node))
+        errorType(call_node, DIMENSION_MISMATCH);
+
+    if(parse_tree.getCols(call_node) == UNKNOWN_SIZE)
+        parse_tree.setCols(call_node, cols);
+    else if(cols != UNKNOWN_SIZE && cols != parse_tree.getCols(call_node))
+        errorType(call_node, DIMENSION_MISMATCH);
 
     return return_type;
 }

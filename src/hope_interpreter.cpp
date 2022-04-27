@@ -694,12 +694,12 @@ Value Interpreter::call(ParseNode call) {
     switch (v.index()) {
         case Lambda_index:{
             Lambda& f = std::get<Lambda>(v);
-            return innerCall(call, f.closure, f.expr(parse_tree), true, true);
+            return innerCall(call, f.closure, f.def, true, true);
         }
 
         case Algorithm_index:{
             Algorithm& alg = std::get<Algorithm>(v);
-            return innerCall(call, alg.closure, alg.body(parse_tree), true, false);
+            return innerCall(call, alg.closure, alg.def, true, false);
         }
 
         case Unitialized_index:
@@ -726,7 +726,7 @@ void Interpreter::callStmt(ParseNode pn){
 
         case Algorithm_index:{
             Algorithm& alg = std::get<Algorithm>(v);
-            innerCall(pn, alg.closure, alg.body(parse_tree), false, false);
+            innerCall(pn, alg.closure, alg.def, false, false);
             break;
         }
 
@@ -735,17 +735,17 @@ void Interpreter::callStmt(ParseNode pn){
     }
 }
 
-Value Interpreter::innerCall(ParseNode call, Closure& closure, ParseNode body, bool expect, bool is_lambda){
+Value Interpreter::innerCall(ParseNode call, Closure& closure, ParseNode fn, bool expect, bool is_lambda){
     assert(parse_tree.getOp(call) == OP_CALL);
 
-    auto inst_result = inst_lookup.find(std::make_pair(body, call));
+    auto inst_result = inst_lookup.find(std::make_pair(fn, call));
     assert(inst_result != inst_lookup.end());
     ParseNode inst_fn = inst_result->second;
 
     ParseNode val_cap = parse_tree.valCapList(inst_fn);
     ParseNode ref_cap = parse_tree.refCapList(inst_fn);
     ParseNode params = parse_tree.paramList(inst_fn);
-    body = parse_tree.body(inst_fn);
+    ParseNode body = parse_tree.body(inst_fn);
 
     size_t nargs = parse_tree.getNumArgs(call)-1;
     size_t nparams = parse_tree.getNumArgs(params);
