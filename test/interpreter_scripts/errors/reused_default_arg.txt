@@ -1,0 +1,4 @@
+alg reusedDefaultArg(x, y = 3x){
+    return x+y
+}
+print( reusedDefaultArg(3) )

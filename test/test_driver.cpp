@@ -1,4 +1,5 @@
 #include "code_interpreter.h"
+#include "code_interpreter_illformed.h"
 #include "code_parser.h"
 #include "code_scanner.h"
 #include "serial.h"
@@ -36,6 +37,7 @@ int main(int argc, char* argv[]){
     passing &= testScanner();
     passing &= testParser();
     passing &= testInterpreter();
+    passing &= testIllFormedPrograms();
     passing &= testTypesetMutability();
     #ifdef TEST_QT
     passing &= testTypesetGraphics();

@@ -39,8 +39,6 @@ NO_RETURN,,Function did not give a return value
 UNUSED_EXPRESSION,,Expression unused
 NON_LVALUE,y,Expression cannot be used as lvalue
 EXPECT_DEFAULT_ARG,,Expected default arg
-CAPTURE_SEMANTICS,,Capture semantics are not supported
-RETURN_LAMBDA,,Returning a function is not supported yet
 BAD_BREAK,,Break statement not in loop
 BAD_CONTINUE,,Continue statement not in loop
 AMBIGIOUS_TRIG_POWER,,Negative trig power is ambiguous. Use explicit power (sin(x)^-1 or csc(x)) or explicit inverse function (arcsin(x))
@@ -69,3 +67,4 @@ BAD_DEFAULT_ARG,y,Previous parameter cannot be used in default arg
 EXPECT_BOOLEAN,,Expected boolean in conditional
 EXPECT_SCALAR,,Expected scalar
 AUTOSIZE,,Failed to deduce dimensions of auto-size variable
+RETURN_OUTSIDE_FUNCTION,,Cannot return from outside of function

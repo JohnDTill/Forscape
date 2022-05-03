@@ -626,6 +626,7 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
         case OP_NORM:
         case OP_NORM_1:
         case OP_NORM_INFTY:
+        case OP_ABS:
         {
             parse_tree.setScalar(pn);
             ParseNode child = resolveExpr(parse_tree.child(pn));
@@ -906,7 +907,7 @@ Type StaticPass::instantiateSetOfFuncs(ParseNode call_node, Type fun_group, Call
             size_t decl_index = arg(fun_group, i);
             const DeclareSignature& dec = declared(decl_index);
             ParseNode fn = getFuncFromDeclSig(dec);
-            if(parse_tree.getOp(fn) != OP_LAMBDA) fn = parse_tree.arg(fn, 0);
+            if(parse_tree.getOp(fn) != OP_LAMBDA) fn = parse_tree.algName(fn);
             errorType(fn, RECURSIVE_TYPE);
         }
         return errorType(call_node, RECURSIVE_TYPE);

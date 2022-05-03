@@ -52,8 +52,6 @@ void Interpreter::reset() noexcept {
 }
 
 Value Interpreter::error(ErrorCode code, ParseNode pn) noexcept {
-    assert(false);
-
     if(status < RUNTIME_ERROR){
         directive = STOP;
         error_code = code;

@@ -83,6 +83,7 @@ std::string Model::run(){
     if(interpreter.error_code != Code::ErrorCode::NO_ERROR_FOUND){
         Code::Error error(parser.parse_tree.getSelection(interpreter.error_node), interpreter.error_code);
         str += "\nLine " + error.line() + " - " + error.message();
+        errors.push_back(error);
     }
 
     return str;
