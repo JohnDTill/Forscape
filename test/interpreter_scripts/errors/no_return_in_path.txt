@@ -1,0 +1,4 @@
+alg f(){
+    if(false) return "Unreachable"
+}
+x = f()

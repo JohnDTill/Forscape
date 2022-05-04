@@ -27,6 +27,7 @@ configure_file(${TEST}/serial_malformed.txt ${CMAKE_BINARY_DIR} COPYONLY)
 configure_file(${TEST}/serial_exhaustive.txt ${CMAKE_BINARY_DIR} COPYONLY)
 
 add_compile_definitions(TYPESET_MEMORY_DEBUG HOPE_SEMANTIC_DEBUGGING)
+add_compile_definitions(BASE_TEST_DIR="../test/interpreter_scripts")
 
 set(GEN_FILES
     ${GEN}/code_ast_fields.cpp
@@ -105,6 +106,7 @@ set(CONSTRUCT_FILES
 set(SOURCES
     ${TEST}/test_driver.cpp
     ${TEST}/code_interpreter.h
+    ${TEST}/code_interpreter_illformed.h
     ${TEST}/code_parser.h
     ${TEST}/code_scanner.h
     ${TEST}/hope_benchmark.h

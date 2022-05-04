@@ -38,11 +38,9 @@ inline bool testExpression(const std::string& in, const std::string& expect){
     }
 }
 
-static const std::string base_test_path = "../test/interpreter_scripts";
-
 inline bool testCase(const std::string& name){
-    std::string in = readFile(base_test_path + "/in/" + name + ".txt");
-    std::string out = readFile(base_test_path + "/out/" + name + ".txt");
+    std::string in = readFile(BASE_TEST_DIR "/in/" + name + ".txt");
+    std::string out = readFile(BASE_TEST_DIR "/out/" + name + ".txt");
 
     Typeset::Model* input = Typeset::Model::fromSerial(in);
     std::string str = input->run();
@@ -86,7 +84,7 @@ inline bool testInterpreter(){
     passing &= testExpression("2^2", "4");
     passing &= testExpression("4^0.5", "2");
 
-    for(std::filesystem::directory_iterator end, dir(base_test_path + "/in");
+    for(std::filesystem::directory_iterator end, dir(BASE_TEST_DIR "/in");
          dir != end;
          dir++) {
         const std::filesystem::path& path = dir->path();

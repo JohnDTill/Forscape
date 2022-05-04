@@ -111,6 +111,8 @@ private:
     static double pNorm(const Eigen::MatrixXd& a, double b) noexcept;
     static void removeEscapes(std::string& str) noexcept;
     static std::string formatted(double num);
+    Value factorial(ParseNode pn);
+    Value binomial(ParseNode pn);
 };
 
 }

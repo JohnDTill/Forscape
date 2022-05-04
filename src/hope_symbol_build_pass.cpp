@@ -117,6 +117,11 @@ void SymbolTableBuilder::resolveStmt(ParseNode pn){
         case OP_IF: resolveConditional1(symbol_table.ifSel(), pn); break;
         case OP_IF_ELSE: resolveConditional2(pn); break;
         case OP_FOR: resolveFor(pn); break;
+        case OP_RETURN:
+        case OP_RETURN_EMPTY:
+            if(closure_depth == 0) errors.push_back(Error(parse_tree.getSelection(pn), RETURN_OUTSIDE_FUNCTION));
+            resolveDefault(pn);
+            break;
         default: resolveDefault(pn);
     }
 }
@@ -192,9 +197,13 @@ void SymbolTableBuilder::resolveAssignmentId(ParseNode pn){
     }else{
         size_t sym_index = lookup->second;
         Symbol& sym = symbol_table.symbols[sym_index];
-        sym.is_reassigned = true;
-        parse_tree.setOp(pn, OP_REASSIGN);
-        resolveReference(id, c, sym_index);
+        if(sym.is_const){
+            errors.push_back(Error(c, REASSIGN_CONSTANT));
+        }else{
+            sym.is_reassigned = true;
+            parse_tree.setOp(pn, OP_REASSIGN);
+            resolveReference(id, c, sym_index);
+        }
     }
 }
 
