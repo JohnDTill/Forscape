@@ -1,0 +1,3 @@
+x ← 0
+alg setter() x ← 1
+print(setter())

@@ -49,6 +49,7 @@ ParseNode Parser::checkedStatement() noexcept{
     if(noErrors()){
         return n;
     }else{
+        assert(!errors.empty());
         recover();
         return n;
     }
@@ -243,9 +244,26 @@ ParseNode Parser::mathStatement() noexcept{
     ParseNode n = expression();
 
     switch (currentType()) {
-        case EQUALS: return equality(n);
-        case LEFTARROW: return assignment(n);
-        default: return parse_tree.addUnary(OP_EXPR_STMT, n);
+        case EQUALS: n = equality(n); break;
+        case LEFTARROW: n = assignment(n); break;
+        default: n = parse_tree.addUnary(OP_EXPR_STMT, n);
+    }
+
+    switch (currentType()) {
+        case NEWLINE:
+        case COMMENT:
+            advance();
+            return n;
+
+        case ARGCLOSE:
+        case SEMICOLON:
+        case RIGHTBRACE:
+        case RIGHTPAREN:
+        case ENDOFFILE:
+            return n;
+
+        default:
+            return error(UNRECOGNIZED_EXPR);
     }
 }
 
@@ -700,6 +718,7 @@ ParseNode Parser::identifier() noexcept{
                 }
                 index = index_backup;
                 errors.clear();
+                error_node = UNITIALIZED;
             }
             return id;
         case TOKEN_DUALSCRIPT:
@@ -1167,6 +1186,8 @@ Parser::ParseNode Parser::error(ErrorCode code, const Typeset::Selection& c){
         error_node = parse_tree.addTerminal(SCANNER_ERROR, c);
         errors.push_back(Error(c, code));
     }
+
+    assert(errors.empty() == (error_node == UNITIALIZED));
 
     return error_node;
 }

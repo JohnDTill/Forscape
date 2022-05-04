@@ -375,7 +375,7 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
             return pn;
         case OP_UNIT_VECTOR_AUTOSIZE:{
             parse_tree.setType(pn, NUMERIC);
-            ParseNode child = enforcePositiveInt(parse_tree.child(pn));
+            ParseNode child = enforceSemiPositiveInt(parse_tree.child(pn));
             parse_tree.setArg<0>( pn, child );
             if(rows_expected > 1 && cols_expected > 1) return error(pn, pn, DIMENSION_MISMATCH);
             else if(rows_expected > 1 && cols_expected == UNKNOWN_SIZE) cols_expected = 1;
@@ -509,9 +509,9 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
         }
         case OP_BINOMIAL:{
             parse_tree.setScalar(pn);
-            ParseNode n = enforcePositiveInt(parse_tree.lhs(pn));
+            ParseNode n = enforceSemiPositiveInt(parse_tree.lhs(pn));
             parse_tree.setArg<0>(pn, n);
-            ParseNode k = enforcePositiveInt(parse_tree.rhs(pn));
+            ParseNode k = enforceSemiPositiveInt(parse_tree.rhs(pn));
             parse_tree.setArg<1>(pn, k);
             return pn;
         }
@@ -616,7 +616,7 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
         }
         case OP_FACTORIAL:{
             parse_tree.setScalar(pn);
-            ParseNode child = enforcePositiveInt(parse_tree.child(pn));
+            ParseNode child = enforceSemiPositiveInt(parse_tree.child(pn));
             parse_tree.setArg<0>(pn, child);
             return pn;
         }
@@ -1361,7 +1361,7 @@ ParseNode StaticPass::resolveUnitVector(ParseNode pn){
         return pn;
     }
 
-    ParseNode elem = enforcePositiveInt(parse_tree.unitVectorElem(pn));
+    ParseNode elem = enforceSemiPositiveInt(parse_tree.unitVectorElem(pn));
     parse_tree.setUnitVectorElem(pn, elem);
 
     if((parse_tree.getOp(elem) == OP_INTEGER_LITERAL || parse_tree.getOp(elem) == OP_DECIMAL_LITERAL) &&
@@ -1472,12 +1472,12 @@ ParseNode StaticPass::enforceNaturalNumber(ParseNode pn){
         return pn;
     }
     if(parse_tree.getFlagAsDouble(pn) < 1)
-        return error(pn, pn, INDEX_OUT_OF_RANGE);
+        return error(pn, pn, EXPECT_NATURAL_NUMBER);
 
     return pn;
 }
 
-ParseNode StaticPass::enforcePositiveInt(ParseNode pn){
+ParseNode StaticPass::enforceSemiPositiveInt(ParseNode pn){
     pn = resolveExpr(pn);
 
     if(parse_tree.getType(pn) != NUMERIC)
@@ -1491,7 +1491,7 @@ ParseNode StaticPass::enforcePositiveInt(ParseNode pn){
         return pn;
     }
     if(parse_tree.getFlagAsDouble(pn) < 0)
-        return error(pn, pn, INDEX_OUT_OF_RANGE);
+        return error(pn, pn, EXPECT_POSITIVE_INT);
 
     return pn;
 }

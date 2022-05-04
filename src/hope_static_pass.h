@@ -148,7 +148,7 @@ private:
         ParseNode enforceScalar(ParseNode pn);
         ParseNode enforceZero(ParseNode pn);
         ParseNode enforceNaturalNumber(ParseNode pn);
-        ParseNode enforcePositiveInt(ParseNode pn);
+        ParseNode enforceSemiPositiveInt(ParseNode pn);
         static bool dimsDisagree(size_t a, size_t b) noexcept;
 
         ParseTree& parse_tree;

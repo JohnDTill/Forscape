@@ -68,3 +68,7 @@ EXPECT_BOOLEAN,,Expected boolean in conditional
 EXPECT_SCALAR,,Expected scalar
 AUTOSIZE,,Failed to deduce dimensions of auto-size variable
 RETURN_OUTSIDE_FUNCTION,,Cannot return from outside of function
+EXPECT_POSITIVE_INT,,Expect semipositive integer
+EXPECT_NATURAL_NUMBER,,Expect natural number
+CALC_OVERFLOW,,Calculation overflows
+BINOM_K_EXCEED_N,,Binomial coefficient options must exceed choices

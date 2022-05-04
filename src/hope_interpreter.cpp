@@ -1128,6 +1128,45 @@ std::string Interpreter::formatted(double num){
     return str;
 }
 
+Value Interpreter::factorial(ParseNode pn) {
+    Value v = interpretExpr(parse_tree.child(pn));
+    if(v.index() != double_index) return error(TYPE_ERROR, pn);
+
+    if(std::get<double>(v) < 0) return error(EXPECT_POSITIVE_INT, pn);
+    size_t a = std::get<double>(v);
+
+    static constexpr bool bit64 = (8*sizeof(size_t) == 64);
+    static constexpr bool bit32 = (8*sizeof(size_t) == 32);
+    if(bit64 && a > 20) return error(CALC_OVERFLOW, pn);
+    else if(bit32 && a > 12) return error(CALC_OVERFLOW, pn);
+
+    size_t ans = 1;
+    while(a > 1) ans *= a--;
+    return static_cast<double>(ans);
+}
+
+Value Interpreter::binomial(ParseNode pn){
+    ParseNode lhs = parse_tree.lhs(pn);
+    Value vl = interpretExpr(lhs);
+    if(vl.index() != double_index) return error(TYPE_ERROR, lhs);
+    if(std::get<double>(vl) < 1) return error(EXPECT_NATURAL_NUMBER, lhs);
+    size_t n = std::get<double>(vl);
+
+    ParseNode rhs = parse_tree.rhs(pn);
+    Value vr = interpretExpr(rhs);
+    if(vr.index() != double_index) return error(TYPE_ERROR, rhs);
+    if(std::get<double>(vr) < 0) return error(EXPECT_POSITIVE_INT, rhs);
+    size_t k = std::get<double>(vr);
+    if(k > n) return error(BINOM_K_EXCEED_N, pn);
+
+    //EVENTUALLY: handle overflow
+    double res = 1;
+    for (int i = 1; i <= k; ++i)
+        res = res * (n - k + i) / i;
+
+    return res;
+}
+
 }
 
 }
