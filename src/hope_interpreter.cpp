@@ -104,7 +104,7 @@ void Interpreter::assignStmt(ParseNode pn){
 
     Value v = interpretExpr(rhs);
 
-    if(parse_tree.getOp(lhs) == OP_READ_UPVALUE) readUpvalue(lhs) = v;
+    if(parse_tree.getOp(lhs) == OP_READ_UPVALUE) readClosedVar(lhs) = v;
     else stack.push(v, parse_tree.str(lhs));
 }
 
@@ -340,20 +340,53 @@ bool Interpreter::evaluateCondition(ParseNode pn){
 void Interpreter::reassign(ParseNode lhs, ParseNode rhs){
     switch (parse_tree.getOp(lhs)) {
         case OP_IDENTIFIER:{
-            Value v = interpretExpr(rhs);
-            readLocal(lhs) = v;
+            Value v_rhs = interpretExpr(rhs);
+            Value& v_lhs = readLocal(lhs);
+            if(v_rhs.index() != v_lhs.index()) error(DIMENSION_MISMATCH, rhs);
+            else if(v_rhs.index() == MatrixXd_index){
+                const Eigen::MatrixXd& m_lhs = std::get<Eigen::MatrixXd>(v_lhs);
+                const Eigen::MatrixXd& m_rhs = std::get<Eigen::MatrixXd>(v_rhs);
+                if(m_lhs.rows() != m_rhs.rows() || m_lhs.cols() != m_rhs.cols()){
+                    error(DIMENSION_MISMATCH, rhs);
+                    break;
+                }
+            }
+
+            v_lhs = v_rhs;
             break;
         }
 
         case OP_READ_GLOBAL:{
-            Value v = interpretExpr(rhs);
-            readGlobal(lhs) = v;
+            Value v_rhs = interpretExpr(rhs);
+            Value& v_lhs = readGlobal(lhs);
+            if(v_rhs.index() != v_lhs.index()) error(DIMENSION_MISMATCH, rhs);
+            else if(v_rhs.index() == MatrixXd_index){
+                const Eigen::MatrixXd& m_lhs = std::get<Eigen::MatrixXd>(v_lhs);
+                const Eigen::MatrixXd& m_rhs = std::get<Eigen::MatrixXd>(v_rhs);
+                if(m_lhs.rows() != m_rhs.rows() || m_lhs.cols() != m_rhs.cols()){
+                    error(DIMENSION_MISMATCH, rhs);
+                    break;
+                }
+            }
+
+            v_lhs = v_rhs;
             break;
         }
 
         case OP_READ_UPVALUE:{
-            Value v = interpretExpr(rhs);
-            readUpvalue(lhs) = v;
+            Value v_rhs = interpretExpr(rhs);
+            Value& v_lhs = readClosedVar(lhs);
+            if(v_rhs.index() != v_lhs.index()) error(DIMENSION_MISMATCH, rhs);
+            else if(v_rhs.index() == MatrixXd_index){
+                const Eigen::MatrixXd& m_lhs = std::get<Eigen::MatrixXd>(v_lhs);
+                const Eigen::MatrixXd& m_rhs = std::get<Eigen::MatrixXd>(v_rhs);
+                if(m_lhs.rows() != m_rhs.rows() || m_lhs.cols() != m_rhs.cols()){
+                    error(DIMENSION_MISMATCH, rhs);
+                    break;
+                }
+            }
+
+            v_lhs = v_rhs;
             break;
         }
 
@@ -573,7 +606,7 @@ Value& Interpreter::read(ParseNode pn){
     switch (parse_tree.getOp(pn)) {
         case OP_IDENTIFIER: return readLocal(pn);
         case OP_READ_GLOBAL: return readGlobal(pn);
-        case OP_READ_UPVALUE: return readUpvalue(pn);
+        case OP_READ_UPVALUE: return readClosedVar(pn);
         default:
             error(NON_LVALUE, pn);
             stack.push(NIL, "%ERROR");
@@ -595,7 +628,7 @@ Value& Interpreter::readGlobal(ParseNode pn){
     return stack.read(stack_offset, parse_tree.str(pn));
 }
 
-Value& Interpreter::readUpvalue(ParseNode pn){
+Value& Interpreter::readClosedVar(ParseNode pn){
     size_t upvalue_offset = parse_tree.getClosureIndex(pn);
     assert(upvalue_offset < active_closure->size());
     return conv(active_closure->at(upvalue_offset));
@@ -781,7 +814,7 @@ Value Interpreter::innerCall(ParseNode call, Closure& closure, ParseNode fn, boo
     for(const auto& entry : stack_vals)
         stack.push(entry.first, entry.second);
     for(const auto& entry : closure_vals)
-        readUpvalue(entry.first) = entry.second;
+        readClosedVar(entry.first) = entry.second;
 
     Value ans;
 

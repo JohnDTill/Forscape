@@ -88,7 +88,7 @@ private:
     Value& read(ParseNode pn);
     Value& readLocal(ParseNode pn);
     Value& readGlobal(ParseNode pn);
-    Value& readUpvalue(ParseNode pn);
+    Value& readClosedVar(ParseNode pn);
     Value matrix(ParseNode pn);
     Value str(ParseNode pn) const;
     Value anonFun(ParseNode pn);

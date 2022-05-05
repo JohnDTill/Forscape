@@ -12,38 +12,38 @@ Ji,j ← i+j
 print(J, "\n")
 
 //Col vec element assignment
-J ← 03×1
-Ji ← i
-print(J, "\n")
+K ← 03×1
+Ki ← i
+print(K, "\n")
 
 //Col vec row assignment
-Ji,: ← i
-print(J, "\n")
+Ki,: ← i
+print(K, "\n")
 
 //Col vec col assignment
-J:,i ← i00⊤
-print(J, "\n")
+K:,i ← i00⊤
+print(K, "\n")
 
 //Row vec element assignment
-J ← 01×3
-Ji ← i
-print(J, "\n")
+L ← 01×3
+Li ← i
+print(L, "\n")
 
 //Row vec row assignment
-Ji,: ← i00
-print(J, "\n")
+Li,: ← i00
+print(L, "\n")
 
 //Row vec col assignment
-J:,i ← i
-print(J, "\n")
+L:,i ← i
+print(L, "\n")
 
 //Scalar assignments
-J ← 0
-Ji,j ← i+j
-print(J, "\n")
-J:,i ← i
-print(J, "\n")
-Ji,: ← i
-print(J, "\n")
-Ji ← i
-print(J, "\n")
+M ← 0
+Mi,j ← i+j
+print(M, "\n")
+M:,i ← i
+print(M, "\n")
+Mi,: ← i
+print(M, "\n")
+Mi ← i
+print(M, "\n")
