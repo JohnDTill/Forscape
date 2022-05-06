@@ -328,6 +328,23 @@ ParseNode ParseTree::addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, 
     return pn;
 }
 
+ParseNode ParseTree::addPentary(Op type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E){
+    ParseNode pn = size();
+
+    resize(size() + FIXED_FIELDS + 5);
+    setOp(pn, type);
+    setFlag(pn, EMPTY);
+    setSelection(pn, c);
+    setNumArgs(pn, 5);
+    setArg<0>(pn, A);
+    setArg<1>(pn, B);
+    setArg<2>(pn, C);
+    setArg<3>(pn, D);
+    setArg<4>(pn, E);
+
+    return pn;
+}
+
 ParseNode ParseTree::clone(ParseNode pn){
     ParseNode cloned = size();
 

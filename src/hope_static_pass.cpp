@@ -270,6 +270,30 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
             return pn;
         }
 
+        case OP_PLOT:{
+            ParseNode title = resolveExprTop(parse_tree.arg<0>(pn));
+            if(parse_tree.getType(title) != STRING) return error(pn, title);
+            parse_tree.setArg<0>(pn, title);
+
+            ParseNode x_label = resolveExprTop(parse_tree.arg<1>(pn));
+            if(parse_tree.getType(x_label) != STRING) return error(pn, x_label);
+            parse_tree.setArg<1>(pn, x_label);
+
+            ParseNode x = resolveExprTop(parse_tree.arg<2>(pn));
+            if(parse_tree.getType(x) != NUMERIC) return error(pn, x);
+            parse_tree.setArg<2>(pn, x);
+
+            ParseNode y_label = resolveExprTop(parse_tree.arg<3>(pn));
+            if(parse_tree.getType(y_label) != STRING) return error(pn, y_label);
+            parse_tree.setArg<3>(pn, y_label);
+
+            ParseNode y = resolveExprTop(parse_tree.arg<4>(pn));
+            if(parse_tree.getType(y) != NUMERIC) return error(pn, y);
+            parse_tree.setArg<4>(pn, y);
+
+            return pn;
+        }
+
         default:
             assert(false);
             return pn;

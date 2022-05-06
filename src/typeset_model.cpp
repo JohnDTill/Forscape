@@ -12,12 +12,15 @@
 #endif
 
 #include <hope_error.h>
+#include "hope_message.h"
 #include <hope_scanner.h>
 #include <hope_parser.h>
 #include <hope_symbol_build_pass.h>
 #include <hope_symbol_link_pass.h>
 #include <hope_interpreter.h>
 #include <unordered_set>
+
+#include <iostream> //DO THIS: delete me
 
 namespace Hope {
 
@@ -75,10 +78,28 @@ std::string Model::run(){
     interpreter.run(parser.parse_tree, symbol_builder.symbol_table, static_pass.instantiation_lookup);
 
     std::string str;
-    str.reserve(interpreter.message_queue.size_approx());
-    char ch;
-    while(interpreter.message_queue.try_dequeue(ch))
-        if(ch != '\0') str += ch;
+
+    InterpreterOutput* msg;
+    while(interpreter.message_queue.try_dequeue(msg))
+        switch(msg->getType()){
+            case Hope::InterpreterOutput::Print:
+                str += static_cast<PrintMessage*>(msg)->msg;
+                delete msg;
+                break;
+            case Hope::InterpreterOutput::CreatePlot:
+                std::cout << "Request to plot " << static_cast<PlotCreate*>(msg)->title << std::endl;
+                delete msg;
+                break;
+            case Hope::InterpreterOutput::AddDiscreteSeries:{
+                const auto& data = static_cast<PlotDiscreteSeries*>(msg)->data;
+                std::cout << "Series {\n";
+                for(const auto& entry : data) std::cout << "    {" << entry.first << ", " << entry.second << "},\n";
+                std::cout << "}" << std::endl;
+                delete msg;
+                break;
+            }
+            default: assert(false);
+        }
 
     if(interpreter.error_code != Code::ErrorCode::NO_ERROR_FOUND){
         Code::Error error(parser.parse_tree.getSelection(interpreter.error_node), interpreter.error_code);

@@ -140,10 +140,13 @@ set(PROJECT_SOURCES
     ${SRC}/hope_interpreter.cpp
     ${SRC}/hope_interpreter.h
     ${INCLUDE}/hope_logging.h
+    ${SRC}/hope_message.h
     ${SRC}/hope_parse_tree.cpp
     ${SRC}/hope_parse_tree.h
     ${SRC}/hope_parser.cpp
     ${SRC}/hope_parser.h
+    ${SRC}/hope_plot.cpp
+    ${SRC}/hope_plot.h
     ${SRC}/hope_scanner.cpp
     ${SRC}/hope_scanner.h
     ${INCLUDE}/hope_serial.h

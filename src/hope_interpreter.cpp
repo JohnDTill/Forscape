@@ -2,6 +2,7 @@
 
 #include <code_parsenode_ops.h>
 #include "construct_codes.h"
+#include "hope_message.h"
 #include "hope_symbol_link_pass.h"
 
 #include <Eigen/Eigen>
@@ -83,6 +84,7 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_RETURN: returnStmt(pn); break;
         case OP_BREAK: status = static_cast<Status>(status | BREAK); break;
         case OP_CONTINUE: status = static_cast<Status>(status | CONTINUE); break;
+        case OP_PLOT: plotStmt(pn); break;
         case OP_DO_NOTHING: break;
         default: error(UNRECOGNIZED_STMT, pn);
     }
@@ -235,6 +237,55 @@ void Interpreter::returnStmt(ParseNode pn){
     Value v = interpretExpr(parse_tree.child(pn));
     status = static_cast<Status>(status | RETURN);
     stack.push(v, "%RETURN");
+}
+
+void Interpreter::plotStmt(ParseNode pn){
+    Value v_title = interpretExpr(parse_tree.arg<0>(pn));
+    assert(v_title.index() == string_index);
+    const std::string& title = std::get<std::string>(v_title);
+    Value v_xlabel = interpretExpr(parse_tree.arg<1>(pn));
+    assert(v_xlabel.index() == string_index);
+    const std::string& x_label = std::get<std::string>(v_xlabel);
+    Value vx = interpretExpr(parse_tree.arg<2>(pn));
+    Value v_ylabel = interpretExpr(parse_tree.arg<3>(pn));
+    assert(v_ylabel.index() == string_index);
+    const std::string& y_label = std::get<std::string>(v_ylabel);
+    Value vy = interpretExpr(parse_tree.arg<4>(pn));
+
+    if(status != NORMAL) return;
+
+    InterpreterOutput* series_command;
+
+    if(vx.index() == double_index){
+        if(vy.index() != double_index){
+            error(DIMENSION_MISMATCH, pn);
+            return;
+        }else{
+            double x = std::get<double>(vx);
+            double y = std::get<double>(vy);
+            series_command = PlotDiscreteSeries::FromArrays(&x, &y, 1);
+        }
+    }else{
+        assert(vx.index() == MatrixXd_index);
+        if(vy.index() != MatrixXd_index){
+            error(DIMENSION_MISMATCH, pn);
+            return;
+        }
+
+        const Eigen::MatrixXd& x = std::get<Eigen::MatrixXd>(vx);
+        const Eigen::MatrixXd& y = std::get<Eigen::MatrixXd>(vy);
+        if(x.rows() != y.rows() || x.cols() != y.cols() || (x.cols() > 1 && x.rows() > 1)){
+            error(DIMENSION_MISMATCH, pn);
+            return;
+        }else{
+            series_command = PlotDiscreteSeries::FromArrays(x.data(), y.data(), x.size());
+        }
+    }
+
+    InterpreterOutput* title_command = new PlotCreate(title, x_label, y_label);
+
+    message_queue.enqueue(title_command);
+    message_queue.enqueue(series_command);
 }
 
 Value Interpreter::implicitMult(ParseNode pn, size_t start){
@@ -720,7 +771,6 @@ Value Interpreter::anonFun(ParseNode pn){
 
 Value Interpreter::call(ParseNode call) {
     Value v = interpretExpr( parse_tree.arg(call, 0) );
-    size_t nargs = parse_tree.getNumArgs(call)-1;
 
     switch (v.index()) {
         case Lambda_index:{
@@ -739,7 +789,8 @@ Value Interpreter::call(ParseNode call) {
 
         case double_index:
         case MatrixXd_index:
-            assert(nargs == 1);
+            //DO THIS - assert false;
+            assert(parse_tree.getNumArgs(false));
             return binaryDispatch(call);
 
         default:
@@ -977,8 +1028,7 @@ void Interpreter::printNode(const ParseNode& pn){
         default: assert(false);
     }
 
-    for(const char& ch : str) message_queue.enqueue(ch);
-    message_queue.enqueue('\0');
+    if(status == NORMAL) message_queue.enqueue(new PrintMessage(str));
 }
 
 double Interpreter::dot(const Eigen::MatrixXd& a, const Eigen::MatrixXd& b) noexcept{

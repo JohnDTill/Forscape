@@ -38,6 +38,7 @@ private:
     ParseNode blockStatement() noexcept;
     ParseNode algStatement() noexcept;
     ParseNode returnStatement() noexcept;
+    ParseNode plotStatement();
     ParseNode mathStatement() noexcept;
     ParseNode assignment(const ParseNode& lhs) noexcept;
     ParseNode expression() noexcept;

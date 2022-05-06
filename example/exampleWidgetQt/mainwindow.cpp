@@ -10,6 +10,7 @@
 #include <hope_serial_unicode.h>
 #include <hope_parser.h>
 #include <hope_symbol_build_pass.h>
+#include <hope_message.h>
 #include <QBuffer>
 #include <QClipboard>
 #include <QCloseEvent>
@@ -307,7 +308,6 @@ void MainWindow::pollInterpreterThread(){
                 console->scrollToBottom();
         }
 
-        out.clear();
         editor->reenable();
         interpreter_poll_timer.stop();
         if(editor_had_focus) editor->setFocus();
@@ -380,13 +380,29 @@ void MainWindow::on_actionExit_triggered(){
 void MainWindow::checkOutput(){
     auto& interpreter = editor->getModel()->interpreter;
     auto& message_queue = interpreter.message_queue;
-    char ch;
-    while(message_queue.try_dequeue(ch))
-        if(ch == '\0'){
-            print_buffer += out;
-            out.clear();
-        }else{
-            out += ch;
+
+    static std::string print_buffer;
+
+    InterpreterOutput* msg;
+    while(message_queue.try_dequeue(msg))
+        switch(msg->getType()){
+            case Hope::InterpreterOutput::Print:
+                print_buffer += static_cast<PrintMessage*>(msg)->msg;
+                delete msg;
+                break;
+            case Hope::InterpreterOutput::CreatePlot:
+                std::cout << "Request to plot " << static_cast<PlotCreate*>(msg)->title << std::endl;
+                delete msg;
+                break;
+            case Hope::InterpreterOutput::AddDiscreteSeries:{
+                const auto& data = static_cast<PlotDiscreteSeries*>(msg)->data;
+                std::cout << "Series {\n";
+                for(const auto& entry : data) std::cout << "    {" << entry.first << ", " << entry.second << "},\n";
+                std::cout << "}" << std::endl;
+                delete msg;
+                break;
+            }
+            default: assert(false);
         }
 
     if(!print_buffer.empty()){

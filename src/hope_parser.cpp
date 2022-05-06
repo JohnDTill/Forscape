@@ -68,6 +68,7 @@ ParseNode Parser::statement() noexcept{
         case RETURN: return returnStatement();
         case BREAK: return loops ? terminalAndAdvance(OP_BREAK) : error(BAD_BREAK);
         case CONTINUE: return loops ? terminalAndAdvance(OP_CONTINUE) : error(BAD_CONTINUE);
+        case PLOT: return plotStatement();
         default: return mathStatement();
     }
 }
@@ -238,6 +239,28 @@ Parser::ParseNode Parser::returnStatement() noexcept{
     Typeset::Marker m = lMark();
     advance();
     return parse_tree.addLeftUnary(OP_RETURN, m, disjunction());
+}
+
+Parser::ParseNode Parser::plotStatement(){
+    Typeset::Marker m = lMark();
+    advance();
+    Typeset::Marker l = lMark();
+    if(!match(LEFTPAREN)) return error(CONSUME);
+    ParseNode title = expression();
+    if(!match(COMMA)) return error(CONSUME);
+    ParseNode x_label = expression();
+    if(!match(COMMA)) return error(CONSUME);
+    ParseNode x = expression();
+    if(!match(COMMA)) return error(CONSUME);
+    ParseNode y_label = expression();
+    if(!match(COMMA)) return error(CONSUME);
+    ParseNode y = expression();
+    Typeset::Marker r = rMark();
+    if(!match(RIGHTPAREN)) return error(CONSUME);
+    Typeset::Selection sel(m, r);
+    registerGrouping(l, r);
+
+    return parse_tree.addPentary(OP_PLOT, sel, title, x_label, x, y_label, y);
 }
 
 ParseNode Parser::mathStatement() noexcept{
