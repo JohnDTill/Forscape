@@ -16,25 +16,25 @@ namespace Code {
 
 class Scanner {
 public:
-    Scanner(Typeset::Model* model);
-    void scanAll();
-    void scanToken();
+    Scanner(Typeset::Model* model) noexcept;
+    void scanAll() alloc_except;
+    void scanToken() alloc_except;
 
     std::vector<Token> tokens;
 
 private:
-    void scanString();
-    void forwardSlash();
-    void comment();
-    void createToken(TokenType type);
-    void scanNumber();
-    void scanIdentifier();
-    void unrecognizedSymbol();
-    void scanConstruct(TokenType type);
-    void close();
-    void error(ErrorCode code);
-    void newline();
-    void endOfFile();
+    void scanString() alloc_except;
+    void forwardSlash() alloc_except;
+    void comment() alloc_except;
+    void createToken(TokenType type) alloc_except;
+    void scanNumber() alloc_except;
+    void scanIdentifier() alloc_except;
+    void unrecognizedSymbol() alloc_except;
+    void scanConstruct(TokenType type) alloc_except;
+    void close() alloc_except;
+    void error(ErrorCode code) alloc_except;
+    void newline() alloc_except;
+    void endOfFile() alloc_except;
     void incrementScope() noexcept;
     void decrementScope() noexcept;
 

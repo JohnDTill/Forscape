@@ -9,10 +9,10 @@ namespace Hope {
 
 namespace Code {
 
-Symbol::Symbol()
+Symbol::Symbol() noexcept
     : declaration_lexical_depth(0) {}
 
-Symbol::Symbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed_var, bool is_const)
+Symbol::Symbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed_var, bool is_const) noexcept
     : declaration_lexical_depth(lexical_depth),
       declaration_closure_depth(closure_depth),
       flag(pn),
@@ -28,13 +28,13 @@ const Typeset::Selection& Symbol::sel(const ParseTree& parse_tree) const noexcep
     return parse_tree.getSelection(flag);
 }
 
-Usage::Usage()
+Usage::Usage() noexcept
     : var_id(NONE), type(DECLARE) {}
 
-Usage::Usage(size_t var_id, ParseNode pn, UsageType type)
+Usage::Usage(size_t var_id, ParseNode pn, UsageType type) noexcept
     : var_id(var_id), pn(pn), type(type) {}
 
-ScopeSegment::ScopeSegment(const Typeset::Selection &name, const Typeset::Marker &start, ParseNode closure, ScopeId parent, ScopeId prev, SymbolId sym_begin, size_t usage_begin)
+ScopeSegment::ScopeSegment(const Typeset::Selection &name, const Typeset::Marker &start, ParseNode closure, ScopeId parent, ScopeId prev, SymbolId sym_begin, size_t usage_begin) noexcept
     : name(name), start(start), fn(closure), parent(parent), prev(prev), sym_begin(sym_begin), usage_begin(usage_begin) {}
 
 bool ScopeSegment::isStartOfScope() const noexcept{
@@ -45,7 +45,7 @@ bool ScopeSegment::isEndOfScope() const noexcept{
     return next == NONE;
 }
 
-void SymbolTable::addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed, bool is_const){
+void SymbolTable::addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed, bool is_const) alloc_except {
     occurence_to_symbol_map[parse_tree.getLeft(pn)] = symbols.size();
     size_t comment = parse_tree.getFlag(pn);
     parse_tree.setFlag(pn, symbols.size());
@@ -53,7 +53,7 @@ void SymbolTable::addSymbol(size_t pn, size_t lexical_depth, size_t closure_dept
     symbols.back().comment = comment;
 }
 
-void SymbolTable::addOccurence(const Typeset::Marker& left, size_t sym_index){
+void SymbolTable::addOccurence(const Typeset::Marker& left, size_t sym_index) alloc_except {
     occurence_to_symbol_map[left] = sym_index;
 }
 
@@ -135,14 +135,14 @@ void SymbolTable::reset(const Typeset::Marker &doc_start) noexcept{
     scopes.push_back(ScopeSegment(sel, doc_start, NONE, NONE, NONE, symbols.size(), usages.size()));
 }
 
-void SymbolTable::addScope(const Typeset::Selection &name, const Typeset::Marker &start, ParseNode closure){
+void SymbolTable::addScope(const Typeset::Selection& name, const Typeset::Marker& start, ParseNode closure) alloc_except {
     ScopeSegment& active_scope = scopes.back();
     active_scope.sym_end = symbols.size();
     active_scope.usage_end = usages.size();
     scopes.push_back(ScopeSegment(name, start, closure, scopes.size()-1, NONE, symbols.size(), usages.size()));
 }
 
-void SymbolTable::closeScope(const Typeset::Marker &stop){
+void SymbolTable::closeScope(const Typeset::Marker& stop) alloc_except {
     ScopeSegment& closed_scope = scopes.back();
     closed_scope.sym_end = symbols.size();
     closed_scope.usage_end = usages.size();
@@ -155,7 +155,7 @@ void SymbolTable::closeScope(const Typeset::Marker &stop){
     scopes.push_back(ScopeSegment(prev_scope.name, stop, prev_scope.fn, prev_scope.parent, prev_index, symbols.size(), usages.size()));
 }
 
-void SymbolTable::finalize(){
+void SymbolTable::finalize() noexcept {
     ScopeSegment& scope = scopes.back();
     scope.next = NONE;
     scope.sym_end = symbols.size();

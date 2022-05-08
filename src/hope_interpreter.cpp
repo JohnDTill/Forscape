@@ -489,11 +489,10 @@ void Interpreter::reassignSubscript(ParseNode lhs, ParseNode rhs){
                     return;
                 }
 
-                Eigen::Map<Eigen::VectorXd> vec(lmat.data(), lmat.size());
                 ParseNode index_node = parse_tree.arg(lhs, 1);
                 Slice s = readSubscript(index_node, lmat.size());
                 if(status != NORMAL) return;
-                auto v = vec(s);
+                auto v = lmat.cols() == 1 ? lmat(s, Slice(0, 1, Eigen::fix<1>)) : lmat(Slice(0, 1, Eigen::fix<1>), s);
 
                 if(rmat.cols() == v.cols() && rmat.rows() == v.rows())
                     v = rmat;

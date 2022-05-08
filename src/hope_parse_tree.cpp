@@ -151,7 +151,7 @@ std::string ParseTree::str(ParseNode node) const{
     return getSelection(node).str();
 }
 
-size_t ParseTree::addTerminal(size_t type, const Typeset::Selection& c){
+size_t ParseTree::addTerminal(size_t type, const Typeset::Selection& c) alloc_except {
     ParseNode pn = size();
 
     resize(size() + FIXED_FIELDS);
@@ -163,7 +163,7 @@ size_t ParseTree::addTerminal(size_t type, const Typeset::Selection& c){
     return pn;
 }
 
-size_t ParseTree::addUnary(size_t type, const Typeset::Selection& c, size_t child){
+size_t ParseTree::addUnary(size_t type, const Typeset::Selection& c, size_t child) alloc_except {
     ParseNode pn = size();
 
     resize(size() + FIXED_FIELDS + 1);
@@ -176,7 +176,7 @@ size_t ParseTree::addUnary(size_t type, const Typeset::Selection& c, size_t chil
     return pn;
 }
 
-size_t ParseTree::addUnary(size_t type, size_t child){
+size_t ParseTree::addUnary(size_t type, size_t child) alloc_except {
     ParseNode pn = size();
 
     resize(size() + FIXED_FIELDS + 1);
@@ -189,7 +189,7 @@ size_t ParseTree::addUnary(size_t type, size_t child){
     return pn;
 }
 
-size_t ParseTree::addLeftUnary(size_t type, const Typeset::Marker& left, size_t child){
+size_t ParseTree::addLeftUnary(size_t type, const Typeset::Marker& left, size_t child) alloc_except {
     ParseNode pn = size();
 
     resize(size() + FIXED_FIELDS + 1);
@@ -203,7 +203,7 @@ size_t ParseTree::addLeftUnary(size_t type, const Typeset::Marker& left, size_t 
     return pn;
 }
 
-size_t ParseTree::addRightUnary(size_t type, const Typeset::Marker& right, size_t child){
+size_t ParseTree::addRightUnary(size_t type, const Typeset::Marker& right, size_t child) alloc_except {
     ParseNode pn = size();
 
     resize(size() + FIXED_FIELDS + 1);
@@ -217,7 +217,7 @@ size_t ParseTree::addRightUnary(size_t type, const Typeset::Marker& right, size_
     return pn;
 }
 
-size_t ParseTree::addBinary(size_t type, const Typeset::Selection& c, size_t lhs, size_t rhs){
+size_t ParseTree::addBinary(size_t type, const Typeset::Selection& c, size_t lhs, size_t rhs) alloc_except {
     ParseNode pn = size();
 
     resize(size() + FIXED_FIELDS + 2);
@@ -231,7 +231,7 @@ size_t ParseTree::addBinary(size_t type, const Typeset::Selection& c, size_t lhs
     return pn;
 }
 
-size_t ParseTree::addBinary(size_t type, size_t lhs, size_t rhs){
+size_t ParseTree::addBinary(size_t type, size_t lhs, size_t rhs) alloc_except {
     ParseNode pn = size();
 
     resize(size() + FIXED_FIELDS + 2);
@@ -246,7 +246,7 @@ size_t ParseTree::addBinary(size_t type, size_t lhs, size_t rhs){
     return pn;
 }
 
-size_t ParseTree::addTernary(size_t type, const Typeset::Selection& c, size_t A, size_t B, size_t C){
+size_t ParseTree::addTernary(size_t type, const Typeset::Selection& c, size_t A, size_t B, size_t C) alloc_except {
     ParseNode pn = size();
 
     resize(size() + FIXED_FIELDS + 3);
@@ -261,7 +261,7 @@ size_t ParseTree::addTernary(size_t type, const Typeset::Selection& c, size_t A,
     return pn;
 }
 
-ParseNode ParseTree::addTernary(Op type, ParseNode A, ParseNode B, ParseNode C){
+ParseNode ParseTree::addTernary(Op type, ParseNode A, ParseNode B, ParseNode C) alloc_except {
     ParseNode pn = size();
 
     resize(size() + FIXED_FIELDS + 3);
@@ -277,7 +277,7 @@ ParseNode ParseTree::addTernary(Op type, ParseNode A, ParseNode B, ParseNode C){
     return pn;
 }
 
-ParseNode ParseTree::addQuadary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D){
+ParseNode ParseTree::addQuadary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D) alloc_except {
     ParseNode pn = size();
 
     resize(size() + FIXED_FIELDS + 4);
@@ -294,7 +294,7 @@ ParseNode ParseTree::addQuadary(Op type, ParseNode A, ParseNode B, ParseNode C, 
     return pn;
 }
 
-ParseNode ParseTree::addQuadary(Op type, const Typeset::Selection &c, ParseNode A, ParseNode B, ParseNode C, ParseNode D){
+ParseNode ParseTree::addQuadary(Op type, const Typeset::Selection &c, ParseNode A, ParseNode B, ParseNode C, ParseNode D) alloc_except {
     ParseNode pn = size();
 
     resize(size() + FIXED_FIELDS + 4);
@@ -310,7 +310,7 @@ ParseNode ParseTree::addQuadary(Op type, const Typeset::Selection &c, ParseNode 
     return pn;
 }
 
-ParseNode ParseTree::addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E){
+ParseNode ParseTree::addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E) alloc_except {
     ParseNode pn = size();
 
     resize(size() + FIXED_FIELDS + 5);
@@ -328,7 +328,7 @@ ParseNode ParseTree::addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, 
     return pn;
 }
 
-ParseNode ParseTree::addPentary(Op type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E){
+ParseNode ParseTree::addPentary(Op type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E) alloc_except {
     ParseNode pn = size();
 
     resize(size() + FIXED_FIELDS + 5);
@@ -345,7 +345,7 @@ ParseNode ParseTree::addPentary(Op type, const Typeset::Selection& c, ParseNode 
     return pn;
 }
 
-ParseNode ParseTree::clone(ParseNode pn){
+ParseNode ParseTree::clone(ParseNode pn) alloc_except {
     ParseNode cloned = size();
 
     switch (getOp(pn)) {
@@ -372,7 +372,7 @@ ParseNode ParseTree::clone(ParseNode pn){
     return cloned;
 }
 
-ParseNode ParseTree::getZero(const Typeset::Selection& sel){
+ParseNode ParseTree::getZero(const Typeset::Selection& sel) alloc_except {
     ParseNode pn = addTerminal(OP_INTEGER_LITERAL, sel);
     setFlag(pn, 0.0);
     setScalar(pn);
@@ -380,7 +380,7 @@ ParseNode ParseTree::getZero(const Typeset::Selection& sel){
     return pn;
 }
 
-ParseNode ParseTree::getOne(const Typeset::Selection& sel){
+ParseNode ParseTree::getOne(const Typeset::Selection& sel) alloc_except {
     ParseNode pn = addTerminal(OP_INTEGER_LITERAL, sel);
     setFlag(pn, 1.0);
     setScalar(pn);
@@ -437,7 +437,7 @@ void ParseTree::transposeDims(ParseNode dest, ParseNode src) noexcept{
     setCols(dest, getRows(src));
 }
 
-ParseTree::NaryBuilder ParseTree::naryBuilder(size_t type){
+ParseTree::NaryBuilder ParseTree::naryBuilder(size_t type) noexcept {
     return NaryBuilder(*this, type);
 }
 
@@ -497,14 +497,14 @@ void ParseTree::graphvizHelper(std::string& src, ParseNode n, size_t& size) cons
 }
 #endif
 
-ParseTree::NaryBuilder::NaryBuilder(ParseTree& tree, size_t type)
+ParseTree::NaryBuilder::NaryBuilder(ParseTree& tree, size_t type) noexcept
     : tree(tree), type(type) {}
 
-void ParseTree::NaryBuilder::addNaryChild(size_t index){
+void ParseTree::NaryBuilder::addNaryChild(size_t index) alloc_except {
     children.push_back(index);
 }
 
-size_t ParseTree::NaryBuilder::finalize(){
+size_t ParseTree::NaryBuilder::finalize() alloc_except {
     #ifndef NDEBUG
     assert(!built);
     built = true;
@@ -523,7 +523,7 @@ size_t ParseTree::NaryBuilder::finalize(){
     return pn;
 }
 
-size_t ParseTree::NaryBuilder::finalize(const Typeset::Marker& right){
+size_t ParseTree::NaryBuilder::finalize(const Typeset::Marker& right) alloc_except {
     #ifndef NDEBUG
     assert(!built);
     built = true;
@@ -542,7 +542,7 @@ size_t ParseTree::NaryBuilder::finalize(const Typeset::Marker& right){
     return pn;
 }
 
-size_t ParseTree::NaryBuilder::finalize(const Typeset::Selection& c){
+size_t ParseTree::NaryBuilder::finalize(const Typeset::Selection& c) alloc_except {
     #ifndef NDEBUG
     assert(!built);
     built = true;

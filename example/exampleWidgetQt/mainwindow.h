@@ -10,10 +10,15 @@ namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
 class MathToolbar;
+class Plot;
 class Preferences;
 class QGroupBox;
 
-namespace Hope{ namespace Typeset { class View; } }
+namespace Hope{
+namespace Typeset {
+class View;
+}
+}
 
 class MainWindow : public QMainWindow{
     Q_OBJECT
@@ -31,6 +36,7 @@ private:
     MathToolbar* math_toolbar;
     QToolBar* action_toolbar;
     Preferences* preferences;
+    Plot* active_plot = nullptr;
     QString path;
     QTimer interpreter_poll_timer;
     static constexpr std::chrono::milliseconds INTERPETER_POLL_PERIOD = std::chrono::milliseconds(15);
@@ -88,6 +94,8 @@ private:
     bool savePrompt();
     bool saveAs(QString name);
     void open(QString path);
+    void addPlot(const std::string& title, const std::string& x_label, const std::string& y_label);
+    void addSeries(const std::vector<std::pair<double, double>>& data) const alloc_except;
     QString getLastDir();
 };
 #endif // MAINWINDOW_H

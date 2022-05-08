@@ -14,6 +14,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 #add_compile_definitions(HOPE_TYPESET_LAYOUT_DEBUG)
 
+add_compile_definitions(alloc_except=noexcept)
+
 set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/forscape.rc")
 
 set(BASE ../..)
@@ -123,6 +125,8 @@ set(PROJECT_SOURCES
     mainwindow.ui
     mathtoolbar.h
     mathtoolbar.cpp
+    plot.cpp
+    plot.h
     preferences.cpp
     preferences.h
     preferences.ui
@@ -145,8 +149,6 @@ set(PROJECT_SOURCES
     ${SRC}/hope_parse_tree.h
     ${SRC}/hope_parser.cpp
     ${SRC}/hope_parser.h
-    ${SRC}/hope_plot.cpp
-    ${SRC}/hope_plot.h
     ${SRC}/hope_scanner.cpp
     ${SRC}/hope_scanner.h
     ${INCLUDE}/hope_serial.h

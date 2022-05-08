@@ -72,12 +72,12 @@ void Painter::init(){
     }
 }
 
-static const QFont& getFont(SemanticType type, uint8_t depth){
+const QFont& getFont(SemanticType type, uint8_t depth) noexcept {
     assert(is_init);
     return fonts[N_DEPTHS*static_cast<size_t>(type) + depth];
 }
 
-static QColor getColor(SemanticType type){
+static QColor getColor(SemanticType type) noexcept {
     return Typeset::getColour(sem_colours[type]);
 }
 

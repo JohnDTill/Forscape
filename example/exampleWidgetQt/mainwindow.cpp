@@ -27,6 +27,7 @@
 #include <QVBoxLayout>
 
 #include "mathtoolbar.h"
+#include "plot.h"
 #include "preferences.h"
 #include "searchdialog.h"
 #include "symboltreeview.h"
@@ -390,15 +391,15 @@ void MainWindow::checkOutput(){
                 print_buffer += static_cast<PrintMessage*>(msg)->msg;
                 delete msg;
                 break;
-            case Hope::InterpreterOutput::CreatePlot:
-                std::cout << "Request to plot " << static_cast<PlotCreate*>(msg)->title << std::endl;
+            case Hope::InterpreterOutput::CreatePlot:{
+                const PlotCreate& plt = *static_cast<PlotCreate*>(msg);
+                addPlot(plt.title, plt.x_label, plt.y_label);
                 delete msg;
                 break;
+            }
             case Hope::InterpreterOutput::AddDiscreteSeries:{
                 const auto& data = static_cast<PlotDiscreteSeries*>(msg)->data;
-                std::cout << "Series {\n";
-                for(const auto& entry : data) std::cout << "    {" << entry.first << ", " << entry.second << "},\n";
-                std::cout << "}" << std::endl;
+                addSeries(data);
                 delete msg;
                 break;
             }
@@ -492,6 +493,17 @@ void MainWindow::open(QString path){
     write_time = std::filesystem::last_write_time(path.toStdString());
 
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
+}
+
+void MainWindow::addPlot(const std::string& title, const std::string& x_label, const std::string& y_label){
+    active_plot = new Plot(title, x_label, y_label);
+    active_plot->show();
+}
+
+void MainWindow::addSeries(const std::vector<std::pair<double, double>>& data) const alloc_except {
+    assert(active_plot);
+    active_plot->addSeries(data);
+    active_plot->update();
 }
 
 QString MainWindow::getLastDir(){

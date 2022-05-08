@@ -87,14 +87,10 @@ std::string Model::run(){
                 delete msg;
                 break;
             case Hope::InterpreterOutput::CreatePlot:
-                std::cout << "Request to plot " << static_cast<PlotCreate*>(msg)->title << std::endl;
+                //EVENTUALLY: maybe do something here?
                 delete msg;
                 break;
             case Hope::InterpreterOutput::AddDiscreteSeries:{
-                const auto& data = static_cast<PlotDiscreteSeries*>(msg)->data;
-                std::cout << "Series {\n";
-                for(const auto& entry : data) std::cout << "    {" << entry.first << ", " << entry.second << "},\n";
-                std::cout << "}" << std::endl;
                 delete msg;
                 break;
             }
