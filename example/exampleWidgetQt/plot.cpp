@@ -7,25 +7,15 @@
 #include <typeset_painter.h>
 #include <typeset_themes.h>
 
-#include <iostream> //DO THIS - delete
+#ifndef NDEBUG
+#include <iostream>
+#endif
 
 class Plot::DiscreteSeries : public Plot::Series {
 private:
     const std::vector<std::pair<double, double>> data;
 
 public:
-    enum InterpolationScheme {
-        None,
-        Linear,
-        Smooth,
-    };
-
-    //DO THIS - do markers really belong? How do they fit with marking specific discrete behaviour, such as discontinuity?
-    enum Marker {
-        NoMarker,
-        Square,
-    };
-
     DiscreteSeries(const std::vector<std::pair<double, double>>& discrete_data)
         : data(discrete_data) {}
 
@@ -112,7 +102,6 @@ void Plot::paintEvent(QPaintEvent* event){
     painter.setFont(title_font);
     QString qtitle = QString::fromStdString(title);
     QFontMetricsF metrics(painter.font());
-    qreal font_height = metrics.height();
     qreal title_width = metrics.horizontalAdvance(qtitle);
     qreal title_x = plotPixelX + (plotPixelWidth() - title_width)/2;
     qreal title_y = MARGIN_TOP - TEXT_MARGIN;

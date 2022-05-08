@@ -782,16 +782,6 @@ Value Interpreter::call(ParseNode call) {
             return innerCall(call, alg.closure, alg.def, true, false);
         }
 
-        case Unitialized_index:
-            error(USE_BEFORE_DEFINE, parse_tree.arg(call, 0));
-            return NIL;
-
-        case double_index:
-        case MatrixXd_index:
-            //DO THIS - assert false;
-            assert(parse_tree.getNumArgs(false));
-            return binaryDispatch(call);
-
         default:
             assert(false);
             return NIL;

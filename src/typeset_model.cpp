@@ -20,8 +20,6 @@
 #include <hope_interpreter.h>
 #include <unordered_set>
 
-#include <iostream> //DO THIS: delete me
-
 namespace Hope {
 
 namespace Typeset {
