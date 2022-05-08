@@ -10,6 +10,7 @@
 #include <hope_serial_unicode.h>
 #include <hope_parser.h>
 #include <hope_symbol_build_pass.h>
+#include <hope_message.h>
 #include <QBuffer>
 #include <QClipboard>
 #include <QCloseEvent>
@@ -26,6 +27,7 @@
 #include <QVBoxLayout>
 
 #include "mathtoolbar.h"
+#include "plot.h"
 #include "preferences.h"
 #include "searchdialog.h"
 #include "symboltreeview.h"
@@ -307,7 +309,6 @@ void MainWindow::pollInterpreterThread(){
                 console->scrollToBottom();
         }
 
-        out.clear();
         editor->reenable();
         interpreter_poll_timer.stop();
         if(editor_had_focus) editor->setFocus();
@@ -380,13 +381,29 @@ void MainWindow::on_actionExit_triggered(){
 void MainWindow::checkOutput(){
     auto& interpreter = editor->getModel()->interpreter;
     auto& message_queue = interpreter.message_queue;
-    char ch;
-    while(message_queue.try_dequeue(ch))
-        if(ch == '\0'){
-            print_buffer += out;
-            out.clear();
-        }else{
-            out += ch;
+
+    static std::string print_buffer;
+
+    InterpreterOutput* msg;
+    while(message_queue.try_dequeue(msg))
+        switch(msg->getType()){
+            case Hope::InterpreterOutput::Print:
+                print_buffer += static_cast<PrintMessage*>(msg)->msg;
+                delete msg;
+                break;
+            case Hope::InterpreterOutput::CreatePlot:{
+                const PlotCreate& plt = *static_cast<PlotCreate*>(msg);
+                addPlot(plt.title, plt.x_label, plt.y_label);
+                delete msg;
+                break;
+            }
+            case Hope::InterpreterOutput::AddDiscreteSeries:{
+                const auto& data = static_cast<PlotDiscreteSeries*>(msg)->data;
+                addSeries(data);
+                delete msg;
+                break;
+            }
+            default: assert(false);
         }
 
     if(!print_buffer.empty()){
@@ -476,6 +493,17 @@ void MainWindow::open(QString path){
     write_time = std::filesystem::last_write_time(path.toStdString());
 
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
+}
+
+void MainWindow::addPlot(const std::string& title, const std::string& x_label, const std::string& y_label){
+    active_plot = new Plot(title, x_label, y_label);
+    active_plot->show();
+}
+
+void MainWindow::addSeries(const std::vector<std::pair<double, double>>& data) const alloc_except {
+    assert(active_plot);
+    active_plot->addSeries(data);
+    active_plot->update();
 }
 
 QString MainWindow::getLastDir(){

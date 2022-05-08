@@ -12,6 +12,7 @@
 #endif
 
 #include <hope_error.h>
+#include "hope_message.h"
 #include <hope_scanner.h>
 #include <hope_parser.h>
 #include <hope_symbol_build_pass.h>
@@ -75,10 +76,24 @@ std::string Model::run(){
     interpreter.run(parser.parse_tree, symbol_builder.symbol_table, static_pass.instantiation_lookup);
 
     std::string str;
-    str.reserve(interpreter.message_queue.size_approx());
-    char ch;
-    while(interpreter.message_queue.try_dequeue(ch))
-        if(ch != '\0') str += ch;
+
+    InterpreterOutput* msg;
+    while(interpreter.message_queue.try_dequeue(msg))
+        switch(msg->getType()){
+            case Hope::InterpreterOutput::Print:
+                str += static_cast<PrintMessage*>(msg)->msg;
+                delete msg;
+                break;
+            case Hope::InterpreterOutput::CreatePlot:
+                //EVENTUALLY: maybe do something here?
+                delete msg;
+                break;
+            case Hope::InterpreterOutput::AddDiscreteSeries:{
+                delete msg;
+                break;
+            }
+            default: assert(false);
+        }
 
     if(interpreter.error_code != Code::ErrorCode::NO_ERROR_FOUND){
         Code::Error error(parser.parse_tree.getSelection(interpreter.error_node), interpreter.error_code);

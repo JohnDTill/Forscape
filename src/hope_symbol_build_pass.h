@@ -21,8 +21,8 @@ private:
     ParseTree& parse_tree;
 
 public:
-    SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model);
-    void resolveSymbols();
+    SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model) noexcept;
+    void resolveSymbols() alloc_except;
     SymbolTable symbol_table;
 
 private:
@@ -40,40 +40,40 @@ private:
 
     void reset() noexcept;
     ScopeSegment& activeScope() noexcept;
-    void addScope(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode closure = NONE);
+    void addScope(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode closure = NONE) alloc_except;
     void closeScope(const Typeset::Marker& end) noexcept;
     Symbol& lastDefinedSymbol() noexcept;
     size_t symbolIndexFromSelection(const Typeset::Selection& sel) const noexcept;
-    void increaseLexicalDepth(const Typeset::Selection& name, const Typeset::Marker& begin);
-    void decreaseLexicalDepth(const Typeset::Marker& end);
-    void increaseClosureDepth(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode pn);
-    void decreaseClosureDepth(const Typeset::Marker& end);
-    void makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable);
-    void appendEntry(size_t index, ParseNode pn, size_t prev, bool immutable);
-    void resolveStmt(ParseNode pn);
-    void resolveExpr(ParseNode pn);
-    void resolveEquality(ParseNode pn);
-    void resolveAssignment(ParseNode pn);
-    void resolveAssignmentId(ParseNode pn);
-    void resolveAssignmentSubscript(ParseNode pn, ParseNode lhs, ParseNode rhs);
-    bool resolvePotentialIdSub(ParseNode pn);
-    template <bool allow_imp_mult = false> void resolveReference(ParseNode pn);
-    void resolveReference(ParseNode pn, const Typeset::Selection& c, size_t sym_id);
-    void resolveIdMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right);
-    void resolveScriptMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right);
-    void resolveConditional1(const Typeset::Selection& name, ParseNode pn);
-    void resolveConditional2(ParseNode pn);
-    void resolveFor(ParseNode pn);
-    void resolveBody(const Typeset::Selection& name, ParseNode pn);
-    void resolveBlock(ParseNode pn);
-    void resolveDefault(ParseNode pn);
-    void resolveLambda(ParseNode pn);
-    void resolveAlgorithm(ParseNode pn);
-    void resolvePrototype(ParseNode pn);
-    void resolveSubscript(ParseNode pn);
-    void resolveBig(ParseNode pn);
-    void resolveDerivative(ParseNode pn);
-    bool defineLocalScope(ParseNode pn, bool immutable = true);
+    void increaseLexicalDepth(const Typeset::Selection& name, const Typeset::Marker& begin) alloc_except;
+    void decreaseLexicalDepth(const Typeset::Marker& end) alloc_except;
+    void increaseClosureDepth(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode pn) alloc_except;
+    void decreaseClosureDepth(const Typeset::Marker& end) alloc_except;
+    void makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable) alloc_except;
+    void appendEntry(size_t index, ParseNode pn, size_t prev, bool immutable) alloc_except;
+    void resolveStmt(ParseNode pn) alloc_except;
+    void resolveExpr(ParseNode pn) alloc_except;
+    void resolveEquality(ParseNode pn) alloc_except;
+    void resolveAssignment(ParseNode pn) alloc_except;
+    void resolveAssignmentId(ParseNode pn) alloc_except;
+    void resolveAssignmentSubscript(ParseNode pn, ParseNode lhs, ParseNode rhs) alloc_except;
+    bool resolvePotentialIdSub(ParseNode pn) alloc_except;
+    template <bool allow_imp_mult = false> void resolveReference(ParseNode pn) alloc_except;
+    void resolveReference(ParseNode pn, const Typeset::Selection& c, size_t sym_id) alloc_except;
+    void resolveIdMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except;
+    void resolveScriptMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except;
+    void resolveConditional1(const Typeset::Selection& name, ParseNode pn) alloc_except;
+    void resolveConditional2(ParseNode pn) alloc_except;
+    void resolveFor(ParseNode pn) alloc_except;
+    void resolveBody(const Typeset::Selection& name, ParseNode pn) alloc_except;
+    void resolveBlock(ParseNode pn) alloc_except;
+    void resolveDefault(ParseNode pn) alloc_except;
+    void resolveLambda(ParseNode pn) alloc_except;
+    void resolveAlgorithm(ParseNode pn) alloc_except;
+    void resolvePrototype(ParseNode pn) alloc_except;
+    void resolveSubscript(ParseNode pn) alloc_except;
+    void resolveBig(ParseNode pn) alloc_except;
+    void resolveDerivative(ParseNode pn) alloc_except;
+    bool defineLocalScope(ParseNode pn, bool immutable = true) alloc_except;
     bool declared(ParseNode pn) const noexcept;
     size_t symIndex(ParseNode pn) const noexcept;
 
@@ -84,8 +84,8 @@ private:
         std::vector<std::pair<size_t, bool> > upvalues;
         std::vector<size_t> captured;
 
-        Closure(){}
-        Closure(ParseNode fn) : fn(fn) {}
+        Closure() noexcept {}
+        Closure(ParseNode fn) noexcept : fn(fn) {}
     };
 };
 

@@ -28,6 +28,7 @@ configure_file(${TEST}/serial_exhaustive.txt ${CMAKE_BINARY_DIR} COPYONLY)
 
 add_compile_definitions(TYPESET_MEMORY_DEBUG HOPE_SEMANTIC_DEBUGGING)
 add_compile_definitions(BASE_TEST_DIR="../test/interpreter_scripts")
+add_compile_definitions(alloc_except=noexcept)
 
 set(GEN_FILES
     ${GEN}/code_ast_fields.cpp
@@ -123,6 +124,7 @@ set(SOURCES
     ${SRC}/hope_interpreter.cpp
     ${SRC}/hope_interpreter.h
     ${INCLUDE}/hope_logging.h
+    ${SRC}/hope_message.h
     ${SRC}/hope_parse_tree.cpp
     ${SRC}/hope_parse_tree.h
     ${SRC}/hope_parser.cpp

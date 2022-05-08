@@ -24,10 +24,10 @@ const std::unordered_map<std::string_view, Op> SymbolTableBuilder::predef {
     {"I", OP_IDENTITY_AUTOSIZE},
 };
 
-SymbolTableBuilder::SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model)
+SymbolTableBuilder::SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model) noexcept
     : errors(model->errors), warnings(model->warnings), parse_tree(parse_tree), symbol_table(parse_tree) {}
 
-void SymbolTableBuilder::resolveSymbols(){
+void SymbolTableBuilder::resolveSymbols() alloc_except {
     reset();
     if(!parse_tree.empty()){ // Note: symbol resolution runs DESPITE parse errors, because the editor needs it
         ParseNode n = parse_tree.root;
@@ -70,7 +70,7 @@ ScopeSegment& SymbolTableBuilder::activeScope() noexcept{
     return symbol_table.scopes[active_scope_id];
 }
 
-void SymbolTableBuilder::addScope(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode closure){
+void SymbolTableBuilder::addScope(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode closure) alloc_except {
     symbol_table.addScope(name, begin);
 
     size_t sze = symbol_table.symbols.size();
@@ -106,7 +106,7 @@ size_t SymbolTableBuilder::symbolIndexFromSelection(const Typeset::Selection& se
     return lookup == map.end() ? NONE : lookup->second;
 }
 
-void SymbolTableBuilder::resolveStmt(ParseNode pn){
+void SymbolTableBuilder::resolveStmt(ParseNode pn) alloc_except {
     switch (parse_tree.getOp(pn)) {
         case OP_EQUAL: resolveEquality(pn); break;
         case OP_ASSIGN: resolveAssignment(pn); break;
@@ -126,7 +126,7 @@ void SymbolTableBuilder::resolveStmt(ParseNode pn){
     }
 }
 
-void SymbolTableBuilder::resolveExpr(ParseNode pn){
+void SymbolTableBuilder::resolveExpr(ParseNode pn) alloc_except {
     switch (parse_tree.getOp(pn)) {
         case OP_IDENTIFIER: resolveReference<true>(pn); break;
         case OP_LAMBDA: resolveLambda(pn); break;
@@ -146,7 +146,7 @@ void SymbolTableBuilder::resolveExpr(ParseNode pn){
     }
 }
 
-void SymbolTableBuilder::resolveEquality(ParseNode pn){
+void SymbolTableBuilder::resolveEquality(ParseNode pn) alloc_except {
     if(parse_tree.getNumArgs(pn) > 2){
         errors.push_back(Error(parse_tree.getSelection(pn), ErrorCode::TYPE_ERROR));
     }else{
@@ -155,7 +155,7 @@ void SymbolTableBuilder::resolveEquality(ParseNode pn){
     }
 }
 
-void SymbolTableBuilder::resolveAssignment(ParseNode pn){
+void SymbolTableBuilder::resolveAssignment(ParseNode pn) alloc_except {
     assert(parse_tree.getNumArgs(pn) == 2);
 
     ParseNode lhs = parse_tree.lhs(pn);
@@ -183,7 +183,7 @@ void SymbolTableBuilder::resolveAssignment(ParseNode pn){
     }
 }
 
-void SymbolTableBuilder::resolveAssignmentId(ParseNode pn){
+void SymbolTableBuilder::resolveAssignmentId(ParseNode pn) alloc_except {
     ParseNode id = parse_tree.lhs(pn);
     Typeset::Selection c = parse_tree.getSelection(id);
     if(parse_tree.getOp(id) != OP_IDENTIFIER){
@@ -207,7 +207,7 @@ void SymbolTableBuilder::resolveAssignmentId(ParseNode pn){
     }
 }
 
-void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs, ParseNode rhs){
+void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs, ParseNode rhs) alloc_except {
     ParseNode id = parse_tree.arg(lhs, 0);
 
     Typeset::Selection c = parse_tree.getSelection(id);
@@ -273,7 +273,7 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
     }
 }
 
-bool SymbolTableBuilder::resolvePotentialIdSub(ParseNode pn){
+bool SymbolTableBuilder::resolvePotentialIdSub(ParseNode pn) alloc_except {
     if(parse_tree.getNumArgs(pn) != 2) return false;
 
     ParseNode id = parse_tree.lhs(pn);
@@ -290,7 +290,7 @@ bool SymbolTableBuilder::resolvePotentialIdSub(ParseNode pn){
 }
 
 template <bool allow_imp_mult>
-void SymbolTableBuilder::resolveReference(ParseNode pn){
+void SymbolTableBuilder::resolveReference(ParseNode pn) alloc_except {
     Typeset::Selection c = parse_tree.getSelection(pn);
 
     auto lookup = map.find(c);
@@ -316,7 +316,7 @@ void SymbolTableBuilder::resolveReference(ParseNode pn){
     }
 }
 
-void SymbolTableBuilder::resolveReference(ParseNode pn, const Typeset::Selection& c, size_t sym_id){
+void SymbolTableBuilder::resolveReference(ParseNode pn, const Typeset::Selection& c, size_t sym_id) alloc_except {
     assert(parse_tree.getOp(pn) == OP_IDENTIFIER);
     if(sym_id >= cutoff) errors.push_back(Error(parse_tree.getSelection(pn), BAD_DEFAULT_ARG));
 
@@ -330,7 +330,7 @@ void SymbolTableBuilder::resolveReference(ParseNode pn, const Typeset::Selection
     symbol_table.usages.push_back(Usage(sym_id, pn, READ));
 }
 
-void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right){
+void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except {
     Typeset::Marker m = left;
     while(m != right){
         m.incrementGrapheme();
@@ -364,7 +364,7 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
     parse_tree.setOp(pn, OP_PROXY);
 }
 
-void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right){
+void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except {
     assert(left.text != right.text);
 
     Typeset::Marker m = left;
@@ -413,18 +413,18 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
     parse_tree.setOp(pn, OP_PROXY);
 }
 
-void SymbolTableBuilder::resolveConditional1(const Typeset::Selection& name, ParseNode pn){
+void SymbolTableBuilder::resolveConditional1(const Typeset::Selection& name, ParseNode pn) alloc_except {
     resolveExpr( parse_tree.arg(pn, 0) );
     resolveBody( name, parse_tree.arg(pn, 1) );
 }
 
-void SymbolTableBuilder::resolveConditional2(ParseNode pn){
+void SymbolTableBuilder::resolveConditional2(ParseNode pn) alloc_except {
     resolveExpr( parse_tree.arg(pn, 0) );
     resolveBody( symbol_table.ifSel(), parse_tree.arg(pn, 1) );
     resolveBody( symbol_table.elseSel(), parse_tree.arg(pn, 2) );
 }
 
-void SymbolTableBuilder::resolveFor(ParseNode pn){
+void SymbolTableBuilder::resolveFor(ParseNode pn) alloc_except {
     increaseLexicalDepth(symbol_table.forSel(), parse_tree.getLeft(parse_tree.arg(pn, 1)));
     resolveStmt(parse_tree.arg(pn, 0));
     resolveExpr(parse_tree.arg(pn, 1));
@@ -433,7 +433,7 @@ void SymbolTableBuilder::resolveFor(ParseNode pn){
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-void SymbolTableBuilder::resolveBody(const Typeset::Selection& name, ParseNode pn){
+void SymbolTableBuilder::resolveBody(const Typeset::Selection& name, ParseNode pn) alloc_except {
     increaseLexicalDepth(name, parse_tree.getLeft(pn));
     resolveStmt(pn);
     decreaseLexicalDepth(parse_tree.getRight(pn));
@@ -447,17 +447,17 @@ void SymbolTableBuilder::resolveBody(const Typeset::Selection& name, ParseNode p
     }
 }
 
-void SymbolTableBuilder::resolveBlock(ParseNode pn){
+void SymbolTableBuilder::resolveBlock(ParseNode pn) alloc_except {
     for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
         resolveStmt( parse_tree.arg(pn, i) );
 }
 
-void SymbolTableBuilder::resolveDefault(ParseNode pn){
+void SymbolTableBuilder::resolveDefault(ParseNode pn) alloc_except {
     for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
         resolveExpr(parse_tree.arg(pn, i));
 }
 
-void SymbolTableBuilder::resolveLambda(ParseNode pn){
+void SymbolTableBuilder::resolveLambda(ParseNode pn) alloc_except {
     increaseClosureDepth(symbol_table.lambda(), parse_tree.getLeft(pn), pn);
 
     ParseNode params = parse_tree.paramList(pn);
@@ -470,7 +470,7 @@ void SymbolTableBuilder::resolveLambda(ParseNode pn){
     decreaseClosureDepth(parse_tree.getRight(pn));
 }
 
-void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
+void SymbolTableBuilder::resolveAlgorithm(ParseNode pn) alloc_except {
     ParseNode name = parse_tree.algName(pn);
     ParseNode val_cap = parse_tree.valCapList(pn);
     ParseNode params = parse_tree.paramList(pn);
@@ -552,12 +552,12 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn){
     decreaseClosureDepth(parse_tree.getRight(body));
 }
 
-void SymbolTableBuilder::resolvePrototype(ParseNode pn){
+void SymbolTableBuilder::resolvePrototype(ParseNode pn) alloc_except {
     if(defineLocalScope(parse_tree.child(pn)))
         lastDefinedSymbol().is_prototype = true;
 }
 
-void SymbolTableBuilder::resolveSubscript(ParseNode pn){
+void SymbolTableBuilder::resolveSubscript(ParseNode pn) alloc_except {
     if(parse_tree.getNumArgs(pn) != 2){ resolveDefault(pn); return; }
 
     ParseNode id = parse_tree.lhs(pn);
@@ -575,7 +575,7 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn){
     }
 }
 
-void SymbolTableBuilder::resolveBig(ParseNode pn){
+void SymbolTableBuilder::resolveBig(ParseNode pn) alloc_except {
     increaseLexicalDepth(symbol_table.big(), parse_tree.getLeft(pn));
     ParseNode assign = parse_tree.arg(pn, 0);
     if( parse_tree.getOp(assign) != OP_ASSIGN ) return;
@@ -592,7 +592,7 @@ void SymbolTableBuilder::resolveBig(ParseNode pn){
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-void SymbolTableBuilder::resolveDerivative(ParseNode pn){
+void SymbolTableBuilder::resolveDerivative(ParseNode pn) alloc_except {
     ParseNode id = parse_tree.arg<1>(pn);
     size_t id_index = symIndex(id);
     if(id_index != NONE) resolveReference(parse_tree.arg<2>(pn));
@@ -608,7 +608,7 @@ void SymbolTableBuilder::resolveDerivative(ParseNode pn){
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable){
+bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable) alloc_except {
     Typeset::Selection c = parse_tree.getSelection(pn);
 
     if(parse_tree.getOp(pn) == OP_SUBSCRIPT_ACCESS && !resolvePotentialIdSub(pn)){
@@ -649,12 +649,12 @@ size_t SymbolTableBuilder::symIndex(ParseNode pn) const noexcept{
     return lookup == map.end() ? NONE : lookup->second;
 }
 
-void SymbolTableBuilder::increaseLexicalDepth(const Typeset::Selection& name, const Typeset::Marker& begin){
+void SymbolTableBuilder::increaseLexicalDepth(const Typeset::Selection& name, const Typeset::Marker& begin) alloc_except {
     lexical_depth++;
     addScope(name, begin);
 }
 
-void SymbolTableBuilder::decreaseLexicalDepth(const Typeset::Marker& end){
+void SymbolTableBuilder::decreaseLexicalDepth(const Typeset::Marker& end) alloc_except {
     closeScope(end);
 
     for(size_t curr = symbol_table.head(active_scope_id-1); curr < active_scope_id; curr = symbol_table.scopes[curr].next){
@@ -673,7 +673,7 @@ void SymbolTableBuilder::decreaseLexicalDepth(const Typeset::Marker& end){
     lexical_depth--;
 }
 
-void SymbolTableBuilder::increaseClosureDepth(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode pn){
+void SymbolTableBuilder::increaseClosureDepth(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode pn) alloc_except {
     ref_list_sets.push_back(std::unordered_set<ParseNode>());
 
     closure_depth++;
@@ -681,7 +681,7 @@ void SymbolTableBuilder::increaseClosureDepth(const Typeset::Selection& name, co
     addScope(name, begin, pn);
 }
 
-void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end){
+void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end) alloc_except {
     ParseNode fn = symbol_table.scopes.back().fn;
 
     decreaseLexicalDepth(end);
@@ -732,14 +732,14 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end){
     ref_list_sets.pop_back();
 }
 
-void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable){
+void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable) alloc_except {
     assert(map.find(c) == map.end());
     map[c] = symbol_table.symbols.size();
     symbol_table.usages.push_back(Usage(symbol_table.symbols.size(), pn, DECLARE));
     symbol_table.addSymbol(pn, lexical_depth, closure_depth, NONE, immutable);
 }
 
-void SymbolTableBuilder::appendEntry(size_t index, ParseNode pn, size_t prev, bool immutable){
+void SymbolTableBuilder::appendEntry(size_t index, ParseNode pn, size_t prev, bool immutable) alloc_except {
     warnings.push_back(Error(parse_tree.getSelection(pn), SHADOWING_VAR)); //EVENTUALLY: make this optional, probably default off
     symbol_table.usages.push_back(Usage(symbol_table.symbols.size(), pn, DECLARE));
     symbol_table.addSymbol(pn, lexical_depth, closure_depth, prev, immutable);

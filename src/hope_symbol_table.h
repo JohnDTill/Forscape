@@ -39,13 +39,13 @@ struct Symbol{
     bool is_ewise_index = false;
     bool is_captured_by_value = false;
 
-    Symbol();
+    Symbol() noexcept;
 
     Symbol(size_t pn,
            size_t lexical_depth,
            size_t closure_depth,
            size_t shadowed_var,
-           bool is_const);
+           bool is_const) noexcept;
 
     size_t closureIndex() const noexcept;
 
@@ -63,9 +63,9 @@ struct Usage{
     ParseNode pn;
     UsageType type;
 
-    Usage();
+    Usage() noexcept;
 
-    Usage(size_t var_id, ParseNode pn, UsageType type);
+    Usage(size_t var_id, ParseNode pn, UsageType type) noexcept;
 };
 
 struct ScopeSegment{
@@ -88,7 +88,7 @@ struct ScopeSegment{
         ScopeId prev,
         SymbolId sym_begin,
         size_t usage_begin
-        );
+        ) noexcept;
 
     bool isStartOfScope() const noexcept;
     bool isEndOfScope() const noexcept;
@@ -102,6 +102,7 @@ public:
     std::vector<Usage> usages;
     ParseTree& parse_tree;
 
+    //EVENTUALLY: fix this hack
     Typeset::Text global_name;
     Typeset::Text lambda_name;
     Typeset::Text elementwise_asgn;
@@ -125,8 +126,8 @@ public:
         deriv_name.str = "derivative";
     }
 
-    void addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed, bool is_const);
-    void addOccurence(const Typeset::Marker& left, size_t sym_index);
+    void addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed, bool is_const) alloc_except;
+    void addOccurence(const Typeset::Marker& left, size_t sym_index) alloc_except;
     size_t containingScope(const Typeset::Marker& m) const noexcept;
     std::vector<Typeset::Selection> getSuggestions(const Typeset::Marker& loc) const;
     const Typeset::Selection& getSel(size_t sym_index) const noexcept;
@@ -170,9 +171,9 @@ public:
 
     ScopeId head(ScopeId index) const noexcept;
     void reset(const Typeset::Marker& doc_start) noexcept;
-    void addScope(const Typeset::Selection& name, const Typeset::Marker& start, ParseNode closure = NONE);
-    void closeScope(const Typeset::Marker& stop);
-    void finalize();
+    void addScope(const Typeset::Selection& name, const Typeset::Marker& start, ParseNode closure = NONE) alloc_except;
+    void closeScope(const Typeset::Marker& stop) alloc_except;
+    void finalize() noexcept;
 };
 
 }

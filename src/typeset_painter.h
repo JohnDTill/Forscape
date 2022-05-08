@@ -16,6 +16,7 @@ namespace Hope {
 namespace Typeset {
 
 uint8_t depthToFontSize(uint8_t depth) noexcept;
+const QFont& getFont(SemanticType type, uint8_t depth) noexcept;
 double getWidth(SemanticType type, uint8_t depth, const std::string& text);
 double getWidth(SemanticType type, uint8_t depth, char ch);
 double getHeight(SemanticType type, uint8_t depth);

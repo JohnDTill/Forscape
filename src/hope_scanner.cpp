@@ -15,11 +15,11 @@ namespace Hope {
 
 namespace Code {
 
-Scanner::Scanner(Typeset::Model* model) :
+Scanner::Scanner(Typeset::Model* model) noexcept :
     model(model), errors(model->errors) {
 }
 
-void Scanner::scanAll(){
+void Scanner::scanAll() alloc_except {
     model->clearFormatting();
     tokens.clear();
     scope_depth = 0;
@@ -34,7 +34,7 @@ void Scanner::scanAll(){
     delete controller;
 }
 
-void Scanner::scanToken(){
+void Scanner::scanToken() alloc_except {
     controller->skipWhitespace();
 
     uint32_t code = controller->scan();
@@ -55,7 +55,7 @@ void Scanner::scanToken(){
     }
 }
 
-void Scanner::scanString() {
+void Scanner::scanString() alloc_except {
     if(controller->selectToStringEnd()){
         controller->formatString();
         createToken(STRING);
@@ -65,12 +65,12 @@ void Scanner::scanString() {
     }
 }
 
-void Scanner::forwardSlash() {
+void Scanner::forwardSlash() alloc_except {
     if(controller->peek('/')) comment();
     else createToken(FORWARDSLASH);
 }
 
-void Scanner::comment() {
+void Scanner::comment() alloc_except {
     controller->selectEndOfLine();
     controller->formatComment();
     controller->anchor.index += 2;
@@ -78,11 +78,11 @@ void Scanner::comment() {
     createToken(COMMENT);
 }
 
-void Scanner::createToken(TokenType type) {
+void Scanner::createToken(TokenType type) alloc_except {
     tokens.push_back( Token(Typeset::Selection(controller->anchor, controller->active), type) );
 }
 
-void Scanner::scanNumber() {
+void Scanner::scanNumber() alloc_except {
     controller->selectToNumberEnd();
     createToken(INTEGER);
 }
@@ -91,7 +91,7 @@ const std::unordered_map<std::string_view, TokenType> Scanner::keywords {
     HOPE_KEYWORD_MAP
 };
 
-void Scanner::scanIdentifier() {
+void Scanner::scanIdentifier() alloc_except {
     controller->selectToIdentifierEnd();
 
     auto lookup = keywords.find(controller->selectedFlatText());
@@ -104,32 +104,32 @@ void Scanner::scanIdentifier() {
     }
 }
 
-void Scanner::unrecognizedSymbol(){
+void Scanner::unrecognizedSymbol() alloc_except {
     error(UNRECOGNIZED_SYMBOL);
 }
 
-void Scanner::scanConstruct(TokenType type) {
+void Scanner::scanConstruct(TokenType type) alloc_except {
     createToken(type);
     controller->consolidateToAnchor();
     controller->moveToNextChar();
 }
 
-void Scanner::close() {
+void Scanner::close() alloc_except {
     createToken(ARGCLOSE);
     controller->consolidateToActive();
 }
 
-void Scanner::error(ErrorCode code) {
+void Scanner::error(ErrorCode code) alloc_except {
     createToken(SCANNER_ERROR);
     errors.push_back(Error(tokens.back().sel, code));
 }
 
-void Scanner::newline() {
+void Scanner::newline() alloc_except {
     controller->anchorLine()->scope_depth = scope_depth;
     createToken(NEWLINE);
 }
 
-void Scanner::endOfFile() {
+void Scanner::endOfFile() alloc_except {
     controller->anchorLine()->scope_depth = scope_depth;
     createToken(ENDOFFILE);
 }

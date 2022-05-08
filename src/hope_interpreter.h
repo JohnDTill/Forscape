@@ -12,6 +12,8 @@
 
 namespace Hope {
 
+class InterpreterOutput;
+
 namespace Code {
 
 class ParseTree;
@@ -21,7 +23,7 @@ class Interpreter{
 public:
     //This is for lock-free, single producer / single consumer message passing of print statements
     static constexpr size_t QUEUE_BLOCK_SIZE = 1024;
-    moodycamel::ReaderWriterQueue<char, QUEUE_BLOCK_SIZE> message_queue;
+    moodycamel::ReaderWriterQueue<InterpreterOutput*, QUEUE_BLOCK_SIZE> message_queue;
 
     enum Instruction{
         RUN,
@@ -72,6 +74,7 @@ private:
     void initClosure(Closure& closure, ParseNode val_cap, ParseNode ref_cap);
     void breakLocalClosureLinks(Closure& closure, ParseNode val_cap, ParseNode ref_cap);
     void returnStmt(ParseNode pn);
+    void plotStmt(ParseNode pn);
     Value implicitMult(ParseNode pn, size_t start = 0);
     Value sum(ParseNode pn);
     Value prod(ParseNode pn);

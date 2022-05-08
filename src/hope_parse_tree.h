@@ -53,21 +53,22 @@ public:
     ParseNode unitVectorCols(ParseNode node) const noexcept;
     void setUnitVectorCols(ParseNode node, ParseNode val) noexcept;
     std::string str(ParseNode node) const;
-    ParseNode addTerminal(Op type, const Typeset::Selection& c);
-    ParseNode addUnary(Op type, const Typeset::Selection& c, ParseNode child);
-    ParseNode addUnary(Op type, ParseNode child);
-    ParseNode addLeftUnary(Op type, const Typeset::Marker& left, ParseNode child);
-    ParseNode addRightUnary(Op type, const Typeset::Marker& right, ParseNode child);
-    ParseNode addBinary(Op type, const Typeset::Selection& c, ParseNode lhs, ParseNode rhs);
-    ParseNode addBinary(Op type, ParseNode lhs, ParseNode rhs);
-    ParseNode addTernary(Op type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C);
-    ParseNode addTernary(Op type, ParseNode A, ParseNode B, ParseNode C);
-    ParseNode addQuadary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D);
-    ParseNode addQuadary(Op type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C, ParseNode D);
-    ParseNode addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E);
-    ParseNode clone(ParseNode pn);
-    ParseNode getZero(const Typeset::Selection& sel);
-    ParseNode getOne(const Typeset::Selection& sel);
+    ParseNode addTerminal(Op type, const Typeset::Selection& c) alloc_except;
+    ParseNode addUnary(Op type, const Typeset::Selection& c, ParseNode child) alloc_except;
+    ParseNode addUnary(Op type, ParseNode child) alloc_except;
+    ParseNode addLeftUnary(Op type, const Typeset::Marker& left, ParseNode child) alloc_except;
+    ParseNode addRightUnary(Op type, const Typeset::Marker& right, ParseNode child) alloc_except;
+    ParseNode addBinary(Op type, const Typeset::Selection& c, ParseNode lhs, ParseNode rhs) alloc_except;
+    ParseNode addBinary(Op type, ParseNode lhs, ParseNode rhs) alloc_except;
+    ParseNode addTernary(Op type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C) alloc_except;
+    ParseNode addTernary(Op type, ParseNode A, ParseNode B, ParseNode C) alloc_except;
+    ParseNode addQuadary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D) alloc_except;
+    ParseNode addQuadary(Op type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C, ParseNode D) alloc_except;
+    ParseNode addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E) alloc_except;
+    ParseNode addPentary(Op type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E) alloc_except;
+    ParseNode clone(ParseNode pn) alloc_except;
+    ParseNode getZero(const Typeset::Selection& sel) alloc_except;
+    ParseNode getOne(const Typeset::Selection& sel) alloc_except;
     bool definitelyScalar(ParseNode pn) const noexcept;
     bool definitelyNotScalar(ParseNode pn) const noexcept;
     bool definitelyMatrix(ParseNode pn) const noexcept;
@@ -90,11 +91,11 @@ public:
 
     class NaryBuilder{
     public:
-        NaryBuilder(ParseTree& tree, Op type);
-        void addNaryChild(ParseNode index);
-        ParseNode finalize();
-        ParseNode finalize(const Typeset::Marker& right);
-        ParseNode finalize(const Typeset::Selection& c);
+        NaryBuilder(ParseTree& tree, Op type) noexcept;
+        void addNaryChild(ParseNode index) alloc_except;
+        ParseNode finalize() alloc_except;
+        ParseNode finalize(const Typeset::Marker& right) alloc_except;
+        ParseNode finalize(const Typeset::Selection& c) alloc_except;
 
     private:
         ParseTree& tree;
@@ -107,7 +108,7 @@ public:
         #endif
     };
 
-    NaryBuilder naryBuilder(Op type);
+    NaryBuilder naryBuilder(Op type) noexcept;
 
     void patchClones() noexcept;
     void patchClonedTypes() noexcept;
