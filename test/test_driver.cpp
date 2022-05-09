@@ -15,7 +15,7 @@
 #include "typeset_graphics.h"
 #endif
 
-int main(int argc, char* argv[]){
+int main(int, char* []){
     #ifdef TEST_QT
     QApplication app_is_prequisite_to_using_QFontDatabase(argc, argv);
     QApplication::processEvents();

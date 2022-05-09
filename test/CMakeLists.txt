@@ -26,7 +26,7 @@ configure_file(${TEST}/serial_valid.txt ${CMAKE_BINARY_DIR} COPYONLY)
 configure_file(${TEST}/serial_malformed.txt ${CMAKE_BINARY_DIR} COPYONLY)
 configure_file(${TEST}/serial_exhaustive.txt ${CMAKE_BINARY_DIR} COPYONLY)
 
-add_compile_definitions(TYPESET_MEMORY_DEBUG HOPE_SEMANTIC_DEBUGGING)
+add_compile_definitions(TYPESET_MEMORY_DEBUG HOPE_SEMANTIC_DEBUGGING EIGEN_NO_AUTOMATIC_RESIZING)
 add_compile_definitions(BASE_TEST_DIR="../test/interpreter_scripts")
 add_compile_definitions(alloc_except=noexcept)
 
@@ -218,17 +218,35 @@ endif ()
 
 add_test(NAME IntegrationTest COMMAND HopeTests.exe)
 
-#target_compile_options(HopeTests PRIVATE
-#  $<$<CXX_COMPILER_ID:MSVC>:/W3 /WX>
-#  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic -Werror>
-#)
+add_compile_definitions(HOPE_EIGEN_UNSUPPORTED $<$<CONFIG:Release>:EIGEN_NO_DEBUG>)
+#EVENTUALLY: get rid of EIGEN_UNSUPPORTED macro and only accept compilers that can handle it
 
-add_compile_definitions(HOPE_EIGEN_UNSUPPORTED)
-
-#Added because Eigen unsupported resulted in compiles with too many sections
-target_compile_options(HopeTests PRIVATE
-  $<$<CXX_COMPILER_ID:MSVC>:/bigobj /DHOPE_EIGEN_UNSUPPORTED>
-)
+if(MSVC)
+    target_compile_options(HopeTests PRIVATE
+        /Ob3 /W3 #/WX #EVENTUALLY: address warnings
+        $<$<CONFIG:Release>:/Oi /Oy> #/GL
+        $<$<CONFIG:Debug>:/bigobj>
+        #/bigobj #May be needed to make Eigen unsupported compile
+    )
+    target_link_options(HopeTests PRIVATE
+        $<$<CONFIG:Release>:/OPT:REF> #/LTCG
+    )
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(HopeTests PRIVATE
+        -Wa,-mbig-obj #Eigen unsupported normally results in too many sections
+        $<$<CONFIG:Debug>:-O2> #Still need optimisation to compile w/ Eigen unsupported
+        -Wall -Wextra -pedantic #-Werror #EVENTUALLY: address warnings
+        $<$<CONFIG:Release>: -Ofast -fmodulo-sched -fmodulo-sched-allow-regmoves -fgcse-sm -fgcse-las -fdelete-null-pointer-checks
+        -fomit-frame-pointer -funroll-loops> #-fwhole-program #EVENTUALLY: couldn't get whole program optimisation working
+    )
+    target_link_options(HopeTests PRIVATE
+        -Wa,-mbig-obj
+    )
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # using Clang
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+    # using Intel C++
+endif()
 
 add_custom_target(
     codegen ALL

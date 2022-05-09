@@ -1088,7 +1088,7 @@ ParseNode StaticPass::resolveIdentity(ParseNode pn){
     if(parse_tree.getOp(rows) == OP_INTEGER_LITERAL || parse_tree.getOp(rows) == OP_DECIMAL_LITERAL){
         double r = parse_tree.getFlagAsDouble(rows);
         if(r < 1) return error(pn, rows, DIMENSION_MISMATCH);
-        parse_tree.setRows(pn, r);
+        parse_tree.setRows(pn, static_cast<size_t>(r));
     }
 
     if(parse_tree.getOp(cols) == OP_INTEGER_LITERAL || parse_tree.getOp(cols) == OP_DECIMAL_LITERAL){

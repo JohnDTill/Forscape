@@ -58,7 +58,7 @@ private:
     void resolveAssignmentSubscript(ParseNode pn, ParseNode lhs, ParseNode rhs) alloc_except;
     bool resolvePotentialIdSub(ParseNode pn) alloc_except;
     template <bool allow_imp_mult = false> void resolveReference(ParseNode pn) alloc_except;
-    void resolveReference(ParseNode pn, const Typeset::Selection& c, size_t sym_id) alloc_except;
+    void resolveReference(ParseNode pn, size_t sym_id) alloc_except;
     void resolveIdMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except;
     void resolveScriptMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except;
     void resolveConditional1(const Typeset::Selection& name, ParseNode pn) alloc_except;

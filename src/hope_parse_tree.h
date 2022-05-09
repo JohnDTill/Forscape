@@ -127,6 +127,17 @@ private:
     std::vector<std::pair<ParseNode, ParseNode>> cloned_vars;
 };
 
+extern template ParseNode ParseTree::arg<0>(ParseNode) const noexcept;
+extern template ParseNode ParseTree::arg<1>(ParseNode) const noexcept;
+extern template ParseNode ParseTree::arg<2>(ParseNode) const noexcept;
+extern template ParseNode ParseTree::arg<3>(ParseNode) const noexcept;
+extern template ParseNode ParseTree::arg<4>(ParseNode) const noexcept;
+extern template void ParseTree::setArg<0>(ParseNode, ParseNode) noexcept;
+extern template void ParseTree::setArg<1>(ParseNode, ParseNode) noexcept;
+extern template void ParseTree::setArg<2>(ParseNode, ParseNode) noexcept;
+extern template void ParseTree::setArg<3>(ParseNode, ParseNode) noexcept;
+extern template void ParseTree::setArg<4>(ParseNode, ParseNode) noexcept;
+
 }
 
 }
