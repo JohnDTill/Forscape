@@ -202,7 +202,7 @@ void SymbolTableBuilder::resolveAssignmentId(ParseNode pn) alloc_except {
         }else{
             sym.is_reassigned = true;
             parse_tree.setOp(pn, OP_REASSIGN);
-            resolveReference(id, c, sym_index);
+            resolveReference(id, sym_index);
         }
     }
 }
@@ -219,7 +219,7 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
     size_t symbol_index = symbolIndexFromSelection(c);
     if(symbol_index != NONE){
         symbol_table.symbols[symbol_index].is_reassigned = true;
-        resolveReference(id, c, symbol_index);
+        resolveReference(id, symbol_index);
     }else{
         errors.push_back(Error(c, BAD_READ));
     }
@@ -312,11 +312,11 @@ void SymbolTableBuilder::resolveReference(ParseNode pn) alloc_except {
             errors.push_back(Error(c, BAD_READ));
         }
     }else{
-        resolveReference(pn, c, lookup->second);
+        resolveReference(pn, lookup->second);
     }
 }
 
-void SymbolTableBuilder::resolveReference(ParseNode pn, const Typeset::Selection& c, size_t sym_id) alloc_except {
+void SymbolTableBuilder::resolveReference(ParseNode pn, size_t sym_id) alloc_except {
     assert(parse_tree.getOp(pn) == OP_IDENTIFIER);
     if(sym_id >= cutoff) errors.push_back(Error(parse_tree.getSelection(pn), BAD_DEFAULT_ARG));
 
@@ -354,7 +354,7 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
         Typeset::Selection sel(left, m);
         auto lookup = map.find(sel);
         ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
-        resolveReference(pn, sel, lookup->second);
+        resolveReference(pn, lookup->second);
         builder.addNaryChild(pn);
         left = m;
     }
@@ -402,7 +402,7 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
         Typeset::Selection sel(left, m);
         auto lookup = map.find(sel);
         ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
-        resolveReference(pn, sel, lookup->second);
+        resolveReference(pn, lookup->second);
         builder.addNaryChild(pn);
         left = m;
     }
@@ -487,7 +487,7 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn) alloc_except {
         Symbol& sym = symbol_table.symbols[index];
         if(sym.declaration_lexical_depth == lexical_depth){
             if(sym.is_prototype){
-                resolveReference(name, sel, index);
+                resolveReference(name, index);
             }else{
                 errors.push_back(Error(sel, TYPE_ERROR));
             }

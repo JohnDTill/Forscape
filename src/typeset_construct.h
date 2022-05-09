@@ -2,6 +2,8 @@
 #define TYPESET_CONSTRUCT_H
 
 #include <construct_codes.h>
+#include <cassert>
+#include <string>
 #include <vector>
 
 #ifndef HOPE_TYPESET_HEADLESS
@@ -11,8 +13,6 @@
 #ifdef TYPESET_MEMORY_DEBUG
 #include <unordered_set>
 #endif
-
-#include <cassert>
 
 #ifndef NDEBUG
 #include <iostream>

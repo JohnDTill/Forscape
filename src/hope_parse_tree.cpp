@@ -560,6 +560,17 @@ size_t ParseTree::NaryBuilder::finalize(const Typeset::Selection& c) alloc_excep
     return pn;
 }
 
+template ParseNode ParseTree::arg<0>(ParseNode) const noexcept;
+template ParseNode ParseTree::arg<1>(ParseNode) const noexcept;
+template ParseNode ParseTree::arg<2>(ParseNode) const noexcept;
+template ParseNode ParseTree::arg<3>(ParseNode) const noexcept;
+template ParseNode ParseTree::arg<4>(ParseNode) const noexcept;
+template void ParseTree::setArg<0>(ParseNode, ParseNode) noexcept;
+template void ParseTree::setArg<1>(ParseNode, ParseNode) noexcept;
+template void ParseTree::setArg<2>(ParseNode, ParseNode) noexcept;
+template void ParseTree::setArg<3>(ParseNode, ParseNode) noexcept;
+template void ParseTree::setArg<4>(ParseNode, ParseNode) noexcept;
+
 }
 
 }

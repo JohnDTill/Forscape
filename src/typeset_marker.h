@@ -2,6 +2,7 @@
 #define TYPESET_MARKER_H
 
 #include <inttypes.h>
+#include <string_view>
 #include <unordered_map>
 
 namespace Hope {

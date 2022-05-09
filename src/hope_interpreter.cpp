@@ -348,7 +348,7 @@ Value Interpreter::big(ParseNode pn, Op type){
         error(BIG_SYMBOL_ARG, assign);
         return NIL;
     }
-    size_t start = std::get<double>(val_start);
+    size_t start = static_cast<size_t>(std::get<double>(val_start));
     Value val_final = interpretExpr(stop);
     if(val_final.index() != double_index){
         error(BIG_SYMBOL_ARG, stop);
