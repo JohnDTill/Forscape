@@ -192,7 +192,7 @@ if (${TEST_QT})
     find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
     find_package(Qt${QT_VERSION_MAJOR}Svg REQUIRED)
     add_compile_definitions(TEST_QT)
-    qt5_add_resources(EMBEDDED_RESOURCES ${EXAMPLE}/resources.qrc)
+    qt_add_resources(EMBEDDED_RESOURCES ${EXAMPLE}/resources.qrc)
     list(APPEND SOURCES
         ${EMBEDDED_RESOURCES}
         ${TEST}/typeset_graphics.h
