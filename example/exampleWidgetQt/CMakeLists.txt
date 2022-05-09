@@ -269,8 +269,7 @@ if(MSVC)
     )
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(Forscape PRIVATE
-        -Wa,-mbig-obj #Eigen unsupported normally results in too many sections
-        $<$<CONFIG:Debug>:-O2> #Still need optimisation to compile w/ Eigen unsupported
+        $<$<CONFIG:Debug>:-O2> #Need optimisation for MinGW to compile w/ Eigen unsupported
         -Wall -Wextra -pedantic #-Werror #EVENTUALLY: address warnings
         $<$<CONFIG:Release>: -Ofast -fmodulo-sched -fmodulo-sched-allow-regmoves -fgcse-sm -fgcse-las -fdelete-null-pointer-checks
         -fomit-frame-pointer -funroll-loops> #-fwhole-program #EVENTUALLY: couldn't get whole program optimisation working
