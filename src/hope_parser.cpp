@@ -268,7 +268,9 @@ ParseNode Parser::mathStatement() alloc_except {
 
     switch (currentType()) {
         case EQUALS:
-            n = (parse_tree.getOp(n) == OP_CALL) ? namedLambdaStmt(n) : equality(n);
+            n = (parse_tree.getOp(n) == OP_CALL && parse_tree.getNumArgs(n) >= 2) ?
+                        namedLambdaStmt(n) :
+                        equality(n);
             break;
         case LEFTARROW: n = assignment(n); break;
         default: n = parse_tree.addUnary(OP_EXPR_STMT, n);
@@ -305,11 +307,22 @@ Parser::ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
     ParseNode ref_upvalues = ParseTree::EMPTY;
 
     const size_t nargs = parse_tree.getNumArgs(call)-1;
+    assert(nargs >= 1);
+
+    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_LIST);
+    for(size_t i = 0; i < nargs; i++) builder.addNaryChild(parse_tree.arg(call, i+1));
+    ParseNode params = builder.finalize();
+
+    //EVENTUALLY: why does cannibalising the call cause a segfault?
+    /*
     ParseNode params = call;
     for(size_t i = 0; i < nargs; i++)
         parse_tree.setArg(params, i, parse_tree.arg(call, i+1));
     parse_tree.setNumArgs(params, nargs);
     parse_tree.setOp(OP_LIST, params);
+    parse_tree.setLeft(params, parse_tree.getLeft(parse_tree.arg<0>(params)));
+    parse_tree.setRight(params, parse_tree.getRight(parse_tree.arg(params, nargs-1)));
+    */
 
     return parse_tree.addPentary(
                 OP_ALGORITHM,
