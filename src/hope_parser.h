@@ -40,6 +40,7 @@ private:
     ParseNode returnStatement() alloc_except;
     ParseNode plotStatement() alloc_except;
     ParseNode mathStatement() alloc_except;
+    ParseNode namedLambdaStmt(ParseNode call) alloc_except;
     ParseNode assignment(const ParseNode& lhs) alloc_except;
     ParseNode expression() alloc_except;
     ParseNode equality(const ParseNode& lhs) alloc_except;
@@ -61,6 +62,7 @@ private:
     ParseNode innerProduct() alloc_except;
     ParseNode integer() alloc_except;
     ParseNode identifier() alloc_except;
+    ParseNode identifierFollowOn(ParseNode id) alloc_except;
     ParseNode isolatedIdentifier() alloc_except;
     ParseNode param() alloc_except;
     ParseNode call(const ParseNode& id) alloc_except;
@@ -91,6 +93,7 @@ private:
     void advance() noexcept;
     bool match(TokenType type) noexcept;
     bool peek(TokenType type) const noexcept;
+    bool lookahead(TokenType type) const noexcept;
     void require(TokenType type) noexcept;
     void consume(TokenType type) noexcept;
     void skipNewlines() noexcept;
