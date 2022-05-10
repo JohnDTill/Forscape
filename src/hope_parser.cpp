@@ -267,7 +267,9 @@ ParseNode Parser::mathStatement() alloc_except {
     ParseNode n = expression();
 
     switch (currentType()) {
-        case EQUALS: n = equality(n); break;
+        case EQUALS:
+            n = (parse_tree.getOp(n) == OP_CALL) ? namedLambdaStmt(n) : equality(n);
+            break;
         case LEFTARROW: n = assignment(n); break;
         default: n = parse_tree.addUnary(OP_EXPR_STMT, n);
     }
@@ -288,6 +290,35 @@ ParseNode Parser::mathStatement() alloc_except {
         default:
             return error(UNRECOGNIZED_EXPR);
     }
+}
+
+Parser::ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
+    assert(parse_tree.getOp(call) == OP_CALL);
+    advance();
+
+    ParseNode expr = expression();
+    if(!noErrors()) return error_node;
+    ParseNode body = parse_tree.addUnary(OP_RETURN, expr);
+
+    ParseNode id = parse_tree.arg<0>(call);
+    ParseNode val_captures = ParseTree::EMPTY;
+    ParseNode ref_upvalues = ParseTree::EMPTY;
+
+    const size_t nargs = parse_tree.getNumArgs(call)-1;
+    ParseNode params = call;
+    for(size_t i = 0; i < nargs; i++)
+        parse_tree.setArg(params, i, parse_tree.arg(call, i+1));
+    parse_tree.setNumArgs(params, nargs);
+    parse_tree.setOp(OP_LIST, params);
+
+    return parse_tree.addPentary(
+                OP_ALGORITHM,
+                val_captures,
+                ref_upvalues,
+                params,
+                body,
+                id
+           );
 }
 
 ParseNode Parser::assignment(const ParseNode& lhs) alloc_except {
@@ -724,7 +755,10 @@ ParseNode Parser::integer() alloc_except {
 
 ParseNode Parser::identifier() alloc_except{
     ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
+    return identifierFollowOn(id);
+}
 
+Parser::ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
     switch (currentType()) {
         case LEFTPAREN: return call(id);
         case MAPSTO: return lambda(parse_tree.addUnary(OP_LIST, id));
@@ -742,6 +776,21 @@ ParseNode Parser::identifier() alloc_except{
                 index = index_backup;
                 errors.clear();
                 error_node = UNITIALIZED;
+            }
+
+        //EVENTUALLY: you can't have named lambdas with subscripts because that depends on symbol resolution
+        //            it might make sense to do symbol resolution while parsing.
+        //            Or there are other ways to solve the problem, such as modifying implicit mult to return OP_CALL
+        //            under certain conditions.
+
+            return id;
+        case TOKEN_SUPERSCRIPT:
+            if(lookahead(MULTIPLY)){
+                advance();
+                advance();
+                parse_tree.setRight(id, rMark());
+                consume(ARGCLOSE);
+                return identifierFollowOn(id);
             }
             return id;
         case TOKEN_DUALSCRIPT:
@@ -921,12 +970,6 @@ ParseNode Parser::superscript(const ParseNode& lhs) alloc_except{
         case DAGGER:{
             advance();
             n = parse_tree.addUnary(OP_DAGGER, c, lhs);
-            break;
-        }
-        case MULTIPLY:{
-            parse_tree.setRight(lhs, right);
-            advance();
-            n = lhs;
             break;
         }
         case PLUS:{
@@ -1230,6 +1273,11 @@ bool Parser::match(TokenType type) noexcept{
 
 bool Parser::peek(TokenType type) const noexcept{
     return tokens[index].type == type;
+}
+
+bool Parser::lookahead(TokenType type) const noexcept{
+    assert(index+1 < tokens.size());
+    return tokens[index+1].type == type;
 }
 
 void Parser::require(TokenType type) noexcept{
