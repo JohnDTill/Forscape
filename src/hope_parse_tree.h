@@ -79,6 +79,8 @@ public:
     void setR3(ParseNode pn) noexcept;
     void copyDims(ParseNode dest, ParseNode src) noexcept;
     void transposeDims(ParseNode dest, ParseNode src) noexcept;
+    void setString(ParseNode pn, const std::string& str) alloc_except;
+    const std::string& getString(ParseNode pn) const noexcept;
 
     #ifndef NDEBUG
     std::string toGraphviz() const;
@@ -118,6 +120,8 @@ private:
     static constexpr size_t LEFT_MARKER_OFFSET = SELECTION_OFFSET + 2;
     static constexpr size_t RIGHT_MARKER_OFFSET = SELECTION_OFFSET;
     size_t fields(size_t node) const noexcept{ return getNumArgs(node)+FIXED_FIELDS; }
+    std::vector<std::string> string_lits; //EVENTUALLY: this isn't the best place to put this,
+        //but you can't cast types with heap-allocated data into the vector
 
     #ifndef NDEBUG
     void graphvizHelper(std::string& src, ParseNode n, size_t& size) const;

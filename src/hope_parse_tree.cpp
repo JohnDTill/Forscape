@@ -18,6 +18,7 @@ static constexpr size_t UNKNOWN_SIZE = 0;
 void ParseTree::clear() noexcept {
     std::vector<size_t>::clear();
     cloned_vars.clear();
+    string_lits.clear();
 }
 
 bool ParseTree::empty() const noexcept{
@@ -435,6 +436,17 @@ void ParseTree::copyDims(ParseNode dest, ParseNode src) noexcept{
 void ParseTree::transposeDims(ParseNode dest, ParseNode src) noexcept{
     setRows(dest, getCols(src));
     setCols(dest, getRows(src));
+}
+
+void ParseTree::setString(ParseNode pn, const std::string& str) alloc_except{
+    assert(getOp(pn) == OP_STRING);
+    setFlag(pn, string_lits.size());
+    string_lits.push_back(str);
+}
+
+const std::string& ParseTree::getString(ParseNode pn) const noexcept{
+    assert(getOp(pn) == OP_STRING);
+    return string_lits[getFlag(pn)];
 }
 
 ParseTree::NaryBuilder ParseTree::naryBuilder(size_t type) noexcept {

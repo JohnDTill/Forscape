@@ -54,6 +54,7 @@ private:
     ParseNode collectImplicitMult(ParseNode n) alloc_except;
     ParseNode rightUnary() alloc_except;
     ParseNode primary() alloc_except;
+    ParseNode string() alloc_except;
     ParseNode parenGrouping() alloc_except;
     ParseNode paramList() alloc_except;
     ParseNode captureList() alloc_except;

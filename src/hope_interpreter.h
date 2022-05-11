@@ -88,10 +88,10 @@ private:
     void reassign(ParseNode lhs, ParseNode rhs);
     void reassignSubscript(ParseNode lhs, ParseNode rhs);
     void elementWiseAssignment(ParseNode pn);
-    Value& read(ParseNode pn);
-    Value& readLocal(ParseNode pn);
-    Value& readGlobal(ParseNode pn);
-    Value& readClosedVar(ParseNode pn);
+    Value& read(ParseNode pn) noexcept;
+    Value& readLocal(ParseNode pn) noexcept;
+    Value& readGlobal(ParseNode pn) noexcept;
+    Value& readClosedVar(ParseNode pn) const noexcept;
     Value matrix(ParseNode pn);
     Value str(ParseNode pn) const;
     Value anonFun(ParseNode pn);

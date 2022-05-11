@@ -382,6 +382,7 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
                 return error(pn, pn, DIMENSION_MISMATCH);
             }
         }
+        //EVENTUALLY: remove autosize
         case OP_IDENTITY_AUTOSIZE:
             parse_tree.setType(pn, NUMERIC);
             parse_tree.setRows(pn, rows_expected);
@@ -412,6 +413,7 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
                 encountered_autosize = true;
                 return pn;
             }else{
+                //EVENTUALLY: writing dynamic data in the parse tree vector is UB
                 const Value& v = parse_tree.getValue(child);
                 if(v.index() != Unitialized_index && std::get<double>(v) >= entries)
                     return error(pn, child, INDEX_OUT_OF_RANGE);
