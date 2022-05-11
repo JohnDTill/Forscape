@@ -501,13 +501,13 @@ ParseNode Parser::primary() alloc_except {
     switch (currentType()) {
         case INTEGER: return integer();
         case IDENTIFIER: return identifier();
+        case STRING: return string();
 
         //Value literal
         case INFTY: return terminalAndAdvance(OP_INFTY);
         case EMPTYSET: return terminalAndAdvance(OP_EMPTY_SET);
         case TRUELITERAL: return terminalAndAdvance(OP_TRUE);
         case FALSELITERAL: return terminalAndAdvance(OP_FALSE);
-        case STRING: return terminalAndAdvance(OP_STRING);
         case GRAVITY: return terminalAndAdvance(OP_GRAVITY);
 
         //Grouping
@@ -577,6 +577,13 @@ ParseNode Parser::primary() alloc_except {
         default:
             return error(EXPECTED_PRIMARY);
     }
+}
+
+Parser::ParseNode Parser::string() noexcept{
+    ParseNode pn = terminalAndAdvance(OP_STRING);
+    std::string str = parse_tree.str(pn);
+    parse_tree.setString(pn, str.substr(1, str.size()-2));
+    return pn;
 }
 
 Parser::ParseNode Parser::parenGrouping() alloc_except {

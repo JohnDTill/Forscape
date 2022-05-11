@@ -21,7 +21,7 @@ void Stack::clear() noexcept{
 }
 
 
-void Stack::push(const Value& value, std::string name){
+void Stack::push(const Value& value   DEBUG_STACK_NAME){
     std::vector<Value>::push_back(value);
     #ifndef NDEBUG
     stack_names.push_back( name );
@@ -35,17 +35,17 @@ void Stack::pop() noexcept{
     #endif
 }
 
-Value& Stack::read(size_t offset, std::string intended) noexcept{
+Value& Stack::read(size_t offset   DEBUG_STACK_NAME) noexcept{
     assert(offset < size());
 
     #ifndef NDEBUG
     const std::string& actual = stack_names[offset];
-    if(intended != actual){
-        std::cout << "Tried to read " << intended << ", but read "
+    if(name != actual){
+        std::cout << "Tried to read " << name << ", but read "
                   << actual << '\n' << std::endl;
         print();
     }
-    assert(intended == actual);
+    assert(name == actual);
     #endif
 
     return std::vector<Value>::operator[](offset);

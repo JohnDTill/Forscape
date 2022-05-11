@@ -79,7 +79,10 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_FOR: forStmt(pn); break;
         case OP_BLOCK: blockStmt(pn); break;
         case OP_ALGORITHM: algorithmStmt(pn); break;
-        case OP_PROTOTYPE_ALG: stack.push(static_cast<void*>(nullptr), parse_tree.str(parse_tree.child(pn))); break;
+        case OP_PROTOTYPE_ALG:
+            stack.push(static_cast<void*>(nullptr)
+                DEBUG_STACK_ARG(parse_tree.str(parse_tree.child(pn))));
+            break;
         case OP_EXPR_STMT: callStmt(parse_tree.child(pn)); break;
         case OP_RETURN: returnStmt(pn); break;
         case OP_BREAK: status = static_cast<Status>(status | BREAK); break;
@@ -107,7 +110,7 @@ void Interpreter::assignStmt(ParseNode pn){
     Value v = interpretExpr(rhs);
 
     if(parse_tree.getOp(lhs) == OP_READ_UPVALUE) readClosedVar(lhs) = v;
-    else stack.push(v, parse_tree.str(lhs));
+    else stack.push(v   DEBUG_STACK_ARG(parse_tree.str(lhs)));
 }
 
 void Interpreter::whileStmt(ParseNode pn){
@@ -170,7 +173,7 @@ void Interpreter::algorithmStmt(ParseNode pn){
     ParseNode upvalues = alg.refCap(parse_tree);
 
     if(parse_tree.getFlag(pn) == NONE){
-        stack.push(alg, parse_tree.str(name));
+        stack.push(alg   DEBUG_STACK_ARG(parse_tree.str(name)));
         list = &std::get<Algorithm>(stack.back()).closure;
     }else{
         Value& place = read(name);
@@ -236,7 +239,7 @@ void Interpreter::breakLocalClosureLinks(Closure& closure, ParseNode val_cap, Pa
 void Interpreter::returnStmt(ParseNode pn){
     Value v = interpretExpr(parse_tree.child(pn));
     status = static_cast<Status>(status | RETURN);
-    stack.push(v, "%RETURN");
+    stack.push(v   DEBUG_STACK_ARG("%RETURN"));
 }
 
 void Interpreter::plotStmt(ParseNode pn){
@@ -307,7 +310,7 @@ Value Interpreter::implicitMult(ParseNode pn, size_t start){
                 error(INVALID_ARGS, lhs);
                 return NIL;
             }else{
-                stack.push(vr, parse_tree.str(parse_tree.child(params)));
+                stack.push(vr   DEBUG_STACK_ARG(parse_tree.str(parse_tree.child(params))));
             }
             ans = interpretExpr(l.expr(parse_tree));
             break;
@@ -533,8 +536,8 @@ void Interpreter::elementWiseAssignment(ParseNode pn){
         bool use_second = num_subscripts>1 &&
                           parse_tree.getOp( parse_tree.arg(lhs, 2) ) != OP_SLICE;
 
-        if(use_first) stack.push(0.0, parse_tree.str(parse_tree.arg(lhs, 1)));
-        if(use_second) stack.push(0.0, parse_tree.str(parse_tree.arg(lhs, 2)));
+        if(use_first) stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg(lhs, 1))));
+        if(use_second) stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg(lhs, 2))));
         Value rvalue = interpretExpr(rhs);
         stack.pop();
         if(use_first & use_second) stack.pop();
@@ -552,7 +555,7 @@ void Interpreter::elementWiseAssignment(ParseNode pn){
             return;
         }
 
-        stack.push(0.0, parse_tree.str(parse_tree.arg(lhs, 1)));
+        stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg(lhs, 1))));
         for(Eigen::Index i = 0; i < lmat.size(); i++){
             stack.back() = static_cast<double>(i);
             Value rvalue = interpretExpr(rhs);
@@ -572,7 +575,7 @@ void Interpreter::elementWiseAssignment(ParseNode pn){
     Op type_col = parse_tree.getOp( parse_tree.arg(lhs, 2) );
 
     if(type_row == OP_SLICE){
-        stack.push(0.0, parse_tree.str(parse_tree.arg(lhs, 2)));
+        stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg(lhs, 2))));
         if(lmat.rows() > 1){
             for(Eigen::Index i = 0; i < lmat.cols(); i++){
                 stack.back() = static_cast<double>(i);
@@ -602,7 +605,7 @@ void Interpreter::elementWiseAssignment(ParseNode pn){
         stack.pop();
         read(lvalue_node) = lmat;
     }else if(type_col == OP_SLICE){
-        stack.push(0.0, parse_tree.str(parse_tree.arg(lhs, 1)));
+        stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg(lhs, 1))));
         if(lmat.cols() > 1){
             for(Eigen::Index i = 0; i < lmat.rows(); i++){
                 stack.back() = static_cast<double>(i);
@@ -632,8 +635,8 @@ void Interpreter::elementWiseAssignment(ParseNode pn){
         stack.pop();
         read(lvalue_node) = lmat;
     }else{
-        stack.push(0.0, parse_tree.str(parse_tree.arg(lhs, 1)));
-        stack.push(0.0, parse_tree.str(parse_tree.arg(lhs, 2)));
+        stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg(lhs, 1))));
+        stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg(lhs, 2))));
         for(Eigen::Index i = 0; i < lmat.rows(); i++){
             stack[stack.size()-2] = static_cast<double>(i);
             for(Eigen::Index j = 0; j < lmat.cols(); j++){
@@ -652,33 +655,33 @@ void Interpreter::elementWiseAssignment(ParseNode pn){
     }
 }
 
-Value& Interpreter::read(ParseNode pn){
+Value& Interpreter::read(ParseNode pn) noexcept {
+    //EVENTUALLY: this switch should be resolved at compile time
     switch (parse_tree.getOp(pn)) {
         case OP_IDENTIFIER: return readLocal(pn);
         case OP_READ_GLOBAL: return readGlobal(pn);
         case OP_READ_UPVALUE: return readClosedVar(pn);
         default:
-            error(NON_LVALUE, pn);
-            stack.push(NIL, "%ERROR");
+            assert(false); //Should catch non-lvalue at compile time
             return stack.back();
     }
 }
 
-Value& Interpreter::readLocal(ParseNode pn) {
+Value& Interpreter::readLocal(ParseNode pn) noexcept {
     assert(parse_tree.getOp(pn) == OP_IDENTIFIER);
     size_t stack_offset = parse_tree.getStackOffset(pn);
 
-    return stack.read(stack.size()-1-stack_offset, parse_tree.str(pn));
+    return stack.read(stack.size()-1-stack_offset   DEBUG_STACK_ARG(parse_tree.str(pn)));
 }
 
-Value& Interpreter::readGlobal(ParseNode pn){
+Value& Interpreter::readGlobal(ParseNode pn) noexcept {
     assert(parse_tree.getOp(pn) == OP_READ_GLOBAL);
     size_t stack_offset = parse_tree.getGlobalIndex(pn);
 
-    return stack.read(stack_offset, parse_tree.str(pn));
+    return stack.read(stack_offset   DEBUG_STACK_ARG(parse_tree.str(pn)));
 }
 
-Value& Interpreter::readClosedVar(ParseNode pn){
+Value& Interpreter::readClosedVar(ParseNode pn) const noexcept {
     size_t upvalue_offset = parse_tree.getClosureIndex(pn);
     assert(upvalue_offset < active_closure->size());
     return conv(active_closure->at(upvalue_offset));
@@ -751,9 +754,8 @@ Value Interpreter::matrix(ParseNode pn){
     return mat;
 }
 
-Value Interpreter::str(ParseNode pn) const{
-    std::string str = parse_tree.str(pn);
-    return str.substr(1, str.size()-2);
+Value Interpreter::str(ParseNode pn) const {
+    return parse_tree.getString(pn);
 }
 
 Value Interpreter::anonFun(ParseNode pn){
@@ -852,7 +854,7 @@ Value Interpreter::innerCall(ParseNode call, Closure& closure, ParseNode fn, boo
     }
 
     for(const auto& entry : stack_vals)
-        stack.push(entry.first, entry.second);
+        stack.push(entry.first   DEBUG_STACK_ARG(entry.second));
     for(const auto& entry : closure_vals)
         readClosedVar(entry.first) = entry.second;
 
@@ -1100,7 +1102,7 @@ Value Interpreter::unitVector(ParseNode pn){
 Value Interpreter::finiteDiff(ParseNode pn){
     ParseNode val_pn = parse_tree.arg<2>(pn);
     Value val = interpretExpr(val_pn);
-    stack.push(val, parse_tree.str(val_pn));
+    stack.push(val   DEBUG_STACK_ARG(parse_tree.str(val_pn)));
     ParseNode expr = parse_tree.arg<0>(pn);
     Value f = interpretExpr(expr);
 
