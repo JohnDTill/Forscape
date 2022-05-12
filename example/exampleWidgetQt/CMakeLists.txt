@@ -15,6 +15,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #add_compile_definitions(HOPE_TYPESET_LAYOUT_DEBUG)
 
 add_compile_definitions(alloc_except=noexcept)
+add_compile_definitions(EIGEN_NO_AUTOMATIC_RESIZING)
 
 set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/forscape.rc")
 
@@ -254,7 +255,7 @@ if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(Forscape)
 endif()
 
-add_compile_definitions(HOPE_EIGEN_UNSUPPORTED $<$<CONFIG:Release>:EIGEN_NO_DEBUG>)
+add_compile_definitions($<$<CONFIG:Release>:EIGEN_NO_DEBUG>)
 #EVENTUALLY: get rid of EIGEN_UNSUPPORTED macro and only accept compilers that can handle it
 
 if(MSVC)

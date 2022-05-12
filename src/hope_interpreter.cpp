@@ -5,12 +5,8 @@
 #include "hope_message.h"
 #include "hope_symbol_link_pass.h"
 
-#include <Eigen/Eigen>
 #include <thread>
-
-#ifdef HOPE_EIGEN_UNSUPPORTED
 #include <unsupported/Eigen/MatrixFunctions>
-#endif
 
 #ifndef NDEBUG
 #include <iostream>
@@ -1054,16 +1050,6 @@ Eigen::MatrixXd Interpreter::invHat(const Eigen::MatrixXd& a){
         assert(a.rows() == 4 && a.cols() == 4);
         return Eigen::Matrix<double, 6, 1>(a(2,1), a(0,2), a(1,0), a(0,3), a(1,3), a(2,3));
     }
-}
-
-Value Interpreter::pow(const Eigen::MatrixXd& a, double b, ParseNode pn){
-    if(b == -1) return a.inverse();
-
-    #ifdef HOPE_EIGEN_UNSUPPORTED
-    return a.pow(b);
-    #else
-    return error(EIGEN_UNSUPPORTED, pn);
-    #endif
 }
 
 Value Interpreter::unitVector(ParseNode pn){

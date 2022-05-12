@@ -108,7 +108,6 @@ private:
     static double dot(const Eigen::MatrixXd& a, const Eigen::MatrixXd& b) noexcept;
     static Eigen::MatrixXd hat(const Eigen::MatrixXd& a);
     static Eigen::MatrixXd invHat(const Eigen::MatrixXd& a);
-    Value pow(const Eigen::MatrixXd& a, double b, ParseNode pn);
     Value unitVector(ParseNode pn);
     Value finiteDiff(ParseNode pn);
     static double pNorm(const Eigen::MatrixXd& a, double b) noexcept;
