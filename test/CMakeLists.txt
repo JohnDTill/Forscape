@@ -26,7 +26,8 @@ configure_file(${TEST}/serial_valid.txt ${CMAKE_BINARY_DIR} COPYONLY)
 configure_file(${TEST}/serial_malformed.txt ${CMAKE_BINARY_DIR} COPYONLY)
 configure_file(${TEST}/serial_exhaustive.txt ${CMAKE_BINARY_DIR} COPYONLY)
 
-add_compile_definitions(TYPESET_MEMORY_DEBUG HOPE_SEMANTIC_DEBUGGING EIGEN_NO_AUTOMATIC_RESIZING)
+add_compile_definitions(TYPESET_MEMORY_DEBUG HOPE_SEMANTIC_DEBUGGING)
+add_compile_definitions(EIGEN_NO_AUTOMATIC_RESIZING)
 add_compile_definitions(BASE_TEST_DIR="../test/interpreter_scripts")
 add_compile_definitions(alloc_except=noexcept)
 
@@ -218,7 +219,7 @@ endif ()
 
 add_test(NAME IntegrationTest COMMAND HopeTests.exe)
 
-add_compile_definitions(HOPE_EIGEN_UNSUPPORTED $<$<CONFIG:Release>:EIGEN_NO_DEBUG>)
+add_compile_definitions($<$<CONFIG:Release>:EIGEN_NO_DEBUG>)
 #EVENTUALLY: get rid of EIGEN_UNSUPPORTED macro and only accept compilers that can handle it
 
 if(MSVC)
@@ -232,8 +233,11 @@ if(MSVC)
         $<$<CONFIG:Release>:/OPT:REF> #/LTCG
     )
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if (WIN32)
+        #Need optimisation for MinGW to compile w/ Eigen unsupported
+        target_compile_options(HopeTests PRIVATE $<$<CONFIG:Debug>:-O1>)
+    endif()
     target_compile_options(HopeTests PRIVATE
-        $<$<CONFIG:Debug>:-O2> #Need optimisation for MinGW to compile w/ Eigen unsupported
         -Wall -Wextra -pedantic #-Werror #EVENTUALLY: address warnings
         $<$<CONFIG:Release>: -Ofast -fmodulo-sched -fmodulo-sched-allow-regmoves -fgcse-sm -fgcse-las -fdelete-null-pointer-checks
         -fomit-frame-pointer -funroll-loops> #-fwhole-program #EVENTUALLY: couldn't get whole program optimisation working

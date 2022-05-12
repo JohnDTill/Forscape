@@ -5,8 +5,7 @@
 #include <memory>
 #include <variant>
 #include <vector>
-//#include <Eigen/src/Core/Matrix.h>
-#include <Eigen/Eigen>
+#include <Eigen/Core>
 
 namespace Hope {
 

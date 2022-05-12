@@ -20,6 +20,9 @@ int main(int argc, char* argv[]){
     QApplication app_is_prequisite_to_using_QFontDatabase(argc, argv);
     QApplication::processEvents();
     Typeset::Painter::init();
+    #else
+    (void)argc;
+    (void)argv;
     #endif
 
     Hope::initLogging();

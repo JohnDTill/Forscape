@@ -37,10 +37,8 @@ def main():
 
     with open("../src/generated/hope_interpreter_gen.cpp", "w", encoding="utf-8") as codegen_file:
         codegen_file.write("#include \"hope_interpreter.h\"\n\n")
-        codegen_file.write("#include <math.h>\n\n")
-        codegen_file.write("#ifdef HOPE_EIGEN_UNSUPPORTED\n"
-                           "#include <unsupported/Eigen/MatrixFunctions>\n"
-                           "#endif\n")
+        codegen_file.write("#include <math.h>\n")
+        codegen_file.write("#include <unsupported/Eigen/MatrixFunctions>\n\n")
         codegen_file.write("using namespace Eigen;\n")
         codegen_file.write("using namespace std;\n\n")
         codegen_file.write("namespace Hope {\n\n")
@@ -95,8 +93,6 @@ def main():
                         impl = re.sub(r'\ba\b', f'std::get<{typ}>(child)', rule.impl)
 
                     codegen_file.write(f"        case unaryCode(OP_{op}, {typ}_index):\n")
-            if rule.eigen_unsupported:
-                codegen_file.write("            #ifdef HOPE_EIGEN_UNSUPPORTED\n")
             if rule.constraint:
                 codegen_file.write("        {\n")
                 codegen_file.write(f"            const auto& a = std::get<{typ}>(child);\n")
@@ -109,10 +105,6 @@ def main():
             codegen_file.write(f"            return {impl};\n")
             if rule.constraint:
                 codegen_file.write("        }\n")
-            if rule.eigen_unsupported:
-                codegen_file.write("            #else\n"
-                                   "            return error(EIGEN_UNSUPPORTED, pn);\n"
-                                   "            #endif\n")
 
         codegen_file.write("        default: return error(TYPE_ERROR, pn);\n"
                            "    }\n"
@@ -161,8 +153,6 @@ def main():
                             impl = re.sub(r'\bb\b', f'std::get<{b_op}>(rhs)', impl)
 
                         codegen_file.write(f"        case binaryCode(OP_{op}, {a_op}_index, {b_op}_index):\n")
-            if rule.eigen_unsupported:
-                codegen_file.write("            #ifdef HOPE_EIGEN_UNSUPPORTED\n")
             if rule.constraint:
                 codegen_file.write("        {\n")
                 codegen_file.write(f"            const auto& a = std::get<{a_op}>(lhs);\n")
@@ -176,10 +166,6 @@ def main():
             codegen_file.write(f"            return {impl};\n")
             if rule.constraint:
                 codegen_file.write("        }\n")
-            if rule.eigen_unsupported:
-                codegen_file.write("            #else\n"
-                                   "            return error(EIGEN_UNSUPPORTED, pn);\n"
-                                   "            #endif\n")
 
         codegen_file.write("        default: return error(TYPE_ERROR, pn);\n"
                            "    }\n"

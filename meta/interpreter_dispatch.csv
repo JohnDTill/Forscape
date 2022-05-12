@@ -1,152 +1,152 @@
-op,a,b,return_type,impl,eigen_unsupported,test_in,test_out,constraint
-ADDITION,double,double,double,a+b,,2+2,4,
-ADDITION,MatrixXd,MatrixXd,MatrixXd,a+b,,,,(a.rows()!=b.rows()) | (a.cols()!=b.cols())=>DIMENSION_MISMATCH
-ADDITION,string,string,string,a+b,,"""Hello""+""World""",HelloWorld,
-SUBTRACTION,double,double,double,a-b,,4-2,2,
-SUBTRACTION,MatrixXd,MatrixXd,MatrixXd,a-b,,,,(a.rows()!=b.rows()) | (a.cols()!=b.cols())=>DIMENSION_MISMATCH
-UNARY_MINUS,double,,double,-a,,-2,-2,
-UNARY_MINUS,MatrixXd,,MatrixXd,-a,,,,
-MULTIPLICATION|CROSS|DOT|CALL|INNER_PRODUCT|ODOT,double,double,double,a*b,,2*2,4,
-MULTIPLICATION|CALL,double,MatrixXd,MatrixXd,a*b,,,,
-MULTIPLICATION|CALL,MatrixXd,double,MatrixXd,a*b,,,,
-MULTIPLICATION|CALL,MatrixXd,MatrixXd,MatrixXd|double,"(a.rows() > 1 || b.cols() > 1) ? Value(a*b) : dot(a,b)",,,,a.cols()!=b.rows()=>DIMENSION_MISMATCH
-DOT|INNER_PRODUCT,MatrixXd,MatrixXd,double,"dot(a,b)",,,,(a.rows()!=b.rows()) | (a.cols()!=b.cols()) | ((a.cols() > 1) & (a.rows() > 1))=>DIMENSION_MISMATCH
-CROSS,MatrixXd,MatrixXd,MatrixXd,Map<const Vector3d>(a.data()).cross(Map<const Vector3d>(b.data())),,,,(a.rows()!=b.rows()) | (a.cols()!=b.cols()) | (a.size()!=3)=>DIMENSION_MISMATCH
-ODOT,MatrixXd,MatrixXd,MatrixXd,a.cwiseProduct(b),,,,(a.rows()!=b.rows()) | (a.cols()!=b.cols())=>DIMENSION_MISMATCH
-FORWARDSLASH|DIVIDE|FRACTION,double,double,double,a/b,,4/2,2,b==0=>DIV_BY_ZERO
-FORWARDSLASH|DIVIDE|FRACTION,MatrixXd,double,MatrixXd,a/b,,,,b==0=>DIV_BY_ZERO
-IMPLICIT_MULTIPLY,,,,implicitMult(pn),,,,
-BACKSLASH,double,double,double,b/a,,,,
-BACKSLASH,double,MatrixXd,MatrixXd,b/a,,,,
-MODULUS,double,double,double,"std::fmod(a,b)",,,,
-EQUAL,double,double,bool,a==b,,2+2=4,true,
-EQUAL,MatrixXd,MatrixXd,bool,a.isApprox(b),,,,
-EQUAL,string,string,bool,a==b,,"""Hello""=""World""",false,
-EQUAL,bool,bool,bool,a==b,,,,
-EQUAL,ANY,NOT_a,bool,false,,"""Hello""=2",false,
-NOT_EQUAL,double,double,bool,a!=b,,,,
-NOT_EQUAL,MatrixXd,MatrixXd,bool,!a.isApprox(b),,,,
-NOT_EQUAL,string,string,bool,a!=b,,,,
-NOT_EQUAL,bool,bool,bool,a!=b,,,,
-NOT_EQUAL,ANY,NOT_a,bool,true,,,,
-TRANSPOSE,double,,double,a,,,,
-TRANSPOSE,MatrixXd,,MatrixXd,a.transpose(),,,,
-PSEUDO_INVERSE,double,,,1/a,,,,
-PSEUDO_INVERSE,MatrixXd,,,a.completeOrthogonalDecomposition().pseudoInverse(),,,,
-DAGGER,double,,,a,,,,
-DAGGER,MatrixXd,,,a.adjoint(),,,,
-POWER,double,double,double,"std::pow(a,b)",,,,
-POWER,MatrixXd,double,MatrixXd,"pow(a, b, pn)",,,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
-POWER,double,MatrixXd,MatrixXd,(b.log()*a).exp(),y,,,b.cols()!=b.rows()=>DIMENSION_MISMATCH
-SQRT,double,,double,std::sqrt(a),,,,a<0=>IMAGINARY_RESULT
-SQRT,MatrixXd,,MatrixXd,a.sqrt(),y,,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
-ROOT,double,double,double,"std::pow(a,1/b)",,,,
-ROOT,MatrixXd,double,MatrixXd,a.pow(1/b),y,,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
-ROOT,double,MatrixXd,MatrixXd,(b.inverse().log()*a).exp(),y,,,b.cols()!=b.rows()=>DIMENSION_MISMATCH
-GREATER,double,double,bool,a > b,,2 > 1|2 > 2,true|false,
-GREATER_EQUAL,double,double,bool,a >= b,,,,
-LESS,double,double,bool,a < b,,,,
-LESS_EQUAL,double,double,bool,a <= b,,,,
-LOGICAL_AND,bool,bool,bool,a && b,,,,
-LOGICAL_NOT,bool,,bool,!a,,,,
-LOGICAL_OR,bool,bool,bool,a || b,,,,
-ABS,double,,,std::abs(a),,,,
-ABS,MatrixXd,,,a.determinant(),,,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
-CEIL,double,,double,std::ceil(a),,,,
-CEIL,MatrixXd,,MatrixXd,a.array().ceil(),y,,,
-FLOOR,double,,double,static_cast<double>(int(a)),,,,
-FLOOR,MatrixXd,,MatrixXd,a.array().floor(),y,,,
-NORM|NORM_INFTY|NORM_1,double,,double,std::abs(a),,,,
-NORM_p,double,double,double,std::abs(a),,,,
-NORM,MatrixXd,,double,a.norm(),,,,(a.cols() > 1) & (a.rows() > 1)=>DIMENSION_MISMATCH
-NORM_1,MatrixXd,,double,a.lpNorm<1>(),,,,(a.cols() > 1) & (a.rows() > 1)=>DIMENSION_MISMATCH
-NORM_INFTY,MatrixXd,,double,a.lpNorm<Eigen::Infinity>(),,,,(a.cols() > 1) & (a.rows() > 1)=>DIMENSION_MISMATCH
-NORM_p,MatrixXd,double,double,"pNorm(a, b)",,,,(a.cols() > 1) & (a.rows() > 1)=>DIMENSION_MISMATCH
-GROUP_PAREN|GROUP_BRACKET,,,,interpretExpr(parse_tree.child(pn)),,,,
-SUBSCRIPT_ACCESS,,,,elementAccess(pn),,,,
-IDENTIFIER,,,,readLocal(pn),,,,
-READ_GLOBAL,,,,readGlobal(pn),,,,
-READ_UPVALUE,,,,readClosedVar(pn),,,,
-TRUE,,,,true,,,,
-FALSE,,,,false,,,,
-MATRIX,,,,matrix(pn),,,,
-DECIMAL_LITERAL|INTEGER_LITERAL,,,,parse_tree.getFlagAsDouble(pn),,,,
-STRING,,,,str(pn),,,,
-LAMBDA,,,,anonFun(pn),,,,
-CALL,,,,call(pn),,,,
-ZERO_MATRIX,double,double,MatrixXd|double,"a*b == 1 ? Value(0.0) : MatrixXd::Zero(static_cast<Index>(a), static_cast<Index>(b))",,,,
-ONES_MATRIX,double,double,MatrixXd|double,"a*b == 1 ? Value(1.0) : MatrixXd::Ones(static_cast<Index>(a), static_cast<Index>(b))",,,,
-IDENTITY_MATRIX,double,double,MatrixXd|double,"a*b == 1 ? Value(1.0) : MatrixXd::Identity(static_cast<Index>(a), static_cast<Index>(b))",,,,
-UNIT_VECTOR,,,,unitVector(pn),,,,
-LENGTH,double,,double,static_cast<double>(1),,,,
-LENGTH,string,,double,static_cast<double>(a.size()),,,,
-LENGTH,MatrixXd,,double,static_cast<double>(a.size()),,,,(a.cols() > 1 && a.rows() > 1)=>DIMENSION_MISMATCH
-SINE,double,,,std::sin(a),,,,
-SINE,MatrixXd,,,a.sin(),y,,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
-COSINE,double,,,std::cos(a),,,,
-COSINE,MatrixXd,,,a.cos(),y,,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
-TANGENT,double,,,std::tan(a),,,,
-ARCSINE,double,,,std::asin(a),,,,
-ARCCOSINE,double,,,std::acos(a),,,,
-ARCTANGENT,double,,,std::atan(a),,,,
-ARCTANGENT2,double,double,,"std::atan2(a,b)",,,,
-COSECANT,double,,,1/std::sin(a),,,,
-SECANT,double,,,1/std::cos(a),,,,
-COTANGENT,double,,,1/std::tan(a),,,,
-ARCCOSECANT,double,,,std::asin(1/a),,,,
-ARCSECANT,double,,,std::acos(1/a),,,,
-ARCCOTANGENT,double,,,std::atan(1/a),,,,
-HYPERBOLIC_SINE,double,,,std::sinh(a),,,,
-HYPERBOLIC_SINE,MatrixXd,,,a.sinh(),y,,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
-HYPERBOLIC_COSINE,double,,,std::cosh(a),,,,
-HYPERBOLIC_TANGENT,double,,,std::tanh(a),,,,
-HYPERBOLIC_ARCSINE,double,,,std::asinh(a),,,,
-HYPERBOLIC_ARCCOSINE,double,,,std::acosh(a),,,,
-HYPERBOLIC_ARCTANGENT,double,,,std::atanh(a),,,,
-HYPERBOLIC_COSECANT,double,,,1/std::asinh(a),,,,
-HYPERBOLIC_SECANT,double,,,1/std::acosh(a),,,,
-HYPERBOLIC_COTANGENT,double,,,1/std::atanh(a),,,,
-HYPERBOLIC_ARCCOSECANT,double,,,"std::log( 1/a + std::sqrt(1/std::pow(a,2) + 1) )",,,,
-HYPERBOLIC_ARCSECANT,double,,,"std::log( (1 + std::sqrt(1 - std::pow(a,2))) / a )",,,,
-HYPERBOLIC_ARCCOTANGENT,double,,,std::log((a+1)/(a-1))/2,,,,
-EXP,double,,,std::exp(a),,,,
-EXP,MatrixXd,,,a.exp(),y,,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
-NATURAL_LOG,double,,,std::log(a),,,,a <= 0=>LOG_ARG
-NATURAL_LOG,MatrixXd,,,a.log(),y,,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
-LOGARITHM,double,,,std::log(a) / std::log(10),,,,a <= 0=>LOG_ARG
-LOGARITHM_BASE,double,double,,std::log(a) / std::log(b),,,,a <= 0=>LOG_ARG:b <= 0=>LOG_BASE
-ERROR_FUNCTION,double,,,std::erf(a),,,,
-COMP_ERR_FUNC,double,,,std::erfc(a),,,,
-SUMMATION,,,,sum(pn),,,,
-PRODUCT,,,,prod(pn),,,,
-CASES,,,,cases(pn),,,,
-PI,,,,3.14159265358979323846264338327950288419716939937510f,,,,
-EULERS_NUMBER,,,,2.71828182845904523536028747135266249775724709369995f,,,,
-GOLDEN_RATIO,,,,1.61803398874989484820458683436563811f,,,,
-SPEED_OF_LIGHT,,,,299792458.0f,,,,
-PLANCK_CONSTANT,,,,6.62607015e-34f,,,,
-REDUCED_PLANCK_CONSTANT,,,,1.054571817e-34f,,,,
-STEFAN_BOLTZMANN_CONSTANT,,,,5.670374419e-8f,,,,
-ACCENT_HAT,MatrixXd,,,hat(a),,,,((a.size()!=3) & (a.size() != 6)) | ((a.rows()>1) & (a.cols()>1))=>DIMENSION_MISMATCH
-PROXY,,,,interpretExpr(parse_tree.getFlag(pn)),,,,
-BIJECTIVE_MAPPING,MatrixXd,,,invHat(a),,,,((a.rows()!=3) | (a.cols() != 3)) & ((a.rows() != 4) | (a.cols() != 4))=>DIMENSION_MISMATCH
-INVERT,double,,,1/a,,,,
-INVERT,MatrixXd,,,a.inverse(),,,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
-LINEAR_SOLVE,double,double,,b/a,,,,
-LINEAR_SOLVE,double,MatrixXd,,b/a,,,,
-LINEAR_SOLVE,MatrixXd,double,,a.inverse()*b,,,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
-LINEAR_SOLVE,MatrixXd,MatrixXd,,a.colPivHouseholderQr().solve(b),,,,(a.cols()!=a.rows()) | (a.cols()!=b.rows())=>DIMENSION_MISMATCH
-NORM_SQUARED,double,,,a*a,,,,
-NORM_SQUARED,MatrixXd,,,a.squaredNorm(),,,,((a.rows()>1) & (a.cols()>1))=>DIMENSION_MISMATCH
-CHECK_SCALAR,double,,,a,,,,
-CHECK_SCALAR,MatrixXd,,,"error(EXPECT_SCALAR, pn)",,,,
-CHECK_ZERO,double,,,a,,,,a!=0=>INDEX_OUT_OF_RANGE
-CHECK_ZERO,MatrixXd,,,"error(EXPECT_SCALAR, pn)",,,,
-CHECK_NAT,double,,,a,,,,a<1=>DIMENSION_MISMATCH
-CHECK_NAT,MatrixXd,,,"error(EXPECT_SCALAR, pn)",,,,
-CHECK_POSITIVE_INT,double,,,a,,,,a<0=>DIMENSION_MISMATCH
-CHECK_POSITIVE_INT,MatrixXd,,,"error(EXPECT_SCALAR, pn)",,,,
-MATRIX_LITERAL,,,,std::get<MatrixXd>(parse_tree.getValue(pn)),,,,
-DERIVATIVE|PARTIAL,,,,finiteDiff(pn),,,,
-FACTORIAL,,,,factorial(pn),,,,
-BINOMIAL,,,,binomial(pn),,,,
+op,a,b,return_type,impl,test_in,test_out,constraint
+ADDITION,double,double,double,a+b,2+2,4,
+ADDITION,MatrixXd,MatrixXd,MatrixXd,a+b,,,(a.rows()!=b.rows()) | (a.cols()!=b.cols())=>DIMENSION_MISMATCH
+ADDITION,string,string,string,a+b,"""Hello""+""World""",HelloWorld,
+SUBTRACTION,double,double,double,a-b,4-2,2,
+SUBTRACTION,MatrixXd,MatrixXd,MatrixXd,a-b,,,(a.rows()!=b.rows()) | (a.cols()!=b.cols())=>DIMENSION_MISMATCH
+UNARY_MINUS,double,,double,-a,-2,-2,
+UNARY_MINUS,MatrixXd,,MatrixXd,-a,,,
+MULTIPLICATION|CROSS|DOT|CALL|INNER_PRODUCT|ODOT,double,double,double,a*b,2*2,4,
+MULTIPLICATION|CALL,double,MatrixXd,MatrixXd,a*b,,,
+MULTIPLICATION|CALL,MatrixXd,double,MatrixXd,a*b,,,
+MULTIPLICATION|CALL,MatrixXd,MatrixXd,MatrixXd|double,"(a.rows() > 1 || b.cols() > 1) ? Value(a*b) : dot(a,b)",,,a.cols()!=b.rows()=>DIMENSION_MISMATCH
+DOT|INNER_PRODUCT,MatrixXd,MatrixXd,double,"dot(a,b)",,,(a.rows()!=b.rows()) | (a.cols()!=b.cols()) | ((a.cols() > 1) & (a.rows() > 1))=>DIMENSION_MISMATCH
+CROSS,MatrixXd,MatrixXd,MatrixXd,Map<const Vector3d>(a.data()).cross(Map<const Vector3d>(b.data())),,,(a.rows()!=b.rows()) | (a.cols()!=b.cols()) | (a.size()!=3)=>DIMENSION_MISMATCH
+ODOT,MatrixXd,MatrixXd,MatrixXd,a.cwiseProduct(b),,,(a.rows()!=b.rows()) | (a.cols()!=b.cols())=>DIMENSION_MISMATCH
+FORWARDSLASH|DIVIDE|FRACTION,double,double,double,a/b,4/2,2,b==0=>DIV_BY_ZERO
+FORWARDSLASH|DIVIDE|FRACTION,MatrixXd,double,MatrixXd,a/b,,,b==0=>DIV_BY_ZERO
+IMPLICIT_MULTIPLY,,,,implicitMult(pn),,,
+BACKSLASH,double,double,double,b/a,,,
+BACKSLASH,double,MatrixXd,MatrixXd,b/a,,,
+MODULUS,double,double,double,"std::fmod(a,b)",,,
+EQUAL,double,double,bool,a==b,2+2=4,true,
+EQUAL,MatrixXd,MatrixXd,bool,a.isApprox(b),,,
+EQUAL,string,string,bool,a==b,"""Hello""=""World""",false,
+EQUAL,bool,bool,bool,a==b,,,
+EQUAL,ANY,NOT_a,bool,false,"""Hello""=2",false,
+NOT_EQUAL,double,double,bool,a!=b,,,
+NOT_EQUAL,MatrixXd,MatrixXd,bool,!a.isApprox(b),,,
+NOT_EQUAL,string,string,bool,a!=b,,,
+NOT_EQUAL,bool,bool,bool,a!=b,,,
+NOT_EQUAL,ANY,NOT_a,bool,true,,,
+TRANSPOSE,double,,double,a,,,
+TRANSPOSE,MatrixXd,,MatrixXd,a.transpose(),,,
+PSEUDO_INVERSE,double,,,1/a,,,
+PSEUDO_INVERSE,MatrixXd,,,a.completeOrthogonalDecomposition().pseudoInverse(),,,
+DAGGER,double,,,a,,,
+DAGGER,MatrixXd,,,a.adjoint(),,,
+POWER,double,double,double,"std::pow(a,b)",,,
+POWER,MatrixXd,double,MatrixXd,(b == -1) ? a.inverse().eval() : a.pow(b).eval(),,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
+POWER,double,MatrixXd,MatrixXd,(b.log()*a).exp(),,,b.cols()!=b.rows()=>DIMENSION_MISMATCH
+SQRT,double,,double,std::sqrt(a),,,a<0=>IMAGINARY_RESULT
+SQRT,MatrixXd,,MatrixXd,a.sqrt(),,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
+ROOT,double,double,double,"std::pow(a,1/b)",,,
+ROOT,MatrixXd,double,MatrixXd,a.pow(1/b),,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
+ROOT,double,MatrixXd,MatrixXd,(b.inverse().log()*a).exp(),,,b.cols()!=b.rows()=>DIMENSION_MISMATCH
+GREATER,double,double,bool,a > b,2 > 1|2 > 2,true|false,
+GREATER_EQUAL,double,double,bool,a >= b,,,
+LESS,double,double,bool,a < b,,,
+LESS_EQUAL,double,double,bool,a <= b,,,
+LOGICAL_AND,bool,bool,bool,a && b,,,
+LOGICAL_NOT,bool,,bool,!a,,,
+LOGICAL_OR,bool,bool,bool,a || b,,,
+ABS,double,,,std::abs(a),,,
+ABS,MatrixXd,,,a.determinant(),,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
+CEIL,double,,double,std::ceil(a),,,
+CEIL,MatrixXd,,MatrixXd,a.array().ceil(),,,
+FLOOR,double,,double,static_cast<double>(int(a)),,,
+FLOOR,MatrixXd,,MatrixXd,a.array().floor(),,,
+NORM|NORM_INFTY|NORM_1,double,,double,std::abs(a),,,
+NORM_p,double,double,double,std::abs(a),,,
+NORM,MatrixXd,,double,a.norm(),,,(a.cols() > 1) & (a.rows() > 1)=>DIMENSION_MISMATCH
+NORM_1,MatrixXd,,double,a.lpNorm<1>(),,,(a.cols() > 1) & (a.rows() > 1)=>DIMENSION_MISMATCH
+NORM_INFTY,MatrixXd,,double,a.lpNorm<Eigen::Infinity>(),,,(a.cols() > 1) & (a.rows() > 1)=>DIMENSION_MISMATCH
+NORM_p,MatrixXd,double,double,"pNorm(a, b)",,,(a.cols() > 1) & (a.rows() > 1)=>DIMENSION_MISMATCH
+GROUP_PAREN|GROUP_BRACKET,,,,interpretExpr(parse_tree.child(pn)),,,
+SUBSCRIPT_ACCESS,,,,elementAccess(pn),,,
+IDENTIFIER,,,,readLocal(pn),,,
+READ_GLOBAL,,,,readGlobal(pn),,,
+READ_UPVALUE,,,,readClosedVar(pn),,,
+TRUE,,,,true,,,
+FALSE,,,,false,,,
+MATRIX,,,,matrix(pn),,,
+DECIMAL_LITERAL|INTEGER_LITERAL,,,,parse_tree.getFlagAsDouble(pn),,,
+STRING,,,,str(pn),,,
+LAMBDA,,,,anonFun(pn),,,
+CALL,,,,call(pn),,,
+ZERO_MATRIX,double,double,MatrixXd|double,"a*b == 1 ? Value(0.0) : MatrixXd::Zero(static_cast<Index>(a), static_cast<Index>(b))",,,
+ONES_MATRIX,double,double,MatrixXd|double,"a*b == 1 ? Value(1.0) : MatrixXd::Ones(static_cast<Index>(a), static_cast<Index>(b))",,,
+IDENTITY_MATRIX,double,double,MatrixXd|double,"a*b == 1 ? Value(1.0) : MatrixXd::Identity(static_cast<Index>(a), static_cast<Index>(b))",,,
+UNIT_VECTOR,,,,unitVector(pn),,,
+LENGTH,double,,double,static_cast<double>(1),,,
+LENGTH,string,,double,static_cast<double>(a.size()),,,
+LENGTH,MatrixXd,,double,static_cast<double>(a.size()),,,(a.cols() > 1 && a.rows() > 1)=>DIMENSION_MISMATCH
+SINE,double,,,std::sin(a),,,
+SINE,MatrixXd,,,a.sin(),,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
+COSINE,double,,,std::cos(a),,,
+COSINE,MatrixXd,,,a.cos(),,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
+TANGENT,double,,,std::tan(a),,,
+ARCSINE,double,,,std::asin(a),,,
+ARCCOSINE,double,,,std::acos(a),,,
+ARCTANGENT,double,,,std::atan(a),,,
+ARCTANGENT2,double,double,,"std::atan2(a,b)",,,
+COSECANT,double,,,1/std::sin(a),,,
+SECANT,double,,,1/std::cos(a),,,
+COTANGENT,double,,,1/std::tan(a),,,
+ARCCOSECANT,double,,,std::asin(1/a),,,
+ARCSECANT,double,,,std::acos(1/a),,,
+ARCCOTANGENT,double,,,std::atan(1/a),,,
+HYPERBOLIC_SINE,double,,,std::sinh(a),,,
+HYPERBOLIC_SINE,MatrixXd,,,a.sinh(),,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
+HYPERBOLIC_COSINE,double,,,std::cosh(a),,,
+HYPERBOLIC_TANGENT,double,,,std::tanh(a),,,
+HYPERBOLIC_ARCSINE,double,,,std::asinh(a),,,
+HYPERBOLIC_ARCCOSINE,double,,,std::acosh(a),,,
+HYPERBOLIC_ARCTANGENT,double,,,std::atanh(a),,,
+HYPERBOLIC_COSECANT,double,,,1/std::asinh(a),,,
+HYPERBOLIC_SECANT,double,,,1/std::acosh(a),,,
+HYPERBOLIC_COTANGENT,double,,,1/std::atanh(a),,,
+HYPERBOLIC_ARCCOSECANT,double,,,"std::log( 1/a + std::sqrt(1/std::pow(a,2) + 1) )",,,
+HYPERBOLIC_ARCSECANT,double,,,"std::log( (1 + std::sqrt(1 - std::pow(a,2))) / a )",,,
+HYPERBOLIC_ARCCOTANGENT,double,,,std::log((a+1)/(a-1))/2,,,
+EXP,double,,,std::exp(a),,,
+EXP,MatrixXd,,,a.exp(),,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
+NATURAL_LOG,double,,,std::log(a),,,a <= 0=>LOG_ARG
+NATURAL_LOG,MatrixXd,,,a.log(),,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
+LOGARITHM,double,,,std::log(a) / std::log(10),,,a <= 0=>LOG_ARG
+LOGARITHM_BASE,double,double,,std::log(a) / std::log(b),,,a <= 0=>LOG_ARG:b <= 0=>LOG_BASE
+ERROR_FUNCTION,double,,,std::erf(a),,,
+COMP_ERR_FUNC,double,,,std::erfc(a),,,
+SUMMATION,,,,sum(pn),,,
+PRODUCT,,,,prod(pn),,,
+CASES,,,,cases(pn),,,
+PI,,,,3.14159265358979323846264338327950288419716939937510f,,,
+EULERS_NUMBER,,,,2.71828182845904523536028747135266249775724709369995f,,,
+GOLDEN_RATIO,,,,1.61803398874989484820458683436563811f,,,
+SPEED_OF_LIGHT,,,,299792458.0f,,,
+PLANCK_CONSTANT,,,,6.62607015e-34f,,,
+REDUCED_PLANCK_CONSTANT,,,,1.054571817e-34f,,,
+STEFAN_BOLTZMANN_CONSTANT,,,,5.670374419e-8f,,,
+ACCENT_HAT,MatrixXd,,,hat(a),,,((a.size()!=3) & (a.size() != 6)) | ((a.rows()>1) & (a.cols()>1))=>DIMENSION_MISMATCH
+PROXY,,,,interpretExpr(parse_tree.getFlag(pn)),,,
+BIJECTIVE_MAPPING,MatrixXd,,,invHat(a),,,((a.rows()!=3) | (a.cols() != 3)) & ((a.rows() != 4) | (a.cols() != 4))=>DIMENSION_MISMATCH
+INVERT,double,,,1/a,,,
+INVERT,MatrixXd,,,a.inverse(),,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
+LINEAR_SOLVE,double,double,,b/a,,,
+LINEAR_SOLVE,double,MatrixXd,,b/a,,,
+LINEAR_SOLVE,MatrixXd,double,,a.inverse()*b,,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
+LINEAR_SOLVE,MatrixXd,MatrixXd,,a.colPivHouseholderQr().solve(b),,,(a.cols()!=a.rows()) | (a.cols()!=b.rows())=>DIMENSION_MISMATCH
+NORM_SQUARED,double,,,a*a,,,
+NORM_SQUARED,MatrixXd,,,a.squaredNorm(),,,((a.rows()>1) & (a.cols()>1))=>DIMENSION_MISMATCH
+CHECK_SCALAR,double,,,a,,,
+CHECK_SCALAR,MatrixXd,,,"error(EXPECT_SCALAR, pn)",,,
+CHECK_ZERO,double,,,a,,,a!=0=>INDEX_OUT_OF_RANGE
+CHECK_ZERO,MatrixXd,,,"error(EXPECT_SCALAR, pn)",,,
+CHECK_NAT,double,,,a,,,a<1=>DIMENSION_MISMATCH
+CHECK_NAT,MatrixXd,,,"error(EXPECT_SCALAR, pn)",,,
+CHECK_POSITIVE_INT,double,,,a,,,a<0=>DIMENSION_MISMATCH
+CHECK_POSITIVE_INT,MatrixXd,,,"error(EXPECT_SCALAR, pn)",,,
+MATRIX_LITERAL,,,,std::get<MatrixXd>(parse_tree.getValue(pn)),,,
+DERIVATIVE|PARTIAL,,,,finiteDiff(pn),,,
+FACTORIAL,,,,factorial(pn),,,
+BINOMIAL,,,,binomial(pn),,,
