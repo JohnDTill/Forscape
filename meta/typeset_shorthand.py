@@ -9,7 +9,7 @@ def main():
     header_writer = cpp.HeaderWriter(
         name="Shorthand",
         inner_namespace="Typeset",
-        includes=("cassert", "limits", "unordered_map"),
+        includes=("cassert", "limits", "string", "unordered_map"),
     )
 
     header_writer.write(

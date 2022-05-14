@@ -1,7 +1,7 @@
 #ifndef HOPE_COMMON_H
 #define HOPE_COMMON_H
 
-#include <cinttypes>
+#include <cstddef>
 #include <limits>
 
 template<typename T, typename IN_TYPE>
