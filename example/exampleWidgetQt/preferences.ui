@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="colours">
       <attribute name="title">
@@ -48,8 +48,42 @@
      </widget>
      <widget class="QWidget" name="Commands">
       <attribute name="title">
-       <string>Commands</string>
+       <string>Keywords</string>
       </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QPushButton" name="keywordDefaultsButton">
+         <property name="text">
+          <string>Reset Defaults</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QScrollArea" name="scrollArea">
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <widget class="QWidget" name="scrollAreaWidgetContents">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>358</width>
+            <height>172</height>
+           </rect>
+          </property>
+          <layout class="QGridLayout" name="gridLayout"/>
+         </widget>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="keywordAddButton">
+         <property name="text">
+          <string>Add Keyword</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </widget>
     </widget>
    </item>

@@ -454,7 +454,7 @@ void Controller::keystroke(const std::string& str){
         return;
     }else if(str == " "){
         std::string_view word = active.checkKeyword();
-        const std::string& sub = Keywords::lookup(word);
+        const std::string& sub = Keywords::lookup(std::string(word));
         insertText(str);
 
         if(!sub.empty()){

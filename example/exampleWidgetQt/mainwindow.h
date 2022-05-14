@@ -16,7 +16,8 @@ class QGroupBox;
 
 namespace Hope{
 namespace Typeset {
-class View;
+class Console;
+class Editor;
 }
 }
 
@@ -30,8 +31,8 @@ public:
 private:
     QSettings settings;
     Ui::MainWindow* ui;
-    Hope::Typeset::View* editor;
-    Hope::Typeset::View* console;
+    Hope::Typeset::Editor* editor;
+    Hope::Typeset::Console* console;
     QGroupBox* group_box;
     MathToolbar* math_toolbar;
     QToolBar* action_toolbar;

@@ -21,7 +21,7 @@ class View : public Widget {
 public:
     View();
     virtual ~View() override;
-    void setFromSerial(const std::string& src);
+    void setFromSerial(const std::string& src, bool is_output = false);
     std::string toSerial() const;
     Model* getModel() const noexcept;
     void setModel(Model* m, bool owned = true);
@@ -50,7 +50,7 @@ public:
     bool isRunning() const noexcept;
     void reenable() noexcept;
 
-private:
+protected:
     void dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held);
     void dispatchRelease(double x, double y);
     void dispatchDoubleClick(double x, double y);
@@ -98,10 +98,11 @@ private:
     Model* model;
     Controller controller;
     double x_setpoint = 0;
+    bool allow_new_line = true;
     bool show_line_nums = true;
     bool allow_write = true;
     bool insert_mode = false;
-    bool show_cursor = true;
+    bool show_cursor = false;
     bool model_owned = true;
     friend MarkerLink;
     public: double zoom = ZOOM_DEFAULT;
@@ -122,7 +123,7 @@ protected:
     QTimer* cursor_blink_timer;
     void onBlink() noexcept;
 
-private:
+protected:
     void setCursorAppearance(double x, double y);
     void drawBackground(const QRect& rect);
     void drawLinebox(double yT, double yB);
@@ -166,6 +167,25 @@ private:
 
 public:
     QImage toPng() const;
+};
+
+class Editor : public View {
+    //DO THIS: define hierarchy
+};
+
+class Console : public View {
+    //DO THIS: define hierarchy
+public:
+    Console() : View() {
+        setLineNumbersVisible(false);
+        setReadOnly(true);
+    }
+};
+
+class LineEdit : public View {
+    //DO THIS: define hierarchy
+public:
+    LineEdit();
 };
 
 }

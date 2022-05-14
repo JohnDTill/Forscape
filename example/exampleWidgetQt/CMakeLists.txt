@@ -121,6 +121,8 @@ set(CONSTRUCT_FILES
 
 set(PROJECT_SOURCES
     main.cpp
+    keywordsubtitutioneditor.cpp
+    keywordsubtitutioneditor.h
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui

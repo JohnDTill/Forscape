@@ -194,13 +194,6 @@ View::View()
     connect(v_scroll, SIGNAL(valueChanged(int)), this, SLOT(repaint()));
     connect(h_scroll, SIGNAL(valueChanged(int)), this, SLOT(repaint()));
 
-    h_scroll->setStyleSheet(
-        "background-color: #F9C929;"
-        "alternate-background-color: #D5EAFF;"
-    );
-
-    h_scroll->setToolTip("Warning: line width exceeds editor width. Uncle Bob is displeased.");
-
     v_scroll->setCursor(Qt::ArrowCursor);
     h_scroll->setCursor(Qt::ArrowCursor);
 }
@@ -209,10 +202,10 @@ View::~View(){
     if(model_owned) delete model;
 }
 
-void View::setFromSerial(const std::string& src){
+void View::setFromSerial(const std::string& src, bool is_output){
     if(model_owned) delete model;
     model_owned = true;
-    model = Model::fromSerial(src);
+    model = Model::fromSerial(src, is_output);
     controller = Controller(model);
     updateXSetpoint();
     handleResize();
@@ -802,7 +795,8 @@ void View::focusOutEvent(QFocusEvent* e){
         repaint();
     }else{
         stopCursorBlink();
-        assert(mouse_hold_state == Hover);
+        //EVENTUALLY: why was this here?
+        //assert(mouse_hold_state == Hover);
     }
 
     if(focusWidget() != recommender) recommender->hide();
@@ -814,7 +808,7 @@ void View::resizeEvent(QResizeEvent* e){
 }
 
 void View::onBlink() noexcept{
-    show_cursor = !show_cursor;
+    show_cursor = !show_cursor && hasFocus();
     repaint();
     cursor_blink_timer->start(CURSOR_BLINK_INTERVAL);
 }
@@ -1207,8 +1201,12 @@ void View::handleKey(int key, int modifiers, const std::string& str){
             restartCursorBlink();
         }
             break;
-        case Qt::Key_Return: if(focusWidget() != this) return; if(allow_write) controller.newline(); updateXSetpoint(); restartCursorBlink(); break;
-        case Qt::Key_Return|Shift: if(allow_write) controller.newline(); updateXSetpoint(); restartCursorBlink(); break;
+        case Qt::Key_Return:
+            if(focusWidget() != this || !allow_new_line) return;
+            if(allow_write) controller.newline(); updateXSetpoint(); restartCursorBlink(); break;
+        case Qt::Key_Return|Shift:
+            if(focusWidget() != this || !allow_new_line) return;
+            if(allow_write) controller.newline(); updateXSetpoint(); restartCursorBlink(); break;
         case Qt::Key_Tab: if(allow_write) controller.tab(); break;
         #ifdef __EMSCRIPTEN__
         case Qt::Key_Tab|Shift: if(allow_write) controller.detab(); break;
@@ -1228,7 +1226,7 @@ void View::handleKey(int key, int modifiers, const std::string& str){
             controller.keystroke(str);
             updateXSetpoint();
             restartCursorBlink();
-            recommend();
+            if(!model->is_output) recommend();
             hide_recommender = false;
     }
 
@@ -1323,6 +1321,18 @@ QImage View::toPng() const{
 
 std::string_view Hope::Typeset::View::logPrefix() const noexcept{
     return model->is_output ? "console->" : "editor->";
+}
+
+LineEdit::LineEdit() : View() {
+    allow_new_line = false;
+    setLineNumbersVisible(false);
+    v_scroll->hide();
+    h_scroll->hide();
+    v_scroll->setDisabled(true);
+    h_scroll->setDisabled(true);
+    model->is_output = true;
+
+    zoom = 1;
 }
 
 }
