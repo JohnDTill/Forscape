@@ -1,5 +1,5 @@
-#ifndef KEYWORDSUBTITUTIONEDITOR_H
-#define KEYWORDSUBTITUTIONEDITOR_H
+#ifndef KEYWORDSUBSTITUTIONEDITOR_H
+#define KEYWORDSUBSTITUTIONEDITOR_H
 
 #include <QWidget>
 
@@ -7,12 +7,12 @@ class QFormLayout;
 class QSettings;
 class QValidator;
 
-class KeywordSubtitutionEditor : public QWidget{
+class KeywordSubstitutionEditor : public QWidget{
     Q_OBJECT
 
 public:
-    KeywordSubtitutionEditor(QSettings& settings, QWidget* parent = nullptr);
-    ~KeywordSubtitutionEditor();
+    KeywordSubstitutionEditor(QSettings& settings, QWidget* parent = nullptr);
+    ~KeywordSubstitutionEditor();
     void resetDefaults();
     void addSlot();
 
@@ -28,7 +28,7 @@ private:
         ModifiedLineEdit* edit;
         QString backup;
 
-        KeywordSubstitutionLabel(KeywordSubtitutionEditor* parent = nullptr, const std::string& label = "");
+        KeywordSubstitutionLabel(KeywordSubstitutionEditor* parent = nullptr, const std::string& label = "");
     };
 
     KeywordSubstitutionLabel* getButtonLabel() const;
@@ -44,4 +44,4 @@ private:
     KeywordSubstitutionLabel* focused_label = nullptr;
 };
 
-#endif // KEYWORDSUBTITUTIONEDITOR_H
+#endif // KEYWORDSUBSTITUTIONEDITOR_H

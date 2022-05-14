@@ -16,6 +16,9 @@ namespace Hope {
 
 namespace Code {
 
+Interpreter::Interpreter() noexcept
+    : error_node(NONE){}
+
 void Interpreter::run(const ParseTree& parse_tree, SymbolTable symbol_table, const InstantiationLookup& inst_lookup){
     assert(parse_tree.getOp(parse_tree.root) == OP_BLOCK);
     reset();
@@ -41,7 +44,7 @@ void Interpreter::stop(){
 
 void Interpreter::reset() noexcept {
     error_code = NO_ERROR_FOUND;
-    error_node = ParseTree::EMPTY;
+    error_node = NONE;
     directive = RUN;
     status = NORMAL;
     stack.clear();
@@ -761,7 +764,7 @@ Value Interpreter::anonFun(ParseNode pn){
 
     Closure* list = &l.closure;
 
-    initClosure(*list, ParseTree::EMPTY, ref_list);
+    initClosure(*list, NONE, ref_list);
 
     return l;
 }

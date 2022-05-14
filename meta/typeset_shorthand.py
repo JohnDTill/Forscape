@@ -25,27 +25,48 @@ def main():
 
     header_writer.write(
         "class Shorthand{\n"
-        "private:\n"
-        "    static const std::unordered_map<std::pair<uint32_t, uint32_t>, std::string, PairHash> map;\n"
-        "    static const std::string NONE;\n"
-        "\n"
         "public:\n"
-        "    static const std::string& lookup(uint32_t first, uint32_t second) noexcept{\n"
-        "        auto result = map.find(std::make_pair(first, second));\n"
-        "        return result==map.end() ? NONE : result->second;\n"
-        "    }\n"
+        "    static std::unordered_map<std::pair<uint32_t, uint32_t>, std::string, PairHash> map;\n"
+        "    static void reset();\n"
+        "    static const std::string& lookup(uint32_t first, uint32_t second) noexcept;\n"
+        "\n"
+        "private:\n"
+        "    static const std::unordered_map<std::pair<uint32_t, uint32_t>, std::string, PairHash> defaults;\n"
+        "    static const std::string NONE;\n"
         "};\n\n"
-        "const std::string Shorthand::NONE = \"\";\n\n"
     )
-    header_writer.write("const std::unordered_map<std::pair<uint32_t, uint32_t>, std::string, PairHash> Shorthand::map{\n")
-    for e in entries:
-        first = unicode.to_num(e.first)
-        second = unicode.to_num(e.second)
-        key = f"std::make_pair({first}, {second})"
-        header_writer.write(f"    {{{key}, \"{e.result}\"}},\n")
-    header_writer.write("};\n\n")
 
     header_writer.finalize()
+
+    with open("../src/generated/typeset_shorthand.cpp", "w", encoding="utf-8") as codegen_file:
+        codegen_file.write("#include \"typeset_shorthand.h\"\n\n")
+
+        codegen_file.write("namespace Hope {\n\n")
+        codegen_file.write("namespace Typeset {\n\n")
+
+        codegen_file.write("const std::string Shorthand::NONE = \"\";\n\n")
+
+        codegen_file.write(
+            "const std::unordered_map<std::pair<uint32_t, uint32_t>, std::string, PairHash> Shorthand::defaults{\n")
+        for e in entries:
+            first = unicode.to_num(e.first)
+            second = unicode.to_num(e.second)
+            key = f"std::make_pair({first}, {second})"
+            codegen_file.write(f"    {{{key}, \"{e.result}\"}},\n")
+        codegen_file.write("};\n\n")
+
+        codegen_file.write(
+            "void Shorthand::reset(){ map = defaults; }\n\n"
+            "const std::string& Shorthand::lookup(uint32_t first, uint32_t second) noexcept{\n"
+            "    auto result = map.find(std::make_pair(first, second));\n"
+            "    return result==map.end() ? NONE : result->second;\n"
+            "}\n\n"
+        )
+
+        codegen_file.write(
+            "std::unordered_map<std::pair<uint32_t, uint32_t>, std::string, PairHash> Shorthand::map = defaults;\n\n"
+            "}\n\n}\n"
+        )
 
 
 if __name__ == "__main__":

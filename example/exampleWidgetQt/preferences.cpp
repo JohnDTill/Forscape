@@ -1,12 +1,13 @@
 #include "preferences.h"
 #include "ui_preferences.h"
 
-#include "keywordsubtitutioneditor.h"
+#include "keywordsubstitutioneditor.h"
 #include <typeset_themes.h>
 #include <QColorDialog>
 #include <QScrollBar>
 #include <QSettings>
 #include <QWindow>
+#include "symbolsubstitutioneditor.h"
 
 Preferences::Preferences(QSettings& settings, QWidget* parent) :
     QWidget(parent), ui(new Ui::Preferences), settings(settings){
@@ -54,8 +55,11 @@ Preferences::Preferences(QSettings& settings, QWidget* parent) :
         ui->colour_table->setVerticalHeaderItem(i, row_item);
     }
 
-    keyword_editor = new KeywordSubtitutionEditor(settings, ui->scrollArea);
+    keyword_editor = new KeywordSubstitutionEditor(settings, ui->scrollArea);
     ui->scrollArea->setWidget(keyword_editor);
+
+    symbol_editor = new SymbolSubstitutionEditor(settings, this);
+    ui->symbolLayout->insertWidget(1, symbol_editor);
 }
 
 Preferences::~Preferences(){
@@ -123,5 +127,15 @@ void Preferences::on_keywordAddButton_clicked(){
     QCoreApplication::processEvents();
     auto scrollbar = ui->scrollArea->verticalScrollBar();
     scrollbar->setValue(scrollbar->maximum());
+}
+
+
+void Preferences::on_symbolsDefaultsButton_clicked(){
+    symbol_editor->resetDefaults();
+}
+
+
+void Preferences::on_symbolsAddButton_clicked(){
+    symbol_editor->addRow();
 }
 

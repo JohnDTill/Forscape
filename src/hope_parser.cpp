@@ -1,6 +1,7 @@
 #include "hope_parser.h"
 
 #include <code_parsenode_ops.h>
+#include <hope_common.h>
 #include "typeset_model.h"
 
 namespace Hope {
@@ -8,7 +9,7 @@ namespace Hope {
 namespace Code {
 
 Parser::Parser(const Scanner& scanner, Typeset::Model* model) noexcept
-    : tokens(scanner.tokens), errors(model->errors), model(model) {}
+    : tokens(scanner.tokens), errors(model->errors), model(model), error_node(NONE) {}
 
 void Parser::parseAll() alloc_except {
     reset();
@@ -31,7 +32,7 @@ void Parser::reset() noexcept {
     index = 0;
     parsing_dims = false;
     loops = 0;
-    error_node = UNITIALIZED;
+    error_node = NONE;
 }
 
 void Parser::registerGrouping(const Typeset::Selection& sel) alloc_except {
@@ -213,9 +214,9 @@ Parser::ParseNode Parser::algStatement() alloc_except {
     if(!peek(LEFTPAREN) & !peek(LEFTBRACE))
         return parse_tree.addUnary(OP_PROTOTYPE_ALG, id);
 
-    ParseNode val_captures = match(LEFTBRACE) ? captureList() : ParseTree::EMPTY;
+    ParseNode val_captures = match(LEFTBRACE) ? captureList() : NONE;
 
-    ParseNode ref_upvalues = ParseTree::EMPTY;
+    ParseNode ref_upvalues = NONE;
 
     consume(LEFTPAREN);
     ParseNode params = paramList();
@@ -303,8 +304,8 @@ Parser::ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
     ParseNode body = parse_tree.addUnary(OP_RETURN, expr);
 
     ParseNode id = parse_tree.arg<0>(call);
-    ParseNode val_captures = ParseTree::EMPTY;
-    ParseNode ref_upvalues = ParseTree::EMPTY;
+    ParseNode val_captures = NONE;
+    ParseNode ref_upvalues = NONE;
 
     const size_t nargs = parse_tree.getNumArgs(call)-1;
     assert(nargs >= 1);
@@ -334,10 +335,10 @@ Parser::ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
            );
 }
 
-ParseNode Parser::assignment(const ParseNode& lhs) alloc_except {
+ParseNode Parser::assignment(ParseNode lhs) alloc_except {
     advance();
     ParseNode pn = parse_tree.addBinary(OP_ASSIGN, lhs, expression());
-    parse_tree.setFlag(lhs, match(COMMENT) ? parse_tree.addTerminal(OP_COMMENT, selectionPrev()) : ParseTree::EMPTY);
+    parse_tree.setFlag(lhs, match(COMMENT) ? parse_tree.addTerminal(OP_COMMENT, selectionPrev()) : NONE);
     return pn;
 }
 
@@ -345,7 +346,7 @@ ParseNode Parser::expression() noexcept{
     return addition();
 }
 
-ParseNode Parser::equality(const ParseNode& lhs) alloc_except {
+ParseNode Parser::equality(ParseNode lhs) alloc_except {
     ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_EQUAL);
     builder.addNaryChild(lhs);
 
@@ -355,7 +356,7 @@ ParseNode Parser::equality(const ParseNode& lhs) alloc_except {
     } while(peek(EQUALS));
 
     ParseNode pn = builder.finalize();
-    parse_tree.setFlag(lhs, match(COMMENT) ? parse_tree.addTerminal(OP_COMMENT, selectionPrev()) : ParseTree::EMPTY);
+    parse_tree.setFlag(lhs, match(COMMENT) ? parse_tree.addTerminal(OP_COMMENT, selectionPrev()) : NONE);
     return pn;
 }
 
@@ -795,7 +796,7 @@ Parser::ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
                 }
                 index = index_backup;
                 errors.clear();
-                error_node = UNITIALIZED;
+                error_node = NONE;
             }
 
         //EVENTUALLY: you can't have named lambdas with subscripts because that depends on symbol resolution
@@ -866,7 +867,7 @@ Parser::ParseNode Parser::param() alloc_except{
     return match(EQUALS) ? parse_tree.addBinary(OP_EQUAL, id, expression()) : id;
 }
 
-ParseNode Parser::call(const ParseNode& id) alloc_except{
+ParseNode Parser::call(ParseNode id) alloc_except{
     Typeset::Marker lmark = lMark();
 
     ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_CALL);
@@ -889,13 +890,13 @@ ParseNode Parser::call(const ParseNode& id) alloc_except{
     return n;
 }
 
-Parser::ParseNode Parser::lambda(const ParseNode& params) alloc_except{
+Parser::ParseNode Parser::lambda(ParseNode params) alloc_except{
     advance();
 
     Typeset::Marker left = parse_tree.getLeft(params);
 
-    ParseNode capture_list = ParseTree::EMPTY;
-    ParseNode referenced_upvalues = ParseTree::EMPTY;
+    ParseNode capture_list = NONE;
+    ParseNode referenced_upvalues = NONE;
     ParseNode e = expression();
     if(!noErrors()) return e;
 
@@ -973,7 +974,7 @@ Parser::ParseNode Parser::binomial() alloc_except{
     return parse_tree.addBinary(OP_BINOMIAL, c, n, k);
 }
 
-ParseNode Parser::superscript(const ParseNode& lhs) alloc_except{
+ParseNode Parser::superscript(ParseNode lhs) alloc_except{
     Typeset::Marker left = parse_tree.getLeft(lhs);
     Typeset::Marker right = rMark();
     Typeset::Selection c(left, right);
@@ -1016,7 +1017,7 @@ ParseNode Parser::superscript(const ParseNode& lhs) alloc_except{
     return n;
 }
 
-Parser::ParseNode Parser::subscript(const ParseNode& lhs, const Typeset::Marker& right) alloc_except{
+Parser::ParseNode Parser::subscript(ParseNode lhs, const Typeset::Marker& right) alloc_except{
     Typeset::Marker left = parse_tree.getLeft(lhs);
     Typeset::Selection selection(left, right);
     advance();
@@ -1030,7 +1031,7 @@ Parser::ParseNode Parser::subscript(const ParseNode& lhs, const Typeset::Marker&
     return builder.finalize(selection);
 }
 
-Parser::ParseNode Parser::dualscript(const ParseNode& lhs) alloc_except{
+Parser::ParseNode Parser::dualscript(ParseNode lhs) alloc_except{
     Typeset::Marker left = parse_tree.getLeft(lhs);
     Typeset::Marker right = rMark();
     Typeset::Selection c(left, right);
@@ -1273,7 +1274,7 @@ Parser::ParseNode Parser::error(ErrorCode code, const Typeset::Selection& c) all
         errors.push_back(Error(c, code));
     }
 
-    assert(errors.empty() == (error_node == UNITIALIZED));
+    assert(errors.empty() == (error_node == NONE));
 
     return error_node;
 }
@@ -1359,6 +1360,15 @@ const Typeset::Marker& Parser::lMarkPrev() const noexcept{
 
 const Typeset::Marker& Parser::rMarkPrev() const noexcept{
     return tokens[index-1].sel.right;
+}
+
+bool Parser::noErrors() const noexcept{
+    return error_node == NONE;
+}
+
+void Parser::recover() noexcept{
+    error_node = NONE;
+    index = tokens.size()-1; //Give up for now //EVENTUALLY: improve error recovery
 }
 
 }

@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="colours">
       <attribute name="title">
@@ -48,7 +48,7 @@
      </widget>
      <widget class="QWidget" name="Commands">
       <attribute name="title">
-       <string>Keywords</string>
+       <string>Keyword Shortcuts</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
@@ -82,6 +82,31 @@
           <string>Add Keyword</string>
          </property>
         </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="symbolPage">
+      <attribute name="title">
+       <string>Symbol Shortcuts</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <layout class="QVBoxLayout" name="symbolLayout">
+         <item>
+          <widget class="QPushButton" name="symbolsDefaultsButton">
+           <property name="text">
+            <string>Reset Defaults</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="symbolsAddButton">
+           <property name="text">
+            <string>Add Entry</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
      </widget>

@@ -13,11 +13,11 @@ SymbolTreeView::SymbolTreeView(const Hope::Code::SymbolTable& symbol_table, cons
     std::stack<QTreeWidgetItem*> items;
     for(const Hope::Code::ScopeSegment& scope : symbol_table.scopes){
         if(scope.isStartOfScope()){
-            if(scope.parent == Hope::Code::NONE){
+            if(scope.parent == NONE){
                 items.push(nullptr);
             }else{
                 Hope::Code::ScopeId grandparent = symbol_table.scopes[scope.parent].parent;
-                QTreeWidgetItem* scope_item = (grandparent == Hope::Code::NONE) ?
+                QTreeWidgetItem* scope_item = (grandparent == NONE) ?
                             new QTreeWidgetItem(this) :
                             new QTreeWidgetItem(items.top());
                 items.push(scope_item);
@@ -36,14 +36,14 @@ SymbolTreeView::SymbolTreeView(const Hope::Code::SymbolTable& symbol_table, cons
         }
 
         for(size_t i = scope.sym_begin; i < scope.sym_end; i++){
-            QTreeWidgetItem* item = (scope.parent == Hope::Code::NONE) ?
+            QTreeWidgetItem* item = (scope.parent == NONE) ?
                         new QTreeWidgetItem(this) :
                         new QTreeWidgetItem(items.top());
             const auto& symbol = symbol_table.symbols[i];
             item->setText(NAME_COLUMN, QString::fromStdString(symbol_table.getSel(i).str()));
             item->setText(1, QString::fromStdString(ts.typeString(symbol)));
             item->setText(2, QChar('0' + symbol.is_const));
-            if(symbol.comment != Hope::Code::ParseTree::EMPTY){
+            if(symbol.comment != NONE){
                 std::string desc = symbol_table.parse_tree.str(symbol.comment);
                 item->setText(3, QString::fromStdString(desc));
             }

@@ -707,6 +707,7 @@ void MainWindow::closeEvent(QCloseEvent* event){
 
     logger->info("assert(editor->toSerial() == {});", cStr(editor->toSerial()));
 
+    preferences->close();
     QMainWindow::closeEvent(event);
 }
 

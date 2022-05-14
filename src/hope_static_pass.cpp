@@ -85,7 +85,7 @@ void StaticPass::reset() noexcept{
 ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
     if(!errors.empty()) return pn;
 
-    assert(pn != ParseTree::EMPTY);
+    assert(pn != NONE);
 
     switch (parse_tree.getOp(pn)) {
         case OP_ASSIGN:
@@ -349,7 +349,7 @@ ParseNode StaticPass::resolveExprTop(size_t pn, size_t rows_expected, size_t col
 }
 
 ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_expected) noexcept{
-    assert(pn != ParseTree::EMPTY);
+    assert(pn != NONE);
 
     if(rows_expected == UNKNOWN_SIZE) rows_expected = parse_tree.getRows(pn);
     if(cols_expected == UNKNOWN_SIZE) cols_expected = parse_tree.getCols(pn);
@@ -1572,7 +1572,7 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
     size_t old_args_index = old_args.size();
 
     //Instantiate
-    called_func_map[fn] = CallResult(RECURSIVE_CYCLE, UNKNOWN_SIZE, UNKNOWN_SIZE, ParseTree::EMPTY);
+    called_func_map[fn] = CallResult(RECURSIVE_CYCLE, UNKNOWN_SIZE, UNKNOWN_SIZE, NONE);
 
     ParseNode instantiated_fn = parse_tree.clone(abstract_fn);
 
@@ -1582,7 +1582,7 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
     size_t N_vals = parse_tree.valListSize(val_list);
 
     size_t type_index = 0;
-    if(val_list != ParseTree::EMPTY){
+    if(val_list != NONE){
         size_t scope_index = parse_tree.getFlag(val_list);
         const ScopeSegment& scope = symbol_table.scopes[scope_index];
         for(size_t i = 0; i < N_vals; i++){

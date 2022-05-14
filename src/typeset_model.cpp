@@ -549,14 +549,13 @@ void Model::clearFormatting() noexcept{
 }
 
 void Model::performSemanticFormatting(){
-    clearFormatting();
+    if(is_output) return;
 
+    clearFormatting();    
     scanner.scanAll();
-    if(!is_output){
-        parser.parseAll();
-        symbol_builder.resolveSymbols();
-        static_pass.resolve();
-    }
+    parser.parseAll();
+    symbol_builder.resolveSymbols();
+    static_pass.resolve();
 }
 
 void Model::premutate() noexcept{

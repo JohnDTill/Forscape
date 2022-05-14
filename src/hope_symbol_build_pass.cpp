@@ -1,6 +1,7 @@
 #include "hope_symbol_build_pass.h"
 
 #include <code_parsenode_ops.h>
+#include <hope_common.h>
 #include "typeset_model.h"
 #include <algorithm>
 #include <cassert>
@@ -492,7 +493,7 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn) alloc_except {
                 errors.push_back(Error(sel, TYPE_ERROR));
             }
         }else if(sym.declaration_lexical_depth == lexical_depth){
-            appendEntry(index, name, lookup->second, true);
+            appendEntry(name, lookup->second, true);
             lookup->second = symbol_table.symbols.size()-1;
         }
 
@@ -500,7 +501,7 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn) alloc_except {
     }
 
     size_t val_cap_size = parse_tree.valListSize(val_cap);
-    if(val_cap != ParseTree::EMPTY){
+    if(val_cap != NONE){
         parse_tree.setFlag(val_cap, symbol_table.scopes.size());
         for(size_t i = 0; i < val_cap_size; i++){
             ParseNode capture = parse_tree.arg(val_cap, i);
@@ -632,7 +633,7 @@ bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable) alloc_ex
             errors.push_back(Error(c, CONST ? REASSIGN_CONSTANT : MUTABLE_CONST_ASSIGN));
             return false;
         }else{
-            appendEntry(index, pn, lookup->second, immutable);
+            appendEntry(pn, lookup->second, immutable);
             lookup->second = symbol_table.symbols.size()-1;
         }
     }
@@ -739,7 +740,7 @@ void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bo
     symbol_table.addSymbol(pn, lexical_depth, closure_depth, NONE, immutable);
 }
 
-void SymbolTableBuilder::appendEntry(size_t index, ParseNode pn, size_t prev, bool immutable) alloc_except {
+void SymbolTableBuilder::appendEntry(ParseNode pn, size_t prev, bool immutable) alloc_except {
     warnings.push_back(Error(parse_tree.getSelection(pn), SHADOWING_VAR)); //EVENTUALLY: make this optional, probably default off
     symbol_table.usages.push_back(Usage(symbol_table.symbols.size(), pn, DECLARE));
     symbol_table.addSymbol(pn, lexical_depth, closure_depth, prev, immutable);

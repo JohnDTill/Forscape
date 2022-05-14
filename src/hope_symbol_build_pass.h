@@ -49,7 +49,7 @@ private:
     void increaseClosureDepth(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode pn) alloc_except;
     void decreaseClosureDepth(const Typeset::Marker& end) alloc_except;
     void makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable) alloc_except;
-    void appendEntry(size_t index, ParseNode pn, size_t prev, bool immutable) alloc_except;
+    void appendEntry(ParseNode pn, size_t prev, bool immutable) alloc_except;
     void resolveStmt(ParseNode pn) alloc_except;
     void resolveExpr(ParseNode pn) alloc_except;
     void resolveEquality(ParseNode pn) alloc_except;

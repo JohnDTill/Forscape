@@ -521,7 +521,7 @@ void View::resolveTooltip(double x, double y) noexcept{
             const auto& symbol = symbol_table.symbols[lookup->second];
             QString tooltip = "<b>" + QString::fromStdString(c.selectedText()) + "</b> ∈ "
                     + QString::fromStdString(model->static_pass.typeString(symbol));
-            if(symbol.comment != Code::ParseTree::EMPTY)
+            if(symbol.comment != NONE)
                 tooltip += "<div style=\"color:green\">" + QString::fromStdString(symbol_table.parse_tree.str(symbol.comment));
             setToolTip(tooltip);
             return;

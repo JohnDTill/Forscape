@@ -17,8 +17,6 @@ struct Marker;
 
 namespace Code {
 
-typedef size_t ParseNode;
-
 class ParseTree : private std::vector<size_t> {
 public:
     HOPE_AST_FIELD_CODEGEN_DECLARATIONS
@@ -88,8 +86,6 @@ public:
     #endif
 
     size_t root;
-
-    static constexpr ParseNode EMPTY = std::numeric_limits<size_t>::max();
 
     class NaryBuilder{
     public:
