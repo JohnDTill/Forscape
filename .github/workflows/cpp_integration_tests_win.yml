@@ -6,8 +6,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - id: cmake
-        run: cd $Env:GITHUB_WORKSPACE/test && cmake -B../../build_test -S.
+        run: cd $Env:GITHUB_WORKSPACE/test && cmake -B../build_test -S.
       - id: make
-        run: cd $Env:GITHUB_WORKSPACE/build_test && make
+        run: cd $Env:GITHUB_WORKSPACE/build_test && mingw32-make -f makefile.txt
       - id: run
         run: cd $Env:GITHUB_WORKSPACE/build_test && ./HopeTests
