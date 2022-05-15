@@ -1,6 +1,7 @@
 #include "hope_parse_tree.h"
 
 #include <code_parsenode_ops.h>
+#include <hope_common.h>
 #include <hope_static_pass.h>
 #include "typeset_selection.h"
 
@@ -121,7 +122,7 @@ ParseNode ParseTree::algName(ParseNode node) const noexcept{
 }
 
 size_t ParseTree::valListSize(ParseNode node) const noexcept{
-    return node == EMPTY ? 0 : getNumArgs(node);
+    return node == NONE ? 0 : getNumArgs(node);
 }
 
 ParseNode ParseTree::unitVectorElem(ParseNode node) const noexcept{
@@ -157,7 +158,7 @@ size_t ParseTree::addTerminal(size_t type, const Typeset::Selection& c) alloc_ex
 
     resize(size() + FIXED_FIELDS);
     setOp(pn, type);
-    setFlag(pn, EMPTY);
+    setFlag(pn, NONE);
     setSelection(pn, c);
     setNumArgs(pn, 0);
 
@@ -169,7 +170,7 @@ size_t ParseTree::addUnary(size_t type, const Typeset::Selection& c, size_t chil
 
     resize(size() + FIXED_FIELDS + 1);
     setOp(pn, type);
-    setFlag(pn, EMPTY);
+    setFlag(pn, NONE);
     setSelection(pn, c);
     setNumArgs(pn, 1);
     setArg<0>(pn, child);
@@ -182,7 +183,7 @@ size_t ParseTree::addUnary(size_t type, size_t child) alloc_except {
 
     resize(size() + FIXED_FIELDS + 1);
     setOp(pn, type);
-    setFlag(pn, EMPTY);
+    setFlag(pn, NONE);
     setSelection(pn, getSelection(child));
     setNumArgs(pn, 1);
     setArg<0>(pn, child);
@@ -195,7 +196,7 @@ size_t ParseTree::addLeftUnary(size_t type, const Typeset::Marker& left, size_t 
 
     resize(size() + FIXED_FIELDS + 1);
     setOp(pn, type);
-    setFlag(pn, EMPTY);
+    setFlag(pn, NONE);
     setLeft(pn, left);
     setRight(pn, getRight(child));
     setNumArgs(pn, 1);
@@ -209,7 +210,7 @@ size_t ParseTree::addRightUnary(size_t type, const Typeset::Marker& right, size_
 
     resize(size() + FIXED_FIELDS + 1);
     setOp(pn, type);
-    setFlag(pn, EMPTY);
+    setFlag(pn, NONE);
     setLeft(pn, getLeft(child));
     setRight(pn, right);
     setNumArgs(pn, 1);
@@ -223,7 +224,7 @@ size_t ParseTree::addBinary(size_t type, const Typeset::Selection& c, size_t lhs
 
     resize(size() + FIXED_FIELDS + 2);
     setOp(pn, type);
-    setFlag(pn, EMPTY);
+    setFlag(pn, NONE);
     setSelection(pn, c);
     setNumArgs(pn, 2);
     setArg<0>(pn, lhs);
@@ -237,7 +238,7 @@ size_t ParseTree::addBinary(size_t type, size_t lhs, size_t rhs) alloc_except {
 
     resize(size() + FIXED_FIELDS + 2);
     setOp(pn, type);
-    setFlag(pn, EMPTY);
+    setFlag(pn, NONE);
     setLeft(pn, getLeft(lhs));
     setRight(pn, getRight(rhs));
     setNumArgs(pn, 2);
@@ -252,7 +253,7 @@ size_t ParseTree::addTernary(size_t type, const Typeset::Selection& c, size_t A,
 
     resize(size() + FIXED_FIELDS + 3);
     setOp(pn, type);
-    setFlag(pn, EMPTY);
+    setFlag(pn, NONE);
     setSelection(pn, c);
     setNumArgs(pn, 3);
     setArg<0>(pn, A);
@@ -267,7 +268,7 @@ ParseNode ParseTree::addTernary(Op type, ParseNode A, ParseNode B, ParseNode C) 
 
     resize(size() + FIXED_FIELDS + 3);
     setOp(pn, type);
-    setFlag(pn, EMPTY);
+    setFlag(pn, NONE);
     setLeft(pn, getLeft(A));
     setRight(pn, getRight(C));
     setNumArgs(pn, 3);
@@ -283,7 +284,7 @@ ParseNode ParseTree::addQuadary(Op type, ParseNode A, ParseNode B, ParseNode C, 
 
     resize(size() + FIXED_FIELDS + 4);
     setOp(pn, type);
-    setFlag(pn, EMPTY);
+    setFlag(pn, NONE);
     setLeft(pn, getLeft(A));
     setRight(pn, getRight(D));
     setNumArgs(pn, 4);
@@ -300,7 +301,7 @@ ParseNode ParseTree::addQuadary(Op type, const Typeset::Selection &c, ParseNode 
 
     resize(size() + FIXED_FIELDS + 4);
     setOp(pn, type);
-    setFlag(pn, EMPTY);
+    setFlag(pn, NONE);
     setSelection(pn, c);
     setNumArgs(pn, 4);
     setArg<0>(pn, A);
@@ -316,7 +317,7 @@ ParseNode ParseTree::addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, 
 
     resize(size() + FIXED_FIELDS + 5);
     setOp(pn, type);
-    setFlag(pn, EMPTY);
+    setFlag(pn, NONE);
     setLeft(pn, getLeft(A));
     setRight(pn, getRight(E));
     setNumArgs(pn, 5);
@@ -334,7 +335,7 @@ ParseNode ParseTree::addPentary(Op type, const Typeset::Selection& c, ParseNode 
 
     resize(size() + FIXED_FIELDS + 5);
     setOp(pn, type);
-    setFlag(pn, EMPTY);
+    setFlag(pn, NONE);
     setSelection(pn, c);
     setNumArgs(pn, 5);
     setArg<0>(pn, A);
@@ -363,8 +364,8 @@ ParseNode ParseTree::clone(ParseNode pn) alloc_except {
     resize(size() + nargs);
     for(size_t i = 0; i < nargs; i++){
         ParseNode a = arg(pn, i);
-        if(a == EMPTY){
-            setArg(cloned, i, EMPTY);
+        if(a == NONE){
+            setArg(cloned, i, NONE);
         }else{
             setArg(cloned, i, clone(a));
         }
@@ -500,7 +501,7 @@ void ParseTree::graphvizHelper(std::string& src, ParseNode n, size_t& size) cons
     src += "]\n";
     for(size_t i = 0; i < getNumArgs(n); i++){
         size_t child = arg(n, i);
-        if(child != EMPTY){
+        if(child != NONE){
             std::string child_id = std::to_string(size);
             graphvizHelper(src, child, size);
             src += "\tn" + id + "->n" + child_id + "\n";
@@ -526,7 +527,7 @@ size_t ParseTree::NaryBuilder::finalize() alloc_except {
 
     tree.resize(tree.size() + FIXED_FIELDS);
     tree.setOp(pn, type);
-    tree.setFlag(pn, EMPTY);
+    tree.setFlag(pn, NONE);
     tree.setLeft(pn, tree.getLeft(children.front()));
     tree.setRight(pn, tree.getRight(children.back()));
     tree.setNumArgs(pn, children.size());
@@ -545,7 +546,7 @@ size_t ParseTree::NaryBuilder::finalize(const Typeset::Marker& right) alloc_exce
 
     tree.resize(tree.size() + FIXED_FIELDS);
     tree.setOp(pn, type);
-    tree.setFlag(pn, EMPTY);
+    tree.setFlag(pn, NONE);
     tree.setLeft(pn, tree.getLeft(children.front()));
     tree.setRight(pn, right);
     tree.setNumArgs(pn, children.size());
@@ -564,7 +565,7 @@ size_t ParseTree::NaryBuilder::finalize(const Typeset::Selection& c) alloc_excep
 
     tree.resize(tree.size() + FIXED_FIELDS);
     tree.setOp(pn, type);
-    tree.setFlag(pn, EMPTY);
+    tree.setFlag(pn, NONE);
     tree.setSelection(pn, c);
     tree.setNumArgs(pn, children.size());
     tree.insert(tree.end(), children.begin(), children.end());

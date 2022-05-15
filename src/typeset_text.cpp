@@ -266,6 +266,12 @@ void Text::updateWidth(){
         type = tag.type;
     }
     width += Hope::Typeset::getWidth(type, depth, str.substr(start));
+
+    invalidateX();
+}
+
+void Text::invalidateX() noexcept {
+    x = std::numeric_limits<double>::quiet_NaN();
 }
 
 double Text::xLocal(size_t index) const{

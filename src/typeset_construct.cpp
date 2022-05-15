@@ -185,10 +185,36 @@ double Construct::height() const noexcept{
     return above_center + under_center;
 }
 
+Construct::ContextAction::ContextAction(const std::string& name, void (*takeAction)(Construct*, Controller&, Subphrase*))
+    : takeAction(takeAction), name(name) {}
+
 const std::vector<Construct::ContextAction> Construct::no_actions {};
 
 const std::vector<Construct::ContextAction>& Construct::getContextActions(Subphrase*) const noexcept{
     return no_actions;
+}
+
+void Construct::updateChildPositions(){
+    // Default does nothing
+    // Must override for constructs with children
+    assert(numArgs() == 0);
+}
+
+void Construct::paintSpecific(Painter&) const {
+    // Default does nothing
+}
+
+void Construct::invalidateX() noexcept{
+    x = std::numeric_limits<double>::quiet_NaN();
+}
+
+void Construct::invalidateY() noexcept{
+    y = std::numeric_limits<double>::quiet_NaN();
+}
+
+void Construct::invalidatePos() noexcept{
+    invalidateX();
+    invalidateY();
 }
 #endif
 

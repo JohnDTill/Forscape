@@ -65,7 +65,7 @@ static uint32_t expand(char ch) noexcept{
     return static_cast<uint32_t>(static_cast<uint8_t>(ch));
 }
 
-inline uint32_t codepointInt(const std::string& str, size_t index){
+inline uint32_t codepointInt(const std::string& str, size_t index = 0) noexcept {
     assert(index < str.size());
 
     uint8_t ch = str[index];
@@ -87,7 +87,12 @@ inline uint32_t codepointInt(const std::string& str, size_t index){
     }
 }
 
-inline size_t graphemeSize(const std::string& str, size_t index){
+inline bool isSingleCodepoint(const std::string& str) noexcept {
+    if(str.empty()) return false;
+    return codepointSize(str[0]) == (str.size() - (str.back() == '\0'));
+}
+
+inline size_t graphemeSize(const std::string& str, size_t index) noexcept {
     assert(index < str.size());
 
     size_t start = index;
@@ -98,7 +103,7 @@ inline size_t graphemeSize(const std::string& str, size_t index){
     return index - start;
 }
 
-inline size_t graphemeSizeLeft(const std::string& str, size_t index){
+inline size_t graphemeSizeLeft(const std::string& str, size_t index) noexcept {
     size_t end = index;
 
     do {
@@ -109,7 +114,22 @@ inline size_t graphemeSizeLeft(const std::string& str, size_t index){
     return end-index;
 }
 
-inline constexpr uint32_t constructScannerCode(uint32_t code) noexcept{
+inline std::string fromCode(uint32_t code){
+    std::string str;
+    str += static_cast<uint8_t>(code);
+
+    if(code & (1 << 7)){
+        str += static_cast<uint8_t>(code >> 8);
+        if(code & (1 << 6)){
+            str += static_cast<uint8_t>(code >> 16);
+            if(code & (1 << 5)) str += static_cast<uint8_t>(code >> 24);
+        }
+    }
+
+    return str;
+}
+
+inline constexpr uint32_t constructScannerCode(uint32_t code) noexcept {
     uint32_t val = static_cast<uint32_t>(1 << 7) | code;
     assert(isContinuationCharacter(val));
     //Map constructs to continuation characters since they are free

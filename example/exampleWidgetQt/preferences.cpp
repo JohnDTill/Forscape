@@ -1,10 +1,13 @@
 #include "preferences.h"
 #include "ui_preferences.h"
 
+#include "keywordsubstitutioneditor.h"
 #include <typeset_themes.h>
 #include <QColorDialog>
+#include <QScrollBar>
 #include <QSettings>
 #include <QWindow>
+#include "symbolsubstitutioneditor.h"
 
 Preferences::Preferences(QSettings& settings, QWidget* parent) :
     QWidget(parent), ui(new Ui::Preferences), settings(settings){
@@ -21,7 +24,7 @@ Preferences::Preferences(QSettings& settings, QWidget* parent) :
         else for(size_t i = 0; i < Hope::Typeset::NUM_COLOUR_PRESETS; i++)
             if(colour_preset == Hope::Typeset::getPresetName(i).data()){
                 Hope::Typeset::setPreset(i);
-                ui->colour_dropdown->setCurrentIndex(i);
+                ui->colour_dropdown->setCurrentIndex(static_cast<int>(i));
             }
     }
 
@@ -51,6 +54,12 @@ Preferences::Preferences(QSettings& settings, QWidget* parent) :
         row_item->setText(Hope::Typeset::getColourName(i).data());
         ui->colour_table->setVerticalHeaderItem(i, row_item);
     }
+
+    keyword_editor = new KeywordSubstitutionEditor(settings, ui->scrollArea);
+    ui->scrollArea->setWidget(keyword_editor);
+
+    symbol_editor = new SymbolSubstitutionEditor(settings, this);
+    ui->symbolLayout->insertWidget(1, symbol_editor);
 }
 
 Preferences::~Preferences(){
@@ -70,7 +79,7 @@ void Preferences::onPresetSelect(int index){
     Hope::Typeset::setPreset(index);
 
     for(size_t i = 0; i < Hope::Typeset::NUM_COLOUR_ROLES; i++){
-        QTableWidgetItem* item = ui->colour_table->item(i, 0);
+        QTableWidgetItem* item = ui->colour_table->item(static_cast<int>(i), 0);
         item->setBackground(Hope::Typeset::getColour(i));
     }
 
@@ -106,3 +115,27 @@ void Preferences::updateWindows() const{
     for(auto window : QGuiApplication::topLevelWindows())
         window->requestUpdate();
 }
+
+void Preferences::on_keywordDefaultsButton_clicked(){
+    keyword_editor->resetDefaults();
+}
+
+
+void Preferences::on_keywordAddButton_clicked(){
+    keyword_editor->addSlot();
+    QCoreApplication::processEvents();
+    QCoreApplication::processEvents();
+    auto scrollbar = ui->scrollArea->verticalScrollBar();
+    scrollbar->setValue(scrollbar->maximum());
+}
+
+
+void Preferences::on_symbolsDefaultsButton_clicked(){
+    symbol_editor->resetDefaults();
+}
+
+
+void Preferences::on_symbolsAddButton_clicked(){
+    symbol_editor->addRow();
+}
+

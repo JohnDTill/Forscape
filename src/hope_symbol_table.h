@@ -1,6 +1,7 @@
 #ifndef HOPE_SCOPE_TREE_H
 #define HOPE_SCOPE_TREE_H
 
+#include <hope_common.h>
 #include "typeset_selection.h"
 #include "typeset_text.h"
 #include <limits>
@@ -16,8 +17,6 @@ namespace Code {
 
 class ParseTree;
 
-static constexpr size_t NONE = std::numeric_limits<size_t>::max();
-typedef size_t ParseNode;
 typedef size_t ScopeId;
 typedef size_t SymbolId;
 static constexpr size_t UNKNOWN_SIZE = 0;

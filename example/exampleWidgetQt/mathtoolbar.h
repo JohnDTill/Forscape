@@ -9,7 +9,7 @@ class MathToolbar : public QToolBar{
     Q_OBJECT
 
 private:
-    QTableWidget* symbol_table;
+    QTableWidget* symbol_table; //EVENTUALLY: symbols can change based on keywords
 
 public:
     MathToolbar(QWidget* parent = nullptr);

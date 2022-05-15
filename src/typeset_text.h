@@ -73,6 +73,7 @@ class Text {
         double underCenter() const;
         double height() const;
         void updateWidth();
+        void invalidateX() noexcept;
         double xLocal(size_t index) const;
         double xPhrase(size_t index) const;
         double xGlobal(size_t index) const;

@@ -41,9 +41,9 @@ private:
     ParseNode plotStatement() alloc_except;
     ParseNode mathStatement() alloc_except;
     ParseNode namedLambdaStmt(ParseNode call) alloc_except;
-    ParseNode assignment(const ParseNode& lhs) alloc_except;
+    ParseNode assignment(ParseNode lhs) alloc_except;
     ParseNode expression() alloc_except;
-    ParseNode equality(const ParseNode& lhs) alloc_except;
+    ParseNode equality(ParseNode lhs) alloc_except;
     ParseNode disjunction() alloc_except;
     ParseNode conjunction() alloc_except;
     ParseNode comparison() alloc_except;
@@ -66,15 +66,15 @@ private:
     ParseNode identifierFollowOn(ParseNode id) alloc_except;
     ParseNode isolatedIdentifier() alloc_except;
     ParseNode param() alloc_except;
-    ParseNode call(const ParseNode& id) alloc_except;
-    ParseNode lambda(const ParseNode& params) alloc_except;
+    ParseNode call(ParseNode id) alloc_except;
+    ParseNode lambda(ParseNode params) alloc_except;
     ParseNode fraction() alloc_except;
     ParseNode fractionDeriv(const Typeset::Selection& c, Op type, TokenType tt) alloc_except;
     ParseNode fractionDefault(const Typeset::Selection& c) alloc_except;
     ParseNode binomial() alloc_except;
-    ParseNode superscript(const ParseNode& lhs) alloc_except;
-    ParseNode subscript(const ParseNode& lhs, const Typeset::Marker& right) alloc_except;
-    ParseNode dualscript(const ParseNode& lhs) alloc_except;
+    ParseNode superscript(ParseNode lhs) alloc_except;
+    ParseNode subscript(ParseNode lhs, const Typeset::Marker& right) alloc_except;
+    ParseNode dualscript(ParseNode lhs) alloc_except;
     ParseNode subExpr() alloc_except;
     ParseNode matrix() alloc_except;
     ParseNode cases() alloc_except;
@@ -108,6 +108,8 @@ private:
     const Typeset::Marker& rMark() const noexcept;
     const Typeset::Marker& lMarkPrev() const noexcept;
     const Typeset::Marker& rMarkPrev() const noexcept;
+    bool noErrors() const noexcept;
+    void recover() noexcept;
 
     const std::vector<Token>& tokens;
     std::vector<Error>& errors;
@@ -115,18 +117,7 @@ private:
     size_t index = 0;
     bool parsing_dims = false;
     size_t loops = 0;
-
-    static constexpr size_t UNITIALIZED = std::numeric_limits<size_t>::max();
-    size_t error_node = UNITIALIZED;
-
-    bool noErrors() const noexcept{
-        return error_node == UNITIALIZED;
-    }
-
-    void recover() noexcept{
-        error_node = UNITIALIZED;
-        index = tokens.size()-1; //Give up for now
-    }
+    size_t error_node;
 };
 
 }

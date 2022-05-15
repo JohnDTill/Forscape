@@ -43,6 +43,7 @@ set(GEN_FILES
     ${GEN}/typeset_closesymbol.h
     ${GEN}/typeset_keywords.cpp
     ${GEN}/typeset_keywords.h
+    ${GEN}/typeset_shorthand.cpp
     ${GEN}/typeset_shorthand.h
     ${GEN}/typeset_themes.cpp
     ${GEN}/typeset_themes.h
@@ -120,6 +121,7 @@ set(SOURCES
     ${TEST}/typeset_mutability.h
     ${GEN_FILES}
     ${CONSTRUCT_FILES}
+    ${SRC}/hope_common.h
     ${SRC}/hope_error.cpp
     ${INCLUDE}/hope_error.h
     ${SRC}/hope_interpreter.cpp

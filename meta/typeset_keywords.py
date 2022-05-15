@@ -15,14 +15,21 @@ def main():
     header_writer = cpp.HeaderWriter(
         name="keywords",
         inner_namespace="Typeset",
-        includes=("construct_codes.h", "string", "string_view", "unordered_map", "vector"),
+        includes=("construct_codes.h", "string", "unordered_map", "vector"),
     )
 
     header_writer.write("class Keywords{\n"
-                        "private:\n"
-                        "    static const std::unordered_map<std::string_view, std::string> map;\n"
+                        "public:\n"
+                        "    static std::unordered_map<std::string, std::string> map;\n"
                         "    static const std::string NONE;\n"
                         "\n"
+                        "    static const std::string& lookup(const std::string& key) noexcept{\n"
+                        "        auto result = map.find(key);\n"
+                        "        return result==map.end() ? NONE : result->second;\n"
+                        "    }\n"
+                        "\n"
+                        "private:\n"
+                        "    static const std::unordered_map<std::string, std::string> defaults;\n"
                         "    static const std::string con(size_t code, size_t arity, std::vector<size_t> args){\n"
                         "        std::string str;\n"
                         "        str.reserve(2+arity+args.size());\n"
@@ -32,12 +39,8 @@ def main():
                         "        for(size_t i = 0; i < arity; i++) str += static_cast<char>(CLOSE);\n"
                         "        return str;\n"
                         "    }\n"
-                        "\n"
                         "public:\n"
-                        "    static const std::string& lookup(std::string_view key) noexcept{\n"
-                        "        auto result = map.find(key);\n"
-                        "        return result==map.end() ? NONE : result->second;\n"
-                        "    }\n"
+                        "    static void reset() { map = defaults; }\n"
                         "};\n\n"
                         )
 
@@ -58,7 +61,7 @@ def main():
 
         codegen_file.write("const std::string Keywords::NONE = \"\";\n\n")
 
-        codegen_file.write("const std::unordered_map<std::string_view, std::string> Keywords::map{\n")
+        codegen_file.write("const std::unordered_map<std::string, std::string> Keywords::defaults{\n")
         for keyword in keywords:
             codegen_file.write(f"    {{\"{keyword.keyword}\", \"{keyword.symbol}\"}},\n")
         for c in constructs:
@@ -80,7 +83,10 @@ def main():
                 args += "}"
 
                 codegen_file.write(f"    {{\"{c.keyword}\", Keywords::con({c.name.upper()}, {arity}, {args})}},\n")
-        codegen_file.write("};\n\n}\n\n}\n\n")
+        codegen_file.write("};\n\n")
+
+        codegen_file.write("std::unordered_map<std::string, std::string> Keywords::map = defaults;\n\n"
+                           "}\n\n}\n\n")
 
 
 if __name__ == "__main__":

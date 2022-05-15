@@ -76,7 +76,7 @@ MainWindow::MainWindow(QWidget* parent)
     QSplitter* splitter = new QSplitter(Qt::Vertical, this);
     setCentralWidget(splitter);
 
-    editor = new Typeset::View();
+    editor = new Typeset::Editor();
     setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
     if(settings.contains(ACTIVE_FILE))
         open(settings.value(ACTIVE_FILE).toString());
@@ -92,9 +92,7 @@ MainWindow::MainWindow(QWidget* parent)
     splitter->setStretchFactor(0, 2);
     splitter->setStretchFactor(1, 1);
 
-    console = new Typeset::View();
-    console->setLineNumbersVisible(false);
-    console->setReadOnly(true);
+    console = new Typeset::Console();
     vbox->addWidget(console);
 
     editor->console = console;
@@ -709,6 +707,7 @@ void MainWindow::closeEvent(QCloseEvent* event){
 
     logger->info("assert(editor->toSerial() == {});", cStr(editor->toSerial()));
 
+    preferences->close();
     QMainWindow::closeEvent(event);
 }
 
