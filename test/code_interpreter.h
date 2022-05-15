@@ -4,7 +4,13 @@
 #include "report.h"
 #include "typeset.h"
 
+#if !defined(__MINGW32__) || (__MINGW32__ > 8)
 #include <filesystem>
+using std::filesystem::directory_iterator;
+#else
+#include <experimental/filesystem>
+using std::experimental::filesystem::directory_iterator; //Workaround MinGW filesystem
+#endif
 
 #ifndef HOPE_TYPESET_HEADLESS
 #include "../example/exampleWidgetQt/symboltreeview.h"
@@ -84,12 +90,8 @@ inline bool testInterpreter(){
     passing &= testExpression("2^2", "4");
     passing &= testExpression("4^0.5", "2");
 
-    for(std::filesystem::directory_iterator end, dir(BASE_TEST_DIR "/in");
-         dir != end;
-         dir++) {
-        const std::filesystem::path& path = dir->path();
-        passing &= testCase(path.stem().string());
-    }
+    for(directory_iterator end, dir(BASE_TEST_DIR "/in"); dir != end; dir++)
+        passing &= testCase(dir->path().stem().string());
 
     if(!allTypesetElementsFreed()){
         printf("Unfreed typeset elements\n");

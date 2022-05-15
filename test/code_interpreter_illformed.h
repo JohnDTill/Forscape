@@ -6,7 +6,13 @@
 #include "report.h"
 #include "typeset.h"
 
+#if !defined(__MINGW32__) || (__MINGW32__ > 8)
 #include <filesystem>
+using std::filesystem::directory_iterator;
+#else
+#include <experimental/filesystem>
+using std::experimental::filesystem::directory_iterator; //Workaround MinGW filesystem
+#endif
 
 #ifndef HOPE_TYPESET_HEADLESS
 #include "../example/exampleWidgetQt/symboltreeview.h"
@@ -42,12 +48,8 @@ inline bool testErrorAndNoCrash(const std::string& name){
 inline bool testIllFormedPrograms(){
     bool passing = true;
 
-    for(std::filesystem::directory_iterator end, dir(BASE_TEST_DIR "/errors");
-         dir != end;
-         dir++) {
-        const std::filesystem::path& path = dir->path();
-        passing &= testErrorAndNoCrash(path.stem().string());
-    }
+    for(directory_iterator end, dir(BASE_TEST_DIR "/errors"); dir != end; dir++)
+        passing &= testErrorAndNoCrash(dir->path().stem().string());
 
     if(!allTypesetElementsFreed()){
         printf("Unfreed typeset elements\n");

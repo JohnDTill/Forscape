@@ -1,4 +1,4 @@
-name: C++ Integration Tests (windows-latest msbuild)
+name: C++ Integration Tests (windows-latest MinGW)
 on: push
 jobs:
   build-and-test:
@@ -6,8 +6,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - id: cmake
-        run: cd $Env:GITHUB_WORKSPACE/test && cmake -B../build_test -S.
-      - id: msbuild
-        run: cd $Env:GITHUB_WORKSPACE/build_test && msbuild
+        run: cd $Env:GITHUB_WORKSPACE/test && cmake -G"MinGW Makefiles" -B../build_test -S.
+      - id: make
+        run: cd $Env:GITHUB_WORKSPACE/build_test && make
       - id: run
         run: cd $Env:GITHUB_WORKSPACE/build_test && ./HopeTests
