@@ -6,7 +6,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - id: cmake
-        run: cd ${GITHUB_WORKSPACE}/test && cmake -DCMAKE_GENERATOR_PLATFORM=x86 -B../build_test -S.
+        run: cd ${GITHUB_WORKSPACE}/test && export CXXFLAGS=-m32 && cmake -B../build_test -S.
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build_test && make
       - id: run
