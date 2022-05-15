@@ -364,8 +364,7 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
             if(rows_expected == 1 && cols_expected == 1){
                 parse_tree.setScalar(pn);
                 parse_tree.setOp(pn, OP_DECIMAL_LITERAL);
-                parse_tree.setFlag(pn, GRAVITY);
-                parse_tree.setValue(pn, GRAVITY);
+                parse_tree.setDouble(pn, GRAVITY);
                 return pn;
             }else if(rows_expected == 3 && cols_expected == 1){
                 parse_tree.setRows(pn, 3);
@@ -790,7 +789,7 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
         }
         case OP_DECIMAL_LITERAL:
         case OP_INTEGER_LITERAL:{
-            double val = parse_tree.getFlagAsDouble(pn);
+            double val = parse_tree.getDouble(pn);
             parse_tree.setScalar(pn);
             parse_tree.setValue(pn, val);
             return pn;
@@ -1088,13 +1087,13 @@ ParseNode StaticPass::resolveIdentity(ParseNode pn){
     parse_tree.setArg<1>(pn, cols);
 
     if(parse_tree.getOp(rows) == OP_INTEGER_LITERAL || parse_tree.getOp(rows) == OP_DECIMAL_LITERAL){
-        double r = parse_tree.getFlagAsDouble(rows);
+        double r = parse_tree.getDouble(rows);
         if(r < 1) return error(pn, rows, DIMENSION_MISMATCH);
         parse_tree.setRows(pn, static_cast<size_t>(r));
     }
 
     if(parse_tree.getOp(cols) == OP_INTEGER_LITERAL || parse_tree.getOp(cols) == OP_DECIMAL_LITERAL){
-        double c = parse_tree.getFlagAsDouble(cols);
+        double c = parse_tree.getDouble(cols);
         if(c < 1) return error(pn, cols, DIMENSION_MISMATCH);
         parse_tree.setCols(pn, c);
     }
@@ -1266,13 +1265,13 @@ ParseNode StaticPass::resolveOnesMatrix(ParseNode pn){
     parse_tree.setArg<1>(pn, cols);
 
     if(parse_tree.getOp(rows) == OP_INTEGER_LITERAL || parse_tree.getOp(rows) == OP_DECIMAL_LITERAL){
-        double r = parse_tree.getFlagAsDouble(rows);
+        double r = parse_tree.getDouble(rows);
         if(r < 1) return error(pn, rows, DIMENSION_MISMATCH);
         parse_tree.setRows(pn, r);
     }
 
     if(parse_tree.getOp(cols) == OP_INTEGER_LITERAL || parse_tree.getOp(cols) == OP_DECIMAL_LITERAL){
-        double c = parse_tree.getFlagAsDouble(cols);
+        double c = parse_tree.getDouble(cols);
         if(c < 1) return error(pn, cols, DIMENSION_MISMATCH);
         parse_tree.setCols(pn, c);
     }
@@ -1305,12 +1304,12 @@ ParseNode StaticPass::resolvePower(ParseNode pn){
     switch (parse_tree.getOp(rhs)) {
         case OP_INTEGER_LITERAL:
         case OP_DECIMAL_LITERAL:{
-            double rhs_val = parse_tree.getFlagAsDouble(rhs);
+            double rhs_val = parse_tree.getDouble(rhs);
 
             ParseNode lhs = parse_tree.lhs(pn);
             Code::Op lhs_op = parse_tree.getOp(lhs);
             if(lhs_op == OP_INTEGER_LITERAL || lhs_op == OP_DECIMAL_LITERAL){
-                double val = pow(parse_tree.getFlagAsDouble(lhs), rhs_val);
+                double val = pow(parse_tree.getDouble(lhs), rhs_val);
                 parse_tree.setFlag(pn, val);
                 parse_tree.setValue(pn, val);
                 parse_tree.setOp(pn, OP_DECIMAL_LITERAL);
@@ -1346,7 +1345,7 @@ ParseNode StaticPass::resolveUnaryMinus(ParseNode pn){
     switch (parse_tree.getOp(child)) {
         case OP_INTEGER_LITERAL:
         case OP_DECIMAL_LITERAL:
-            parse_tree.setFlag(child, -parse_tree.getFlagAsDouble(child));
+            parse_tree.setDouble(child, -parse_tree.getDouble(child));
             return child;
         case OP_UNARY_MINUS:
             return parse_tree.child(child);
@@ -1366,13 +1365,13 @@ ParseNode StaticPass::resolveUnitVector(ParseNode pn){
     parse_tree.setUnitVectorCols(pn, cols);
 
     if(parse_tree.getOp(rows) == OP_INTEGER_LITERAL || parse_tree.getOp(rows) == OP_DECIMAL_LITERAL){
-        double r = parse_tree.getFlagAsDouble(rows);
+        double r = parse_tree.getDouble(rows);
         if(r < 1) return error(pn, rows, DIMENSION_MISMATCH);
         parse_tree.setRows(pn, r);
     }
 
     if(parse_tree.getOp(cols) == OP_INTEGER_LITERAL || parse_tree.getOp(cols) == OP_DECIMAL_LITERAL){
-        double c = parse_tree.getFlagAsDouble(cols);
+        double c = parse_tree.getDouble(cols);
         if(c < 1) return error(pn, cols, DIMENSION_MISMATCH);
         parse_tree.setCols(pn, c);
     }
@@ -1392,7 +1391,7 @@ ParseNode StaticPass::resolveUnitVector(ParseNode pn){
 
     if((parse_tree.getOp(elem) == OP_INTEGER_LITERAL || parse_tree.getOp(elem) == OP_DECIMAL_LITERAL) &&
         parse_tree.getRows(pn) != UNKNOWN_SIZE && parse_tree.getCols(pn) != UNKNOWN_SIZE){
-        Eigen::Index e = parse_tree.getFlagAsDouble(elem);
+        Eigen::Index e = parse_tree.getDouble(elem);
         Eigen::Index r = parse_tree.getRows(pn);
         Eigen::Index c = parse_tree.getCols(pn);
 
@@ -1418,13 +1417,13 @@ ParseNode StaticPass::resolveZeroMatrix(ParseNode pn){
     parse_tree.setArg<1>(pn, cols);
 
     if(parse_tree.getOp(rows) == OP_INTEGER_LITERAL || parse_tree.getOp(rows) == OP_DECIMAL_LITERAL){
-        double r = parse_tree.getFlagAsDouble(rows);
+        double r = parse_tree.getDouble(rows);
         if(r < 1) return error(pn, rows, DIMENSION_MISMATCH);
         parse_tree.setRows(pn, r);
     }
 
     if(parse_tree.getOp(cols) == OP_INTEGER_LITERAL || parse_tree.getOp(cols) == OP_DECIMAL_LITERAL){
-        double c = parse_tree.getFlagAsDouble(cols);
+        double c = parse_tree.getDouble(cols);
         if(c < 1) return error(pn, cols, DIMENSION_MISMATCH);
         parse_tree.setCols(pn, c);
     }
@@ -1478,7 +1477,7 @@ ParseNode StaticPass::enforceZero(ParseNode pn){
         parse_tree.setScalar(pn);
         return pn;
     }
-    if(parse_tree.getFlagAsDouble(pn) != 0)
+    if(parse_tree.getDouble(pn) != 0)
         return error(pn, pn, INDEX_OUT_OF_RANGE);
 
     return pn;
@@ -1497,7 +1496,7 @@ ParseNode StaticPass::enforceNaturalNumber(ParseNode pn){
         parse_tree.setScalar(pn);
         return pn;
     }
-    if(parse_tree.getFlagAsDouble(pn) < 1)
+    if(parse_tree.getDouble(pn) < 1)
         return error(pn, pn, EXPECT_NATURAL_NUMBER);
 
     return pn;
@@ -1516,7 +1515,7 @@ ParseNode StaticPass::enforceSemiPositiveInt(ParseNode pn){
         parse_tree.setScalar(pn);
         return pn;
     }
-    if(parse_tree.getFlagAsDouble(pn) < 0)
+    if(parse_tree.getDouble(pn) < 0)
         return error(pn, pn, EXPECT_POSITIVE_INT);
 
     return pn;

@@ -57,13 +57,14 @@ void ParseTree::setArg(ParseNode node, size_t index, ParseNode val) noexcept{
     (*this)[node+FIXED_FIELDS+index] = val;
 }
 
-double ParseTree::getFlagAsDouble(ParseNode pn) const noexcept{
-    size_t flag = getFlag(pn);
-    return *reinterpret_cast<double*>(&flag);
+double ParseTree::getDouble(ParseNode pn) const noexcept{
+    const Value& v = getValue(pn);
+    assert(v.index() == double_index);
+    return std::get<double>(v);
 }
 
-void ParseTree::setFlag(ParseNode pn, double val) noexcept{
-    setFlag(pn, *reinterpret_cast<size_t*>(&val));
+void ParseTree::setDouble(ParseNode pn, double val) noexcept{
+    setValue(pn, val);
 }
 
 template<size_t index>
@@ -384,7 +385,7 @@ ParseNode ParseTree::getZero(const Typeset::Selection& sel) alloc_except {
 
 ParseNode ParseTree::getOne(const Typeset::Selection& sel) alloc_except {
     ParseNode pn = addTerminal(OP_INTEGER_LITERAL, sel);
-    setFlag(pn, 1.0);
+    setDouble(pn, 1.0);
     setScalar(pn);
 
     return pn;
