@@ -69,3 +69,5 @@ Feel free to report any bugs in the issue tracker and message me about feature r
 
 
 [![Qt Integration Tests (macos-latest)](https://github.com/JohnDTill/Forscape/actions/workflows/qt_integration_tests_mac.yml/badge.svg)](https://github.com/JohnDTill/Forscape/actions/workflows/qt_integration_tests_mac.yml)
+
+[![Forscape App Compiles (ubuntu-latest gcc)](https://github.com/JohnDTill/Forscape/actions/workflows/app_compiles.yml/badge.svg)](https://github.com/JohnDTill/Forscape/actions/workflows/app_compiles.yml)
