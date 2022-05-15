@@ -1,4 +1,4 @@
-name: Qt Integration Tests (ubuntu-latest)
+name: Qt Integration Tests (ubuntu-latest gcc)
 on: push
 jobs:
   build-and-test:

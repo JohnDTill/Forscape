@@ -1,4 +1,4 @@
-name: C++ Integration Tests (ubuntu-latest)
+name: C++ Integration Tests (ubuntu-latest gcc)
 on: push
 jobs:
   build-and-test:
