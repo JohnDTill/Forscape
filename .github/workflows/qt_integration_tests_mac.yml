@@ -1,8 +1,8 @@
-name: Qt Integration Tests (ubuntu-latest)
+name: Qt Integration Tests (macos-latest)
 on: push
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - id: Qt
         uses: jurplel/install-qt-action@v2

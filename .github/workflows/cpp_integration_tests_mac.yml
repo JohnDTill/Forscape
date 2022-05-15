@@ -1,4 +1,4 @@
-name: C++ Integration Tests (Ubuntu gcc 32-bit)
+name: C++ Integration Tests (macos-latest)
 on: push
 jobs:
   build-and-test:
