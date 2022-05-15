@@ -1,11 +1,8 @@
-name: C++ Integration Tests (macos-latest)
-on:
-  pull_request:
-  push:
-    branches: main
+name: C++ Integration Tests (windows-latest)
+on: push
 jobs:
   build-and-test:
-    runs-on: macos-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
       - id: cmake
