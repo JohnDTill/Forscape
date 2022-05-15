@@ -170,11 +170,11 @@ public:
 };
 
 class Editor : public View {
-    //DO THIS: define hierarchy
+    //EVENTUALLY: define hierarchy
 };
 
 class Console : public View {
-    //DO THIS: define hierarchy
+    //EVENTUALLY: define hierarchy
 public:
     Console() : View() {
         setLineNumbersVisible(false);
@@ -183,7 +183,7 @@ public:
 };
 
 class LineEdit : public View {
-    //DO THIS: define hierarchy
+    //EVENTUALLY: define hierarchy
 public:
     LineEdit();
 };

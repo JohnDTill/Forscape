@@ -89,8 +89,7 @@ public:
         const std::string name;
 
         ContextAction(const std::string& name,
-                      void(*takeAction)(Construct* con, Controller& c, Subphrase* child))
-            : takeAction(takeAction), name(name) {}
+                      void(*takeAction)(Construct* con, Controller& c, Subphrase* child));
     };
 
     static const std::vector<ContextAction> no_actions;
@@ -108,9 +107,12 @@ protected:
     Subphrase* second() const noexcept;
 
     #ifndef HOPE_TYPESET_HEADLESS
-    virtual void updateSizeSpecific() noexcept { /*IMPLEMENT MEEEE*/ }
-    virtual void updateChildPositions(){ /*IMPLEMENT MEEEE*/ }
-    virtual void paintSpecific(Painter&) const { /*DO NOTHING*/ }
+    virtual void updateSizeSpecific() noexcept = 0;
+    virtual void updateChildPositions();
+    virtual void paintSpecific(Painter&) const;
+    virtual void invalidateX() noexcept;
+    virtual void invalidateY() noexcept;
+    virtual void invalidatePos() noexcept;
     #endif
 
     std::vector<Subphrase*> args;
