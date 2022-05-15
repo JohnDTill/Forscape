@@ -31,8 +31,8 @@ public:
     template<size_t index> ParseNode arg(ParseNode node) const noexcept;
     void setArg(ParseNode node, size_t index, ParseNode val) noexcept;
     template<size_t index> void setArg(ParseNode node, ParseNode val) noexcept;
-    double getFlagAsDouble(ParseNode pn) const noexcept;
-    void setFlag(ParseNode pn, double val) noexcept;
+    double getDouble(ParseNode pn) const noexcept;
+    void setDouble(ParseNode pn, double val) noexcept;
     ParseNode lhs(ParseNode node) const noexcept;
     ParseNode rhs(ParseNode node) const noexcept;
     ParseNode child(ParseNode node) const noexcept;

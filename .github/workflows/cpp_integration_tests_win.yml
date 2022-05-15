@@ -1,0 +1,18 @@
+name: C++ Integration Tests (windows-latest msbuild)
+on:
+  pull_request:
+  push:
+    branches: main
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - id: cmake
+        run: cd $Env:GITHUB_WORKSPACE/test && cmake -B../build_test -S.
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+      - name: Build app for release
+        run: cd $Env:GITHUB_WORKSPACE/build_test && msbuild HopeTests.vcxproj -property:Configuration=Debug
+      - id: run
+        run: cd $Env:GITHUB_WORKSPACE/build_test && ./Debug/HopeTests.exe

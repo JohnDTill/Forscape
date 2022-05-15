@@ -19,8 +19,8 @@ namespace Code {
 
 typedef size_t ParseNode;
 struct PairHash{
-    size_t operator()(const std::pair<ParseNode, ParseNode>& in) const noexcept {
-        return std::hash<size_t>{}(in.first ^ (in.second << 32));
+    size_t operator()(const std::pair<size_t, size_t>& in) const noexcept {
+        return std::hash<size_t>{}(in.first ^ (in.second << 4*sizeof(size_t)));
     }
 };
 typedef std::unordered_map<std::pair<ParseNode, ParseNode>, ParseNode, PairHash> InstantiationLookup;

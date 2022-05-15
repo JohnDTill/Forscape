@@ -23,7 +23,7 @@ def main():
     )
 
     header_writer.write("#define HOPE_AST_FIELD_CODEGEN_DECLARATIONS \\\n")
-    offset = 0
+    prev = 0
 
     with open("../src/generated/code_ast_fields.cpp", "w", encoding="utf-8") as source_file:
         source_file.write("#include \"hope_parse_tree.h\"\n\n")
@@ -33,14 +33,15 @@ def main():
         source_file.write("namespace Code {\n\n")
 
         for field in fields:
-            field_size = int(field.words)
-            header_writer.write(f"    static constexpr size_t {field.property.upper()}_OFFSET = {offset}; \\\n")
-            offset += field_size
-            if field_size == 1:
+            word = (field.word == "y")
+            header_writer.write(f"    static constexpr size_t {field.property.upper()}_OFFSET = {prev}; \\\n")
+            if word:
+                prev = f"{field.property.upper()}_OFFSET + 1"
                 T = "size_t"
                 ref = f"(*this)[pn+{field.property.upper()}_OFFSET]"
                 const_ref = f"(*this)[pn+{field.property.upper()}_OFFSET]"
             else:
+                prev = f"{field.property.upper()}_OFFSET + sizeof({field.type})"
                 T = f"const {field.type}&"
                 ref = f"*reinterpret_cast<{field.type}*>(data()+pn+{field.property.upper()}_OFFSET)"
                 const_ref = f"*reinterpret_cast<const {field.type}*>(data()+pn+{field.property.upper()}_OFFSET)"
@@ -77,7 +78,7 @@ def main():
                 "}\n\n"
             )
 
-        header_writer.write(f"    static constexpr size_t FIXED_FIELDS = {offset};\n\n")
+        header_writer.write(f"    static constexpr size_t FIXED_FIELDS = {prev};\n\n")
         source_file.write("}\n\n}\n")
 
     header_writer.finalize()

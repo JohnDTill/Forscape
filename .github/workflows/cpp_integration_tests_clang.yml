@@ -1,12 +1,15 @@
-name: C++ Integration Tests (ubuntu-latest gcc)
-on: push
+name: C++ Integration Tests (ubuntu-latest clang)
+on:
+  pull_request:
+  push:
+    branches: main
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - id: cmake
-        run: cd ${GITHUB_WORKSPACE}/test && cmake -B../build_test -S.
+        run: cd ${GITHUB_WORKSPACE}/test && export CXX=/usr/bin/clang++ && cmake -B../build_test -S.
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build_test && make
       - id: run

@@ -55,6 +55,19 @@ This project aims to be financially maintainable while ultimately resulting in a
 
 Feel free to report any bugs in the issue tracker and message me about feature requests or general design discussion. Tests are run automatically and required to pass before merging to main.
 
-[![C++ Integration Tests](https://github.com/JohnDTill/Forscape/actions/workflows/cpp_integration_tests.yml/badge.svg?event=push)](https://github.com/JohnDTill/Forscape/actions/workflows/cpp_integration_tests.yml)
+[![C++ Integration Tests (ubuntu-latest gcc)](https://github.com/JohnDTill/Forscape/actions/workflows/cpp_integration_tests.yml/badge.svg)](https://github.com/JohnDTill/Forscape/actions/workflows/cpp_integration_tests.yml)
 
-[![Qt Integration Tests](https://github.com/JohnDTill/Forscape/actions/workflows/qt_integration_tests.yml/badge.svg?event=push)](https://github.com/JohnDTill/Forscape/actions/workflows/qt_integration_tests.yml)
+[![C++ Integration Tests (ubuntu-latest gcc 32-bit)](https://github.com/JohnDTill/Forscape/actions/workflows/cpp_integration_tests_32bit.yml/badge.svg)](https://github.com/JohnDTill/Forscape/actions/workflows/cpp_integration_tests_32bit.yml)
+
+[![C++ Integration Tests (ubuntu-latest clang)](https://github.com/JohnDTill/Forscape/actions/workflows/cpp_integration_tests_clang.yml/badge.svg)](https://github.com/JohnDTill/Forscape/actions/workflows/cpp_integration_tests_clang.yml)
+
+[![C++ Integration Tests (windows-latest msbuild)](https://github.com/JohnDTill/Forscape/actions/workflows/cpp_integration_tests_win.yml/badge.svg)](https://github.com/JohnDTill/Forscape/actions/workflows/cpp_integration_tests_win.yml)
+
+[![C++ Integration Tests (macos-latest)](https://github.com/JohnDTill/Forscape/actions/workflows/cpp_integration_tests_mac.yml/badge.svg)](https://github.com/JohnDTill/Forscape/actions/workflows/cpp_integration_tests_mac.yml)
+
+[![Qt Integration Tests (ubuntu-latest gcc)](https://github.com/JohnDTill/Forscape/actions/workflows/qt_integration_tests.yml/badge.svg)](https://github.com/JohnDTill/Forscape/actions/workflows/qt_integration_tests.yml)
+
+
+[![Qt Integration Tests (macos-latest)](https://github.com/JohnDTill/Forscape/actions/workflows/qt_integration_tests_mac.yml/badge.svg)](https://github.com/JohnDTill/Forscape/actions/workflows/qt_integration_tests_mac.yml)
+
+[![Forscape App Compiles (ubuntu-latest gcc)](https://github.com/JohnDTill/Forscape/actions/workflows/app_compiles.yml/badge.svg)](https://github.com/JohnDTill/Forscape/actions/workflows/app_compiles.yml)
