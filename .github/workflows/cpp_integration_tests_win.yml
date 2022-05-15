@@ -1,4 +1,4 @@
-name: C++ Integration Tests (windows-latest MinGW)
+name: C++ Integration Tests (windows-latest msbuild)
 on: push
 jobs:
   build-and-test:
@@ -6,8 +6,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - id: cmake
-        run: cd $Env:GITHUB_WORKSPACE/test && cmake -G"MinGW Makefiles" -B../build_test -S.
-      - id: make
-        run: cd $Env:GITHUB_WORKSPACE/build_test && make
+        run: cd $Env:GITHUB_WORKSPACE/test && cmake -B../build_test -S.
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+      - name: Build app for release
+        run: cd $Env:GITHUB_WORKSPACE/build_test && msbuild src\HopeTets.csproj -t:rebuild -verbosity:diag -property:Configuration=Debug
       - id: run
         run: cd $Env:GITHUB_WORKSPACE/build_test && ./HopeTests

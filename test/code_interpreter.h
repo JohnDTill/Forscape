@@ -4,12 +4,11 @@
 #include "report.h"
 #include "typeset.h"
 
-#if !defined(__MINGW32__) || (__MINGW32__ > 8)
+#if !defined(__MINGW32__) || (__MINGW32__ >= 9)
 #include <filesystem>
 using std::filesystem::directory_iterator;
 #else
-#include <experimental/filesystem>
-using std::experimental::filesystem::directory_iterator; //Workaround MinGW filesystem
+#error std::filesystem is borked for MinGW versions before 9.0
 #endif
 
 #ifndef HOPE_TYPESET_HEADLESS
