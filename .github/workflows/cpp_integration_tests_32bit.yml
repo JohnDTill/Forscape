@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - id: support 32bit
+      - id: support_32bit
         run: apt-get install gcc-multilib g++-multilib
       - id: cmake
         run: cd ${GITHUB_WORKSPACE}/test &&
