@@ -33,7 +33,7 @@ private:
 
     KeywordSubstitutionLabel* getButtonLabel() const;
     ModifiedLineEdit* getBottomEdit() const;
-    void populateDefaults();
+    void populateWidgetFromMap();
     void load();
     void addRowForEntry(const std::string& keyword, const std::string& result);
     static std::vector<std::pair<std::string, std::string>> getSortedMap();
