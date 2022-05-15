@@ -1,13 +1,17 @@
-name: C++ Integration Tests (windows-latest MinGW32)
+name: C++ Integration Tests (windows-latest MinGW)
 on: push
 jobs:
   build-and-test:
     runs-on: windows-latest
     steps:
+      - name: Set up MinGW
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
       - uses: actions/checkout@v3
       - id: cmake
         run: cd $Env:GITHUB_WORKSPACE/test && cmake -G"MinGW Makefiles" -B../build_test -S.
       - id: make
-        run: cd $Env:GITHUB_WORKSPACE/build_test && pwd && ls && make
+        run: cd $Env:GITHUB_WORKSPACE/build_test && make
       - id: run
         run: cd $Env:GITHUB_WORKSPACE/build_test && ./HopeTests
