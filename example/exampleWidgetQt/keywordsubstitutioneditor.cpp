@@ -34,15 +34,16 @@ KeywordSubstitutionEditor::KeywordSubstitutionEditor(QSettings& settings, QWidge
     setLayout(form);
 
     if(settings.contains("KEYWORD_SHORTCUTS")) load();
-    else populateDefaults();
+    populateWidgetFromMap();
 }
 
 KeywordSubstitutionEditor::~KeywordSubstitutionEditor(){
-    const auto to_save = getSortedMap();
-    QMap<QString, QVariant> map;
-    for(const auto& entry : to_save)
-        map.insert(QString::fromStdString(entry.first), QString::fromStdString(entry.second));
-    settings.setValue("KEYWORD_SHORTCUTS", map);
+    QList<QVariant> list;
+    for(const auto& entry : Keywords::map){
+        list.append(QString::fromStdString(entry.first));
+        list.append(QString::fromStdString(entry.second));
+    }
+    settings.setValue("KEYWORD_SHORTCUTS", list);
 }
 
 void KeywordSubstitutionEditor::resetDefaults(){
@@ -51,7 +52,7 @@ void KeywordSubstitutionEditor::resetDefaults(){
     delete form;
     form = new QFormLayout(this);
     setLayout(form);
-    populateDefaults();
+    populateWidgetFromMap();
 }
 
 void KeywordSubstitutionEditor::addSlot(){
@@ -95,23 +96,23 @@ void KeywordSubstitutionEditor::updateResult(){
     Keywords::map[label->backup.toStdString()] = result_edit->toSerial();
 }
 
-void KeywordSubstitutionEditor::populateDefaults(){
+void KeywordSubstitutionEditor::populateWidgetFromMap(){
     for(const auto& entry : getSortedMap())
         addRowForEntry(entry.first, entry.second);
 }
 
 void KeywordSubstitutionEditor::load(){
     assert(settings.contains("KEYWORD_SHORTCUTS"));
-    auto map = settings.value("KEYWORD_SHORTCUTS").toMap();
+    auto loaded = settings.value("KEYWORD_SHORTCUTS").toList();
+    assert(loaded.size()%2 == 0);
 
     Keywords::map.clear();
-    for(auto it = map.constKeyValueBegin(); it != map.constKeyValueEnd(); it++){
-        std::string keyword = it->first.toStdString();
-        std::string result = it->second.toString().toStdString();
+    for(int i = 0; i < loaded.size(); i += 2){
+        std::string keyword = loaded[i].toString().toStdString();
+        std::string result = loaded[i+1].toString().toStdString();
 
         auto op = Keywords::map.insert({keyword, result});
         assert(op.second); //Should not have saved with duplicates
-        addRowForEntry(keyword, result);
     }
 }
 
