@@ -10,6 +10,6 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
       - name: Build app for release
-        run: cd $Env:GITHUB_WORKSPACE/build_test && msbuild src\HopeTets.vcxproj -t:rebuild -verbosity:diag -property:Configuration=Debug
+        run: cd $Env:GITHUB_WORKSPACE/build_test && msbuild HopeTests.vcxproj -property:Configuration=Debug
       - id: run
         run: cd $Env:GITHUB_WORKSPACE/build_test && ./HopeTests
