@@ -8,6 +8,7 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QRegularExpressionValidator>
 #include <QSettings>
 using Hope::Typeset::Keywords;
 
@@ -30,7 +31,7 @@ KeywordSubstitutionEditor::KeywordSubstitutionEditor(QSettings& settings, QWidge
     : QWidget(parent),
       form(new QFormLayout(this)),
       settings(settings),
-      validator(validator = new QRegExpValidator(QRegExp("^[a-zA-Z0-9_]*"), this)) {
+      validator(new QRegularExpressionValidator(QRegularExpression("^[a-zA-Z0-9_]*"), this)) {
     setLayout(form);
 
     if(settings.contains("KEYWORD_SHORTCUTS")) load();
