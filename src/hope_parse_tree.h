@@ -84,27 +84,6 @@ public:
 
     size_t root;
 
-    class NaryBuilder{
-    public:
-        NaryBuilder(ParseTree& tree, Op type) noexcept;
-        void addNaryChild(ParseNode index) alloc_except;
-        ParseNode finalize() alloc_except;
-        ParseNode finalize(const Typeset::Marker& right) alloc_except;
-        ParseNode finalize(const Typeset::Selection& c) alloc_except;
-
-    private:
-        ParseTree& tree;
-        size_t type;
-        std::vector<ParseNode> children;
-
-        #ifndef NDEBUG
-        bool built = false;
-        public: ~NaryBuilder(){ assert(built); }
-        #endif
-    };
-
-    NaryBuilder naryBuilder(Op type) noexcept;
-
     void patchClones() noexcept;
     void patchClonedTypes() noexcept;
 

@@ -14,15 +14,15 @@ Parser::Parser(const Scanner& scanner, Typeset::Model* model) noexcept
 void Parser::parseAll() alloc_except {
     reset();
 
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_BLOCK);
+    std::vector<ParseNode> stmts;
     skipNewlines();
     while (!peek(ENDOFFILE)) {
-        builder.addNaryChild( checkedStatement() );
+        stmts.push_back(checkedStatement());
         skipNewlines();
     }
 
     Typeset::Selection c(tokens.front().sel.left, tokens.back().sel.right);
-    parse_tree.root = builder.finalize(c);
+    parse_tree.root = parse_tree.addNode(OP_BLOCK, c, stmts);
 }
 
 void Parser::reset() noexcept {
@@ -150,21 +150,19 @@ ParseNode Parser::printStatement() alloc_except {
     Typeset::Marker l_group = lMark();
     if(!match(LEFTPAREN)) return error(EXPECT_LPAREN);
 
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_PRINT);
+    static std::vector<ParseNode> children; //Can make this static since stmts won't nest
+    children.clear();
 
     do{
-        builder.addNaryChild(disjunction());
+        children.push_back(disjunction());
     } while(noErrors() && match(COMMA));
 
     Typeset::Marker right = rMark();
     Typeset::Selection sel(left, right);
-    if(!match(RIGHTPAREN)){
-        builder.finalize(sel);
-        return error(EXPECT_RPAREN);
-    }
+    if(!match(RIGHTPAREN)) return error(EXPECT_RPAREN);
     registerGrouping(l_group, right);
 
-    return builder.finalize(sel);
+    return parse_tree.addNode(OP_PRINT, sel, children);
 }
 
 Parser::ParseNode Parser::assertStatement() alloc_except {
@@ -192,18 +190,18 @@ ParseNode Parser::blockStatement() alloc_except {
 
     Typeset::Marker left = lMark();
     consume(LEFTBRACKET);
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_BLOCK);
+    std::vector<ParseNode> stmts;
 
     skipNewlines();
     while(noErrors() && !match(RIGHTBRACKET)){
-        builder.addNaryChild( statement() );
+        stmts.push_back(statement());
         skipNewlines();
     }
 
     Typeset::Selection sel(left, rMarkPrev());
     if(noErrors()) registerGrouping(sel);
 
-    return builder.finalize(sel);
+    return parse_tree.addNode(OP_BLOCK, sel, stmts);
 }
 
 Parser::ParseNode Parser::algStatement() alloc_except {
@@ -303,9 +301,9 @@ Parser::ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
     const size_t nargs = parse_tree.getNumArgs(call)-1;
     assert(nargs >= 1);
 
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_LIST);
-    for(size_t i = 0; i < nargs; i++) builder.addNaryChild(parse_tree.arg(call, i+1));
-    ParseNode params = builder.finalize();
+    std::vector<ParseNode> args;
+    for(size_t i = 0; i < nargs; i++) args.push_back(parse_tree.arg(call, i+1));
+    ParseNode params = parse_tree.addNode(OP_LIST, args);
 
     //EVENTUALLY: why does cannibalising the call cause a segfault?
     /*
@@ -333,15 +331,17 @@ ParseNode Parser::expression() noexcept{
 }
 
 ParseNode Parser::equality(ParseNode lhs) alloc_except {
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_EQUAL);
-    builder.addNaryChild(lhs);
+    //ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_EQUAL);
+    //builder.addNaryChild(lhs);
+    std::vector<ParseNode> children = {lhs};
 
     do {
         advance();
-        builder.addNaryChild(expression());
+        //builder.addNaryChild(expression());
+        children.push_back(expression());
     } while(peek(EQUALS));
 
-    ParseNode pn = builder.finalize();
+    ParseNode pn = parse_tree.addNode(OP_EQUAL, children);
     parse_tree.setFlag(lhs, match(COMMENT) ? parse_tree.addTerminal(OP_COMMENT, selectionPrev()) : NONE);
     return pn;
 }
@@ -445,22 +445,19 @@ ParseNode Parser::implicitMult() alloc_except {
 }
 
 Parser::ParseNode Parser::collectImplicitMult(ParseNode n) alloc_except {
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_IMPLICIT_MULTIPLY);
-    builder.addNaryChild(n);
-    builder.addNaryChild(rightUnary());
+    std::vector<ParseNode> children = {n, rightUnary()};
 
     for(;;){
-        if(!noErrors()) return builder.finalize();
+        if(!noErrors()) return error_node;
 
         switch (currentType()) {
             HOPE_IMPLICIT_MULT_TOKENS
-                builder.addNaryChild(rightUnary());
+                children.push_back(rightUnary());
                 break;
             case INTEGER:
-                builder.finalize();
                 return error(TRAILING_CONSTANT);
             default:
-                return builder.finalize();
+                return parse_tree.addNode(OP_IMPLICIT_MULTIPLY, children);
         }
     }
 }
@@ -588,13 +585,12 @@ Parser::ParseNode Parser::parenGrouping() alloc_except {
                 parse_tree.addUnary(OP_GROUP_PAREN, sel, nested);
     }
 
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_LIST);
-    builder.addNaryChild(nested);
+    std::vector<ParseNode> children = {nested};
     do{
         consume(COMMA);
         if(!noErrors()) break;
         match(NEWLINE);
-        builder.addNaryChild(disjunction());
+        children.push_back(disjunction());
         match(NEWLINE);
     } while(!peek(RIGHTPAREN) && noErrors());
     Typeset::Selection sel(left, rMark());
@@ -603,7 +599,7 @@ Parser::ParseNode Parser::parenGrouping() alloc_except {
         advance();
     }
 
-    ParseNode list = builder.finalize(sel);
+    ParseNode list = parse_tree.addNode(OP_LIST, sel, children);
 
     return peek(MAPSTO) ? lambda(list) : list;
 }
@@ -618,17 +614,18 @@ Parser::ParseNode Parser::paramList() alloc_except {
         return parse_tree.addTerminal(OP_LIST, sel);
     }
 
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_LIST);
+    static std::vector<ParseNode> params;
+    params.clear();
     do{
         match(NEWLINE);
-        builder.addNaryChild(param());
+        params.push_back(param());
         match(NEWLINE);
     } while(match(COMMA) && noErrors());
     Typeset::Selection sel(left, rMark());
     consume(RIGHTPAREN);
     if(noErrors()) registerGrouping(sel);
 
-    ParseNode list = builder.finalize(sel);
+    ParseNode list = parse_tree.addNode(OP_LIST, sel, params);
 
     if(noErrors())
         return list;
@@ -639,10 +636,10 @@ Parser::ParseNode Parser::paramList() alloc_except {
 Parser::ParseNode Parser::captureList() alloc_except {
     Typeset::Marker left = lMarkPrev();
 
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_LIST);
+    static std::vector<ParseNode> caps;  caps.clear();
     do{
         match(NEWLINE);
-        builder.addNaryChild(isolatedIdentifier());
+        caps.push_back(isolatedIdentifier());
         match(NEWLINE);
     } while(match(COMMA) && noErrors());
     Typeset::Selection sel(left, rMark());
@@ -650,11 +647,10 @@ Parser::ParseNode Parser::captureList() alloc_except {
 
     if(noErrors()){
         registerGrouping(sel);
-        ParseNode list = builder.finalize(sel);
+        ParseNode list = parse_tree.addNode(OP_LIST, sel, caps);
         return list;
     }else{
-        builder.finalize(sel);
-        return parse_tree.addTerminal(OP_LIST, sel);
+        return parse_tree.addTerminal(OP_LIST, sel); //EVENTUALLY: why mock a return value?
     }
 }
 
@@ -856,21 +852,20 @@ Parser::ParseNode Parser::param() alloc_except{
 ParseNode Parser::call(ParseNode id) alloc_except{
     Typeset::Marker lmark = lMark();
 
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_CALL);
-    builder.addNaryChild(id);
+    std::vector<ParseNode> children = {id}; //DO THIS: eliminate nested allocation (elsewhere as well)
     advance();
     if(!peek(RIGHTPAREN)){
-        builder.addNaryChild( expression() );
+        children.push_back(expression());
         while(noErrors() && !peek(RIGHTPAREN)){
             consume(COMMA);
-            builder.addNaryChild( expression() );
+            children.push_back(expression());
         }
     }
 
     Typeset::Marker rmark = rMark();
     registerGrouping(Typeset::Selection(lmark, rmark));
 
-    size_t n = builder.finalize(rmark);
+    size_t n = parse_tree.addNode(OP_CALL, Typeset::Selection(parse_tree.getLeft(id), rmark), children);
     if(noErrors()) advance();
 
     return n;
@@ -1001,13 +996,12 @@ Parser::ParseNode Parser::subscript(ParseNode lhs, const Typeset::Marker& right)
     Typeset::Selection selection(left, right);
     advance();
 
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_SUBSCRIPT_ACCESS);
-    builder.addNaryChild(lhs);
-    do{ builder.addNaryChild(subExpr()); } while(match(COMMA));
+    std::vector<ParseNode> subs = {lhs};
+    do{ subs.push_back(subExpr()); } while(match(COMMA));
 
     consume(ARGCLOSE);
 
-    return builder.finalize(selection);
+    return parse_tree.addNode(OP_SUBSCRIPT_ACCESS, selection, subs);
 }
 
 Parser::ParseNode Parser::dualscript(ParseNode lhs) alloc_except{
@@ -1069,14 +1063,14 @@ ParseNode Parser::matrix() alloc_except{
     size_t argc = c.getConstructArgSize();
     if(argc == 1) return error(SCALAR_MATRIX, c);
 
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_MATRIX);
+    std::vector<ParseNode> elements;
 
     for(size_t i = 0; i < argc; i++){
-        builder.addNaryChild( expression() );
+        elements.push_back(expression());
         consume(ARGCLOSE);
     }
 
-    ParseNode m = builder.finalize(c);
+    ParseNode m = parse_tree.addNode(OP_MATRIX, c, elements);
     parse_tree.setFlag(m, c.getMatrixRows());
 
     return m;
@@ -1086,14 +1080,14 @@ Parser::ParseNode Parser::cases() alloc_except{
     const Typeset::Selection& c = selection();
     advance();
     size_t argc = c.getConstructArgSize();
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_CASES);
+    std::vector<ParseNode> children;
 
     for(size_t i = 0; i < argc; i++){
-        builder.addNaryChild( disjunction() );
+        children.push_back(disjunction());
         consume(ARGCLOSE);
     }
 
-    return builder.finalize(c);
+    return parse_tree.addNode(OP_CASES, c, children);
 }
 
 Parser::ParseNode Parser::squareRoot() alloc_except{

@@ -157,12 +157,13 @@ std::string ParseTree::str(ParseNode node) const{
 template<typename T> ParseNode ParseTree::addNode(Op type, const Typeset::Selection& sel, const T& children) alloc_except {
     ParseNode pn = size();
 
-    resize(size() + FIXED_FIELDS + children.size());
+    resize(size() + FIXED_FIELDS);
     setOp(pn, type);
     setSelection(pn, sel);
     setNumArgs(pn, children.size());
 
-    memcpy(data()+pn+FIXED_FIELDS, &children, children.size()*sizeof(ParseNode));
+    //memcpy(data()+pn+FIXED_FIELDS, &children, children.size()*sizeof(ParseNode));
+    insert(end(), children.begin(), children.end());
 
     return pn;
 }
@@ -304,10 +305,6 @@ const std::string& ParseTree::getString(ParseNode pn) const noexcept{
     return string_lits[getFlag(pn)];
 }
 
-ParseTree::NaryBuilder ParseTree::naryBuilder(size_t type) noexcept {
-    return NaryBuilder(*this, type);
-}
-
 void ParseTree::patchClones() noexcept{
     for(const auto& entry : cloned_vars){
         ParseNode orig = entry.first;
@@ -363,69 +360,6 @@ void ParseTree::graphvizHelper(std::string& src, ParseNode n, size_t& size) cons
     }
 }
 #endif
-
-ParseTree::NaryBuilder::NaryBuilder(ParseTree& tree, size_t type) noexcept
-    : tree(tree), type(type) {}
-
-void ParseTree::NaryBuilder::addNaryChild(size_t index) alloc_except {
-    children.push_back(index);
-}
-
-size_t ParseTree::NaryBuilder::finalize() alloc_except {
-    #ifndef NDEBUG
-    assert(!built);
-    built = true;
-    #endif
-
-    ParseNode pn = tree.size();
-
-    tree.resize(tree.size() + FIXED_FIELDS);
-    tree.setOp(pn, type);
-    tree.setFlag(pn, NONE);
-    tree.setLeft(pn, tree.getLeft(children.front()));
-    tree.setRight(pn, tree.getRight(children.back()));
-    tree.setNumArgs(pn, children.size());
-    tree.insert(tree.end(), children.begin(), children.end());
-
-    return pn;
-}
-
-size_t ParseTree::NaryBuilder::finalize(const Typeset::Marker& right) alloc_except {
-    #ifndef NDEBUG
-    assert(!built);
-    built = true;
-    #endif
-
-    ParseNode pn = tree.size();
-
-    tree.resize(tree.size() + FIXED_FIELDS);
-    tree.setOp(pn, type);
-    tree.setFlag(pn, NONE);
-    tree.setLeft(pn, tree.getLeft(children.front()));
-    tree.setRight(pn, right);
-    tree.setNumArgs(pn, children.size());
-    tree.insert(tree.end(), children.begin(), children.end());
-
-    return pn;
-}
-
-size_t ParseTree::NaryBuilder::finalize(const Typeset::Selection& c) alloc_except {
-    #ifndef NDEBUG
-    assert(!built);
-    built = true;
-    #endif
-
-    ParseNode pn = tree.size();
-
-    tree.resize(tree.size() + FIXED_FIELDS);
-    tree.setOp(pn, type);
-    tree.setFlag(pn, NONE);
-    tree.setSelection(pn, c);
-    tree.setNumArgs(pn, children.size());
-    tree.insert(tree.end(), children.begin(), children.end());
-
-    return pn;
-}
 
 template ParseNode ParseTree::arg<0>(ParseNode) const noexcept;
 template ParseNode ParseTree::arg<1>(ParseNode) const noexcept;

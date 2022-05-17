@@ -345,7 +345,9 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
         left = m;
     }
 
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_IMPLICIT_MULTIPLY);
+    static std::vector<ParseNode> children;
+    children.clear();
+
     left = parse_tree.getLeft(pn);
     m = left;
     while(m != right){
@@ -356,10 +358,10 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
         auto lookup = map.find(sel);
         ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
         resolveReference(pn, lookup->second);
-        builder.addNaryChild(pn);
+        children.push_back(pn);
         left = m;
     }
-    ParseNode mult = builder.finalize();
+    ParseNode mult = parse_tree.addNode(OP_IMPLICIT_MULTIPLY, children);
 
     parse_tree.setFlag(pn, mult);
     parse_tree.setOp(pn, OP_PROXY);
@@ -387,15 +389,15 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
         left = m;
     }
 
+    //DO THIS: what is going on here?
     ParseNode new_id = parse_tree.addTerminal(OP_IDENTIFIER, Typeset::Selection(end, new_right));
-    ParseTree::NaryBuilder script_builder = parse_tree.naryBuilder(parse_tree.getOp(pn));
-    script_builder.addNaryChild(new_id);
+    static std::vector<ParseNode> scripts;  scripts = {new_id};
     for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++)
-        script_builder.addNaryChild(parse_tree.arg(pn, i));
-    ParseNode script = script_builder.finalize(Typeset::Selection(end, right));
+        scripts.push_back(parse_tree.arg(pn, i));
+    ParseNode script = parse_tree.addNode(OP_IDENTIFIER, Typeset::Selection(end, right), scripts);
     resolveExpr(script);
 
-    ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_IMPLICIT_MULTIPLY);
+    static std::vector<ParseNode> children;
     left = parse_tree.getLeft(pn);
     m = left;
     while(m != end){
@@ -404,11 +406,11 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
         auto lookup = map.find(sel);
         ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
         resolveReference(pn, lookup->second);
-        builder.addNaryChild(pn);
+        children.push_back(pn);
         left = m;
     }
-    builder.addNaryChild(script);
-    ParseNode mult = builder.finalize();
+    children.push_back(script);
+    ParseNode mult = parse_tree.addNode(OP_IMPLICIT_MULTIPLY, children);
 
     parse_tree.setFlag(pn, mult);
     parse_tree.setOp(pn, OP_PROXY);
@@ -712,7 +714,7 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end) alloc_
             }
         }
 
-        ParseTree::NaryBuilder ref_builder = parse_tree.naryBuilder(OP_LIST);
+        static std::vector<ParseNode> refs;  refs.clear();
         for(size_t sym_id : closed_refs){
             Op op = symbol_table.symbols[sym_id].declaration_closure_depth <= closure_depth ?
                     OP_READ_UPVALUE :
@@ -722,9 +724,9 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end) alloc_
             ParseNode n = parse_tree.addTerminal(op, sel);
             assert(parse_tree.getSelection(n) == sel);
             parse_tree.setFlag(n, sym_id);
-            ref_builder.addNaryChild(n);
+            refs.push_back(n);
         }
-        ParseNode list = ref_builder.finalize(parse_tree.getSelection(fn));
+        ParseNode list = parse_tree.addNode(OP_LIST, parse_tree.getSelection(fn), refs);
         parse_tree.setRefList(fn, list);
     }else{
         parse_tree.setRefList(fn, parse_tree.addTerminal(OP_LIST, parse_tree.getSelection(fn)));
