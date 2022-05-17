@@ -209,7 +209,7 @@ void SymbolTableBuilder::resolveAssignmentId(ParseNode pn) alloc_except {
 }
 
 void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs, ParseNode rhs) alloc_except {
-    ParseNode id = parse_tree.arg(lhs, 0);
+    ParseNode id = parse_tree.arg<0>(lhs);
 
     Typeset::Selection c = parse_tree.getSelection(id);
     if(parse_tree.getOp(id) != OP_IDENTIFIER){
@@ -241,7 +241,7 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
 
     if(!undefined_vars.empty() & only_trivial_slice){
         if(num_subscripts > 2){
-            const Typeset::Selection& sel = parse_tree.getSelection(parse_tree.arg(lhs, 3));
+            const Typeset::Selection& sel = parse_tree.getSelection(parse_tree.arg<3>(lhs));
             errors.push_back(Error(sel, INDEX_OUT_OF_RANGE));
             return;
         }
@@ -417,22 +417,22 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
 }
 
 void SymbolTableBuilder::resolveConditional1(const Typeset::Selection& name, ParseNode pn) alloc_except {
-    resolveExpr( parse_tree.arg(pn, 0) );
-    resolveBody( name, parse_tree.arg(pn, 1) );
+    resolveExpr( parse_tree.arg<0>(pn) );
+    resolveBody( name, parse_tree.arg<1>(pn) );
 }
 
 void SymbolTableBuilder::resolveConditional2(ParseNode pn) alloc_except {
-    resolveExpr( parse_tree.arg(pn, 0) );
-    resolveBody( symbol_table.ifSel(), parse_tree.arg(pn, 1) );
-    resolveBody( symbol_table.elseSel(), parse_tree.arg(pn, 2) );
+    resolveExpr( parse_tree.arg<0>(pn) );
+    resolveBody( symbol_table.ifSel(), parse_tree.arg<1>(pn) );
+    resolveBody( symbol_table.elseSel(), parse_tree.arg<2>(pn) );
 }
 
 void SymbolTableBuilder::resolveFor(ParseNode pn) alloc_except {
-    increaseLexicalDepth(symbol_table.forSel(), parse_tree.getLeft(parse_tree.arg(pn, 1)));
-    resolveStmt(parse_tree.arg(pn, 0));
-    resolveExpr(parse_tree.arg(pn, 1));
-    resolveStmt(parse_tree.arg(pn, 2));
-    resolveStmt(parse_tree.arg(pn, 3));
+    increaseLexicalDepth(symbol_table.forSel(), parse_tree.getLeft(parse_tree.arg<1>(pn)));
+    resolveStmt(parse_tree.arg<0>(pn));
+    resolveExpr(parse_tree.arg<1>(pn));
+    resolveStmt(parse_tree.arg<2>(pn));
+    resolveStmt(parse_tree.arg<3>(pn));
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
@@ -467,7 +467,7 @@ void SymbolTableBuilder::resolveLambda(ParseNode pn) alloc_except {
     for(size_t i = 0; i < parse_tree.getNumArgs(params); i++)
         defineLocalScope( parse_tree.arg(params, i) );
 
-    ParseNode rhs = parse_tree.arg(pn, 3);
+    ParseNode rhs = parse_tree.arg<3>(pn);
     resolveExpr(rhs);
 
     decreaseClosureDepth(parse_tree.getRight(pn));
@@ -580,11 +580,11 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn) alloc_except {
 
 void SymbolTableBuilder::resolveBig(ParseNode pn) alloc_except {
     increaseLexicalDepth(symbol_table.big(), parse_tree.getLeft(pn));
-    ParseNode assign = parse_tree.arg(pn, 0);
+    ParseNode assign = parse_tree.arg<0>(pn);
     if( parse_tree.getOp(assign) != OP_ASSIGN ) return;
     ParseNode id = parse_tree.lhs(assign);
-    ParseNode stop = parse_tree.arg(pn, 1);
-    ParseNode body = parse_tree.arg(pn, 2);
+    ParseNode stop = parse_tree.arg<1>(pn);
+    ParseNode body = parse_tree.arg<2>(pn);
 
     defineLocalScope(id, false);
     lastDefinedSymbol().is_used = true;

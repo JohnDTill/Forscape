@@ -14,7 +14,7 @@ Parser::Parser(const Scanner& scanner, Typeset::Model* model) noexcept
 void Parser::parseAll() alloc_except {
     reset();
 
-    std::vector<ParseNode> stmts;
+    static std::vector<ParseNode> stmts;  stmts.clear();
     skipNewlines();
     while (!peek(ENDOFFILE)) {
         stmts.push_back(checkedStatement());
@@ -150,8 +150,7 @@ ParseNode Parser::printStatement() alloc_except {
     Typeset::Marker l_group = lMark();
     if(!match(LEFTPAREN)) return error(EXPECT_LPAREN);
 
-    static std::vector<ParseNode> children; //Can make this static since stmts won't nest
-    children.clear();
+    static std::vector<ParseNode> children;  children.clear();
 
     do{
         children.push_back(disjunction());
@@ -190,7 +189,7 @@ ParseNode Parser::blockStatement() alloc_except {
 
     Typeset::Marker left = lMark();
     consume(LEFTBRACKET);
-    std::vector<ParseNode> stmts;
+    std::vector<ParseNode> stmts; //DO THIS: eliminate nested allocation
 
     skipNewlines();
     while(noErrors() && !match(RIGHTBRACKET)){
@@ -301,7 +300,7 @@ Parser::ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
     const size_t nargs = parse_tree.getNumArgs(call)-1;
     assert(nargs >= 1);
 
-    std::vector<ParseNode> args;
+    static std::vector<ParseNode> args;  args.clear();
     for(size_t i = 0; i < nargs; i++) args.push_back(parse_tree.arg(call, i+1));
     ParseNode params = parse_tree.addNode(OP_LIST, args);
 
@@ -331,13 +330,10 @@ ParseNode Parser::expression() noexcept{
 }
 
 ParseNode Parser::equality(ParseNode lhs) alloc_except {
-    //ParseTree::NaryBuilder builder = parse_tree.naryBuilder(OP_EQUAL);
-    //builder.addNaryChild(lhs);
-    std::vector<ParseNode> children = {lhs};
+    std::vector<ParseNode> children = {lhs}; //DO THIS: eliminate nested allocation
 
     do {
         advance();
-        //builder.addNaryChild(expression());
         children.push_back(expression());
     } while(peek(EQUALS));
 
@@ -445,7 +441,7 @@ ParseNode Parser::implicitMult() alloc_except {
 }
 
 Parser::ParseNode Parser::collectImplicitMult(ParseNode n) alloc_except {
-    std::vector<ParseNode> children = {n, rightUnary()};
+    std::vector<ParseNode> children = {n, rightUnary()}; //DO THIS: eliminate nested allocation
 
     for(;;){
         if(!noErrors()) return error_node;
@@ -585,7 +581,7 @@ Parser::ParseNode Parser::parenGrouping() alloc_except {
                 parse_tree.addUnary(OP_GROUP_PAREN, sel, nested);
     }
 
-    std::vector<ParseNode> children = {nested};
+    std::vector<ParseNode> children = {nested}; //DO THIS: eliminate nested allocation
     do{
         consume(COMMA);
         if(!noErrors()) break;
@@ -996,7 +992,7 @@ Parser::ParseNode Parser::subscript(ParseNode lhs, const Typeset::Marker& right)
     Typeset::Selection selection(left, right);
     advance();
 
-    std::vector<ParseNode> subs = {lhs};
+    std::vector<ParseNode> subs = {lhs}; //DO THIS - eliminate nested allocation
     do{ subs.push_back(subExpr()); } while(match(COMMA));
 
     consume(ARGCLOSE);
@@ -1063,7 +1059,7 @@ ParseNode Parser::matrix() alloc_except{
     size_t argc = c.getConstructArgSize();
     if(argc == 1) return error(SCALAR_MATRIX, c);
 
-    std::vector<ParseNode> elements;
+    std::vector<ParseNode> elements; //DO THIS: eliminate nested allocation
 
     for(size_t i = 0; i < argc; i++){
         elements.push_back(expression());
@@ -1080,7 +1076,7 @@ Parser::ParseNode Parser::cases() alloc_except{
     const Typeset::Selection& c = selection();
     advance();
     size_t argc = c.getConstructArgSize();
-    std::vector<ParseNode> children;
+    std::vector<ParseNode> children; //DO THIS: eliminate nested allocation
 
     for(size_t i = 0; i < argc; i++){
         children.push_back(disjunction());

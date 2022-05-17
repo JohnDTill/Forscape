@@ -162,7 +162,6 @@ template<typename T> ParseNode ParseTree::addNode(Op type, const Typeset::Select
     setSelection(pn, sel);
     setNumArgs(pn, children.size());
 
-    //memcpy(data()+pn+FIXED_FIELDS, &children, children.size()*sizeof(ParseNode));
     insert(end(), children.begin(), children.end());
 
     return pn;
