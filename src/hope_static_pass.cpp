@@ -427,7 +427,7 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
                 parse_tree.setFlag(cols, (double)cols_expected);
                 parse_tree.setValue(cols, (double)cols_expected);
 
-                return resolveUnitVector(parse_tree.addTernary(OP_UNIT_VECTOR, sel, child, rows, cols));
+                return resolveUnitVector(parse_tree.addNode<3>(OP_UNIT_VECTOR, sel, {child, rows, cols}));
             }
         }
         case OP_LAMBDA: return resolveLambda(pn);
@@ -848,7 +848,7 @@ size_t StaticPass::callSite(size_t pn) noexcept{
                 //parse_tree.setOp(pn, OP_MULTIPLICATION);
                 //return resolveMult(pn);
                 //EVENTUALLY: need to create a new node since the call isn't cloned
-                return resolveMult(parse_tree.addBinary(OP_MULTIPLICATION, call_expr, rhs));
+                return resolveMult(parse_tree.addNode<2>(OP_MULTIPLICATION, {call_expr, rhs}));
             }else{
                 return error(pn, rhs);
             }
@@ -890,7 +890,7 @@ size_t StaticPass::implicitMult(size_t pn, size_t start) noexcept{
         ParseNode rhs = implicitMult(pn, start+1);
         Type tl = parse_tree.getType(rhs);
         if(tl != NUMERIC) return error(pn, rhs);
-        ParseNode mult = parse_tree.addBinary(OP_MULTIPLICATION, lhs, rhs);
+        ParseNode mult = parse_tree.addNode<2>(OP_MULTIPLICATION, {lhs, rhs});
         return resolveMult(mult);
     }else if(tl == UNINITIALISED){
         return error(pn, lhs, CALL_BEFORE_DEFINE);
@@ -910,7 +910,7 @@ size_t StaticPass::implicitMult(size_t pn, size_t start) noexcept{
         sig.push_back(parse_tree.getCols(rhs));
     }
 
-    ParseNode call = parse_tree.addBinary(OP_CALL, lhs, rhs);
+    ParseNode call = parse_tree.addNode<2>(OP_CALL, {lhs, rhs});
     parse_tree.setType(call, instantiateSetOfFuncs(call, tl, sig));
 
     return call;

@@ -154,198 +154,51 @@ std::string ParseTree::str(ParseNode node) const{
     return getSelection(node).str();
 }
 
-size_t ParseTree::addTerminal(size_t type, const Typeset::Selection& c) alloc_except {
+template<typename T> ParseNode ParseTree::addNode(Op type, const Typeset::Selection& sel, const T& children) alloc_except {
     ParseNode pn = size();
 
-    resize(size() + FIXED_FIELDS);
+    resize(size() + FIXED_FIELDS + children.size());
     setOp(pn, type);
-    setFlag(pn, NONE);
-    setSelection(pn, c);
-    setNumArgs(pn, 0);
+    setSelection(pn, sel);
+    setNumArgs(pn, children.size());
+
+    memcpy(data()+pn+FIXED_FIELDS, &children, children.size()*sizeof(ParseNode));
 
     return pn;
 }
 
-size_t ParseTree::addUnary(size_t type, const Typeset::Selection& c, size_t child) alloc_except {
-    ParseNode pn = size();
-
-    resize(size() + FIXED_FIELDS + 1);
-    setOp(pn, type);
-    setFlag(pn, NONE);
-    setSelection(pn, c);
-    setNumArgs(pn, 1);
-    setArg<0>(pn, child);
-
-    return pn;
+template<typename T> ParseNode ParseTree::addNode(Op type, const T& children) alloc_except {
+    return addNode<T>(type, Typeset::Selection(getLeft(children[0]), getRight(children.back())), children);
 }
 
-size_t ParseTree::addUnary(size_t type, size_t child) alloc_except {
-    ParseNode pn = size();
-
-    resize(size() + FIXED_FIELDS + 1);
-    setOp(pn, type);
-    setFlag(pn, NONE);
-    setSelection(pn, getSelection(child));
-    setNumArgs(pn, 1);
-    setArg<0>(pn, child);
-
-    return pn;
+template<size_t N>
+ParseNode ParseTree::addNode(Op type, const Typeset::Selection& sel, const std::array<ParseNode, N>& children) alloc_except {
+    return addNode<std::array<ParseNode, N>>(type, sel, children);
 }
 
-size_t ParseTree::addLeftUnary(size_t type, const Typeset::Marker& left, size_t child) alloc_except {
-    ParseNode pn = size();
-
-    resize(size() + FIXED_FIELDS + 1);
-    setOp(pn, type);
-    setFlag(pn, NONE);
-    setLeft(pn, left);
-    setRight(pn, getRight(child));
-    setNumArgs(pn, 1);
-    setArg<0>(pn, child);
-
-    return pn;
+template<size_t N>
+ParseNode ParseTree::addNode(Op type, const std::array<ParseNode, N>& children) alloc_except {
+    return addNode<std::array<ParseNode, N>>(type, children);
 }
 
-size_t ParseTree::addRightUnary(size_t type, const Typeset::Marker& right, size_t child) alloc_except {
-    ParseNode pn = size();
-
-    resize(size() + FIXED_FIELDS + 1);
-    setOp(pn, type);
-    setFlag(pn, NONE);
-    setLeft(pn, getLeft(child));
-    setRight(pn, right);
-    setNumArgs(pn, 1);
-    setArg<0>(pn, child);
-
-    return pn;
+ParseNode ParseTree::addTerminal(size_t type, const Typeset::Selection& c) alloc_except {
+    return addNode<0>(type, c, {});
 }
 
-size_t ParseTree::addBinary(size_t type, const Typeset::Selection& c, size_t lhs, size_t rhs) alloc_except {
-    ParseNode pn = size();
-
-    resize(size() + FIXED_FIELDS + 2);
-    setOp(pn, type);
-    setFlag(pn, NONE);
-    setSelection(pn, c);
-    setNumArgs(pn, 2);
-    setArg<0>(pn, lhs);
-    setArg<1>(pn, rhs);
-
-    return pn;
+ParseNode ParseTree::addUnary(size_t type, const Typeset::Selection& c, ParseNode child) alloc_except {
+    return addNode<1>(type, c, {child});
 }
 
-size_t ParseTree::addBinary(size_t type, size_t lhs, size_t rhs) alloc_except {
-    ParseNode pn = size();
-
-    resize(size() + FIXED_FIELDS + 2);
-    setOp(pn, type);
-    setFlag(pn, NONE);
-    setLeft(pn, getLeft(lhs));
-    setRight(pn, getRight(rhs));
-    setNumArgs(pn, 2);
-    setArg<0>(pn, lhs);
-    setArg<1>(pn, rhs);
-
-    return pn;
+ParseNode ParseTree::addUnary(size_t type, size_t child) alloc_except {
+    return addNode<1>(type, {child});
 }
 
-size_t ParseTree::addTernary(size_t type, const Typeset::Selection& c, size_t A, size_t B, size_t C) alloc_except {
-    ParseNode pn = size();
-
-    resize(size() + FIXED_FIELDS + 3);
-    setOp(pn, type);
-    setFlag(pn, NONE);
-    setSelection(pn, c);
-    setNumArgs(pn, 3);
-    setArg<0>(pn, A);
-    setArg<1>(pn, B);
-    setArg<2>(pn, C);
-
-    return pn;
+ParseNode ParseTree::addLeftUnary(size_t type, const Typeset::Marker& left, ParseNode child) alloc_except {
+    return addNode<1>(type, Typeset::Selection(left, getRight(child)), {child});
 }
 
-ParseNode ParseTree::addTernary(Op type, ParseNode A, ParseNode B, ParseNode C) alloc_except {
-    ParseNode pn = size();
-
-    resize(size() + FIXED_FIELDS + 3);
-    setOp(pn, type);
-    setFlag(pn, NONE);
-    setLeft(pn, getLeft(A));
-    setRight(pn, getRight(C));
-    setNumArgs(pn, 3);
-    setArg<0>(pn, A);
-    setArg<1>(pn, B);
-    setArg<2>(pn, C);
-
-    return pn;
-}
-
-ParseNode ParseTree::addQuadary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D) alloc_except {
-    ParseNode pn = size();
-
-    resize(size() + FIXED_FIELDS + 4);
-    setOp(pn, type);
-    setFlag(pn, NONE);
-    setLeft(pn, getLeft(A));
-    setRight(pn, getRight(D));
-    setNumArgs(pn, 4);
-    setArg<0>(pn, A);
-    setArg<1>(pn, B);
-    setArg<2>(pn, C);
-    setArg<3>(pn, D);
-
-    return pn;
-}
-
-ParseNode ParseTree::addQuadary(Op type, const Typeset::Selection &c, ParseNode A, ParseNode B, ParseNode C, ParseNode D) alloc_except {
-    ParseNode pn = size();
-
-    resize(size() + FIXED_FIELDS + 4);
-    setOp(pn, type);
-    setFlag(pn, NONE);
-    setSelection(pn, c);
-    setNumArgs(pn, 4);
-    setArg<0>(pn, A);
-    setArg<1>(pn, B);
-    setArg<2>(pn, C);
-    setArg<3>(pn, D);
-
-    return pn;
-}
-
-ParseNode ParseTree::addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E) alloc_except {
-    ParseNode pn = size();
-
-    resize(size() + FIXED_FIELDS + 5);
-    setOp(pn, type);
-    setFlag(pn, NONE);
-    setLeft(pn, getLeft(A));
-    setRight(pn, getRight(E));
-    setNumArgs(pn, 5);
-    setArg<0>(pn, A);
-    setArg<1>(pn, B);
-    setArg<2>(pn, C);
-    setArg<3>(pn, D);
-    setArg<4>(pn, E);
-
-    return pn;
-}
-
-ParseNode ParseTree::addPentary(Op type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E) alloc_except {
-    ParseNode pn = size();
-
-    resize(size() + FIXED_FIELDS + 5);
-    setOp(pn, type);
-    setFlag(pn, NONE);
-    setSelection(pn, c);
-    setNumArgs(pn, 5);
-    setArg<0>(pn, A);
-    setArg<1>(pn, B);
-    setArg<2>(pn, C);
-    setArg<3>(pn, D);
-    setArg<4>(pn, E);
-
-    return pn;
+ParseNode ParseTree::addRightUnary(size_t type, const Typeset::Marker& right, ParseNode child) alloc_except {
+    return addNode<1>(type, Typeset::Selection(getLeft(child), right), {child});
 }
 
 ParseNode ParseTree::clone(ParseNode pn) alloc_except {
@@ -584,6 +437,15 @@ template void ParseTree::setArg<1>(ParseNode, ParseNode) noexcept;
 template void ParseTree::setArg<2>(ParseNode, ParseNode) noexcept;
 template void ParseTree::setArg<3>(ParseNode, ParseNode) noexcept;
 template void ParseTree::setArg<4>(ParseNode, ParseNode) noexcept;
+template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::vector<ParseNode>&) alloc_except;
+template ParseNode ParseTree::addNode(Op, const std::vector<ParseNode>&) alloc_except;
+template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::array<ParseNode, 2>&) alloc_except;
+template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::array<ParseNode, 3>&) alloc_except;
+template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::array<ParseNode, 4>&) alloc_except;
+template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::array<ParseNode, 5>&) alloc_except;
+template ParseNode ParseTree::addNode(Op, const std::array<ParseNode, 2>&) alloc_except;
+template ParseNode ParseTree::addNode(Op, const std::array<ParseNode, 3>&) alloc_except;
+template ParseNode ParseTree::addNode(Op, const std::array<ParseNode, 5>&) alloc_except;
 
 }
 

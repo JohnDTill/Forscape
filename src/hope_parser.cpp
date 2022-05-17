@@ -89,12 +89,12 @@ ParseNode Parser::ifStatement() alloc_except {
         Typeset::Marker right = rMark();
         Typeset::Selection c(left, right);
 
-        return parse_tree.addTernary(OP_IF_ELSE, c, condition, body, el);
+        return parse_tree.addNode<3>(OP_IF_ELSE, c, {condition, body, el});
     }else{
         Typeset::Marker right = rMark();
         Typeset::Selection c(left, right);
 
-        return parse_tree.addBinary(OP_IF, c, condition, body);
+        return parse_tree.addNode<2>(OP_IF, c, {condition, body});
     }
 }
 
@@ -113,7 +113,7 @@ Parser::ParseNode Parser::whileStatement() alloc_except {
     Typeset::Marker right = rMark();
     Typeset::Selection c(left, right);
 
-    return parse_tree.addBinary(OP_WHILE, c, condition, body);
+    return parse_tree.addNode<2>(OP_WHILE, c, {condition, body});
 }
 
 Parser::ParseNode Parser::forStatement() alloc_except {
@@ -141,7 +141,7 @@ Parser::ParseNode Parser::forStatement() alloc_except {
     Typeset::Marker right = rMark();
     Typeset::Selection c(left, right);
 
-    return parse_tree.addQuadary(OP_FOR, c, initializer, condition, update, body);
+    return parse_tree.addNode<4>(OP_FOR, c, {initializer, condition, update, body});
 }
 
 ParseNode Parser::printStatement() alloc_except {
@@ -226,14 +226,7 @@ Parser::ParseNode Parser::algStatement() alloc_except {
     ParseNode body = blockStatement();
     std::swap(loops_backup, loops);
 
-    return parse_tree.addPentary(
-                OP_ALGORITHM,
-                val_captures,
-                ref_upvalues,
-                params,
-                body,
-                id
-           );
+    return parse_tree.addNode<5>(OP_ALGORITHM, {val_captures, ref_upvalues, params, body, id});
 }
 
 Parser::ParseNode Parser::returnStatement() alloc_except {
@@ -261,7 +254,7 @@ Parser::ParseNode Parser::plotStatement() alloc_except {
     Typeset::Selection sel(m, r);
     registerGrouping(l, r);
 
-    return parse_tree.addPentary(OP_PLOT, sel, title, x_label, x, y_label, y);
+    return parse_tree.addNode<5>(OP_PLOT, sel, {title, x_label, x, y_label, y});
 }
 
 ParseNode Parser::mathStatement() alloc_except {
@@ -325,19 +318,12 @@ Parser::ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
     parse_tree.setRight(params, parse_tree.getRight(parse_tree.arg(params, nargs-1)));
     */
 
-    return parse_tree.addPentary(
-                OP_ALGORITHM,
-                val_captures,
-                ref_upvalues,
-                params,
-                body,
-                id
-           );
+    return parse_tree.addNode<5>(OP_ALGORITHM, {val_captures, ref_upvalues, params, body, id});
 }
 
 ParseNode Parser::assignment(ParseNode lhs) alloc_except {
     advance();
-    ParseNode pn = parse_tree.addBinary(OP_ASSIGN, lhs, expression());
+    ParseNode pn = parse_tree.addNode<2>(OP_ASSIGN, {lhs, expression()});
     parse_tree.setFlag(lhs, match(COMMENT) ? parse_tree.addTerminal(OP_COMMENT, selectionPrev()) : NONE);
     return pn;
 }
@@ -365,7 +351,7 @@ Parser::ParseNode Parser::disjunction() alloc_except {
 
     for(;;){
         switch (currentType()) {
-            case DISJUNCTION: advance(); n = parse_tree.addBinary(OP_LOGICAL_OR, n, conjunction()); break;
+            case DISJUNCTION: advance(); n = parse_tree.addNode<2>(OP_LOGICAL_OR, {n, conjunction()}); break;
             default: return n;
         }
     }
@@ -376,7 +362,7 @@ Parser::ParseNode Parser::conjunction() alloc_except {
 
     for(;;){
         switch (currentType()) {
-            case CONJUNCTION: advance(); n = parse_tree.addBinary(OP_LOGICAL_AND, n, comparison()); break;
+            case CONJUNCTION: advance(); n = parse_tree.addNode<2>(OP_LOGICAL_AND, {n, comparison()}); break;
             default: return n;
         }
     }
@@ -387,12 +373,12 @@ Parser::ParseNode Parser::comparison() alloc_except {
 
     for(;;){
         switch (currentType()) {
-            case EQUALS: advance(); n = parse_tree.addBinary(OP_EQUAL, n, addition()); break;
-            case NOTEQUAL: advance(); n = parse_tree.addBinary(OP_NOT_EQUAL, n, addition()); break;
-            case LESS: advance(); n = parse_tree.addBinary(OP_LESS, n, addition()); break;
-            case LESSEQUAL: advance(); n = parse_tree.addBinary(OP_LESS_EQUAL, n, addition()); break;
-            case GREATER: advance(); n = parse_tree.addBinary(OP_GREATER, n, addition()); break;
-            case GREATEREQUAL: advance(); n = parse_tree.addBinary(OP_GREATER_EQUAL, n, addition()); break;
+            case EQUALS: advance(); n = parse_tree.addNode<2>(OP_EQUAL, {n, addition()}); break;
+            case NOTEQUAL: advance(); n = parse_tree.addNode<2>(OP_NOT_EQUAL, {n, addition()}); break;
+            case LESS: advance(); n = parse_tree.addNode<2>(OP_LESS, {n, addition()}); break;
+            case LESSEQUAL: advance(); n = parse_tree.addNode<2>(OP_LESS_EQUAL, {n, addition()}); break;
+            case GREATER: advance(); n = parse_tree.addNode<2>(OP_GREATER, {n, addition()}); break;
+            case GREATEREQUAL: advance(); n = parse_tree.addNode<2>(OP_GREATER_EQUAL, {n, addition()}); break;
             default: return n;
         }
     }
@@ -403,8 +389,8 @@ ParseNode Parser::addition() alloc_except {
 
     for(;;){
         switch (currentType()) {
-            case PLUS: advance(); n = parse_tree.addBinary(OP_ADDITION, n, multiplication()); break;
-            case MINUS: advance(); n = parse_tree.addBinary(OP_SUBTRACTION, n, multiplication()); break;
+            case PLUS: advance(); n = parse_tree.addNode<2>(OP_ADDITION, {n, multiplication()}); break;
+            case MINUS: advance(); n = parse_tree.addNode<2>(OP_SUBTRACTION, {n, multiplication()}); break;
             default: return n;
         }
     }
@@ -415,15 +401,15 @@ ParseNode Parser::multiplication() alloc_except {
 
     for(;;){
         switch (currentType()) {
-            case MULTIPLY: advance(); n = parse_tree.addBinary(OP_MULTIPLICATION, n, leftUnary()); break;
-            case DIVIDE: advance(); n = parse_tree.addBinary(OP_DIVIDE, n, leftUnary()); break;
-            case FORWARDSLASH: advance(); n = parse_tree.addBinary(OP_FORWARDSLASH, n, leftUnary()); break;
-            case BACKSLASH: advance(); n = parse_tree.addBinary(OP_BACKSLASH, n, leftUnary()); break;
-            case TIMES: if(parsing_dims) return n; advance(); n = parse_tree.addBinary(OP_CROSS, n, leftUnary()); break;
-            case DOTPRODUCT: advance(); n = parse_tree.addBinary(OP_DOT, n, leftUnary()); break;
-            case PERCENT: advance(); n = parse_tree.addBinary(OP_MODULUS, n, leftUnary()); break;
-            case OUTERPRODUCT: advance(); n = parse_tree.addBinary(OP_OUTER_PRODUCT, n, leftUnary()); break;
-            case ODOT: advance(); n = parse_tree.addBinary(OP_ODOT, n, leftUnary()); break;
+            case MULTIPLY: advance(); n = parse_tree.addNode<2>(OP_MULTIPLICATION, {n, leftUnary()}); break;
+            case DIVIDE: advance(); n = parse_tree.addNode<2>(OP_DIVIDE, {n, leftUnary()}); break;
+            case FORWARDSLASH: advance(); n = parse_tree.addNode<2>(OP_FORWARDSLASH, {n, leftUnary()}); break;
+            case BACKSLASH: advance(); n = parse_tree.addNode<2>(OP_BACKSLASH, {n, leftUnary()}); break;
+            case TIMES: if(parsing_dims) return n; advance(); n = parse_tree.addNode<2>(OP_CROSS, {n, leftUnary()}); break;
+            case DOTPRODUCT: advance(); n = parse_tree.addNode<2>(OP_DOT, {n, leftUnary()}); break;
+            case PERCENT: advance(); n = parse_tree.addNode<2>(OP_MODULUS, {n, leftUnary()}); break;
+            case OUTERPRODUCT: advance(); n = parse_tree.addNode<2>(OP_OUTER_PRODUCT, {n, leftUnary()}); break;
+            case ODOT: advance(); n = parse_tree.addNode<2>(OP_ODOT, {n, leftUnary()}); break;
             default: return n;
         }
     }
@@ -489,7 +475,7 @@ ParseNode Parser::rightUnary() alloc_except {
                 advance();
                 return parse_tree.addRightUnary(OP_FACTORIAL, m, n);
             }
-            case CARET: advance(); return parse_tree.addBinary(OP_POWER, n, implicitMult());
+            case CARET: advance(); return parse_tree.addNode<2>(OP_POWER, {n, implicitMult()});
             case TOKEN_SUPERSCRIPT: n = superscript(n); break;
             case TOKEN_SUBSCRIPT: n = subscript(n, rMark()); break;
             case TOKEN_DUALSCRIPT: n = dualscript(n); break;
@@ -711,7 +697,7 @@ Parser::ParseNode Parser::norm() alloc_except {
         }
         ParseNode e = expression();
         consume(ARGCLOSE);
-        return parse_tree.addBinary(OP_NORM_p, s, nested, e);
+        return parse_tree.addNode<2>(OP_NORM_p, s, {nested, e});
     }else{
         return parse_tree.addUnary(OP_NORM, sel, nested);
     }
@@ -727,7 +713,7 @@ Parser::ParseNode Parser::innerProduct() alloc_except {
     if(!match(RIGHTANGLE)) return error(EXPECT_RANGLE);
     registerGrouping(sel);
 
-    return parse_tree.addBinary(OP_INNER_PRODUCT, sel, lhs, rhs);
+    return parse_tree.addNode<2>(OP_INNER_PRODUCT, sel, {lhs, rhs});
 }
 
 ParseNode Parser::integer() alloc_except {
@@ -755,7 +741,7 @@ ParseNode Parser::integer() alloc_except {
             const Typeset::Selection sel(left, rMark());
             sel.formatNumber();
             ParseNode decimal = terminalAndAdvance(OP_INTEGER_LITERAL);
-            ParseNode pn = parse_tree.addBinary(OP_DECIMAL_LITERAL, sel, n, decimal);
+            ParseNode pn = parse_tree.addNode<2>(OP_DECIMAL_LITERAL, sel, {n, decimal});
             double val = stod(parse_tree.str(pn));
             parse_tree.setDouble(pn, val);
             parse_tree.setRows(pn, 1);
@@ -829,7 +815,7 @@ Parser::ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
                 ParseNode elem = expression();
                 if(!noErrors()) return error_node;
                 if(!match(ARGCLOSE)) return error(UNRECOGNIZED_EXPR, Typeset::Selection(rMarkPrev(), rMarkPrev()));
-                ParseNode n = parse_tree.addTernary(OP_UNIT_VECTOR, c, elem, dim0, dim1);
+                ParseNode n = parse_tree.addNode<3>(OP_UNIT_VECTOR, c, {elem, dim0, dim1});
                 parsing_dims = false;
                 return n;
             }
@@ -864,7 +850,7 @@ Parser::ParseNode Parser::isolatedIdentifier() alloc_except{
 
 Parser::ParseNode Parser::param() alloc_except{
     ParseNode id = isolatedIdentifier();
-    return match(EQUALS) ? parse_tree.addBinary(OP_EQUAL, id, expression()) : id;
+    return match(EQUALS) ? parse_tree.addNode<2>(OP_EQUAL, {id, expression()}) : id;
 }
 
 ParseNode Parser::call(ParseNode id) alloc_except{
@@ -902,14 +888,7 @@ Parser::ParseNode Parser::lambda(ParseNode params) alloc_except{
 
     Typeset::Selection sel(left, rMarkPrev());
 
-    return parse_tree.addQuadary(
-                OP_LAMBDA,
-                sel,
-                capture_list,
-                referenced_upvalues,
-                params,
-                e
-           );
+    return parse_tree.addNode<4>(OP_LAMBDA, sel, {capture_list, referenced_upvalues, params, e});
 }
 
 ParseNode Parser::fraction() alloc_except{
@@ -936,7 +915,7 @@ Parser::ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, To
         if(!errors.empty()) return error_node;
         Typeset::Selection sel(c.left, rMarkPrev());
         ParseNode val = parse_tree.addTerminal(OP_IDENTIFIER, parse_tree.getSelection(id));
-        return parse_tree.addTernary(type, sel, expr, id, val);
+        return parse_tree.addNode<3>(type, sel, {expr, id, val});
     }else{
         ParseNode expr = multiplication();
         if(!errors.empty()) return error_node;
@@ -949,7 +928,7 @@ Parser::ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, To
         consume(ARGCLOSE);
         if(!errors.empty()) return error_node;
         ParseNode val = parse_tree.addTerminal(OP_IDENTIFIER, parse_tree.getSelection(id));
-        return parse_tree.addTernary(type, c, expr, id, val);
+        return parse_tree.addNode<3>(type, c, {expr, id, val});
     }
 }
 
@@ -959,7 +938,7 @@ Parser::ParseNode Parser::fractionDefault(const Typeset::Selection& c) alloc_exc
     ParseNode den = expression();
     consume(ARGCLOSE);
 
-    return parse_tree.addBinary(OP_FRACTION, c, num, den);
+    return parse_tree.addNode<2>(OP_FRACTION, c, {num, den});
 }
 
 Parser::ParseNode Parser::binomial() alloc_except{
@@ -971,7 +950,7 @@ Parser::ParseNode Parser::binomial() alloc_except{
     ParseNode k = expression();
     consume(ARGCLOSE);
 
-    return parse_tree.addBinary(OP_BINOMIAL, c, n, k);
+    return parse_tree.addNode<2>(OP_BINOMIAL, c, {n, k});
 }
 
 ParseNode Parser::superscript(ParseNode lhs) alloc_except{
@@ -1009,7 +988,7 @@ ParseNode Parser::superscript(ParseNode lhs) alloc_except{
             n = parse_tree.addUnary(OP_BIJECTIVE_MAPPING, c, lhs);
             break;
         }
-        default: n = parse_tree.addBinary(OP_POWER, c, lhs, expression());
+        default: n = parse_tree.addNode<2>(OP_POWER, c, {lhs, expression()});
     }
 
     consume(ARGCLOSE);
@@ -1062,7 +1041,7 @@ Parser::ParseNode Parser::dualscript(ParseNode lhs) alloc_except{
         default:
             ParseNode power = expression();
             require(ARGCLOSE);
-            return parse_tree.addBinary(OP_POWER, c, subscript(lhs, right), power);
+            return parse_tree.addNode<2>(OP_POWER, c, {subscript(lhs, right), power});
     }
 }
 
@@ -1080,8 +1059,8 @@ Parser::ParseNode Parser::subExpr() alloc_except{
                        parse_tree.addTerminal(OP_SLICE_ALL, selection()) :
                        expression();
 
-    if(!match(COLON)) return parse_tree.addBinary(OP_SLICE, first, second);
-    else return parse_tree.addTernary(OP_SLICE, first, second, expression());
+    if(!match(COLON)) return parse_tree.addNode<2>(OP_SLICE, {first, second});
+    else return parse_tree.addNode<3>(OP_SLICE, {first, second, expression()});
 }
 
 ParseNode Parser::matrix() alloc_except{
@@ -1134,7 +1113,7 @@ Parser::ParseNode Parser::nRoot() alloc_except{
     ParseNode arg = expression();
     consume(ARGCLOSE);
 
-    return parse_tree.addBinary(OP_ROOT, c, arg, base);
+    return parse_tree.addNode<2>(OP_ROOT, c, {arg, base});
 }
 
 Parser::ParseNode Parser::oneDim(Op type) alloc_except{
@@ -1155,7 +1134,7 @@ Parser::ParseNode Parser::twoDims(Op type) alloc_except{
     ParseNode lhs = expression();
     if(!noErrors()) return error_node;
     if(!match(TIMES)) return error(ErrorCode::INVALID_ARGS, Typeset::Selection(rMarkPrev(), rMarkPrev()));
-    ParseNode pn = parse_tree.addBinary(type, c, lhs, expression());
+    ParseNode pn = parse_tree.addNode<2>(type, c, {lhs, expression()});
     if(!noErrors()) return error_node;
     if(!match(ARGCLOSE)) return error(ErrorCode::INVALID_ARGS, Typeset::Selection(rMarkPrev(), rMarkPrev()));
     parsing_dims = false;
@@ -1188,7 +1167,7 @@ Parser::ParseNode Parser::trig(Op type) alloc_except{
         Typeset::Selection c(left, right);
         if(parse_tree.getOp(power) == OP_UNARY_MINUS)
             return error(AMBIGIOUS_TRIG_POWER, c);
-        return parse_tree.addBinary(OP_POWER, c, fn, power);
+        return parse_tree.addNode<2>(OP_POWER, c, {fn, power});
     }
 
     return parse_tree.addLeftUnary(type, left, leftUnary());
@@ -1203,7 +1182,7 @@ const Typeset::Marker& left = lMark();
         ParseNode arg = leftUnary();
         const Typeset::Marker& right = parse_tree.getRight(arg);
         Typeset::Selection c(left, right);
-        return parse_tree.addBinary(OP_LOGARITHM_BASE, c, arg, base);
+        return parse_tree.addNode<2>(OP_LOGARITHM_BASE, c, {arg, base});
     }
 
     return parse_tree.addLeftUnary(OP_LOGARITHM, left, leftUnary());
@@ -1232,7 +1211,7 @@ Parser::ParseNode Parser::twoArgs(Op type) alloc_except{
     consume(RIGHTPAREN);
     Typeset::Selection c(left, right);
 
-    return parse_tree.addBinary(type, c, a, b);
+    return parse_tree.addNode<2>(type, c, {a, b});
 }
 
 Parser::ParseNode Parser::big(Op type) alloc_except{
@@ -1245,7 +1224,7 @@ Parser::ParseNode Parser::big(Op type) alloc_except{
     ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
     if(!match(EQUALS) && !match(LEFTARROW)) return error(UNRECOGNIZED_SYMBOL, err_sel);
     ParseNode start = expression();
-    ParseNode assign = parse_tree.addBinary(OP_ASSIGN, id, start);
+    ParseNode assign = parse_tree.addNode<2>(OP_ASSIGN, {id, start});
     consume(ARGCLOSE);
     if(!noErrors()) return error_node;
     ParseNode body = expression();
@@ -1253,7 +1232,7 @@ Parser::ParseNode Parser::big(Op type) alloc_except{
     const Typeset::Marker& right = rMarkPrev();
     Typeset::Selection sel(left, right);
 
-    return parse_tree.addTernary(type, sel, assign, end, body);
+    return parse_tree.addNode<3>(type, sel, {assign, end, body});
 }
 
 Parser::ParseNode Parser::oneArgConstruct(Op type) alloc_except{

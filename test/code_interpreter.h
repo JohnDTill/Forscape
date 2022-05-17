@@ -4,7 +4,7 @@
 #include "report.h"
 #include "typeset.h"
 
-#if !defined(__MINGW32__) || (__MINGW32__ >= 9)
+#if !defined(__MINGW32__) || (__MINGW64_VERSION_MAJOR > 8)
 #include <filesystem>
 using std::filesystem::directory_iterator;
 #else

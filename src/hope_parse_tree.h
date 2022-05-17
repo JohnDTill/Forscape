@@ -51,19 +51,16 @@ public:
     ParseNode unitVectorCols(ParseNode node) const noexcept;
     void setUnitVectorCols(ParseNode node, ParseNode val) noexcept;
     std::string str(ParseNode node) const;
+    template<typename T> ParseNode addNode(Op type, const Typeset::Selection& sel, const T& children) alloc_except;
+    template<typename T> ParseNode addNode(Op type, const T& children) alloc_except;
+    template<size_t N>
+    ParseNode addNode(Op type, const Typeset::Selection& sel, const std::array<ParseNode, N>& children) alloc_except;
+    template<size_t N> ParseNode addNode(Op type, const std::array<ParseNode, N>& children) alloc_except;
     ParseNode addTerminal(Op type, const Typeset::Selection& c) alloc_except;
     ParseNode addUnary(Op type, const Typeset::Selection& c, ParseNode child) alloc_except;
     ParseNode addUnary(Op type, ParseNode child) alloc_except;
     ParseNode addLeftUnary(Op type, const Typeset::Marker& left, ParseNode child) alloc_except;
     ParseNode addRightUnary(Op type, const Typeset::Marker& right, ParseNode child) alloc_except;
-    ParseNode addBinary(Op type, const Typeset::Selection& c, ParseNode lhs, ParseNode rhs) alloc_except;
-    ParseNode addBinary(Op type, ParseNode lhs, ParseNode rhs) alloc_except;
-    ParseNode addTernary(Op type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C) alloc_except;
-    ParseNode addTernary(Op type, ParseNode A, ParseNode B, ParseNode C) alloc_except;
-    ParseNode addQuadary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D) alloc_except;
-    ParseNode addQuadary(Op type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C, ParseNode D) alloc_except;
-    ParseNode addPentary(Op type, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E) alloc_except;
-    ParseNode addPentary(Op type, const Typeset::Selection& c, ParseNode A, ParseNode B, ParseNode C, ParseNode D, ParseNode E) alloc_except;
     ParseNode clone(ParseNode pn) alloc_except;
     ParseNode getZero(const Typeset::Selection& sel) alloc_except;
     ParseNode getOne(const Typeset::Selection& sel) alloc_except;
@@ -137,6 +134,15 @@ extern template void ParseTree::setArg<1>(ParseNode, ParseNode) noexcept;
 extern template void ParseTree::setArg<2>(ParseNode, ParseNode) noexcept;
 extern template void ParseTree::setArg<3>(ParseNode, ParseNode) noexcept;
 extern template void ParseTree::setArg<4>(ParseNode, ParseNode) noexcept;
+extern template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::vector<ParseNode>&) alloc_except;
+extern template ParseNode ParseTree::addNode(Op, const std::vector<ParseNode>&) alloc_except;
+extern template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::array<ParseNode, 2>&) alloc_except;
+extern template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::array<ParseNode, 3>&) alloc_except;
+extern template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::array<ParseNode, 4>&) alloc_except;
+extern template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::array<ParseNode, 5>&) alloc_except;
+extern template ParseNode ParseTree::addNode(Op, const std::array<ParseNode, 2>&) alloc_except;
+extern template ParseNode ParseTree::addNode(Op, const std::array<ParseNode, 3>&) alloc_except;
+extern template ParseNode ParseTree::addNode(Op, const std::array<ParseNode, 5>&) alloc_except;
 
 }
 
