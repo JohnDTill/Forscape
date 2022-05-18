@@ -8,6 +8,10 @@
 #include <string>
 #include <vector>
 
+#ifndef NDEBUG
+#include <unordered_set>
+#endif
+
 namespace Hope {
 
 namespace Typeset {
@@ -20,40 +24,40 @@ using Typeset::Selection; //EVENTUALLY: Selection may depend on environment, e.g
 namespace Code {
 
 //DO THIS - think about templating the payload and generalising to "AppendOnlyTree"
-class ParseTree : private std::vector<size_t> {
+class ParseTree {
 public:
     HOPE_AST_FIELD_CODEGEN_DECLARATIONS
 
     void clear() noexcept;
     bool empty() const noexcept;
-    const Typeset::Marker& getLeft(ParseNode index) const noexcept;
-    void setLeft(ParseNode index, const Typeset::Marker& m) noexcept;
-    const Typeset::Marker& getRight(ParseNode index) const noexcept;
-    void setRight(ParseNode index, const Typeset::Marker& m) noexcept;
-    ParseNode arg(ParseNode node, size_t index) const noexcept;
-    template<size_t index> ParseNode arg(ParseNode node) const noexcept;
-    void setArg(ParseNode node, size_t index, ParseNode val) noexcept;
-    template<size_t index> void setArg(ParseNode node, ParseNode val) noexcept;
+    const Typeset::Marker& getLeft(ParseNode pn) const noexcept;
+    void setLeft(ParseNode pn, const Typeset::Marker& m) noexcept;
+    const Typeset::Marker& getRight(ParseNode pn) const noexcept;
+    void setRight(ParseNode pn, const Typeset::Marker& m) noexcept;
+    ParseNode arg(ParseNode pn, size_t index) const noexcept;
+    template<size_t index> ParseNode arg(ParseNode pn) const noexcept;
+    void setArg(ParseNode pn, size_t index, ParseNode val) noexcept;
+    template<size_t index> void setArg(ParseNode pn, ParseNode val) noexcept;
     double getDouble(ParseNode pn) const noexcept;
     void setDouble(ParseNode pn, double val) noexcept;
-    ParseNode lhs(ParseNode node) const noexcept;
-    ParseNode rhs(ParseNode node) const noexcept;
-    ParseNode child(ParseNode node) const noexcept;
-    ParseNode valCapList(ParseNode node) const noexcept;
-    ParseNode refCapList(ParseNode node) const noexcept;
+    ParseNode lhs(ParseNode pn) const noexcept;
+    ParseNode rhs(ParseNode pn) const noexcept;
+    ParseNode child(ParseNode pn) const noexcept;
+    ParseNode valCapList(ParseNode pn) const noexcept;
+    ParseNode refCapList(ParseNode pn) const noexcept;
     void setRefList(ParseNode fn, ParseNode list) noexcept;
-    ParseNode paramList(ParseNode node) const noexcept;
-    ParseNode body(ParseNode node) const noexcept;
-    void setBody(ParseNode node, ParseNode body) noexcept;
-    ParseNode algName(ParseNode node) const noexcept;
-    size_t valListSize(ParseNode node) const noexcept;
-    ParseNode unitVectorElem(ParseNode node) const noexcept;
-    void setUnitVectorElem(ParseNode node, ParseNode val) noexcept;
-    ParseNode unitVectorRows(ParseNode node) const noexcept;
-    void setUnitVectorRows(ParseNode node, ParseNode val) noexcept;
-    ParseNode unitVectorCols(ParseNode node) const noexcept;
-    void setUnitVectorCols(ParseNode node, ParseNode val) noexcept;
-    std::string str(ParseNode node) const;
+    ParseNode paramList(ParseNode pn) const noexcept;
+    ParseNode body(ParseNode pn) const noexcept;
+    void setBody(ParseNode pn, ParseNode body) noexcept;
+    ParseNode algName(ParseNode pn) const noexcept;
+    size_t valListSize(ParseNode pn) const noexcept;
+    ParseNode unitVectorElem(ParseNode pn) const noexcept;
+    void setUnitVectorElem(ParseNode pn, ParseNode val) noexcept;
+    ParseNode unitVectorRows(ParseNode pn) const noexcept;
+    void setUnitVectorRows(ParseNode pn, ParseNode val) noexcept;
+    ParseNode unitVectorCols(ParseNode pn) const noexcept;
+    void setUnitVectorCols(ParseNode pn, ParseNode val) noexcept;
+    std::string str(ParseNode pn) const;
     template<typename T> ParseNode addNode(Op type, const Selection& sel, const T& children) alloc_except;
     template<typename T> ParseNode addNode(Op type, const T& children) alloc_except;
     template<size_t N> ParseNode addNode(Op type, const Selection& sel, const std::array<ParseNode, N>& children) alloc_except;
@@ -77,12 +81,14 @@ public:
     void copyDims(ParseNode dest, ParseNode src) noexcept;
     void transposeDims(ParseNode dest, ParseNode src) noexcept;
 
+    //EVENTUALLY: this could leave somewhere else, and might be cleaner
     void prepareNary() alloc_except;
     void addNaryChild(ParseNode pn) alloc_except;
     ParseNode finishNary(Op type, const Selection& sel) alloc_except;
     ParseNode finishNary(Op type) alloc_except;
 
     #ifndef NDEBUG
+    bool isNode(ParseNode pn) const noexcept;
     bool inFinalState() const noexcept;
     std::string toGraphviz() const;
     std::string toGraphviz(ParseNode pn) const;
@@ -94,13 +100,16 @@ public:
     void patchClonedTypes() noexcept;
 
 private:
+    std::vector<size_t> data;
     std::vector<ParseNode> nary_construction_stack;
     std::vector<size_t> nary_start;
 
-    static constexpr size_t UNITIALIZED = std::numeric_limits<size_t>::max();
+    #ifndef NDEBUG
+    std::unordered_set<ParseNode> created;
+    #endif
+
     static constexpr size_t LEFT_MARKER_OFFSET = SELECTION_OFFSET + 2;
     static constexpr size_t RIGHT_MARKER_OFFSET = SELECTION_OFFSET;
-    size_t fields(size_t node) const noexcept{ return getNumArgs(node)+FIXED_FIELDS; }
 
     #ifndef NDEBUG
     void graphvizHelper(std::string& src, ParseNode n, size_t& size) const;

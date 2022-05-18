@@ -10,15 +10,15 @@ using namespace Hope;
 using namespace Code;
 
 static constexpr size_t ITER_SERIAL_VALIDATION = 50000;
-static constexpr size_t ITER_MODEL_LOAD_DELETE = 100;
-static constexpr size_t ITER_SCANNER = 5000;
-static constexpr size_t ITER_PARSER = 500;
-static constexpr size_t ITER_SYMBOL_TABLE = 500;
-static constexpr size_t ITER_INTERPRETER = 500;
+static constexpr size_t ITER_MODEL_LOAD_DELETE = 5000;
+static constexpr size_t ITER_SCANNER = 500000;
+static constexpr size_t ITER_PARSER = 500000;
+static constexpr size_t ITER_SYMBOL_TABLE = 50000;
+static constexpr size_t ITER_INTERPRETER = 5000;
 static constexpr size_t ITER_CALC_SIZE = 30;
 static constexpr size_t ITER_LAYOUT = 500;
 static constexpr size_t ITER_PAINT = 500;
-static constexpr size_t ITER_LOOP = 1;
+static constexpr size_t ITER_LOOP = 500;
 
 void runBenchmark(){
     std::string src = readFile("../test/interpreter_scripts/in/root_finding_terse.txt");

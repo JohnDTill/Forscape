@@ -17,153 +17,169 @@ namespace Code {
 static constexpr size_t UNKNOWN_SIZE = 0;
 
 void ParseTree::clear() noexcept {
-    std::vector<size_t>::clear();
+    data.clear();
     nary_construction_stack.clear();
     nary_start.clear();
     cloned_vars.clear();
+
+    #ifndef NDEBUG
+    created.clear();
+    #endif
 }
 
-bool ParseTree::empty() const noexcept{
-    return std::vector<size_t>::empty();
+bool ParseTree::empty() const noexcept {
+    return data.empty();
 }
 
-const Typeset::Marker& ParseTree::getLeft(ParseNode index) const noexcept{
-    return *reinterpret_cast<const Typeset::Marker*>(data()+index+LEFT_MARKER_OFFSET);
+const Typeset::Marker& ParseTree::getLeft(ParseNode pn) const noexcept {
+    assert(isNode(pn));
+    return *reinterpret_cast<const Typeset::Marker*>(data.data()+pn+LEFT_MARKER_OFFSET);
 }
 
-void ParseTree::setLeft(ParseNode index, const Typeset::Marker& m) noexcept{
-    *reinterpret_cast<Typeset::Marker*>(data()+index+LEFT_MARKER_OFFSET) = m;
+void ParseTree::setLeft(ParseNode pn, const Typeset::Marker& m) noexcept {
+    assert(isNode(pn));
+    *reinterpret_cast<Typeset::Marker*>(data.data()+pn+LEFT_MARKER_OFFSET) = m;
 }
 
-const Typeset::Marker& ParseTree::getRight(ParseNode index) const noexcept{
-    return *reinterpret_cast<const Typeset::Marker*>(data()+index+RIGHT_MARKER_OFFSET);
+const Typeset::Marker& ParseTree::getRight(ParseNode pn) const noexcept {
+    assert(isNode(pn));
+    return *reinterpret_cast<const Typeset::Marker*>(data.data()+pn+RIGHT_MARKER_OFFSET);
 }
 
-void ParseTree::setRight(ParseNode index, const Typeset::Marker& m) noexcept{
-    *reinterpret_cast<Typeset::Marker*>(data()+index+RIGHT_MARKER_OFFSET) = m;
+void ParseTree::setRight(ParseNode pn, const Typeset::Marker& m) noexcept {
+    assert(isNode(pn));
+    *reinterpret_cast<Typeset::Marker*>(data.data()+pn+RIGHT_MARKER_OFFSET) = m;
 }
 
-ParseNode ParseTree::arg(ParseNode node, size_t index) const noexcept{
-    assert(index < getNumArgs(node));
-    return (*this)[node+FIXED_FIELDS+index];
+ParseNode ParseTree::arg(ParseNode pn, size_t index) const noexcept {
+    assert(index < getNumArgs(pn));
+    return data[pn+FIXED_FIELDS+index];
 }
 
 template<size_t index>
-ParseNode ParseTree::arg(ParseNode node) const noexcept{
-    assert(index < getNumArgs(node));
-    return (*this)[node+FIXED_FIELDS+index];
+ParseNode ParseTree::arg(ParseNode pn) const noexcept {
+    assert(index < getNumArgs(pn));
+    return data[pn+FIXED_FIELDS+index];
 }
 
-void ParseTree::setArg(ParseNode node, size_t index, ParseNode val) noexcept{
-    (*this)[node+FIXED_FIELDS+index] = val;
+void ParseTree::setArg(ParseNode pn, size_t index, ParseNode val) noexcept {
+    assert(index < getNumArgs(pn));
+    data[pn+FIXED_FIELDS+index] = val;
 }
 
-double ParseTree::getDouble(ParseNode pn) const noexcept{
+template<size_t index> void ParseTree::setArg(ParseNode pn, ParseNode val) noexcept {
+    assert(index < getNumArgs(pn));
+    data[pn+FIXED_FIELDS+index] = val;
+}
+
+double ParseTree::getDouble(ParseNode pn) const noexcept {
+    assert(isNode(pn));
     const Value& v = getValue(pn);
     assert(v.index() == double_index);
     return std::get<double>(v);
 }
 
-void ParseTree::setDouble(ParseNode pn, double val) noexcept{
+void ParseTree::setDouble(ParseNode pn, double val) noexcept {
+    assert(isNode(pn));
     setValue(pn, val);
 }
 
-template<size_t index>
-void ParseTree::setArg(ParseNode node, ParseNode val) noexcept{
-    (*this)[node+FIXED_FIELDS+index] = val;
+ParseNode ParseTree::lhs(ParseNode pn) const noexcept {
+    assert(getNumArgs(pn) == 2);
+    return arg<0>(pn);
 }
 
-ParseNode ParseTree::lhs(ParseNode node) const noexcept{
-    assert(getNumArgs(node) == 2);
-    return arg<0>(node);
+ParseNode ParseTree::rhs(ParseNode pn) const noexcept {
+    assert(getNumArgs(pn) == 2);
+    return arg<1>(pn);
 }
 
-ParseNode ParseTree::rhs(ParseNode node) const noexcept{
-    assert(getNumArgs(node) == 2);
-    return arg<1>(node);
+ParseNode ParseTree::child(ParseNode pn) const noexcept {
+    assert(getNumArgs(pn) == 1);
+    return arg<0>(pn);
 }
 
-ParseNode ParseTree::child(ParseNode node) const noexcept{
-    assert(getNumArgs(node) == 1);
-    return arg<0>(node);
+ParseNode ParseTree::valCapList(ParseNode pn) const noexcept {
+    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_LAMBDA);
+    return arg<0>(pn);
 }
 
-ParseNode ParseTree::valCapList(ParseNode node) const noexcept{
-    assert(getOp(node) == OP_ALGORITHM || getOp(node) == OP_LAMBDA);
-    return arg<0>(node);
+ParseNode ParseTree::refCapList(ParseNode pn) const noexcept {
+    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_LAMBDA);
+    return arg<1>(pn);
 }
 
-ParseNode ParseTree::refCapList(ParseNode node) const noexcept{
-    assert(getOp(node) == OP_ALGORITHM || getOp(node) == OP_LAMBDA);
-    return arg<1>(node);
-}
-
-void ParseTree::setRefList(ParseNode fn, ParseNode list) noexcept{
+void ParseTree::setRefList(ParseNode fn, ParseNode list) noexcept {
     assert(getOp(fn) == OP_ALGORITHM || getOp(fn) == OP_LAMBDA);
     setArg<1>(fn, list);
 }
 
-ParseNode ParseTree::paramList(ParseNode node) const noexcept{
-    assert(getOp(node) == OP_ALGORITHM || getOp(node) == OP_LAMBDA);
-    return arg<2>(node);
+ParseNode ParseTree::paramList(ParseNode pn) const noexcept {
+    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_LAMBDA);
+    return arg<2>(pn);
 }
 
-ParseNode ParseTree::body(ParseNode node) const noexcept{
-    assert(getOp(node) == OP_ALGORITHM || getOp(node) == OP_LAMBDA);
-    return arg<3>(node);
+ParseNode ParseTree::body(ParseNode pn) const noexcept {
+    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_LAMBDA);
+    return arg<3>(pn);
 }
 
-void ParseTree::setBody(ParseNode node, ParseNode body) noexcept{
-    assert(getOp(node) == OP_ALGORITHM || getOp(node) == OP_LAMBDA);
-    setArg<3>(node, body);
+void ParseTree::setBody(ParseNode pn, ParseNode body) noexcept {
+    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_LAMBDA);
+    setArg<3>(pn, body);
 }
 
-ParseNode ParseTree::algName(ParseNode node) const noexcept{
-    assert(getOp(node) == OP_ALGORITHM);
-    return arg<4>(node);
+ParseNode ParseTree::algName(ParseNode pn) const noexcept {
+    assert(getOp(pn) == OP_ALGORITHM);
+    return arg<4>(pn);
 }
 
-size_t ParseTree::valListSize(ParseNode node) const noexcept{
-    return node == NONE ? 0 : getNumArgs(node);
+size_t ParseTree::valListSize(ParseNode pn) const noexcept {
+    return pn == NONE ? 0 : getNumArgs(pn);
 }
 
-ParseNode ParseTree::unitVectorElem(ParseNode node) const noexcept{
-    return arg<0>(node);
+ParseNode ParseTree::unitVectorElem(ParseNode pn) const noexcept {
+    return arg<0>(pn);
 }
 
-void ParseTree::setUnitVectorElem(ParseNode node, ParseNode val) noexcept{
-    setArg<0>(node, val);
+void ParseTree::setUnitVectorElem(ParseNode pn, ParseNode val) noexcept {
+    setArg<0>(pn, val);
 }
 
-ParseNode ParseTree::unitVectorRows(ParseNode node) const noexcept{
-    return arg<1>(node);
+ParseNode ParseTree::unitVectorRows(ParseNode pn) const noexcept {
+    return arg<1>(pn);
 }
 
-void ParseTree::setUnitVectorRows(ParseNode node, ParseNode val) noexcept{
-    setArg<1>(node, val);
+void ParseTree::setUnitVectorRows(ParseNode pn, ParseNode val) noexcept {
+    setArg<1>(pn, val);
 }
 
-ParseNode ParseTree::unitVectorCols(ParseNode node) const noexcept{
-    return arg<2>(node);
+ParseNode ParseTree::unitVectorCols(ParseNode pn) const noexcept {
+    return arg<2>(pn);
 }
 
-void ParseTree::setUnitVectorCols(ParseNode node, ParseNode val) noexcept{
-    setArg<2>(node, val);
+void ParseTree::setUnitVectorCols(ParseNode pn, ParseNode val) noexcept {
+    setArg<2>(pn, val);
 }
 
-std::string ParseTree::str(ParseNode node) const{
-    return getSelection(node).str();
+std::string ParseTree::str(ParseNode pn) const{
+    return getSelection(pn).str();
 }
 
 template<typename T> ParseNode ParseTree::addNode(Op type, const Typeset::Selection& sel, const T& children) alloc_except {
-    ParseNode pn = size();
+    ParseNode pn = data.size();
 
-    resize(size() + FIXED_FIELDS);
+    data.resize(data.size() + FIXED_FIELDS);
     setOp(pn, type);
     setSelection(pn, sel);
     setNumArgs(pn, children.size());
 
-    insert(end(), children.begin(), children.end());
+    data.insert(data.end(), children.begin(), children.end());
+
+    #ifndef NDEBUG
+    for(ParseNode child : children) assert(child == NONE || isNode(child));
+    created.insert(pn);
+    #endif
 
     return pn;
 }
@@ -202,7 +218,7 @@ ParseNode ParseTree::addRightUnary(size_t type, const Typeset::Marker& right, Pa
 }
 
 ParseNode ParseTree::clone(ParseNode pn) alloc_except {
-    ParseNode cloned = size();
+    ParseNode cloned = data.size();
 
     switch (getOp(pn)) {
         case OP_IDENTIFIER:
@@ -213,24 +229,24 @@ ParseNode ParseTree::clone(ParseNode pn) alloc_except {
             cloned_vars.push_back(std::make_pair(pn, cloned));
     }
 
-    insert(end(), data()+pn, data()+pn+FIXED_FIELDS);
+    data.insert(data.end(), data.data()+pn, data.data()+pn+FIXED_FIELDS);
     size_t nargs = getNumArgs(pn);
-    resize(size() + nargs);
+    data.resize(data.size() + nargs);
     for(size_t i = 0; i < nargs; i++){
         ParseNode a = arg(pn, i);
-        if(a == NONE){
-            setArg(cloned, i, NONE);
-        }else{
-            setArg(cloned, i, clone(a));
-        }
+        setArg(cloned, i, (a==NONE) ? NONE : clone(a));
     }
+
+    #ifndef NDEBUG
+    created.insert(cloned);
+    #endif
 
     return cloned;
 }
 
 ParseNode ParseTree::getZero(const Typeset::Selection& sel) alloc_except {
     ParseNode pn = addTerminal(OP_INTEGER_LITERAL, sel);
-    setFlag(pn, 0.0);
+    setDouble(pn, 0.0);
     setScalar(pn);
 
     return pn;
@@ -244,51 +260,51 @@ ParseNode ParseTree::getOne(const Typeset::Selection& sel) alloc_except {
     return pn;
 }
 
-bool ParseTree::definitelyScalar(ParseNode pn) const noexcept{
+bool ParseTree::definitelyScalar(ParseNode pn) const noexcept {
     return getRows(pn) == 1 && getCols(pn) == 1;
 }
 
-bool ParseTree::definitelyNotScalar(ParseNode pn) const noexcept{
+bool ParseTree::definitelyNotScalar(ParseNode pn) const noexcept {
     return getRows(pn) > 1 || getCols(pn) > 1;
 }
 
-bool ParseTree::definitelyMatrix(ParseNode pn) const noexcept{
+bool ParseTree::definitelyMatrix(ParseNode pn) const noexcept {
     return getRows(pn) > 1 && getCols(pn) > 1;
 }
 
-bool ParseTree::definitelyR3(ParseNode pn) const noexcept{
+bool ParseTree::definitelyR3(ParseNode pn) const noexcept {
     return getRows(pn) == 3 && getCols(pn) == 1;
 }
 
-bool ParseTree::nonSquare(ParseNode pn) const noexcept{
+bool ParseTree::nonSquare(ParseNode pn) const noexcept {
     size_t rows = getRows(pn);
     size_t cols = getCols(pn);
     return rows != UNKNOWN_SIZE && cols != UNKNOWN_SIZE && rows != cols;
 }
 
-bool ParseTree::maybeR3(ParseNode pn) const noexcept{
+bool ParseTree::maybeR3(ParseNode pn) const noexcept {
     size_t rows = getRows(pn);
     size_t cols = getCols(pn);
     return (rows == 3 || rows == UNKNOWN_SIZE) && (cols == 1 || cols == UNKNOWN_SIZE);
 }
 
-void ParseTree::setScalar(ParseNode pn) noexcept{
+void ParseTree::setScalar(ParseNode pn) noexcept {
     setType(pn, StaticPass::NUMERIC);
     setRows(pn, 1);
     setCols(pn, 1);
 }
 
-void ParseTree::setR3(ParseNode pn) noexcept{
+void ParseTree::setR3(ParseNode pn) noexcept {
     setRows(pn, 3);
     setCols(pn, 1);
 }
 
-void ParseTree::copyDims(ParseNode dest, ParseNode src) noexcept{
+void ParseTree::copyDims(ParseNode dest, ParseNode src) noexcept {
     setRows(dest, getRows(src));
     setCols(dest, getCols(src));
 }
 
-void ParseTree::transposeDims(ParseNode dest, ParseNode src) noexcept{
+void ParseTree::transposeDims(ParseNode dest, ParseNode src) noexcept {
     setRows(dest, getCols(src));
     setCols(dest, getRows(src));
 }
@@ -298,6 +314,7 @@ void ParseTree::prepareNary() alloc_except {
 }
 
 void ParseTree::addNaryChild(ParseNode pn) alloc_except {
+    assert(isNode(pn));
     nary_construction_stack.push_back(pn);
 }
 
@@ -305,15 +322,19 @@ ParseNode ParseTree::finishNary(Op type, const Typeset::Selection& sel) alloc_ex
     assert(!nary_start.empty());
     size_t N = nary_construction_stack.size()-nary_start.back();
 
-    ParseNode pn = size();
-    resize(size() + FIXED_FIELDS);
+    ParseNode pn = data.size();
+    data.resize(data.size() + FIXED_FIELDS);
     setOp(pn, type);
     setSelection(pn, sel);
     setNumArgs(pn, N);
-    insert(end(), nary_construction_stack.end()-N, nary_construction_stack.end());
+    data.insert(data.end(), nary_construction_stack.end()-N, nary_construction_stack.end());
 
     nary_construction_stack.resize(nary_start.back());
     nary_start.pop_back();
+
+    #ifndef NDEBUG
+    created.insert(pn);
+    #endif
 
     return pn;
 }
@@ -324,7 +345,7 @@ ParseNode ParseTree::finishNary(Op type) alloc_except {
                           getLeft(nary_construction_stack[nary_start.back()]), getRight(nary_construction_stack.back())));
 }
 
-void ParseTree::patchClones() noexcept{
+void ParseTree::patchClones() noexcept {
     for(const auto& entry : cloned_vars){
         ParseNode orig = entry.first;
         ParseNode clone = entry.second;
@@ -334,7 +355,7 @@ void ParseTree::patchClones() noexcept{
     }
 }
 
-void ParseTree::patchClonedTypes() noexcept{
+void ParseTree::patchClonedTypes() noexcept {
     for(const auto& entry : cloned_vars){
         ParseNode orig = entry.first;
         ParseNode clone = entry.second;
@@ -346,6 +367,10 @@ void ParseTree::patchClonedTypes() noexcept{
 }
 
 #ifndef NDEBUG
+bool ParseTree::isNode(ParseNode pn) const noexcept {
+    return created.find(pn) != created.end();
+}
+
 bool ParseTree::inFinalState() const noexcept {
     return nary_construction_stack.empty() && nary_start.empty();
 }

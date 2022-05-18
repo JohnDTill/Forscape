@@ -49,7 +49,9 @@ int main(int argc, char* argv[]){
     if(passing) printf("\nAll passing\n\n");
     else printf("\nTEST(S) FAILED\n\n");
 
+    #ifdef NDEBUG
     if(passing) runBenchmark();
+    #endif
 
     Hope::logger->info("TEST_END");
 

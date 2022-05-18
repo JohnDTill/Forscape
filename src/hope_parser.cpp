@@ -215,6 +215,7 @@ ParseNode Parser::blockStatement() alloc_except {
 }
 
 ParseNode Parser::algStatement() alloc_except {
+    Typeset::Marker left = lMark();
     advance();
 
     ParseNode id = isolatedIdentifier();
@@ -233,8 +234,9 @@ ParseNode Parser::algStatement() alloc_except {
     std::swap(loops_backup, loops);
     ParseNode body = blockStatement();
     std::swap(loops_backup, loops);
+    Typeset::Selection sel(left, rMarkPrev());
 
-    return parse_tree.addNode<5>(OP_ALGORITHM, {val_captures, ref_upvalues, params, body, id});
+    return parse_tree.addNode<5>(OP_ALGORITHM, sel, {val_captures, ref_upvalues, params, body, id});
 }
 
 ParseNode Parser::returnStatement() alloc_except {
@@ -320,7 +322,8 @@ ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
     parse_tree.setLeft(params, parse_tree.getLeft(parse_tree.arg<0>(params)));
     parse_tree.setRight(params, parse_tree.getRight(parse_tree.arg(params, nargs-1)));
 
-    return parse_tree.addNode<5>(OP_ALGORITHM, {val_captures, ref_upvalues, params, body, id});
+    Typeset::Selection sel(parse_tree.getLeft(id), parse_tree.getRight(body));
+    return parse_tree.addNode<5>(OP_ALGORITHM, sel, {val_captures, ref_upvalues, params, body, id});
 }
 
 ParseNode Parser::assignment(ParseNode lhs) alloc_except {
@@ -625,14 +628,12 @@ ParseNode Parser::paramList() alloc_except {
     } while(match(COMMA) && noErrors());
     Typeset::Selection sel(left, rMark());
     consume(RIGHTPAREN);
-    if(noErrors()) registerGrouping(sel);
-
-    ParseNode list = parse_tree.finishNary(OP_LIST, sel);
-
-    if(noErrors())
-        return list;
-    else
-        return parse_tree.addTerminal(OP_LIST, sel);
+    if(noErrors()){
+        registerGrouping(sel);
+        return parse_tree.finishNary(OP_LIST, sel);
+    }else{
+        return error_node;
+    }
 }
 
 ParseNode Parser::captureList() alloc_except {
@@ -649,10 +650,9 @@ ParseNode Parser::captureList() alloc_except {
 
     if(noErrors()){
         registerGrouping(sel);
-        ParseNode list = parse_tree.finishNary(OP_LIST, sel);
-        return list;
+        return parse_tree.finishNary(OP_LIST, sel);
     }else{
-        return parse_tree.addTerminal(OP_LIST, sel); //EVENTUALLY: why mock a return value?
+        return error_node;
     }
 }
 
@@ -733,9 +733,7 @@ ParseNode Parser::integer() alloc_except {
         }
         case PERIOD:{
             advance();
-            if(!peek(INTEGER)){
-                return error(TRAILING_DOT, Typeset::Selection(left, rMarkPrev()));
-            }
+            if(!peek(INTEGER)) return error(TRAILING_DOT, Typeset::Selection(left, rMarkPrev()));
             const Typeset::Selection sel(left, rMark());
             sel.formatNumber();
             ParseNode decimal = terminalAndAdvance(OP_INTEGER_LITERAL);
