@@ -1,5 +1,5 @@
 property,type,word
-op,ParseNodeType,y
+op,Op,y
 flag,size_t,y
 type,size_t,y
 rows,size_t,y

@@ -67,6 +67,11 @@ void ParseTree::setArg(ParseNode pn, size_t index, ParseNode val) noexcept {
     data[pn+FIXED_FIELDS+index] = val;
 }
 
+void ParseTree::reduceNumArgs(ParseNode pn, size_t sze) noexcept {
+    assert(getNumArgs(pn) >= sze);
+    setNumArgs(pn, sze);
+}
+
 template<size_t index> void ParseTree::setArg(ParseNode pn, ParseNode val) noexcept {
     assert(index < getNumArgs(pn));
     data[pn+FIXED_FIELDS+index] = val;
@@ -162,24 +167,22 @@ void ParseTree::setUnitVectorCols(ParseNode pn, ParseNode val) noexcept {
     setArg<2>(pn, val);
 }
 
-std::string ParseTree::str(ParseNode pn) const{
+std::string ParseTree::str(ParseNode pn) const alloc_except {
     return getSelection(pn).str();
 }
 
 template<typename T> ParseNode ParseTree::addNode(Op type, const Typeset::Selection& sel, const T& children) alloc_except {
     ParseNode pn = data.size();
-
+    #ifndef NDEBUG
+    for(ParseNode child : children) assert(child == NONE || isNode(child));
+    created.insert(pn);
+    #endif
     data.resize(data.size() + FIXED_FIELDS);
     setOp(pn, type);
     setSelection(pn, sel);
     setNumArgs(pn, children.size());
 
     data.insert(data.end(), children.begin(), children.end());
-
-    #ifndef NDEBUG
-    for(ParseNode child : children) assert(child == NONE || isNode(child));
-    created.insert(pn);
-    #endif
 
     return pn;
 }
@@ -219,7 +222,9 @@ ParseNode ParseTree::addRightUnary(size_t type, const Typeset::Marker& right, Pa
 
 ParseNode ParseTree::clone(ParseNode pn) alloc_except {
     ParseNode cloned = data.size();
-
+    #ifndef NDEBUG
+    created.insert(cloned);
+    #endif
     switch (getOp(pn)) {
         case OP_IDENTIFIER:
         case OP_READ_GLOBAL:
@@ -236,10 +241,6 @@ ParseNode ParseTree::clone(ParseNode pn) alloc_except {
         ParseNode a = arg(pn, i);
         setArg(cloned, i, (a==NONE) ? NONE : clone(a));
     }
-
-    #ifndef NDEBUG
-    created.insert(cloned);
-    #endif
 
     return cloned;
 }
@@ -323,6 +324,9 @@ ParseNode ParseTree::finishNary(Op type, const Typeset::Selection& sel) alloc_ex
     size_t N = nary_construction_stack.size()-nary_start.back();
 
     ParseNode pn = data.size();
+    #ifndef NDEBUG
+    created.insert(pn);
+    #endif
     data.resize(data.size() + FIXED_FIELDS);
     setOp(pn, type);
     setSelection(pn, sel);
@@ -331,10 +335,6 @@ ParseNode ParseTree::finishNary(Op type, const Typeset::Selection& sel) alloc_ex
 
     nary_construction_stack.resize(nary_start.back());
     nary_start.pop_back();
-
-    #ifndef NDEBUG
-    created.insert(pn);
-    #endif
 
     return pn;
 }

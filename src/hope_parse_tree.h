@@ -23,7 +23,7 @@ using Typeset::Selection; //EVENTUALLY: Selection may depend on environment, e.g
 
 namespace Code {
 
-//DO THIS - think about templating the payload and generalising to "AppendOnlyTree"
+
 class ParseTree {
 public:
     HOPE_AST_FIELD_CODEGEN_DECLARATIONS
@@ -38,6 +38,7 @@ public:
     template<size_t index> ParseNode arg(ParseNode pn) const noexcept;
     void setArg(ParseNode pn, size_t index, ParseNode val) noexcept;
     template<size_t index> void setArg(ParseNode pn, ParseNode val) noexcept;
+    void reduceNumArgs(ParseNode pn, size_t sze) noexcept;
     double getDouble(ParseNode pn) const noexcept;
     void setDouble(ParseNode pn, double val) noexcept;
     ParseNode lhs(ParseNode pn) const noexcept;
@@ -57,7 +58,7 @@ public:
     void setUnitVectorRows(ParseNode pn, ParseNode val) noexcept;
     ParseNode unitVectorCols(ParseNode pn) const noexcept;
     void setUnitVectorCols(ParseNode pn, ParseNode val) noexcept;
-    std::string str(ParseNode pn) const;
+    std::string str(ParseNode pn) const alloc_except;
     template<typename T> ParseNode addNode(Op type, const Selection& sel, const T& children) alloc_except;
     template<typename T> ParseNode addNode(Op type, const T& children) alloc_except;
     template<size_t N> ParseNode addNode(Op type, const Selection& sel, const std::array<ParseNode, N>& children) alloc_except;
@@ -81,7 +82,6 @@ public:
     void copyDims(ParseNode dest, ParseNode src) noexcept;
     void transposeDims(ParseNode dest, ParseNode src) noexcept;
 
-    //EVENTUALLY: this could leave somewhere else, and might be cleaner
     void prepareNary() alloc_except;
     void addNaryChild(ParseNode pn) alloc_except;
     ParseNode finishNary(Op type, const Selection& sel) alloc_except;

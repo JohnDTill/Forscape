@@ -317,7 +317,7 @@ ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
     ParseNode params = call;
     for(size_t i = 0; i < nargs; i++)
         parse_tree.setArg(params, i, parse_tree.arg(call, i+1));
-    parse_tree.setNumArgs(params, nargs);
+    parse_tree.reduceNumArgs(params, nargs);
     parse_tree.setOp(params, OP_LIST);
     parse_tree.setLeft(params, parse_tree.getLeft(parse_tree.arg<0>(params)));
     parse_tree.setRight(params, parse_tree.getRight(parse_tree.arg(params, nargs-1)));

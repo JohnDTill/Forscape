@@ -1102,7 +1102,7 @@ ParseNode StaticPass::resolveIdentity(ParseNode pn){
     if(parse_tree.getRows(pn) != UNKNOWN_SIZE && parse_tree.getCols(pn) != UNKNOWN_SIZE){
         parse_tree.setOp(pn, OP_MATRIX_LITERAL);
         parse_tree.setValue(pn, Eigen::MatrixXd::Identity(parse_tree.getRows(pn), parse_tree.getCols(pn)));
-        parse_tree.setNumArgs(pn, 0);
+        parse_tree.reduceNumArgs(pn, 0);
         return pn;
     }
 
@@ -1281,7 +1281,7 @@ ParseNode StaticPass::resolveOnesMatrix(ParseNode pn){
     if(parse_tree.getRows(pn) != UNKNOWN_SIZE && parse_tree.getCols(pn) != UNKNOWN_SIZE){
         parse_tree.setOp(pn, OP_MATRIX_LITERAL);
         parse_tree.setValue(pn, Eigen::MatrixXd::Ones(parse_tree.getRows(pn), parse_tree.getCols(pn)));
-        parse_tree.setNumArgs(pn, 0);
+        parse_tree.reduceNumArgs(pn, 0);
         return pn;
     }
 
@@ -1313,12 +1313,12 @@ ParseNode StaticPass::resolvePower(ParseNode pn){
                 parse_tree.setFlag(pn, val);
                 parse_tree.setValue(pn, val);
                 parse_tree.setOp(pn, OP_DECIMAL_LITERAL);
-                parse_tree.setNumArgs(pn, 0);
+                parse_tree.reduceNumArgs(pn, 0);
                 parse_tree.setScalar(pn);
                 return pn;
             }else if(rhs_val == -1){
                 parse_tree.setOp(pn, OP_INVERT);
-                parse_tree.setNumArgs(pn, 1);
+                parse_tree.reduceNumArgs(pn, 1);
                 return resolveInverse(pn);
             }else if(rhs_val == 1){
                 return parse_tree.lhs(pn);
@@ -1401,7 +1401,7 @@ ParseNode StaticPass::resolveUnitVector(ParseNode pn){
         parse_tree.setOp(pn, OP_MATRIX_LITERAL);
         if(r > 1) parse_tree.setValue(pn, Eigen::VectorXd::Unit(r, e));
         else parse_tree.setValue(pn, Eigen::RowVectorXd::Unit(c, e));
-        parse_tree.setNumArgs(pn, 0);
+        parse_tree.reduceNumArgs(pn, 0);
         return pn;
     }
 
@@ -1433,7 +1433,7 @@ ParseNode StaticPass::resolveZeroMatrix(ParseNode pn){
     if(parse_tree.getRows(pn) != UNKNOWN_SIZE && parse_tree.getCols(pn) != UNKNOWN_SIZE){
         parse_tree.setOp(pn, OP_MATRIX_LITERAL);
         parse_tree.setValue(pn, Eigen::MatrixXd::Zero(parse_tree.getRows(pn), parse_tree.getCols(pn)));
-        parse_tree.setNumArgs(pn, 0);
+        parse_tree.reduceNumArgs(pn, 0);
         return pn;
     }
 

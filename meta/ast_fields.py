@@ -41,7 +41,7 @@ def main():
                 ref = f"data[pn+{field.property.upper()}_OFFSET]"
                 const_ref = f"data[pn+{field.property.upper()}_OFFSET]"
             else:
-                prev = f"{field.property.upper()}_OFFSET + sizeof({field.type})"
+                prev = f"{field.property.upper()}_OFFSET + sizeof({field.type})/sizeof(size_t)"
                 T = f"const {field.type}&"
                 ref = f"*reinterpret_cast<{field.type}*>(data.data()+pn+{field.property.upper()}_OFFSET)"
                 const_ref = f"*reinterpret_cast<const {field.type}*>(data.data()+pn+{field.property.upper()}_OFFSET)"
@@ -51,11 +51,13 @@ def main():
             header_writer.write(f"    void {setter}(ParseNode pn, {T} {field.property}) noexcept;  \\\n")
             source_file.write(
                 f"{T} ParseTree::{getter}(ParseNode pn) const noexcept{{\n"
+                "    assert(isNode(pn));\n"
                 f"    return {const_ref};\n"
                 "}\n\n"
             )
             source_file.write(
                 f"void ParseTree::{setter}(ParseNode pn, {T} {field.property}) noexcept{{\n"
+                "    assert(isNode(pn));\n"
                 f"    {ref} = {field.property};\n"
                 "}\n\n"
             )
