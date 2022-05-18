@@ -19,8 +19,11 @@ public:
     Parser(const Scanner& scanner, Typeset::Model* model) noexcept;
     void parseAll() alloc_except;
     ParseTree parse_tree;
+
+    #ifndef HOPE_TYPESET_HEADLESS
     std::unordered_map<Typeset::Marker, Typeset::Marker> open_symbols;
     std::unordered_map<Typeset::Marker, Typeset::Marker> close_symbols;
+    #endif
 
 private:
     void reset() noexcept;

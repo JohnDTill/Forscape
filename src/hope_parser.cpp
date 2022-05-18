@@ -34,8 +34,10 @@ void Parser::parseAll() alloc_except {
 
 void Parser::reset() noexcept {
     parse_tree.clear();
+    #ifndef HOPE_TYPESET_HEADLESS
     open_symbols.clear();
     close_symbols.clear();
+    #endif
     index = 0;
     parsing_dims = false;
     loops = 0;
@@ -47,9 +49,11 @@ void Parser::registerGrouping(const Typeset::Selection& sel) alloc_except {
 }
 
 void Parser::registerGrouping(const Typeset::Marker& l, const Typeset::Marker& r) alloc_except {
+    #ifndef HOPE_TYPESET_HEADLESS
     if(!noErrors()) return;
     open_symbols[l] = r;
     close_symbols[r] = l;
+    #endif
 }
 
 ParseNode Parser::checkedStatement() alloc_except {
@@ -565,8 +569,6 @@ ParseNode Parser::primary() alloc_except {
 
 ParseNode Parser::string() noexcept{
     ParseNode pn = terminalAndAdvance(OP_STRING);
-    std::string str = parse_tree.str(pn);
-    parse_tree.setString(pn, str.substr(1, str.size()-2));
     return pn;
 }
 

@@ -7,10 +7,6 @@
 #include <limits>
 #include <vector>
 
-#ifndef NDEBUG
-#include <iostream>
-#endif
-
 namespace Hope {
 
 namespace Code {
@@ -21,7 +17,7 @@ typedef size_t ScopeId;
 typedef size_t SymbolId;
 static constexpr size_t UNKNOWN_SIZE = 0;
 
-struct Symbol{
+struct Symbol {
     size_t declaration_lexical_depth;
     size_t declaration_closure_depth;
     size_t flag;
@@ -132,6 +128,7 @@ public:
     const Typeset::Selection& getSel(size_t sym_index) const noexcept;
     void getSymbolOccurences(const Typeset::Marker& loc, std::vector<Typeset::Selection>& found) const;
 
+    //DO THIS - fix this stupid hack
     Typeset::Selection global() noexcept{
         return Typeset::Selection(&global_name, 0, 6);
     }

@@ -4,7 +4,6 @@
 #include <hope_common.h>
 #include <hope_static_pass.h>
 #include "typeset_selection.h"
-#include <span>
 
 #ifndef NDEBUG
 #include <code_parsenodegraphviz.h>
@@ -22,7 +21,6 @@ void ParseTree::clear() noexcept {
     nary_construction_stack.clear();
     nary_start.clear();
     cloned_vars.clear();
-    string_lits.clear(); //DO THIS - avoid nested alloc
 }
 
 bool ParseTree::empty() const noexcept{
@@ -295,17 +293,6 @@ void ParseTree::transposeDims(ParseNode dest, ParseNode src) noexcept{
     setCols(dest, getRows(src));
 }
 
-void ParseTree::setString(ParseNode pn, const std::string& str) alloc_except{
-    assert(getOp(pn) == OP_STRING);
-    setFlag(pn, string_lits.size());
-    string_lits.push_back(str);
-}
-
-const std::string& ParseTree::getString(ParseNode pn) const noexcept{
-    assert(getOp(pn) == OP_STRING);
-    return string_lits[getFlag(pn)];
-}
-
 void ParseTree::prepareNary() alloc_except {
     nary_start.push_back(nary_construction_stack.size());
 }
@@ -317,7 +304,14 @@ void ParseTree::addNaryChild(ParseNode pn) alloc_except {
 ParseNode ParseTree::finishNary(Op type, const Typeset::Selection& sel) alloc_except {
     assert(!nary_start.empty());
     size_t N = nary_construction_stack.size()-nary_start.back();
-    ParseNode pn = addNode(type, sel, std::span<ParseNode>(nary_construction_stack.end()-N, N));
+
+    ParseNode pn = size();
+    resize(size() + FIXED_FIELDS);
+    setOp(pn, type);
+    setSelection(pn, sel);
+    setNumArgs(pn, N);
+    insert(end(), nary_construction_stack.end()-N, nary_construction_stack.end());
+
     nary_construction_stack.resize(nary_start.back());
     nary_start.pop_back();
 

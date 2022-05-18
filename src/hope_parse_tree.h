@@ -15,8 +15,11 @@ class Selection;
 struct Marker;
 }
 
+using Typeset::Selection; //EVENTUALLY: Selection may depend on environment, e.g. string_view
+
 namespace Code {
 
+//DO THIS - think about templating the payload and generalising to "AppendOnlyTree"
 class ParseTree : private std::vector<size_t> {
 public:
     HOPE_AST_FIELD_CODEGEN_DECLARATIONS
@@ -51,19 +54,18 @@ public:
     ParseNode unitVectorCols(ParseNode node) const noexcept;
     void setUnitVectorCols(ParseNode node, ParseNode val) noexcept;
     std::string str(ParseNode node) const;
-    template<typename T> ParseNode addNode(Op type, const Typeset::Selection& sel, const T& children) alloc_except;
+    template<typename T> ParseNode addNode(Op type, const Selection& sel, const T& children) alloc_except;
     template<typename T> ParseNode addNode(Op type, const T& children) alloc_except;
-    template<size_t N>
-    ParseNode addNode(Op type, const Typeset::Selection& sel, const std::array<ParseNode, N>& children) alloc_except;
+    template<size_t N> ParseNode addNode(Op type, const Selection& sel, const std::array<ParseNode, N>& children) alloc_except;
     template<size_t N> ParseNode addNode(Op type, const std::array<ParseNode, N>& children) alloc_except;
-    ParseNode addTerminal(Op type, const Typeset::Selection& c) alloc_except;
-    ParseNode addUnary(Op type, const Typeset::Selection& c, ParseNode child) alloc_except;
+    ParseNode addTerminal(Op type, const Selection& c) alloc_except;
+    ParseNode addUnary(Op type, const Selection& c, ParseNode child) alloc_except;
     ParseNode addUnary(Op type, ParseNode child) alloc_except;
     ParseNode addLeftUnary(Op type, const Typeset::Marker& left, ParseNode child) alloc_except;
     ParseNode addRightUnary(Op type, const Typeset::Marker& right, ParseNode child) alloc_except;
     ParseNode clone(ParseNode pn) alloc_except;
-    ParseNode getZero(const Typeset::Selection& sel) alloc_except;
-    ParseNode getOne(const Typeset::Selection& sel) alloc_except;
+    ParseNode getZero(const Selection& sel) alloc_except;
+    ParseNode getOne(const Selection& sel) alloc_except;
     bool definitelyScalar(ParseNode pn) const noexcept;
     bool definitelyNotScalar(ParseNode pn) const noexcept;
     bool definitelyMatrix(ParseNode pn) const noexcept;
@@ -74,12 +76,10 @@ public:
     void setR3(ParseNode pn) noexcept;
     void copyDims(ParseNode dest, ParseNode src) noexcept;
     void transposeDims(ParseNode dest, ParseNode src) noexcept;
-    void setString(ParseNode pn, const std::string& str) alloc_except;
-    const std::string& getString(ParseNode pn) const noexcept;
 
     void prepareNary() alloc_except;
     void addNaryChild(ParseNode pn) alloc_except;
-    ParseNode finishNary(Op type, const Typeset::Selection& sel) alloc_except;
+    ParseNode finishNary(Op type, const Selection& sel) alloc_except;
     ParseNode finishNary(Op type) alloc_except;
 
     #ifndef NDEBUG
@@ -101,7 +101,6 @@ private:
     static constexpr size_t LEFT_MARKER_OFFSET = SELECTION_OFFSET + 2;
     static constexpr size_t RIGHT_MARKER_OFFSET = SELECTION_OFFSET;
     size_t fields(size_t node) const noexcept{ return getNumArgs(node)+FIXED_FIELDS; }
-    std::vector<std::string> string_lits; //DO THIS: eliminate nested allocation
 
     #ifndef NDEBUG
     void graphvizHelper(std::string& src, ParseNode n, size_t& size) const;
@@ -121,12 +120,12 @@ extern template void ParseTree::setArg<1>(ParseNode, ParseNode) noexcept;
 extern template void ParseTree::setArg<2>(ParseNode, ParseNode) noexcept;
 extern template void ParseTree::setArg<3>(ParseNode, ParseNode) noexcept;
 extern template void ParseTree::setArg<4>(ParseNode, ParseNode) noexcept;
-extern template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::vector<ParseNode>&) alloc_except;
+extern template ParseNode ParseTree::addNode(Op, const Selection&, const std::vector<ParseNode>&) alloc_except;
 extern template ParseNode ParseTree::addNode(Op, const std::vector<ParseNode>&) alloc_except;
-extern template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::array<ParseNode, 2>&) alloc_except;
-extern template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::array<ParseNode, 3>&) alloc_except;
-extern template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::array<ParseNode, 4>&) alloc_except;
-extern template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::array<ParseNode, 5>&) alloc_except;
+extern template ParseNode ParseTree::addNode(Op, const Selection&, const std::array<ParseNode, 2>&) alloc_except;
+extern template ParseNode ParseTree::addNode(Op, const Selection&, const std::array<ParseNode, 3>&) alloc_except;
+extern template ParseNode ParseTree::addNode(Op, const Selection&, const std::array<ParseNode, 4>&) alloc_except;
+extern template ParseNode ParseTree::addNode(Op, const Selection&, const std::array<ParseNode, 5>&) alloc_except;
 extern template ParseNode ParseTree::addNode(Op, const std::array<ParseNode, 2>&) alloc_except;
 extern template ParseNode ParseTree::addNode(Op, const std::array<ParseNode, 3>&) alloc_except;
 extern template ParseNode ParseTree::addNode(Op, const std::array<ParseNode, 5>&) alloc_except;

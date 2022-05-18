@@ -754,7 +754,8 @@ Value Interpreter::matrix(ParseNode pn){
 }
 
 Value Interpreter::str(ParseNode pn) const {
-    return parse_tree.getString(pn);
+    std::string s = parse_tree.str(pn);
+    return s.substr(1, s.size()-2);
 }
 
 Value Interpreter::anonFun(ParseNode pn){
