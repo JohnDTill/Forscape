@@ -4,6 +4,7 @@
 #include <hope_common.h>
 #include <hope_static_pass.h>
 #include "typeset_selection.h"
+#include <span>
 
 #ifndef NDEBUG
 #include <code_parsenodegraphviz.h>
@@ -18,8 +19,10 @@ static constexpr size_t UNKNOWN_SIZE = 0;
 
 void ParseTree::clear() noexcept {
     std::vector<size_t>::clear();
+    nary_construction_stack.clear();
+    nary_start.clear();
     cloned_vars.clear();
-    string_lits.clear();
+    string_lits.clear(); //DO THIS - avoid nested alloc
 }
 
 bool ParseTree::empty() const noexcept{
@@ -176,8 +179,7 @@ ParseNode ParseTree::addNode(Op type, const Typeset::Selection& sel, const std::
     return addNode<std::array<ParseNode, N>>(type, sel, children);
 }
 
-template<size_t N>
-ParseNode ParseTree::addNode(Op type, const std::array<ParseNode, N>& children) alloc_except {
+template<size_t N> ParseNode ParseTree::addNode(Op type, const std::array<ParseNode, N>& children) alloc_except {
     return addNode<std::array<ParseNode, N>>(type, children);
 }
 
@@ -304,6 +306,30 @@ const std::string& ParseTree::getString(ParseNode pn) const noexcept{
     return string_lits[getFlag(pn)];
 }
 
+void ParseTree::prepareNary() alloc_except {
+    nary_start.push_back(nary_construction_stack.size());
+}
+
+void ParseTree::addNaryChild(ParseNode pn) alloc_except {
+    nary_construction_stack.push_back(pn);
+}
+
+ParseNode ParseTree::finishNary(Op type, const Typeset::Selection& sel) alloc_except {
+    assert(!nary_start.empty());
+    size_t N = nary_construction_stack.size()-nary_start.back();
+    ParseNode pn = addNode(type, sel, std::span<ParseNode>(nary_construction_stack.end()-N, N));
+    nary_construction_stack.resize(nary_start.back());
+    nary_start.pop_back();
+
+    return pn;
+}
+
+ParseNode ParseTree::finishNary(Op type) alloc_except {
+    assert(!nary_start.empty());
+    return finishNary(type, Typeset::Selection(
+                          getLeft(nary_construction_stack[nary_start.back()]), getRight(nary_construction_stack.back())));
+}
+
 void ParseTree::patchClones() noexcept{
     for(const auto& entry : cloned_vars){
         ParseNode orig = entry.first;
@@ -326,6 +352,10 @@ void ParseTree::patchClonedTypes() noexcept{
 }
 
 #ifndef NDEBUG
+bool ParseTree::inFinalState() const noexcept {
+    return nary_construction_stack.empty() && nary_start.empty();
+}
+
 std::string ParseTree::toGraphviz() const{
     std::string src = "digraph {\n\trankdir=TB\n\n";
     size_t sze = 0;

@@ -77,7 +77,13 @@ public:
     void setString(ParseNode pn, const std::string& str) alloc_except;
     const std::string& getString(ParseNode pn) const noexcept;
 
+    void prepareNary() alloc_except;
+    void addNaryChild(ParseNode pn) alloc_except;
+    ParseNode finishNary(Op type, const Typeset::Selection& sel) alloc_except;
+    ParseNode finishNary(Op type) alloc_except;
+
     #ifndef NDEBUG
+    bool inFinalState() const noexcept;
     std::string toGraphviz() const;
     std::string toGraphviz(ParseNode pn) const;
     #endif
@@ -88,12 +94,14 @@ public:
     void patchClonedTypes() noexcept;
 
 private:
+    std::vector<ParseNode> nary_construction_stack;
+    std::vector<size_t> nary_start;
+
     static constexpr size_t UNITIALIZED = std::numeric_limits<size_t>::max();
     static constexpr size_t LEFT_MARKER_OFFSET = SELECTION_OFFSET + 2;
     static constexpr size_t RIGHT_MARKER_OFFSET = SELECTION_OFFSET;
     size_t fields(size_t node) const noexcept{ return getNumArgs(node)+FIXED_FIELDS; }
-    std::vector<std::string> string_lits; //EVENTUALLY: this isn't the best place to put this,
-        //but you can't cast types with heap-allocated data into the vector
+    std::vector<std::string> string_lits; //DO THIS: eliminate nested allocation
 
     #ifndef NDEBUG
     void graphvizHelper(std::string& src, ParseNode n, size_t& size) const;

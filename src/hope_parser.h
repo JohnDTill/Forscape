@@ -23,8 +23,6 @@ public:
     std::unordered_map<Typeset::Marker, Typeset::Marker> close_symbols;
 
 private:
-    typedef size_t ParseNode;
-
     void reset() noexcept;
     void registerGrouping(const Typeset::Selection& sel) alloc_except;
     void registerGrouping(const Typeset::Marker& l, const Typeset::Marker& r) alloc_except;

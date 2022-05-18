@@ -12,17 +12,24 @@ Parser::Parser(const Scanner& scanner, Typeset::Model* model) noexcept
     : tokens(scanner.tokens), errors(model->errors), model(model), error_node(NONE) {}
 
 void Parser::parseAll() alloc_except {
+    #ifndef NDEBUG
+    bool scanner_error = !errors.empty();
+    #endif
+
     reset();
 
-    static std::vector<ParseNode> stmts;  stmts.clear();
+    parse_tree.prepareNary();
     skipNewlines();
     while (!peek(ENDOFFILE)) {
-        stmts.push_back(checkedStatement());
+        parse_tree.addNaryChild(checkedStatement());
         skipNewlines();
     }
 
     Typeset::Selection c(tokens.front().sel.left, tokens.back().sel.right);
-    parse_tree.root = parse_tree.addNode(OP_BLOCK, c, stmts);
+    parse_tree.root = parse_tree.finishNary(OP_BLOCK, c);
+
+    assert(!errors.empty() || parse_tree.inFinalState());
+    //assert(errors.empty() == (error_node == NONE) || (scanner_error && error_node == NONE)); //DO THIS: fix
 }
 
 void Parser::reset() noexcept {
@@ -98,7 +105,7 @@ ParseNode Parser::ifStatement() alloc_except {
     }
 }
 
-Parser::ParseNode Parser::whileStatement() alloc_except {
+ParseNode Parser::whileStatement() alloc_except {
     Typeset::Marker left = lMark();
     advance();
     Typeset::Marker l_cond = lMark();
@@ -116,7 +123,7 @@ Parser::ParseNode Parser::whileStatement() alloc_except {
     return parse_tree.addNode<2>(OP_WHILE, c, {condition, body});
 }
 
-Parser::ParseNode Parser::forStatement() alloc_except {
+ParseNode Parser::forStatement() alloc_except {
     Typeset::Marker left = lMark();
     advance();
     Typeset::Marker l_cond = lMark();
@@ -150,10 +157,10 @@ ParseNode Parser::printStatement() alloc_except {
     Typeset::Marker l_group = lMark();
     if(!match(LEFTPAREN)) return error(EXPECT_LPAREN);
 
-    static std::vector<ParseNode> children;  children.clear();
+    parse_tree.prepareNary();
 
     do{
-        children.push_back(disjunction());
+        parse_tree.addNaryChild(disjunction());
     } while(noErrors() && match(COMMA));
 
     Typeset::Marker right = rMark();
@@ -161,10 +168,10 @@ ParseNode Parser::printStatement() alloc_except {
     if(!match(RIGHTPAREN)) return error(EXPECT_RPAREN);
     registerGrouping(l_group, right);
 
-    return parse_tree.addNode(OP_PRINT, sel, children);
+    return parse_tree.finishNary(OP_PRINT, sel);
 }
 
-Parser::ParseNode Parser::assertStatement() alloc_except {
+ParseNode Parser::assertStatement() alloc_except {
     Typeset::Marker left = lMark();
     advance();
     Typeset::Marker l_group = lMark();
@@ -189,21 +196,21 @@ ParseNode Parser::blockStatement() alloc_except {
 
     Typeset::Marker left = lMark();
     consume(LEFTBRACKET);
-    std::vector<ParseNode> stmts; //DO THIS: eliminate nested allocation
+    parse_tree.prepareNary();
 
     skipNewlines();
     while(noErrors() && !match(RIGHTBRACKET)){
-        stmts.push_back(statement());
+        parse_tree.addNaryChild(statement());
         skipNewlines();
     }
 
     Typeset::Selection sel(left, rMarkPrev());
     if(noErrors()) registerGrouping(sel);
 
-    return parse_tree.addNode(OP_BLOCK, sel, stmts);
+    return parse_tree.finishNary(OP_BLOCK, sel);
 }
 
-Parser::ParseNode Parser::algStatement() alloc_except {
+ParseNode Parser::algStatement() alloc_except {
     advance();
 
     ParseNode id = isolatedIdentifier();
@@ -226,13 +233,13 @@ Parser::ParseNode Parser::algStatement() alloc_except {
     return parse_tree.addNode<5>(OP_ALGORITHM, {val_captures, ref_upvalues, params, body, id});
 }
 
-Parser::ParseNode Parser::returnStatement() alloc_except {
+ParseNode Parser::returnStatement() alloc_except {
     Typeset::Marker m = lMark();
     advance();
     return parse_tree.addLeftUnary(OP_RETURN, m, disjunction());
 }
 
-Parser::ParseNode Parser::plotStatement() alloc_except {
+ParseNode Parser::plotStatement() alloc_except {
     Typeset::Marker m = lMark();
     advance();
     Typeset::Marker l = lMark();
@@ -285,7 +292,7 @@ ParseNode Parser::mathStatement() alloc_except {
     }
 }
 
-Parser::ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
+ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
     assert(parse_tree.getOp(call) == OP_CALL);
     advance();
 
@@ -300,20 +307,14 @@ Parser::ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
     const size_t nargs = parse_tree.getNumArgs(call)-1;
     assert(nargs >= 1);
 
-    static std::vector<ParseNode> args;  args.clear();
-    for(size_t i = 0; i < nargs; i++) args.push_back(parse_tree.arg(call, i+1));
-    ParseNode params = parse_tree.addNode(OP_LIST, args);
-
-    //EVENTUALLY: why does cannibalising the call cause a segfault?
-    /*
+    //Repurpose the call
     ParseNode params = call;
     for(size_t i = 0; i < nargs; i++)
         parse_tree.setArg(params, i, parse_tree.arg(call, i+1));
     parse_tree.setNumArgs(params, nargs);
-    parse_tree.setOp(OP_LIST, params);
+    parse_tree.setOp(params, OP_LIST);
     parse_tree.setLeft(params, parse_tree.getLeft(parse_tree.arg<0>(params)));
     parse_tree.setRight(params, parse_tree.getRight(parse_tree.arg(params, nargs-1)));
-    */
 
     return parse_tree.addNode<5>(OP_ALGORITHM, {val_captures, ref_upvalues, params, body, id});
 }
@@ -330,19 +331,20 @@ ParseNode Parser::expression() noexcept{
 }
 
 ParseNode Parser::equality(ParseNode lhs) alloc_except {
-    std::vector<ParseNode> children = {lhs}; //DO THIS: eliminate nested allocation
+    parse_tree.prepareNary();
+    parse_tree.addNaryChild(lhs);
 
     do {
         advance();
-        children.push_back(expression());
+        parse_tree.addNaryChild(expression());
     } while(peek(EQUALS));
 
-    ParseNode pn = parse_tree.addNode(OP_EQUAL, children);
+    ParseNode pn = parse_tree.finishNary(OP_EQUAL);
     parse_tree.setFlag(lhs, match(COMMENT) ? parse_tree.addTerminal(OP_COMMENT, selectionPrev()) : NONE);
     return pn;
 }
 
-Parser::ParseNode Parser::disjunction() alloc_except {
+ParseNode Parser::disjunction() alloc_except {
     ParseNode n = conjunction();
 
     for(;;){
@@ -353,7 +355,7 @@ Parser::ParseNode Parser::disjunction() alloc_except {
     }
 }
 
-Parser::ParseNode Parser::conjunction() alloc_except {
+ParseNode Parser::conjunction() alloc_except {
     ParseNode n = comparison();
 
     for(;;){
@@ -364,7 +366,7 @@ Parser::ParseNode Parser::conjunction() alloc_except {
     }
 }
 
-Parser::ParseNode Parser::comparison() alloc_except {
+ParseNode Parser::comparison() alloc_except {
     ParseNode n = addition();
 
     for(;;){
@@ -440,20 +442,22 @@ ParseNode Parser::implicitMult() alloc_except {
     }
 }
 
-Parser::ParseNode Parser::collectImplicitMult(ParseNode n) alloc_except {
-    std::vector<ParseNode> children = {n, rightUnary()}; //DO THIS: eliminate nested allocation
+ParseNode Parser::collectImplicitMult(ParseNode n) alloc_except {
+    parse_tree.prepareNary();
+    parse_tree.addNaryChild(n);
+    parse_tree.addNaryChild(rightUnary());
 
     for(;;){
         if(!noErrors()) return error_node;
 
         switch (currentType()) {
             HOPE_IMPLICIT_MULT_TOKENS
-                children.push_back(rightUnary());
+                parse_tree.addNaryChild(rightUnary());
                 break;
             case INTEGER:
                 return error(TRAILING_CONSTANT);
             default:
-                return parse_tree.addNode(OP_IMPLICIT_MULTIPLY, children);
+                return parse_tree.finishNary(OP_IMPLICIT_MULTIPLY);
         }
     }
 }
@@ -559,14 +563,14 @@ ParseNode Parser::primary() alloc_except {
     }
 }
 
-Parser::ParseNode Parser::string() noexcept{
+ParseNode Parser::string() noexcept{
     ParseNode pn = terminalAndAdvance(OP_STRING);
     std::string str = parse_tree.str(pn);
     parse_tree.setString(pn, str.substr(1, str.size()-2));
     return pn;
 }
 
-Parser::ParseNode Parser::parenGrouping() alloc_except {
+ParseNode Parser::parenGrouping() alloc_except {
     Typeset::Marker left = lMark();
     advance();
     match(NEWLINE);
@@ -581,12 +585,13 @@ Parser::ParseNode Parser::parenGrouping() alloc_except {
                 parse_tree.addUnary(OP_GROUP_PAREN, sel, nested);
     }
 
-    std::vector<ParseNode> children = {nested}; //DO THIS: eliminate nested allocation
+    parse_tree.prepareNary();
+    parse_tree.addNaryChild(nested);
     do{
         consume(COMMA);
         if(!noErrors()) break;
         match(NEWLINE);
-        children.push_back(disjunction());
+        parse_tree.addNaryChild(disjunction());
         match(NEWLINE);
     } while(!peek(RIGHTPAREN) && noErrors());
     Typeset::Selection sel(left, rMark());
@@ -595,12 +600,12 @@ Parser::ParseNode Parser::parenGrouping() alloc_except {
         advance();
     }
 
-    ParseNode list = parse_tree.addNode(OP_LIST, sel, children);
+    ParseNode list = parse_tree.finishNary(OP_LIST, sel);
 
     return peek(MAPSTO) ? lambda(list) : list;
 }
 
-Parser::ParseNode Parser::paramList() alloc_except {
+ParseNode Parser::paramList() alloc_except {
     Typeset::Marker left = lMarkPrev();
 
     if(peek(RIGHTPAREN)){
@@ -610,18 +615,17 @@ Parser::ParseNode Parser::paramList() alloc_except {
         return parse_tree.addTerminal(OP_LIST, sel);
     }
 
-    static std::vector<ParseNode> params;
-    params.clear();
+    parse_tree.prepareNary();
     do{
         match(NEWLINE);
-        params.push_back(param());
+        parse_tree.addNaryChild(param());
         match(NEWLINE);
     } while(match(COMMA) && noErrors());
     Typeset::Selection sel(left, rMark());
     consume(RIGHTPAREN);
     if(noErrors()) registerGrouping(sel);
 
-    ParseNode list = parse_tree.addNode(OP_LIST, sel, params);
+    ParseNode list = parse_tree.finishNary(OP_LIST, sel);
 
     if(noErrors())
         return list;
@@ -629,13 +633,13 @@ Parser::ParseNode Parser::paramList() alloc_except {
         return parse_tree.addTerminal(OP_LIST, sel);
 }
 
-Parser::ParseNode Parser::captureList() alloc_except {
+ParseNode Parser::captureList() alloc_except {
     Typeset::Marker left = lMarkPrev();
 
-    static std::vector<ParseNode> caps;  caps.clear();
+    parse_tree.prepareNary();
     do{
         match(NEWLINE);
-        caps.push_back(isolatedIdentifier());
+        parse_tree.addNaryChild(isolatedIdentifier());
         match(NEWLINE);
     } while(match(COMMA) && noErrors());
     Typeset::Selection sel(left, rMark());
@@ -643,7 +647,7 @@ Parser::ParseNode Parser::captureList() alloc_except {
 
     if(noErrors()){
         registerGrouping(sel);
-        ParseNode list = parse_tree.addNode(OP_LIST, sel, caps);
+        ParseNode list = parse_tree.finishNary(OP_LIST, sel);
         return list;
     }else{
         return parse_tree.addTerminal(OP_LIST, sel); //EVENTUALLY: why mock a return value?
@@ -661,7 +665,7 @@ ParseNode Parser::grouping(size_t type, TokenType close) alloc_except {
     return parse_tree.addUnary(type, sel, nested);
 }
 
-Parser::ParseNode Parser::norm() alloc_except {
+ParseNode Parser::norm() alloc_except {
     Typeset::Marker left = lMark();
     advance();
     ParseNode nested = expression();
@@ -695,7 +699,7 @@ Parser::ParseNode Parser::norm() alloc_except {
     }
 }
 
-Parser::ParseNode Parser::innerProduct() alloc_except {
+ParseNode Parser::innerProduct() alloc_except {
     Typeset::Marker left = lMark();
     advance();
     ParseNode lhs = expression();
@@ -757,7 +761,7 @@ ParseNode Parser::identifier() alloc_except{
     return identifierFollowOn(id);
 }
 
-Parser::ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
+ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
     switch (currentType()) {
         case LEFTPAREN: return call(id);
         case MAPSTO: return lambda(parse_tree.addUnary(OP_LIST, id));
@@ -816,7 +820,7 @@ Parser::ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
     }
 }
 
-Parser::ParseNode Parser::isolatedIdentifier() alloc_except{
+ParseNode Parser::isolatedIdentifier() alloc_except{
     if(!peek(IDENTIFIER)) return error(UNRECOGNIZED_SYMBOL);
     ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
     switch (currentType()) {
@@ -840,7 +844,7 @@ Parser::ParseNode Parser::isolatedIdentifier() alloc_except{
     }
 }
 
-Parser::ParseNode Parser::param() alloc_except{
+ParseNode Parser::param() alloc_except{
     ParseNode id = isolatedIdentifier();
     return match(EQUALS) ? parse_tree.addNode<2>(OP_EQUAL, {id, expression()}) : id;
 }
@@ -848,26 +852,27 @@ Parser::ParseNode Parser::param() alloc_except{
 ParseNode Parser::call(ParseNode id) alloc_except{
     Typeset::Marker lmark = lMark();
 
-    std::vector<ParseNode> children = {id}; //DO THIS: eliminate nested allocation (elsewhere as well)
+    parse_tree.prepareNary();
+    parse_tree.addNaryChild(id);
     advance();
     if(!peek(RIGHTPAREN)){
-        children.push_back(expression());
+        parse_tree.addNaryChild(expression());
         while(noErrors() && !peek(RIGHTPAREN)){
             consume(COMMA);
-            children.push_back(expression());
+            parse_tree.addNaryChild(expression());
         }
     }
 
     Typeset::Marker rmark = rMark();
     registerGrouping(Typeset::Selection(lmark, rmark));
 
-    size_t n = parse_tree.addNode(OP_CALL, Typeset::Selection(parse_tree.getLeft(id), rmark), children);
+    size_t n = parse_tree.finishNary(OP_CALL, Typeset::Selection(parse_tree.getLeft(id), rmark));
     if(noErrors()) advance();
 
     return n;
 }
 
-Parser::ParseNode Parser::lambda(ParseNode params) alloc_except{
+ParseNode Parser::lambda(ParseNode params) alloc_except{
     advance();
 
     Typeset::Marker left = parse_tree.getLeft(params);
@@ -893,7 +898,7 @@ ParseNode Parser::fraction() alloc_except{
     }
 }
 
-Parser::ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, TokenType tt) alloc_except{
+ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, TokenType tt) alloc_except{
     advance();
     if(match(ARGCLOSE)){
         consume(tt);
@@ -923,7 +928,7 @@ Parser::ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, To
     }
 }
 
-Parser::ParseNode Parser::fractionDefault(const Typeset::Selection& c) alloc_except{
+ParseNode Parser::fractionDefault(const Typeset::Selection& c) alloc_except{
     ParseNode num = expression();
     consume(ARGCLOSE);
     ParseNode den = expression();
@@ -932,7 +937,7 @@ Parser::ParseNode Parser::fractionDefault(const Typeset::Selection& c) alloc_exc
     return parse_tree.addNode<2>(OP_FRACTION, c, {num, den});
 }
 
-Parser::ParseNode Parser::binomial() alloc_except{
+ParseNode Parser::binomial() alloc_except{
     Typeset::Selection c = selection();
     advance();
 
@@ -987,20 +992,20 @@ ParseNode Parser::superscript(ParseNode lhs) alloc_except{
     return n;
 }
 
-Parser::ParseNode Parser::subscript(ParseNode lhs, const Typeset::Marker& right) alloc_except{
+ParseNode Parser::subscript(ParseNode lhs, const Typeset::Marker& right) alloc_except{
     Typeset::Marker left = parse_tree.getLeft(lhs);
     Typeset::Selection selection(left, right);
     advance();
 
-    std::vector<ParseNode> subs = {lhs}; //DO THIS - eliminate nested allocation
-    do{ subs.push_back(subExpr()); } while(match(COMMA));
+    parse_tree.prepareNary(); parse_tree.addNaryChild(lhs);
+    do{ parse_tree.addNaryChild(subExpr()); } while(match(COMMA));
 
     consume(ARGCLOSE);
 
-    return parse_tree.addNode(OP_SUBSCRIPT_ACCESS, selection, subs);
+    return parse_tree.finishNary(OP_SUBSCRIPT_ACCESS, selection);
 }
 
-Parser::ParseNode Parser::dualscript(ParseNode lhs) alloc_except{
+ParseNode Parser::dualscript(ParseNode lhs) alloc_except{
     Typeset::Marker left = parse_tree.getLeft(lhs);
     Typeset::Marker right = rMark();
     Typeset::Selection c(left, right);
@@ -1035,7 +1040,7 @@ Parser::ParseNode Parser::dualscript(ParseNode lhs) alloc_except{
     }
 }
 
-Parser::ParseNode Parser::subExpr() alloc_except{
+ParseNode Parser::subExpr() alloc_except{
     ParseNode first = peek(COLON) ?
                       parse_tree.addTerminal(OP_SLICE_ALL, selection()) :
                       expression();
@@ -1059,34 +1064,33 @@ ParseNode Parser::matrix() alloc_except{
     size_t argc = c.getConstructArgSize();
     if(argc == 1) return error(SCALAR_MATRIX, c);
 
-    std::vector<ParseNode> elements; //DO THIS: eliminate nested allocation
-
+    parse_tree.prepareNary();
     for(size_t i = 0; i < argc; i++){
-        elements.push_back(expression());
+        parse_tree.addNaryChild(expression());
         consume(ARGCLOSE);
     }
 
-    ParseNode m = parse_tree.addNode(OP_MATRIX, c, elements);
+    ParseNode m = parse_tree.finishNary(OP_MATRIX, c);
     parse_tree.setFlag(m, c.getMatrixRows());
 
     return m;
 }
 
-Parser::ParseNode Parser::cases() alloc_except{
+ParseNode Parser::cases() alloc_except{
     const Typeset::Selection& c = selection();
     advance();
     size_t argc = c.getConstructArgSize();
-    std::vector<ParseNode> children; //DO THIS: eliminate nested allocation
 
+    parse_tree.prepareNary();
     for(size_t i = 0; i < argc; i++){
-        children.push_back(disjunction());
+        parse_tree.addNaryChild(disjunction());
         consume(ARGCLOSE);
     }
 
-    return parse_tree.addNode(OP_CASES, c, children);
+    return parse_tree.finishNary(OP_CASES, c);
 }
 
-Parser::ParseNode Parser::squareRoot() alloc_except{
+ParseNode Parser::squareRoot() alloc_except{
     const Typeset::Selection& c = selection();
     advance();
     ParseNode n = parse_tree.addUnary(OP_SQRT, c, expression());
@@ -1095,7 +1099,7 @@ Parser::ParseNode Parser::squareRoot() alloc_except{
     return n;
 }
 
-Parser::ParseNode Parser::nRoot() alloc_except{
+ParseNode Parser::nRoot() alloc_except{
     const Typeset::Selection& c = selection();
     advance();
     ParseNode base = expression();
@@ -1106,7 +1110,7 @@ Parser::ParseNode Parser::nRoot() alloc_except{
     return parse_tree.addNode<2>(OP_ROOT, c, {arg, base});
 }
 
-Parser::ParseNode Parser::oneDim(Op type) alloc_except{
+ParseNode Parser::oneDim(Op type) alloc_except{
     Typeset::Selection c(lMarkPrev(), rMark());
     advance();
     parsing_dims = true;
@@ -1117,7 +1121,7 @@ Parser::ParseNode Parser::oneDim(Op type) alloc_except{
     return pn;
 }
 
-Parser::ParseNode Parser::twoDims(Op type) alloc_except{
+ParseNode Parser::twoDims(Op type) alloc_except{
     Typeset::Selection c(lMarkPrev(), rMark());
     advance();
     parsing_dims = true;
@@ -1132,7 +1136,7 @@ Parser::ParseNode Parser::twoDims(Op type) alloc_except{
     return pn;
 }
 
-Parser::ParseNode Parser::length() alloc_except{
+ParseNode Parser::length() alloc_except{
     Typeset::Marker left = lMark();
     advance();
     Typeset::Marker lparen_mark = lMark();
@@ -1146,7 +1150,7 @@ Parser::ParseNode Parser::length() alloc_except{
     return parse_tree.addUnary(OP_LENGTH, Typeset::Selection(left, right), arg);
 }
 
-Parser::ParseNode Parser::trig(Op type) alloc_except{
+ParseNode Parser::trig(Op type) alloc_except{
     const Typeset::Marker& left = lMark();
     advance();
     if(match(TOKEN_SUPERSCRIPT)){
@@ -1163,7 +1167,7 @@ Parser::ParseNode Parser::trig(Op type) alloc_except{
     return parse_tree.addLeftUnary(type, left, leftUnary());
 }
 
-Parser::ParseNode Parser::log() alloc_except{
+ParseNode Parser::log() alloc_except{
 const Typeset::Marker& left = lMark();
     advance();
     if(match(TOKEN_SUBSCRIPT)){
@@ -1178,7 +1182,7 @@ const Typeset::Marker& left = lMark();
     return parse_tree.addLeftUnary(OP_LOGARITHM, left, leftUnary());
 }
 
-Parser::ParseNode Parser::oneArg(Op type) alloc_except{
+ParseNode Parser::oneArg(Op type) alloc_except{
     const Typeset::Marker& left = lMark();
     advance();
     consume(LEFTPAREN);
@@ -1190,7 +1194,7 @@ Parser::ParseNode Parser::oneArg(Op type) alloc_except{
     return parse_tree.addUnary(type, c, e);
 }
 
-Parser::ParseNode Parser::twoArgs(Op type) alloc_except{
+ParseNode Parser::twoArgs(Op type) alloc_except{
     const Typeset::Marker& left = lMark();
     advance();
     consume(LEFTPAREN);
@@ -1204,7 +1208,7 @@ Parser::ParseNode Parser::twoArgs(Op type) alloc_except{
     return parse_tree.addNode<2>(type, c, {a, b});
 }
 
-Parser::ParseNode Parser::big(Op type) alloc_except{
+ParseNode Parser::big(Op type) alloc_except{
     const Typeset::Marker& left = lMark();
     Typeset::Selection err_sel = selection();
     advance();
@@ -1225,7 +1229,7 @@ Parser::ParseNode Parser::big(Op type) alloc_except{
     return parse_tree.addNode<3>(type, sel, {assign, end, body});
 }
 
-Parser::ParseNode Parser::oneArgConstruct(Op type) alloc_except{
+ParseNode Parser::oneArgConstruct(Op type) alloc_except{
     Typeset::Selection sel = selection();
     advance();
     ParseNode child = disjunction();
@@ -1237,7 +1241,7 @@ ParseNode Parser::error(ErrorCode code) alloc_except {
     return error(code, selection());
 }
 
-Parser::ParseNode Parser::error(ErrorCode code, const Typeset::Selection& c) alloc_except {
+ParseNode Parser::error(ErrorCode code, const Typeset::Selection& c) alloc_except {
     if(noErrors()){
         error_node = parse_tree.addTerminal(SCANNER_ERROR, c);
         errors.push_back(Error(c, code));
@@ -1295,7 +1299,7 @@ TokenType Parser::currentType() const noexcept{
     return tokens[index].type;
 }
 
-Parser::ParseNode Parser::makeTerminalNode(size_t type) alloc_except {
+ParseNode Parser::makeTerminalNode(size_t type) alloc_except {
     return parse_tree.addTerminal(type, selection());
 }
 
