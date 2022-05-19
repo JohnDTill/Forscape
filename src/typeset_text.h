@@ -6,7 +6,7 @@
 #include <vector>
 
 #ifdef TYPESET_MEMORY_DEBUG
-#include <unordered_set>
+#include <hope_common.h>
 #endif
 
 namespace Hope {
@@ -23,7 +23,7 @@ class Phrase;
 class Text {
     public:
         #ifdef TYPESET_MEMORY_DEBUG
-        static std::unordered_set<Text*> all;
+        static unordered_set<Text*> all;
         Text();
         ~Text();
         #endif

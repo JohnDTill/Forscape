@@ -4,8 +4,6 @@
 #include "hope_error.h"
 #include "hope_parse_tree.h"
 #include "hope_symbol_table.h"
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 namespace Hope {
@@ -26,17 +24,19 @@ public:
     SymbolTable symbol_table;
 
 private:
-    static const std::unordered_map<std::string_view, Op> predef;
+    static static_map<std::string_view, Op> predef;
     size_t active_scope_id;
-    std::unordered_map<Typeset::Selection, SymbolId> map;
+    unordered_map<Typeset::Selection, SymbolId> map;
     static constexpr size_t GLOBAL_DEPTH = 0;
     size_t lexical_depth = GLOBAL_DEPTH;
     size_t closure_depth = 0;
     size_t cutoff = std::numeric_limits<size_t>::max();
 
-    //EVENTUALLY: redesign nesting allocation
-    //This should probably be some kind of map to intrusive linked list, like for symbols in general
-    std::vector<std::unordered_set<size_t>> ref_list_sets;
+    std::vector<size_t> refs;
+    std::vector<size_t> ref_frames;
+    unordered_map<ParseNode, size_t> node_to_capture;
+
+    std::vector<ParseNode> potential_loop_vars;
 
     void reset() noexcept;
     ScopeSegment& activeScope() noexcept;
@@ -76,17 +76,6 @@ private:
     bool defineLocalScope(ParseNode pn, bool immutable = true) alloc_except;
     bool declared(ParseNode pn) const noexcept;
     size_t symIndex(ParseNode pn) const noexcept;
-
-    struct Closure {
-        ParseNode fn;
-        std::unordered_map<size_t, size_t> upvalue_indices;
-        size_t num_upvalues = 0;
-        std::vector<std::pair<size_t, bool> > upvalues;
-        std::vector<size_t> captured;
-
-        Closure() noexcept {}
-        Closure(ParseNode fn) noexcept : fn(fn) {}
-    };
 };
 
 }

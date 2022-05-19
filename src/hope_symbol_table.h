@@ -15,7 +15,6 @@ class ParseTree;
 
 typedef size_t ScopeId;
 typedef size_t SymbolId;
-static constexpr size_t UNKNOWN_SIZE = 0;
 
 struct Symbol {
     size_t declaration_lexical_depth;
@@ -35,15 +34,8 @@ struct Symbol {
     bool is_captured_by_value = false;
 
     Symbol() noexcept;
-
-    Symbol(size_t pn,
-           size_t lexical_depth,
-           size_t closure_depth,
-           size_t shadowed_var,
-           bool is_const) noexcept;
-
+    Symbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed_var, bool is_const) noexcept;
     size_t closureIndex() const noexcept;
-
     const Typeset::Selection& sel(const ParseTree& parse_tree) const noexcept;
 };
 
@@ -59,7 +51,6 @@ struct Usage{
     UsageType type;
 
     Usage() noexcept;
-
     Usage(size_t var_id, ParseNode pn, UsageType type) noexcept;
 };
 
@@ -97,7 +88,7 @@ public:
     std::vector<Usage> usages;
     ParseTree& parse_tree;
 
-    //EVENTUALLY: fix this hack
+    //DO THIS: fix this hack
     Typeset::Text global_name;
     Typeset::Text lambda_name;
     Typeset::Text elementwise_asgn;

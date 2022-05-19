@@ -39,6 +39,7 @@ void Scanner::scanToken() alloc_except {
 
     uint32_t code = controller->scan();
 
+    //EVENTUALLY: look at symbol perfect hashing
     switch (code) {
         HOPE_SCANNER_CASES
 
@@ -87,7 +88,7 @@ void Scanner::scanNumber() alloc_except {
     createToken(INTEGER);
 }
 
-const std::unordered_map<std::string_view, TokenType> Scanner::keywords {
+static_map<std::string_view, TokenType> Scanner::keywords {
     HOPE_KEYWORD_MAP
 };
 

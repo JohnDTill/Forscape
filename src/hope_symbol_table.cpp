@@ -66,7 +66,7 @@ size_t SymbolTable::containingScope(const Typeset::Marker& m) const noexcept{
 }
 
 std::vector<Typeset::Selection> SymbolTable::getSuggestions(const Typeset::Marker& loc) const{
-    std::unordered_set<Typeset::Selection> suggestions;
+    unordered_set<Typeset::Selection> suggestions;
 
     Typeset::Marker left = loc;
     while(left.atTextStart()){

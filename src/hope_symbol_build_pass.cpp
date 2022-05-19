@@ -14,7 +14,7 @@ namespace Hope {
 
 namespace Code {
 
-const std::unordered_map<std::string_view, Op> SymbolTableBuilder::predef {
+static_map<std::string_view, Op> SymbolTableBuilder::predef {
     {"π", OP_PI},
     {"e", OP_EULERS_NUMBER},
     {"φ", OP_GOLDEN_RATIO},
@@ -60,10 +60,12 @@ void SymbolTableBuilder::resolveSymbols() alloc_except {
     assert(!errors.empty() || parse_tree.inFinalState());
 }
 
-void SymbolTableBuilder::reset() noexcept{
+void SymbolTableBuilder::reset() noexcept {
     symbol_table.reset(parse_tree.getLeft(parse_tree.root));
     map.clear();
-    assert(ref_list_sets.empty());
+    assert(refs.empty());
+    assert(ref_frames.empty());
+    node_to_capture.clear();
     lexical_depth = GLOBAL_DEPTH;
     closure_depth = 0;
     active_scope_id = 0;
@@ -228,39 +230,40 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
     }
 
     bool only_trivial_slice = true;
-    std::vector<ParseNode> undefined_vars; //DO THIS - nested allocation
+    assert(potential_loop_vars.empty()); //Should be non-recursive, should be cleared after use
     size_t num_subscripts = parse_tree.getNumArgs(lhs) - 1;
     for(size_t i = 0; i < num_subscripts; i++){
         ParseNode sub = parse_tree.arg(lhs, i+1);
         Op type = parse_tree.getOp(sub);
         if(type == OP_IDENTIFIER && !declared(sub)){
-            undefined_vars.push_back(sub);
+            potential_loop_vars.push_back(sub);
         }else{
             only_trivial_slice &= (type == OP_SLICE) && parse_tree.getNumArgs(sub) == 1;
             resolveExpr(sub);
         }
     }
 
-    if(!undefined_vars.empty() & only_trivial_slice){
+    if(!potential_loop_vars.empty() & only_trivial_slice){
         if(num_subscripts > 2){
             const Typeset::Selection& sel = parse_tree.getSelection(parse_tree.arg<3>(lhs));
             errors.push_back(Error(sel, INDEX_OUT_OF_RANGE));
+            potential_loop_vars.clear();
             return;
         }
 
         parse_tree.setOp(pn, OP_ELEMENTWISE_ASSIGNMENT);
         increaseLexicalDepth(symbol_table.ewise(), parse_tree.getLeft(pn));
         size_t vars_start = symbol_table.symbols.size();
-        for(ParseNode pn : undefined_vars){
+        for(ParseNode pn : potential_loop_vars){
             bool success = defineLocalScope(pn, false);
             (void)success;
             assert(success);
         }
         resolveExpr(rhs);
 
-        for(size_t i = 0; i < undefined_vars.size(); i++){
+        for(size_t i = 0; i < potential_loop_vars.size(); i++){
             Symbol& sym = symbol_table.symbols[vars_start + i];
-            ParseNode var = undefined_vars[undefined_vars.size()-1];
+            ParseNode var = potential_loop_vars[potential_loop_vars.size()-1];
             sym.is_ewise_index = true;
             if(!sym.is_used){
                 errors.push_back(Error(parse_tree.getSelection(var), UNUSED_ELEM_AGN_INDEX));
@@ -269,9 +272,11 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
         }
 
         decreaseLexicalDepth(parse_tree.getRight(pn));
-    }else if(!undefined_vars.empty()){
-        for(ParseNode pn : undefined_vars)
+        potential_loop_vars.clear();
+    }else if(!potential_loop_vars.empty()){
+        for(ParseNode pn : potential_loop_vars)
             errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ_OR_SUBSCRIPT));
+        potential_loop_vars.clear();
     }else{
         resolveExpr(rhs);
     }
@@ -680,7 +685,7 @@ void SymbolTableBuilder::decreaseLexicalDepth(const Typeset::Marker& end) alloc_
 }
 
 void SymbolTableBuilder::increaseClosureDepth(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode pn) alloc_except {
-    ref_list_sets.push_back(std::unordered_set<ParseNode>());
+    ref_frames.push_back(refs.size());
 
     closure_depth++;
     lexical_depth++;
@@ -693,49 +698,50 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end) alloc_
     decreaseLexicalDepth(end);
     closure_depth--;
 
-    std::unordered_set<size_t>& closed_refs = ref_list_sets.back();
-
+    //Find variables which are captured by reference in this closure, also modified by inner closures
     for(size_t seg_index = symbol_table.scopes.size()-2; seg_index != NONE; seg_index = symbol_table.scopes[seg_index].prev){
         ScopeSegment& closed_seg = symbol_table.scopes[seg_index];
         for(size_t i = closed_seg.usage_begin; i < closed_seg.usage_end; i++){
             const Usage& usage = symbol_table.usages[i];
             const Symbol& sym = symbol_table.symbols[usage.var_id];
-            if(usage.type != UsageType::DECLARE &&
-               sym.is_closure_nested &&
-               (!sym.is_captured_by_value || sym.declaration_closure_depth <= closure_depth))
-                closed_refs.insert(usage.var_id);
-        }
-    }
+            bool is_closed = (usage.type != UsageType::DECLARE) && sym.is_closure_nested &&
+                    (!sym.is_captured_by_value || sym.declaration_closure_depth <= closure_depth);
+            if(!is_closed) continue;
 
-    if(!closed_refs.empty()){
-        if(ref_list_sets.size() >= 2){
-            std::unordered_set<size_t>& returning_refs = ref_list_sets[ref_list_sets.size()-2];
-            for(size_t sym_id : closed_refs){
-                const Symbol& sym = symbol_table.symbols[sym_id];
-                if(sym.declaration_closure_depth <= (closure_depth - sym.is_captured_by_value))
-                    returning_refs.insert(sym_id);
+            //The variable is closed, so we will add it to our book keeping
+            auto result = node_to_capture.insert({usage.var_id, refs.size()});
+            if(!result.second){
+                //We have a more recent entry; mark the old one with a tombstone
+                refs[result.first->second] = NONE;
+                result.first->second = refs.size();
             }
+            refs.push_back(usage.var_id);
         }
-
-        parse_tree.prepareNary();
-        for(size_t sym_id : closed_refs){
-            Op op = symbol_table.symbols[sym_id].declaration_closure_depth <= closure_depth ?
-                    OP_READ_UPVALUE :
-                    OP_IDENTIFIER;
-            Typeset::Selection sel = symbol_table.getSel(sym_id);
-            assert(sel.left != sel.right);
-            ParseNode n = parse_tree.addTerminal(op, sel);
-            assert(parse_tree.getSelection(n) == sel);
-            parse_tree.setFlag(n, sym_id);
-            parse_tree.addNaryChild(n);
-        }
-        ParseNode list = parse_tree.finishNary(OP_LIST, parse_tree.getSelection(fn));
-        parse_tree.setRefList(fn, list);
-    }else{
-        parse_tree.setRefList(fn, parse_tree.addTerminal(OP_LIST, parse_tree.getSelection(fn)));
     }
 
-    ref_list_sets.pop_back();
+    size_t tombstone_start = ref_frames.back();
+    ref_frames.pop_back();
+    parse_tree.prepareNary();
+    for(size_t i = tombstone_start; i < refs.size(); i++){
+        size_t sym_id = refs[i];
+        if(sym_id == NONE) continue; //Tombstone: this node was promoted and we'll see it later
+        const Symbol& sym = symbol_table.symbols[sym_id];
+        Op op = sym.declaration_closure_depth <= closure_depth ? OP_READ_UPVALUE : OP_IDENTIFIER;
+        Typeset::Selection sel = symbol_table.getSel(sym_id);
+        assert(sel.left != sel.right);
+        ParseNode n = parse_tree.addTerminal(op, sel);
+        assert(parse_tree.getSelection(n) == sel);
+        parse_tree.setFlag(n, sym_id);
+        parse_tree.addNaryChild(n);
+
+        if(sym.declaration_closure_depth > (closure_depth - sym.is_captured_by_value)) refs[i] = NONE;
+        else tombstone_start = i+1;
+    }
+    ParseNode list = parse_tree.finishNary(OP_LIST, parse_tree.getSelection(fn));
+    parse_tree.setRefList(fn, list);
+
+    //Likely leaving tombstones and iterating them is faster than updating the map
+    refs.resize(tombstone_start);
 }
 
 void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable) alloc_except {

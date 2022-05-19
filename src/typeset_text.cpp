@@ -19,7 +19,7 @@ namespace Hope {
 namespace Typeset {
 
 #ifdef TYPESET_MEMORY_DEBUG
-std::unordered_set<Text*> Text::all;
+unordered_set<Text*> Text::all;
 
 Text::Text() {
     all.insert(this);

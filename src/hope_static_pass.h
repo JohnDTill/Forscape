@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <code_error_types.h>
+#include <hope_common.h>
 #include <limits>
 #include <set>
 #include <stack>
@@ -23,7 +24,7 @@ struct PairHash{
         return std::hash<size_t>{}(in.first ^ (in.second << 4*sizeof(size_t)));
     }
 };
-typedef std::unordered_map<std::pair<ParseNode, ParseNode>, ParseNode, PairHash> InstantiationLookup;
+typedef unordered_map<std::pair<ParseNode, ParseNode>, ParseNode, PairHash> InstantiationLookup;
 
 struct Error;
 class ParseTree;
@@ -94,15 +95,15 @@ private:
             : type(type), rows(rows), cols(cols), instantiated(instantiated) {}
     };
 
-    std::unordered_map<DeclareSignature, size_t, vectorOfIntHash> declared_func_map;
-    std::unordered_map<CallSignature, CallResult, vectorOfIntHash> called_func_map;
+    unordered_map<DeclareSignature, size_t, vectorOfIntHash> declared_func_map;
+    unordered_map<CallSignature, CallResult, vectorOfIntHash> called_func_map;
 
     std::vector<std::pair<ParseNode, CallSignature>> all_calls;
 
     std::string declFunctionString(size_t i) const;
     std::string instFunctionString(const CallSignature& sig) const;
 
-    std::unordered_map<std::vector<ParseNode>, Type, vectorOfIntHash> memoized_abstract_function_groups;
+    unordered_map<std::vector<ParseNode>, Type, vectorOfIntHash> memoized_abstract_function_groups;
 
     private:
         struct ReturnType{

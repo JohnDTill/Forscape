@@ -1,9 +1,9 @@
 #ifndef HOPE_SCANNER_H
 #define HOPE_SCANNER_H
 
+#include <hope_common.h>
 #include "hope_error.h"
 #include "hope_token.h"
-#include <unordered_map>
 #include <vector>
 
 namespace Hope {
@@ -41,7 +41,7 @@ private:
     Typeset::Model* model;
     Typeset::Controller* controller;
     std::vector<Error>& errors;
-    static const std::unordered_map<std::string_view, TokenType> keywords;
+    static static_map<std::string_view, TokenType> keywords; //EVENTUALLY: look at keyword perfect hashing
     size_t scope_depth = 0;
 };
 

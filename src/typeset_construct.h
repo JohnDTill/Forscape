@@ -11,7 +11,7 @@
 #endif
 
 #ifdef TYPESET_MEMORY_DEBUG
-#include <unordered_set>
+#include <hope_common.h>
 #endif
 
 #ifndef NDEBUG
@@ -31,7 +31,7 @@ class Text;
 class Construct {
 public:
     #ifdef TYPESET_MEMORY_DEBUG
-    static std::unordered_set<Construct*> all;
+    static unordered_set<Construct*> all;
     Construct();
     #endif
 

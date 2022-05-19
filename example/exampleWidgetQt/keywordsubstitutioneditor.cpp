@@ -11,6 +11,7 @@
 #include <QRegularExpressionValidator>
 #include <QSettings>
 using Hope::Typeset::Keywords;
+using Hope::debug_cast;
 
 class KeywordSubstitutionEditor::ModifiedLineEdit : public QLineEdit {
 public:
