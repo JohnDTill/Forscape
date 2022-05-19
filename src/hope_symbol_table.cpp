@@ -34,8 +34,16 @@ Usage::Usage() noexcept
 Usage::Usage(size_t var_id, ParseNode pn, UsageType type) noexcept
     : var_id(var_id), pn(pn), type(type) {}
 
-ScopeSegment::ScopeSegment(const Typeset::Selection &name, const Typeset::Marker &start, ParseNode closure, ScopeId parent, ScopeId prev, SymbolId sym_begin, size_t usage_begin) noexcept
-    : name(name), start(start), fn(closure), parent(parent), prev(prev), sym_begin(sym_begin), usage_begin(usage_begin) {}
+ScopeSegment::ScopeSegment(
+        #ifdef HOPE_USE_SCOPE_NAME
+        size_t name_start, size_t name_size,
+        #endif
+        const Typeset::Marker &start, ParseNode closure, ScopeId parent, ScopeId prev, SymbolId sym_begin, size_t usage_begin) noexcept
+    :
+      #ifdef HOPE_USE_SCOPE_NAME
+      name_start(name_start), name_size(name_size),
+      #endif
+      start(start), fn(closure), parent(parent), prev(prev), sym_begin(sym_begin), usage_begin(usage_begin) {}
 
 bool ScopeSegment::isStartOfScope() const noexcept{
     return prev == NONE;
@@ -131,15 +139,25 @@ void SymbolTable::reset(const Typeset::Marker &doc_start) noexcept{
     occurence_to_symbol_map.clear();
     usages.clear();
 
-    Typeset::Selection sel(&global_name, 0, 6);
-    scopes.push_back(ScopeSegment(sel, doc_start, NONE, NONE, NONE, symbols.size(), usages.size()));
+    #if !defined(NDEBUG) && !defined(HOPE_TYPESET_HEADLESS)
+    scope_names = "Global";
+    #endif
+
+    scopes.push_back(ScopeSegment(SCOPE_NAME(0) SCOPE_NAME(scope_names.size()) doc_start, NONE, NONE, NONE, symbols.size(), usages.size()));
 }
 
-void SymbolTable::addScope(const Typeset::Selection& name, const Typeset::Marker& start, ParseNode closure) alloc_except {
+void SymbolTable::addScope(
+        #ifdef HOPE_USE_SCOPE_NAME
+        const std::string& name,
+        #endif
+        const Typeset::Marker& start, ParseNode closure) alloc_except {
     ScopeSegment& active_scope = scopes.back();
     active_scope.sym_end = symbols.size();
     active_scope.usage_end = usages.size();
-    scopes.push_back(ScopeSegment(name, start, closure, scopes.size()-1, NONE, symbols.size(), usages.size()));
+    scopes.push_back(ScopeSegment(SCOPE_NAME(scope_names.size()) SCOPE_NAME(name.size()) start, closure, scopes.size()-1, NONE, symbols.size(), usages.size()));
+    #ifdef HOPE_USE_SCOPE_NAME
+    scope_names += name;
+    #endif
 }
 
 void SymbolTable::closeScope(const Typeset::Marker& stop) alloc_except {
@@ -152,7 +170,7 @@ void SymbolTable::closeScope(const Typeset::Marker& stop) alloc_except {
     ScopeSegment& prev_scope = scopes[prev_index];
     prev_scope.next = scopes.size();
 
-    scopes.push_back(ScopeSegment(prev_scope.name, stop, prev_scope.fn, prev_scope.parent, prev_index, symbols.size(), usages.size()));
+    scopes.push_back(ScopeSegment(SCOPE_NAME(prev_scope.name_start) SCOPE_NAME(prev_scope.name_size) stop, prev_scope.fn, prev_scope.parent, prev_index, symbols.size(), usages.size()));
 }
 
 void SymbolTable::finalize() noexcept {

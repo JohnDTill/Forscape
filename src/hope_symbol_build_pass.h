@@ -40,13 +40,25 @@ private:
 
     void reset() noexcept;
     ScopeSegment& activeScope() noexcept;
-    void addScope(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode closure = NONE) alloc_except;
+    void addScope(
+        #ifdef HOPE_USE_SCOPE_NAME
+        const std::string& name,
+        #endif
+        const Typeset::Marker& begin, ParseNode closure = NONE) alloc_except;
     void closeScope(const Typeset::Marker& end) noexcept;
     Symbol& lastDefinedSymbol() noexcept;
     size_t symbolIndexFromSelection(const Typeset::Selection& sel) const noexcept;
-    void increaseLexicalDepth(const Typeset::Selection& name, const Typeset::Marker& begin) alloc_except;
+    void increaseLexicalDepth(
+        #ifdef HOPE_USE_SCOPE_NAME
+        const std::string& name,
+        #endif
+        const Typeset::Marker& begin) alloc_except;
     void decreaseLexicalDepth(const Typeset::Marker& end) alloc_except;
-    void increaseClosureDepth(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode pn) alloc_except;
+    void increaseClosureDepth(
+        #ifdef HOPE_USE_SCOPE_NAME
+        const std::string& name,
+        #endif
+        const Typeset::Marker& begin, ParseNode pn) alloc_except;
     void decreaseClosureDepth(const Typeset::Marker& end) alloc_except;
     void makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable) alloc_except;
     void appendEntry(ParseNode pn, size_t prev, bool immutable) alloc_except;
@@ -61,10 +73,18 @@ private:
     void resolveReference(ParseNode pn, size_t sym_id) alloc_except;
     void resolveIdMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except;
     void resolveScriptMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except;
-    void resolveConditional1(const Typeset::Selection& name, ParseNode pn) alloc_except;
+    void resolveConditional1(
+        #ifdef HOPE_USE_SCOPE_NAME
+        const std::string& name,
+        #endif
+        ParseNode pn) alloc_except;
     void resolveConditional2(ParseNode pn) alloc_except;
     void resolveFor(ParseNode pn) alloc_except;
-    void resolveBody(const Typeset::Selection& name, ParseNode pn) alloc_except;
+    void resolveBody(
+        #ifdef HOPE_USE_SCOPE_NAME
+        const std::string& name,
+        #endif
+        ParseNode pn) alloc_except;
     void resolveBlock(ParseNode pn) alloc_except;
     void resolveDefault(ParseNode pn) alloc_except;
     void resolveLambda(ParseNode pn) alloc_except;

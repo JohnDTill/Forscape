@@ -75,8 +75,12 @@ ScopeSegment& SymbolTableBuilder::activeScope() noexcept{
     return symbol_table.scopes[active_scope_id];
 }
 
-void SymbolTableBuilder::addScope(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode closure) alloc_except {
-    symbol_table.addScope(name, begin);
+void SymbolTableBuilder::addScope(
+        #ifdef HOPE_USE_SCOPE_NAME
+        const std::string& name,
+        #endif
+        const Typeset::Marker& begin, ParseNode closure) alloc_except {
+    symbol_table.addScope(SCOPE_NAME(name) begin);
 
     size_t sze = symbol_table.symbols.size();
     size_t n_usages = symbol_table.usages.size();
@@ -118,8 +122,8 @@ void SymbolTableBuilder::resolveStmt(ParseNode pn) alloc_except {
         case OP_BLOCK: resolveBlock(pn); break;
         case OP_ALGORITHM: resolveAlgorithm(pn); break;
         case OP_PROTOTYPE_ALG: resolvePrototype(pn); break;
-        case OP_WHILE: resolveConditional1(symbol_table.whileSel(), pn); break;
-        case OP_IF: resolveConditional1(symbol_table.ifSel(), pn); break;
+        case OP_WHILE: resolveConditional1(SCOPE_NAME("-while-")  pn); break;
+        case OP_IF: resolveConditional1(SCOPE_NAME("-if-")  pn); break;
         case OP_IF_ELSE: resolveConditional2(pn); break;
         case OP_FOR: resolveFor(pn); break;
         case OP_RETURN:
@@ -252,7 +256,7 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
         }
 
         parse_tree.setOp(pn, OP_ELEMENTWISE_ASSIGNMENT);
-        increaseLexicalDepth(symbol_table.ewise(), parse_tree.getLeft(pn));
+        increaseLexicalDepth(SCOPE_NAME("-ewise assign-")  parse_tree.getLeft(pn));
         size_t vars_start = symbol_table.symbols.size();
         for(ParseNode pn : potential_loop_vars){
             bool success = defineLocalScope(pn, false);
@@ -424,19 +428,23 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
     parse_tree.setOp(pn, OP_PROXY);
 }
 
-void SymbolTableBuilder::resolveConditional1(const Typeset::Selection& name, ParseNode pn) alloc_except {
+void SymbolTableBuilder::resolveConditional1(
+        #ifdef HOPE_USE_SCOPE_NAME
+        const std::string& name,
+        #endif
+        ParseNode pn) alloc_except {
     resolveExpr( parse_tree.arg<0>(pn) );
-    resolveBody( name, parse_tree.arg<1>(pn) );
+    resolveBody( SCOPE_NAME(name)  parse_tree.arg<1>(pn) );
 }
 
 void SymbolTableBuilder::resolveConditional2(ParseNode pn) alloc_except {
     resolveExpr( parse_tree.arg<0>(pn) );
-    resolveBody( symbol_table.ifSel(), parse_tree.arg<1>(pn) );
-    resolveBody( symbol_table.elseSel(), parse_tree.arg<2>(pn) );
+    resolveBody( SCOPE_NAME("-if-")  parse_tree.arg<1>(pn) );
+    resolveBody( SCOPE_NAME("-else-")  parse_tree.arg<2>(pn) );
 }
 
 void SymbolTableBuilder::resolveFor(ParseNode pn) alloc_except {
-    increaseLexicalDepth(symbol_table.forSel(), parse_tree.getLeft(parse_tree.arg<1>(pn)));
+    increaseLexicalDepth(SCOPE_NAME("-for-")  parse_tree.getLeft(parse_tree.arg<1>(pn)));
     resolveStmt(parse_tree.arg<0>(pn));
     resolveExpr(parse_tree.arg<1>(pn));
     resolveStmt(parse_tree.arg<2>(pn));
@@ -444,8 +452,12 @@ void SymbolTableBuilder::resolveFor(ParseNode pn) alloc_except {
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-void SymbolTableBuilder::resolveBody(const Typeset::Selection& name, ParseNode pn) alloc_except {
-    increaseLexicalDepth(name, parse_tree.getLeft(pn));
+void SymbolTableBuilder::resolveBody(
+        #ifdef HOPE_USE_SCOPE_NAME
+        const std::string& name,
+        #endif
+        ParseNode pn) alloc_except {
+    increaseLexicalDepth(SCOPE_NAME(name)  parse_tree.getLeft(pn));
     resolveStmt(pn);
     decreaseLexicalDepth(parse_tree.getRight(pn));
 
@@ -469,7 +481,7 @@ void SymbolTableBuilder::resolveDefault(ParseNode pn) alloc_except {
 }
 
 void SymbolTableBuilder::resolveLambda(ParseNode pn) alloc_except {
-    increaseClosureDepth(symbol_table.lambda(), parse_tree.getLeft(pn), pn);
+    increaseClosureDepth(SCOPE_NAME("-lambda-")  parse_tree.getLeft(pn), pn);
 
     ParseNode params = parse_tree.paramList(pn);
     for(size_t i = 0; i < parse_tree.getNumArgs(params); i++)
@@ -519,7 +531,7 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn) alloc_except {
         }
     }
 
-    increaseClosureDepth(parse_tree.getSelection(name), parse_tree.getLeft(body), pn);
+    increaseClosureDepth(SCOPE_NAME(sel.str())  parse_tree.getLeft(body), pn);
 
     for(size_t i = 0; i < val_cap_size; i++){
         ParseNode capture = parse_tree.arg(val_cap, i);
@@ -587,7 +599,7 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn) alloc_except {
 }
 
 void SymbolTableBuilder::resolveBig(ParseNode pn) alloc_except {
-    increaseLexicalDepth(symbol_table.big(), parse_tree.getLeft(pn));
+    increaseLexicalDepth(SCOPE_NAME("-big symbol-")  parse_tree.getLeft(pn));
     ParseNode assign = parse_tree.arg<0>(pn);
     if( parse_tree.getOp(assign) != OP_ASSIGN ) return;
     ParseNode id = parse_tree.lhs(assign);
@@ -609,7 +621,7 @@ void SymbolTableBuilder::resolveDerivative(ParseNode pn) alloc_except {
     if(id_index != NONE) resolveReference(parse_tree.arg<2>(pn));
     else parse_tree.setArg<2>(pn, NONE);
 
-    increaseLexicalDepth(symbol_table.deriv(), parse_tree.getLeft(pn));
+    increaseLexicalDepth(SCOPE_NAME("-derivative-")  parse_tree.getLeft(pn));
 
     defineLocalScope(id, true);
     if(id_index != NONE) warnings.pop_back(); //EVENTUALLY: stupid hack to not warn shadowing
@@ -660,9 +672,13 @@ size_t SymbolTableBuilder::symIndex(ParseNode pn) const noexcept{
     return lookup == map.end() ? NONE : lookup->second;
 }
 
-void SymbolTableBuilder::increaseLexicalDepth(const Typeset::Selection& name, const Typeset::Marker& begin) alloc_except {
+void SymbolTableBuilder::increaseLexicalDepth(
+        #ifdef HOPE_USE_SCOPE_NAME
+        const std::string& name,
+        #endif
+        const Typeset::Marker& begin) alloc_except {
     lexical_depth++;
-    addScope(name, begin);
+    addScope(SCOPE_NAME(name)  begin);
 }
 
 void SymbolTableBuilder::decreaseLexicalDepth(const Typeset::Marker& end) alloc_except {
@@ -684,12 +700,16 @@ void SymbolTableBuilder::decreaseLexicalDepth(const Typeset::Marker& end) alloc_
     lexical_depth--;
 }
 
-void SymbolTableBuilder::increaseClosureDepth(const Typeset::Selection& name, const Typeset::Marker& begin, ParseNode pn) alloc_except {
+void SymbolTableBuilder::increaseClosureDepth(
+        #ifdef HOPE_USE_SCOPE_NAME
+        const std::string& name,
+        #endif
+        const Typeset::Marker& begin, ParseNode pn) alloc_except {
     ref_frames.push_back(refs.size());
 
     closure_depth++;
     lexical_depth++;
-    addScope(name, begin, pn);
+    addScope(SCOPE_NAME(name)  begin, pn);
 }
 
 void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end) alloc_except {

@@ -23,7 +23,8 @@ SymbolTreeView::SymbolTreeView(const Hope::Code::SymbolTable& symbol_table, cons
                             new QTreeWidgetItem(this) :
                             new QTreeWidgetItem(items.top());
                 items.push(scope_item);
-                scope_item->setText(NAME_COLUMN, QString::fromStdString(scope.name.str()));
+                std::string_view name = symbol_table.getName(scope);
+                scope_item->setText(NAME_COLUMN, QString::fromStdString(std::string(name)));
                 for(int i = 0; i < N_FIELDS; i++) scope_item->setBackground(i, QColor::fromRgb(200, 200, 255));
 
                 if(last_added_item && last_added_item->text(0) == scope_item->text(0)){

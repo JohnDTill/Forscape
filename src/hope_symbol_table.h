@@ -7,6 +7,13 @@
 #include <limits>
 #include <vector>
 
+#if !defined(NDEBUG) && !defined(HOPE_TYPESET_HEADLESS)
+#define SCOPE_NAME(x) x,
+#define HOPE_USE_SCOPE_NAME
+#else
+#define SCOPE_NAME(x)
+#endif
+
 namespace Hope {
 
 namespace Code {
@@ -55,7 +62,10 @@ struct Usage{
 };
 
 struct ScopeSegment{
-    Typeset::Selection name;
+    #ifdef HOPE_USE_SCOPE_NAME
+    size_t name_start;
+    size_t name_size;
+    #endif
     Typeset::Marker start;
     ParseNode fn;
     ScopeId parent;
@@ -67,7 +77,10 @@ struct ScopeSegment{
     size_t usage_end = NONE;
 
     ScopeSegment(
-        const Typeset::Selection& name,
+        #if !defined(NDEBUG) && !defined(HOPE_TYPESET_HEADLESS)
+        size_t name_start,
+        size_t name_size,
+        #endif
         const Typeset::Marker& start,
         ParseNode closure,
         ScopeId parent,
@@ -88,29 +101,15 @@ public:
     std::vector<Usage> usages;
     ParseTree& parse_tree;
 
-    //DO THIS: fix this hack
-    Typeset::Text global_name;
-    Typeset::Text lambda_name;
-    Typeset::Text elementwise_asgn;
-    Typeset::Text if_name;
-    Typeset::Text else_name;
-    Typeset::Text while_name;
-    Typeset::Text for_name;
-    Typeset::Text big_name;
-    Typeset::Text deriv_name;
-
-    SymbolTable(ParseTree& parse_tree)
-        : parse_tree(parse_tree) {
-        global_name.str = "Global";
-        lambda_name.str = "lambda";
-        elementwise_asgn.str = "element-wise assignment";
-        if_name.str = "if";
-        else_name.str = "else";
-        while_name.str = "while";
-        for_name.str = "for";
-        big_name.str = "big symbol";
-        deriv_name.str = "derivative";
+    #ifdef HOPE_USE_SCOPE_NAME
+    std::string scope_names;
+    std::string_view getName(const ScopeSegment& scope) const noexcept {
+        return std::string_view(scope_names.data()+scope.name_start, scope.name_size);
     }
+    #endif
+
+    SymbolTable(ParseTree& parse_tree) noexcept
+        : parse_tree(parse_tree) {}
 
     void addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed, bool is_const) alloc_except;
     void addOccurence(const Typeset::Marker& left, size_t sym_index) alloc_except;
@@ -119,46 +118,13 @@ public:
     const Typeset::Selection& getSel(size_t sym_index) const noexcept;
     void getSymbolOccurences(const Typeset::Marker& loc, std::vector<Typeset::Selection>& found) const;
 
-    //DO THIS - fix this stupid hack
-    Typeset::Selection global() noexcept{
-        return Typeset::Selection(&global_name, 0, 6);
-    }
-
-    Typeset::Selection lambda() noexcept{
-        return Typeset::Selection(&lambda_name, 0, 6);
-    }
-
-    Typeset::Selection ewise() noexcept{
-        return Typeset::Selection(&elementwise_asgn, 0, elementwise_asgn.size());
-    }
-
-    Typeset::Selection ifSel() noexcept{
-        return Typeset::Selection(&if_name, 0, 2);
-    }
-
-    Typeset::Selection elseSel() noexcept{
-        return Typeset::Selection(&else_name, 0, 4);
-    }
-
-    Typeset::Selection whileSel() noexcept{
-        return Typeset::Selection(&while_name, 0, 5);
-    }
-
-    Typeset::Selection forSel() noexcept{
-        return Typeset::Selection(&for_name, 0, 3);
-    }
-
-    Typeset::Selection big() noexcept{
-        return Typeset::Selection(&big_name, 0, big_name.size());
-    }
-
-    Typeset::Selection deriv() noexcept{
-        return Typeset::Selection(&deriv_name, 0, deriv_name.size());
-    }
-
     ScopeId head(ScopeId index) const noexcept;
     void reset(const Typeset::Marker& doc_start) noexcept;
-    void addScope(const Typeset::Selection& name, const Typeset::Marker& start, ParseNode closure = NONE) alloc_except;
+    void addScope(
+        #ifdef HOPE_USE_SCOPE_NAME
+        const std::string& name,
+        #endif
+        const Typeset::Marker& start, ParseNode closure = NONE) alloc_except;
     void closeScope(const Typeset::Marker& stop) alloc_except;
     void finalize() noexcept;
 };
