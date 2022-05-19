@@ -41,7 +41,7 @@ private:
     Typeset::Model* model;
     Typeset::Controller* controller;
     std::vector<Error>& errors;
-    static static_map<std::string_view, TokenType> keywords; //EVENTUALLY: look at keyword perfect hashing
+    static HOPE_STATIC_MAP<std::string_view, TokenType> keywords; //EVENTUALLY: look at keyword perfect hashing
     size_t scope_depth = 0;
 };
 

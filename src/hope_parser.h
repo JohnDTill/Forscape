@@ -21,8 +21,8 @@ public:
     ParseTree parse_tree;
 
     #ifndef HOPE_TYPESET_HEADLESS
-    unordered_map<Typeset::Marker, Typeset::Marker> open_symbols;
-    unordered_map<Typeset::Marker, Typeset::Marker> close_symbols;
+    HOPE_UNORDERED_MAP<Typeset::Marker, Typeset::Marker> open_symbols;
+    HOPE_UNORDERED_MAP<Typeset::Marker, Typeset::Marker> close_symbols;
     #endif
 
 private:

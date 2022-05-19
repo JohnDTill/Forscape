@@ -24,9 +24,9 @@ public:
     SymbolTable symbol_table;
 
 private:
-    static static_map<std::string_view, Op> predef;
+    static HOPE_STATIC_MAP<std::string_view, Op> predef;
     size_t active_scope_id;
-    unordered_map<Typeset::Selection, SymbolId> map;
+    HOPE_UNORDERED_MAP<Typeset::Selection, SymbolId> map;
     static constexpr size_t GLOBAL_DEPTH = 0;
     size_t lexical_depth = GLOBAL_DEPTH;
     size_t closure_depth = 0;
@@ -34,7 +34,7 @@ private:
 
     std::vector<size_t> refs;
     std::vector<size_t> ref_frames;
-    unordered_map<ParseNode, size_t> node_to_capture;
+    HOPE_UNORDERED_MAP<ParseNode, size_t> node_to_capture;
 
     std::vector<ParseNode> potential_loop_vars;
 

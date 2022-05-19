@@ -3,8 +3,13 @@
 
 #include <cstddef>
 #include <limits>
-#include <unordered_map>
+#include <parallel_hashmap/phmap.h>
 #include <unordered_set>
+
+#define HOPE_UNORDERED_MAP phmap::flat_hash_map
+#define HOPE_STATIC_MAP const phmap::flat_hash_map
+#define HOPE_UNORDERED_SET std::unordered_set
+#define HOPE_STATIC_SET const std::unordered_set
 
 namespace Hope {
 
@@ -17,12 +22,6 @@ inline constexpr T debug_cast(IN_TYPE in) noexcept {
 typedef size_t ParseNode;
 extern inline constexpr size_t NONE = std::numeric_limits<size_t>::max();
 extern inline constexpr size_t UNKNOWN_SIZE = 0;
-
-using std::unordered_map;
-template<class Key, class T> using static_map = const unordered_map<Key, T>;
-
-using std::unordered_set;
-template<class T> using static_set = const unordered_set<T>;
 
 }
 

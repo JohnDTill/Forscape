@@ -5,7 +5,6 @@
 #include <typeset_model.h>
 #include <typeset_line.h>
 #include <string_view>
-#include <unordered_map>
 
 #ifndef NDEBUG
 #include <iostream>
@@ -88,7 +87,7 @@ void Scanner::scanNumber() alloc_except {
     createToken(INTEGER);
 }
 
-static_map<std::string_view, TokenType> Scanner::keywords {
+HOPE_STATIC_MAP<std::string_view, TokenType> Scanner::keywords {
     HOPE_KEYWORD_MAP
 };
 

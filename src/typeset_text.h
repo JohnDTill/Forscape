@@ -23,7 +23,7 @@ class Phrase;
 class Text {
     public:
         #ifdef TYPESET_MEMORY_DEBUG
-        static unordered_set<Text*> all;
+        static HOPE_UNORDERED_SET<Text*> all;
         Text();
         ~Text();
         #endif

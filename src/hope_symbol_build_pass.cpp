@@ -14,7 +14,7 @@ namespace Hope {
 
 namespace Code {
 
-static_map<std::string_view, Op> SymbolTableBuilder::predef {
+HOPE_STATIC_MAP<std::string_view, Op> SymbolTableBuilder::predef {
     {"π", OP_PI},
     {"e", OP_EULERS_NUMBER},
     {"φ", OP_GOLDEN_RATIO},

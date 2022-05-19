@@ -84,7 +84,7 @@ class SymbolTable{
 public:
     std::vector<ScopeSegment> scopes;
     std::vector<Symbol> symbols;
-    std::unordered_map<Typeset::Marker, SymbolId> occurence_to_symbol_map;
+    HOPE_UNORDERED_MAP<Typeset::Marker, SymbolId> occurence_to_symbol_map;
     std::vector<Usage> usages;
     ParseTree& parse_tree;
 

@@ -31,7 +31,7 @@ class Text;
 class Construct {
 public:
     #ifdef TYPESET_MEMORY_DEBUG
-    static unordered_set<Construct*> all;
+    static HOPE_UNORDERED_SET<Construct*> all;
     Construct();
     #endif
 

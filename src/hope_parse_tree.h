@@ -105,7 +105,7 @@ private:
     std::vector<size_t> nary_start;
 
     #ifndef NDEBUG
-    unordered_set<ParseNode> created;
+    HOPE_UNORDERED_SET<ParseNode> created;
     #endif
 
     static constexpr size_t LEFT_MARKER_OFFSET = SELECTION_OFFSET + 2;

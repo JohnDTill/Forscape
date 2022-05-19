@@ -10,7 +10,7 @@ namespace Hope {
 namespace Typeset {
 
 #ifdef TYPESET_MEMORY_DEBUG
-unordered_set<Construct*> Construct::all;
+HOPE_UNORDERED_SET<Construct*> Construct::all;
 
 Construct::Construct(){
     all.insert(this);
