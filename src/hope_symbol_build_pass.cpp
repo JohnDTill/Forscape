@@ -62,7 +62,7 @@ void SymbolTableBuilder::resolveSymbols() alloc_except {
 
 void SymbolTableBuilder::reset() noexcept {
     symbol_table.reset(parse_tree.getLeft(parse_tree.root));
-    map.clear();
+    assert(map.empty());
     assert(refs.empty());
     assert(ref_frames.empty());
     lexical_depth = GLOBAL_DEPTH;
@@ -753,7 +753,8 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end) alloc_
             sym.type = cutoff++;
         }
     }
-    ParseNode list = parse_tree.finishNary(OP_LIST, parse_tree.getSelection(fn));
+    Typeset::Selection sel = parse_tree.getSelection(fn);
+    ParseNode list = parse_tree.finishNary(OP_LIST, sel);
     parse_tree.setRefList(fn, list);
     refs.resize(cutoff);
 }

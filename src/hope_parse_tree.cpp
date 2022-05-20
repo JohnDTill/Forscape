@@ -171,7 +171,10 @@ std::string ParseTree::str(ParseNode pn) const alloc_except {
     return getSelection(pn).str();
 }
 
-template<typename T> ParseNode ParseTree::addNode(Op type, const Typeset::Selection& sel, const T& children) alloc_except {
+template<typename T> ParseNode ParseTree::addNode(Op type, const Selection& sel, const T& children) alloc_except {
+    assert(notInTree(sel));
+    assert(notInTree(children));
+
     ParseNode pn = data.size();
     #ifndef NDEBUG
     for(ParseNode child : children) assert(child == NONE || isNode(child));
@@ -188,11 +191,11 @@ template<typename T> ParseNode ParseTree::addNode(Op type, const Typeset::Select
 }
 
 template<typename T> ParseNode ParseTree::addNode(Op type, const T& children) alloc_except {
-    return addNode<T>(type, Typeset::Selection(getLeft(children[0]), getRight(children.back())), children);
+    return addNode<T>(type, Selection(getLeft(children[0]), getRight(children.back())), children);
 }
 
 template<size_t N>
-ParseNode ParseTree::addNode(Op type, const Typeset::Selection& sel, const std::array<ParseNode, N>& children) alloc_except {
+ParseNode ParseTree::addNode(Op type, const Selection& sel, const std::array<ParseNode, N>& children) alloc_except {
     return addNode<std::array<ParseNode, N>>(type, sel, children);
 }
 
@@ -200,11 +203,11 @@ template<size_t N> ParseNode ParseTree::addNode(Op type, const std::array<ParseN
     return addNode<std::array<ParseNode, N>>(type, children);
 }
 
-ParseNode ParseTree::addTerminal(size_t type, const Typeset::Selection& c) alloc_except {
+ParseNode ParseTree::addTerminal(size_t type, const Selection& c) alloc_except {
     return addNode<0>(type, c, {});
 }
 
-ParseNode ParseTree::addUnary(size_t type, const Typeset::Selection& c, ParseNode child) alloc_except {
+ParseNode ParseTree::addUnary(size_t type, const Selection& c, ParseNode child) alloc_except {
     return addNode<1>(type, c, {child});
 }
 
@@ -213,11 +216,11 @@ ParseNode ParseTree::addUnary(size_t type, size_t child) alloc_except {
 }
 
 ParseNode ParseTree::addLeftUnary(size_t type, const Typeset::Marker& left, ParseNode child) alloc_except {
-    return addNode<1>(type, Typeset::Selection(left, getRight(child)), {child});
+    return addNode<1>(type, Selection(left, getRight(child)), {child});
 }
 
 ParseNode ParseTree::addRightUnary(size_t type, const Typeset::Marker& right, ParseNode child) alloc_except {
-    return addNode<1>(type, Typeset::Selection(getLeft(child), right), {child});
+    return addNode<1>(type, Selection(getLeft(child), right), {child});
 }
 
 ParseNode ParseTree::clone(ParseNode pn) alloc_except {
@@ -245,7 +248,7 @@ ParseNode ParseTree::clone(ParseNode pn) alloc_except {
     return cloned;
 }
 
-ParseNode ParseTree::getZero(const Typeset::Selection& sel) alloc_except {
+ParseNode ParseTree::getZero(const Selection& sel) alloc_except {
     ParseNode pn = addTerminal(OP_INTEGER_LITERAL, sel);
     setDouble(pn, 0.0);
     setScalar(pn);
@@ -253,7 +256,7 @@ ParseNode ParseTree::getZero(const Typeset::Selection& sel) alloc_except {
     return pn;
 }
 
-ParseNode ParseTree::getOne(const Typeset::Selection& sel) alloc_except {
+ParseNode ParseTree::getOne(const Selection& sel) alloc_except {
     ParseNode pn = addTerminal(OP_INTEGER_LITERAL, sel);
     setDouble(pn, 1.0);
     setScalar(pn);
@@ -319,8 +322,9 @@ void ParseTree::addNaryChild(ParseNode pn) alloc_except {
     nary_construction_stack.push_back(pn);
 }
 
-ParseNode ParseTree::finishNary(Op type, const Typeset::Selection& sel) alloc_except {
+ParseNode ParseTree::finishNary(Op type, const Selection& sel) alloc_except {
     assert(!nary_start.empty());
+    assert(notInTree(sel));
     size_t N = nary_construction_stack.size()-nary_start.back();
 
     ParseNode pn = data.size();
@@ -341,7 +345,7 @@ ParseNode ParseTree::finishNary(Op type, const Typeset::Selection& sel) alloc_ex
 
 ParseNode ParseTree::finishNary(Op type) alloc_except {
     assert(!nary_start.empty());
-    return finishNary(type, Typeset::Selection(
+    return finishNary(type, Selection(
                           getLeft(nary_construction_stack[nary_start.back()]), getRight(nary_construction_stack.back())));
 }
 
@@ -373,6 +377,13 @@ bool ParseTree::isNode(ParseNode pn) const noexcept {
 
 bool ParseTree::inFinalState() const noexcept {
     return nary_construction_stack.empty() && nary_start.empty();
+}
+
+template<typename T> bool ParseTree::notInTree(const T& obj) const noexcept {
+    if(data.empty()) return true;
+
+    auto potential_index = reinterpret_cast<const size_t*>(&obj) - &data[0];
+    return potential_index < 0 || static_cast<size_t>(potential_index) >= data.size();
 }
 
 std::string ParseTree::toGraphviz() const{
@@ -419,12 +430,12 @@ template void ParseTree::setArg<1>(ParseNode, ParseNode) noexcept;
 template void ParseTree::setArg<2>(ParseNode, ParseNode) noexcept;
 template void ParseTree::setArg<3>(ParseNode, ParseNode) noexcept;
 template void ParseTree::setArg<4>(ParseNode, ParseNode) noexcept;
-template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::vector<ParseNode>&) alloc_except;
+template ParseNode ParseTree::addNode(Op, const Selection&, const std::vector<ParseNode>&) alloc_except;
 template ParseNode ParseTree::addNode(Op, const std::vector<ParseNode>&) alloc_except;
-template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::array<ParseNode, 2>&) alloc_except;
-template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::array<ParseNode, 3>&) alloc_except;
-template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::array<ParseNode, 4>&) alloc_except;
-template ParseNode ParseTree::addNode(Op, const Typeset::Selection&, const std::array<ParseNode, 5>&) alloc_except;
+template ParseNode ParseTree::addNode(Op, const Selection&, const std::array<ParseNode, 2>&) alloc_except;
+template ParseNode ParseTree::addNode(Op, const Selection&, const std::array<ParseNode, 3>&) alloc_except;
+template ParseNode ParseTree::addNode(Op, const Selection&, const std::array<ParseNode, 4>&) alloc_except;
+template ParseNode ParseTree::addNode(Op, const Selection&, const std::array<ParseNode, 5>&) alloc_except;
 template ParseNode ParseTree::addNode(Op, const std::array<ParseNode, 2>&) alloc_except;
 template ParseNode ParseTree::addNode(Op, const std::array<ParseNode, 3>&) alloc_except;
 template ParseNode ParseTree::addNode(Op, const std::array<ParseNode, 5>&) alloc_except;

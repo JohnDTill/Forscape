@@ -910,7 +910,7 @@ ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, TokenType 
         ParseNode expr = multiplication();
         if(!errors.empty()) return error_node;
         Typeset::Selection sel(c.left, rMarkPrev());
-        ParseNode val = parse_tree.addTerminal(OP_IDENTIFIER, parse_tree.getSelection(id));
+        ParseNode val = parse_tree.addTerminal(OP_IDENTIFIER, Typeset::Selection(parse_tree.getSelection(id)));
         return parse_tree.addNode<3>(type, sel, {expr, id, val});
     }else{
         ParseNode expr = multiplication();
@@ -923,7 +923,7 @@ ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, TokenType 
         if(!errors.empty()) return error_node;
         consume(ARGCLOSE);
         if(!errors.empty()) return error_node;
-        ParseNode val = parse_tree.addTerminal(OP_IDENTIFIER, parse_tree.getSelection(id));
+        ParseNode val = parse_tree.addTerminal(OP_IDENTIFIER, Typeset::Selection(parse_tree.getSelection(id)));
         return parse_tree.addNode<3>(type, c, {expr, id, val});
     }
 }

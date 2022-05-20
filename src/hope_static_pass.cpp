@@ -390,7 +390,7 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
                 encountered_autosize = true;
                 if(second_dim_attempt) return error(pn, pn, AUTOSIZE);
             }else if(parse_tree.definitelyScalar(pn)){
-                return parse_tree.getOne(parse_tree.getSelection(pn));
+                return parse_tree.getOne(Typeset::Selection(parse_tree.getSelection(pn)));
             }else{
                 parse_tree.getSelection(pn).format(SEM_PREDEFINEDMAT);
                 parse_tree.setValue(pn, Eigen::MatrixXd::Identity(rows_expected, cols_expected));
@@ -1098,7 +1098,7 @@ ParseNode StaticPass::resolveIdentity(ParseNode pn){
         parse_tree.setCols(pn, c);
     }
 
-    if(parse_tree.definitelyScalar(pn)) return parse_tree.getOne(parse_tree.getSelection(pn));
+    if(parse_tree.definitelyScalar(pn)) return parse_tree.getOne(Typeset::Selection(parse_tree.getSelection(pn)));
     if(parse_tree.getRows(pn) != UNKNOWN_SIZE && parse_tree.getCols(pn) != UNKNOWN_SIZE){
         parse_tree.setOp(pn, OP_MATRIX_LITERAL);
         parse_tree.setValue(pn, Eigen::MatrixXd::Identity(parse_tree.getRows(pn), parse_tree.getCols(pn)));
@@ -1276,7 +1276,7 @@ ParseNode StaticPass::resolveOnesMatrix(ParseNode pn){
         parse_tree.setCols(pn, c);
     }
 
-    if(parse_tree.definitelyScalar(pn)) return parse_tree.getOne(parse_tree.getSelection(pn));
+    if(parse_tree.definitelyScalar(pn)) return parse_tree.getOne(Typeset::Selection(parse_tree.getSelection(pn)));
 
     if(parse_tree.getRows(pn) != UNKNOWN_SIZE && parse_tree.getCols(pn) != UNKNOWN_SIZE){
         parse_tree.setOp(pn, OP_MATRIX_LITERAL);
@@ -1381,7 +1381,7 @@ ParseNode StaticPass::resolveUnitVector(ParseNode pn){
         parse_tree.setUnitVectorElem(pn, elem);
 
         if(parse_tree.getOp(elem) == OP_INTEGER_LITERAL || parse_tree.getOp(elem) == OP_DECIMAL_LITERAL)
-            return parse_tree.getOne(parse_tree.getSelection(pn));
+            return parse_tree.getOne(Typeset::Selection(parse_tree.getSelection(pn)));
 
         return pn;
     }
@@ -1428,7 +1428,7 @@ ParseNode StaticPass::resolveZeroMatrix(ParseNode pn){
         parse_tree.setCols(pn, c);
     }
 
-    if(parse_tree.definitelyScalar(pn)) return parse_tree.getZero(parse_tree.getSelection(pn));
+    if(parse_tree.definitelyScalar(pn)) return parse_tree.getZero(Typeset::Selection(parse_tree.getSelection(pn)));
 
     if(parse_tree.getRows(pn) != UNKNOWN_SIZE && parse_tree.getCols(pn) != UNKNOWN_SIZE){
         parse_tree.setOp(pn, OP_MATRIX_LITERAL);

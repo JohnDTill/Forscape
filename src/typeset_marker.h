@@ -1,6 +1,7 @@
 #ifndef TYPESET_MARKER_H
 #define TYPESET_MARKER_H
 
+#include <hope_common.h>
 #include <inttypes.h>
 #include <string_view>
 
@@ -76,8 +77,8 @@ struct Marker{
     void selectToNumberEnd() noexcept;
     bool selectToStringEnd() noexcept;
 
-    Text* text;
-    size_t index;
+    Text* text  DEBUG_INIT_NULLPTR;
+    size_t index  DEBUG_INIT_NONE;
 };
 
 }

@@ -90,6 +90,7 @@ public:
     #ifndef NDEBUG
     bool isNode(ParseNode pn) const noexcept;
     bool inFinalState() const noexcept;
+    template<typename T> bool notInTree(const T& obj) const noexcept;
     std::string toGraphviz() const;
     std::string toGraphviz(ParseNode pn) const;
     #endif

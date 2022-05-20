@@ -11,6 +11,14 @@
 #define HOPE_UNORDERED_SET std::unordered_set
 #define HOPE_STATIC_SET const std::unordered_set
 
+#ifndef NDEBUG
+#define DEBUG_INIT_NONE =NONE
+#define DEBUG_INIT_NULLPTR =nullptr
+#else
+#define DEBUG_INIT_NONE
+#define DEBUG_INIT_NULLPTR
+#endif
+
 namespace Hope {
 
 template<typename T, typename IN_TYPE>
