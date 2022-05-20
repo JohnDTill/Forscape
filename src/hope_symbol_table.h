@@ -27,7 +27,7 @@ struct Symbol {
     size_t declaration_lexical_depth;
     size_t declaration_closure_depth;
     size_t flag;
-    size_t type;
+    size_t type = NONE;
     size_t rows = UNKNOWN_SIZE;
     size_t cols = UNKNOWN_SIZE;
     size_t shadowed_var;

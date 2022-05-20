@@ -65,7 +65,6 @@ void SymbolTableBuilder::reset() noexcept {
     map.clear();
     assert(refs.empty());
     assert(ref_frames.empty());
-    node_to_capture.clear();
     lexical_depth = GLOBAL_DEPTH;
     closure_depth = 0;
     active_scope_id = 0;
@@ -400,7 +399,6 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
         left = m;
     }
 
-    //DO THIS: what is going on here?
     ParseNode new_id = parse_tree.addTerminal(OP_IDENTIFIER, Typeset::Selection(end, new_right));
     parse_tree.prepareNary();
     parse_tree.addNaryChild(new_id);
@@ -723,29 +721,25 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end) alloc_
         ScopeSegment& closed_seg = symbol_table.scopes[seg_index];
         for(size_t i = closed_seg.usage_begin; i < closed_seg.usage_end; i++){
             const Usage& usage = symbol_table.usages[i];
-            const Symbol& sym = symbol_table.symbols[usage.var_id];
+            Symbol& sym = symbol_table.symbols[usage.var_id];
             bool is_closed = (usage.type != UsageType::DECLARE) && sym.is_closure_nested &&
                     (!sym.is_captured_by_value || sym.declaration_closure_depth <= closure_depth);
             if(!is_closed) continue;
 
             //The variable is closed, so we will add it to our book keeping
-            auto result = node_to_capture.insert({usage.var_id, refs.size()});
-            if(!result.second){
-                //We have a more recent entry; mark the old one with a tombstone
-                refs[result.first->second] = NONE;
-                result.first->second = refs.size();
-            }
+            if(sym.type != NONE) refs[sym.type] = NONE; //We have a more recent entry; mark the old one with a tombstone
+            sym.type = refs.size();
             refs.push_back(usage.var_id);
         }
     }
 
-    size_t tombstone_start = ref_frames.back();
+    size_t cutoff = ref_frames.back();
     ref_frames.pop_back();
     parse_tree.prepareNary();
-    for(size_t i = tombstone_start; i < refs.size(); i++){
+    for(size_t i = cutoff; i < refs.size(); i++){
         size_t sym_id = refs[i];
         if(sym_id == NONE) continue; //Tombstone: this node was promoted and we'll see it later
-        const Symbol& sym = symbol_table.symbols[sym_id];
+        Symbol& sym = symbol_table.symbols[sym_id];
         Op op = sym.declaration_closure_depth <= closure_depth ? OP_READ_UPVALUE : OP_IDENTIFIER;
         Typeset::Selection sel = symbol_table.getSel(sym_id);
         assert(sel.left != sel.right);
@@ -754,14 +748,14 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end) alloc_
         parse_tree.setFlag(n, sym_id);
         parse_tree.addNaryChild(n);
 
-        if(sym.declaration_closure_depth > (closure_depth - sym.is_captured_by_value)) refs[i] = NONE;
-        else tombstone_start = i+1;
+        if(sym.declaration_closure_depth <= (closure_depth - sym.is_captured_by_value)){
+            refs[cutoff] = sym_id;
+            sym.type = cutoff++;
+        }
     }
     ParseNode list = parse_tree.finishNary(OP_LIST, parse_tree.getSelection(fn));
     parse_tree.setRefList(fn, list);
-
-    //Likely leaving tombstones and iterating them is faster than updating the map
-    refs.resize(tombstone_start);
+    refs.resize(cutoff);
 }
 
 void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable) alloc_except {

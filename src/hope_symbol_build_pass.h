@@ -12,7 +12,7 @@ namespace Code {
 
 class ParseTree;
 
-class SymbolTableBuilder{
+class SymbolTableBuilder {
 private:
     std::vector<Error>& errors;
     std::vector<Error>& warnings;
@@ -34,7 +34,6 @@ private:
 
     std::vector<size_t> refs;
     std::vector<size_t> ref_frames;
-    HOPE_UNORDERED_MAP<ParseNode, size_t> node_to_capture;
 
     std::vector<ParseNode> potential_loop_vars;
 

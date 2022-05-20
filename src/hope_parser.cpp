@@ -12,11 +12,11 @@ Parser::Parser(const Scanner& scanner, Typeset::Model* model) noexcept
     : tokens(scanner.tokens), errors(model->errors), model(model), error_node(NONE) {}
 
 void Parser::parseAll() alloc_except {
+    reset();
+
     #ifndef NDEBUG
     bool scanner_error = !errors.empty();
     #endif
-
-    reset();
 
     parse_tree.prepareNary();
     skipNewlines();
@@ -29,7 +29,7 @@ void Parser::parseAll() alloc_except {
     parse_tree.root = parse_tree.finishNary(OP_BLOCK, c);
 
     assert(!errors.empty() || parse_tree.inFinalState());
-    //assert(errors.empty() == (error_node == NONE) || (scanner_error && error_node == NONE)); //DO THIS: fix
+    assert((errors.empty() == (error_node == NONE)) || (scanner_error && (error_node == NONE)));
 }
 
 void Parser::reset() noexcept {
@@ -1248,6 +1248,7 @@ ParseNode Parser::error(ErrorCode code, const Typeset::Selection& c) alloc_excep
     }
 
     assert(errors.empty() == (error_node == NONE));
+    assert(error_node != NONE);
 
     return error_node;
 }
@@ -1340,7 +1341,7 @@ bool Parser::noErrors() const noexcept{
 }
 
 void Parser::recover() noexcept{
-    error_node = NONE;
+    //error_node = NONE;
     index = tokens.size()-1; //Give up for now //EVENTUALLY: improve error recovery
 }
 
