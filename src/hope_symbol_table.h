@@ -24,14 +24,14 @@ typedef size_t ScopeId;
 typedef size_t SymbolId;
 
 struct Symbol {
-    size_t declaration_lexical_depth;
-    size_t declaration_closure_depth;
-    size_t flag;
+    size_t declaration_lexical_depth  DEBUG_INIT_UNITIALISED;
+    size_t declaration_closure_depth  DEBUG_INIT_UNITIALISED;
+    size_t flag  DEBUG_INIT_UNITIALISED;
     size_t type = NONE;
     size_t rows = UNKNOWN_SIZE;
     size_t cols = UNKNOWN_SIZE;
-    size_t shadowed_var;
-    size_t comment;
+    size_t shadowed_var  DEBUG_INIT_UNITIALISED;
+    size_t comment  DEBUG_INIT_UNITIALISED;
     bool is_const;
     bool is_used = false;
     bool is_reassigned = false; //Used to determine if parameters are constant
@@ -53,8 +53,8 @@ enum UsageType{
 };
 
 struct Usage{
-    size_t var_id;
-    ParseNode pn;
+    size_t var_id  DEBUG_INIT_UNITIALISED;
+    ParseNode pn  DEBUG_INIT_UNITIALISED;
     UsageType type;
 
     Usage() noexcept;
@@ -67,11 +67,11 @@ struct ScopeSegment{
     size_t name_size;
     #endif
     Typeset::Marker start;
-    ParseNode fn;
-    ScopeId parent;
-    ScopeId prev;
-    SymbolId sym_begin;
-    size_t usage_begin;
+    ParseNode fn  DEBUG_INIT_UNITIALISED;
+    ScopeId parent  DEBUG_INIT_UNITIALISED;
+    ScopeId prev  DEBUG_INIT_UNITIALISED;
+    SymbolId sym_begin  DEBUG_INIT_UNITIALISED;
+    size_t usage_begin  DEBUG_INIT_UNITIALISED;
     ScopeId next = NONE;
     SymbolId sym_end = NONE;
     size_t usage_end = NONE;

@@ -11,14 +11,6 @@
 #define HOPE_UNORDERED_SET std::unordered_set
 #define HOPE_STATIC_SET const std::unordered_set
 
-#ifndef NDEBUG
-#define DEBUG_INIT_NONE =NONE
-#define DEBUG_INIT_NULLPTR =nullptr
-#else
-#define DEBUG_INIT_NONE
-#define DEBUG_INIT_NULLPTR
-#endif
-
 namespace Hope {
 
 template<typename T, typename IN_TYPE>
@@ -30,6 +22,17 @@ inline constexpr T debug_cast(IN_TYPE in) noexcept {
 typedef size_t ParseNode;
 extern inline constexpr size_t NONE = std::numeric_limits<size_t>::max();
 extern inline constexpr size_t UNKNOWN_SIZE = 0;
+
+#ifndef NDEBUG
+#define DEBUG_INIT_NONE =NONE
+#define DEBUG_INIT_NULLPTR =nullptr
+extern inline constexpr size_t UNITIALISED = NONE-1;
+#define DEBUG_INIT_UNITIALISED
+#else
+#define DEBUG_INIT_NONE
+#define DEBUG_INIT_NULLPTR
+#define DEBUG_INIT_UNITIALISED
+#endif
 
 }
 

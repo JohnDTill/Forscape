@@ -1,7 +1,7 @@
 #ifndef HOPE_PARSE_TREE_H
 #define HOPE_PARSE_TREE_H
 
-#include <code_ast_fields.h> //DO THIS: why does this crash on my 32-bit test?
+#include <code_ast_fields.h>
 #include <code_parsenode_ops.h>
 #include <cassert>
 #include <limits>
