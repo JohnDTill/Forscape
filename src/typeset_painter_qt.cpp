@@ -45,21 +45,16 @@ static QFont readFont(const QString& file, const QString& name, const QString& f
 void Painter::init(){
     is_init = true;
 
-    line_font = readFont(":/fonts/cmunbmr.ttf", "CMU Bright", "Roman");
-    line_font.setPointSize(8);
-
     std::array<QFont, NUM_FONTS> loaded_fonts;
-    loaded_fonts[CMU_SERIF_BOLD] = readFont(":/fonts/cmunbx.ttf", "CMU Serif", "Bold");
-    loaded_fonts[CMU_SERIF_BOLD_ITALIC] = readFont(":/fonts/cmunbi.ttf", "CMU Serif", "Bold Italic");
-    loaded_fonts[CMU_SERIF_ITALIC] = readFont(":/fonts/cmunti.ttf", "CMU Serif", "Italic");
-    loaded_fonts[QUIVIRA_REGULAR] = readFont(":/fonts/Quivira.otf", "Quivira", "Regular");
-    #ifdef __linux__
-    //WORKAROUND: for some reason CMU Serif Roman font metrics work especially poorly in Linux
-    loaded_fonts[CMU_SERIF_ROMAN] = loaded_fonts[QUIVIRA_REGULAR];
-    #else
-    loaded_fonts[CMU_SERIF_ROMAN] = readFont(":/fonts/cmunrm.ttf", "CMU Serif", "Roman");
-    #endif
-    loaded_fonts[CMU_TYPEWRITER_TEXT_BOLD] = readFont(":/fonts/cmuntb.ttf", "CMU Typewriter Text", "Bold");
+
+    //DO THIS: codegen font loading
+    loaded_fonts[JULIAMONO_REGULAR] = readFont(":/fonts/JuliaMono-Regular.ttf", "JuliaMono", "Regular");
+    loaded_fonts[JULIAMONO_ITALIC] = readFont(":/fonts/JuliaMono-RegularItalic.ttf", "JuliaMono", "Italic");
+    loaded_fonts[JULIAMONO_BOLD] = readFont(":/fonts/JuliaMono-Bold.ttf", "JuliaMono", "Bold");
+    loaded_fonts[JULIAMONO_BOLD_ITALIC] = readFont(":/fonts/JuliaMono-BoldItalic.ttf", "JuliaMono", "Bold Italic");
+
+    line_font = loaded_fonts[JULIAMONO_REGULAR];
+    line_font.setPointSize(8);
 
     for(size_t i = 0; i < NUM_SEM_TYPES; i++){
         QFont font = loaded_fonts[font_enum[i]];

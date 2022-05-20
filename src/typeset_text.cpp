@@ -12,11 +12,17 @@
 
 #include <algorithm>
 #include <cassert>
-#include <iostream>
 
 namespace Hope {
 
 namespace Typeset {
+
+//DO THIS - codegen these
+static constexpr double CHARACTER_WIDTHS[3] {
+    7.796875,
+    5.390625,
+    4.1875,
+};
 
 #ifdef TYPESET_MEMORY_DEBUG
 HOPE_UNORDERED_SET<Text*> Text::all;
@@ -251,22 +257,11 @@ double Text::underCenter() const {
 }
 
 double Text::height() const {
-    return getHeight(SEM_DEFAULT, scriptDepth());
+    return getHeight(SEM_DEFAULT, scriptDepth()); //DO THIS - the height calculations should be simpler
 }
 
 void Text::updateWidth(){
-    width = 0;
-    uint8_t depth = scriptDepth();
-    SemanticType type = getTypePrev();
-    size_t start = 0;
-
-    for(const SemanticTag& tag : tags){
-        width += Hope::Typeset::getWidth(type, depth, str.substr(start, tag.index-start));
-        start = tag.index;
-        type = tag.type;
-    }
-    width += Hope::Typeset::getWidth(type, depth, str.substr(start));
-
+    width = CHARACTER_WIDTHS[scriptDepth()] * size();
     invalidateX();
 }
 

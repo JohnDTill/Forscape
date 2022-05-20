@@ -9,5 +9,9 @@
     <file>fonts/cmuntb.ttf</file>
     <file>fonts/cmunti.ttf</file>
     <file>fonts/Quivira.otf</file>
+	<file>fonts/JuliaMono-Bold.ttf</file>
+    <file>fonts/JuliaMono-BoldItalic.ttf</file>
+    <file>fonts/JuliaMono-Regular.ttf</file>
+    <file>fonts/JuliaMono-RegularItalic.ttf</file>
 </qresource>
 </RCC>

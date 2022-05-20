@@ -1,5 +1,7 @@
 #include "symboltreeview.h"
 
+#ifndef NDEBUG
+
 #include <stack>
 
 using Hope::NONE; //But there is
@@ -55,3 +57,5 @@ SymbolTreeView::SymbolTreeView(const Hope::Code::SymbolTable& symbol_table, cons
         if(scope.isEndOfScope()) items.pop();
     }
 }
+
+#endif

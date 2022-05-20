@@ -496,6 +496,7 @@ void MainWindow::open(QString path){
 void MainWindow::addPlot(const std::string& title, const std::string& x_label, const std::string& y_label){
     active_plot = new Plot(title, x_label, y_label);
     active_plot->show();
+    connect(this, SIGNAL(destroyed()), active_plot, SLOT(deleteLater()));
 }
 
 void MainWindow::addSeries(const std::vector<std::pair<double, double>>& data) const alloc_except {
@@ -709,6 +710,7 @@ void MainWindow::closeEvent(QCloseEvent* event){
 
     preferences->close();
     QMainWindow::closeEvent(event);
+    emit destroyed();
 }
 
 void MainWindow::on_actionShow_action_toolbar_toggled(bool show){

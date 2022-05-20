@@ -62,7 +62,8 @@ void SymbolTableBuilder::resolveSymbols() alloc_except {
 
 void SymbolTableBuilder::reset() noexcept {
     symbol_table.reset(parse_tree.getLeft(parse_tree.root));
-    assert(map.empty());
+    //assert(map.empty()); //Not necessarily empty due to errors
+    map.clear();
     assert(refs.empty());
     assert(ref_frames.empty());
     lexical_depth = GLOBAL_DEPTH;
