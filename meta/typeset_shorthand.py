@@ -9,7 +9,7 @@ def main():
     header_writer = cpp.HeaderWriter(
         name="Shorthand",
         inner_namespace="Typeset",
-        includes=("cassert", "limits", "string", "unordered_map"),
+        includes=("cassert", "hope_common.h", "limits", "string"),
     )
 
     header_writer.write(
@@ -26,12 +26,12 @@ def main():
     header_writer.write(
         "class Shorthand{\n"
         "public:\n"
-        "    static std::unordered_map<std::pair<uint32_t, uint32_t>, std::string, PairHash> map;\n"
+        "    static HOPE_UNORDERED_MAP<std::pair<uint32_t, uint32_t>, std::string, PairHash> map;\n"
         "    static void reset();\n"
         "    static const std::string& lookup(uint32_t first, uint32_t second) noexcept;\n"
         "\n"
         "private:\n"
-        "    static const std::unordered_map<std::pair<uint32_t, uint32_t>, std::string, PairHash> defaults;\n"
+        "    static const HOPE_UNORDERED_MAP<std::pair<uint32_t, uint32_t>, std::string, PairHash> defaults;\n"
         "    static const std::string NONE;\n"
         "};\n\n"
     )
@@ -47,7 +47,7 @@ def main():
         codegen_file.write("const std::string Shorthand::NONE = \"\";\n\n")
 
         codegen_file.write(
-            "const std::unordered_map<std::pair<uint32_t, uint32_t>, std::string, PairHash> Shorthand::defaults{\n")
+            "const HOPE_UNORDERED_MAP<std::pair<uint32_t, uint32_t>, std::string, PairHash> Shorthand::defaults{\n")
         for e in entries:
             first = unicode.to_num(e.first)
             second = unicode.to_num(e.second)
@@ -64,7 +64,7 @@ def main():
         )
 
         codegen_file.write(
-            "std::unordered_map<std::pair<uint32_t, uint32_t>, std::string, PairHash> Shorthand::map = defaults;\n\n"
+            "HOPE_UNORDERED_MAP<std::pair<uint32_t, uint32_t>, std::string, PairHash> Shorthand::map = defaults;\n\n"
             "}\n\n}\n"
         )
 

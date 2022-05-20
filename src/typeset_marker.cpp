@@ -14,8 +14,7 @@ namespace Hope {
 
 namespace Typeset {
 
-Marker::Marker()
-    : text(nullptr), index(0) {}
+Marker::Marker() {}
 
 Marker::Marker(const Model* model) noexcept
     : text(model->lastText()), index(text->size()) {}

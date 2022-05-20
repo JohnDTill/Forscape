@@ -1,6 +1,7 @@
 #ifndef HOPE_VALUE_H
 #define HOPE_VALUE_H
 
+#include <hope_common.h>
 #include "hope_error.h"
 #include <memory>
 #include <variant>
@@ -13,7 +14,6 @@ namespace Code {
 
 class ParseTree;
 typedef std::vector<std::shared_ptr<void>> Closure;
-typedef size_t ParseNode;
 
 struct Lambda{
     Closure closure;

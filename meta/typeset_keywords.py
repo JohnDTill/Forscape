@@ -15,12 +15,12 @@ def main():
     header_writer = cpp.HeaderWriter(
         name="keywords",
         inner_namespace="Typeset",
-        includes=("construct_codes.h", "string", "unordered_map", "vector"),
+        includes=("construct_codes.h", "hope_common.h", "string", "vector"),
     )
 
     header_writer.write("class Keywords{\n"
                         "public:\n"
-                        "    static std::unordered_map<std::string, std::string> map;\n"
+                        "    static HOPE_UNORDERED_MAP<std::string, std::string> map;\n"
                         "    static const std::string NONE;\n"
                         "\n"
                         "    static const std::string& lookup(const std::string& key) noexcept{\n"
@@ -29,7 +29,7 @@ def main():
                         "    }\n"
                         "\n"
                         "private:\n"
-                        "    static const std::unordered_map<std::string, std::string> defaults;\n"
+                        "    static const HOPE_UNORDERED_MAP<std::string, std::string> defaults;\n"
                         "    static const std::string con(size_t code, size_t arity, std::vector<size_t> args){\n"
                         "        std::string str;\n"
                         "        str.reserve(2+arity+args.size());\n"
@@ -61,7 +61,7 @@ def main():
 
         codegen_file.write("const std::string Keywords::NONE = \"\";\n\n")
 
-        codegen_file.write("const std::unordered_map<std::string, std::string> Keywords::defaults{\n")
+        codegen_file.write("const HOPE_UNORDERED_MAP<std::string, std::string> Keywords::defaults{\n")
         for keyword in keywords:
             codegen_file.write(f"    {{\"{keyword.keyword}\", \"{keyword.symbol}\"}},\n")
         for c in constructs:
@@ -85,7 +85,7 @@ def main():
                 codegen_file.write(f"    {{\"{c.keyword}\", Keywords::con({c.name.upper()}, {arity}, {args})}},\n")
         codegen_file.write("};\n\n")
 
-        codegen_file.write("std::unordered_map<std::string, std::string> Keywords::map = defaults;\n\n"
+        codegen_file.write("HOPE_UNORDERED_MAP<std::string, std::string> Keywords::map = defaults;\n\n"
                            "}\n\n}\n\n")
 
 

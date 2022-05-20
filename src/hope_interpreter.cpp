@@ -113,25 +113,25 @@ void Interpreter::assignStmt(ParseNode pn){
 }
 
 void Interpreter::whileStmt(ParseNode pn){
-    while(status <= CONTINUE && evaluateCondition( parse_tree.arg(pn, 0) )){
+    while(status <= CONTINUE && evaluateCondition( parse_tree.arg<0>(pn) )){
         status = NORMAL;
         size_t stack_size = stack.size();
-        interpretStmt( parse_tree.arg(pn, 1) );
+        interpretStmt( parse_tree.arg<1>(pn) );
         if(status < RETURN) stack.trim(stack_size);
     }
 }
 
 void Interpreter::forStmt(ParseNode pn){
     size_t stack_size = stack.size();
-    interpretStmt(parse_tree.arg(pn, 0));
+    interpretStmt(parse_tree.arg<0>(pn));
 
-    while(status <= CONTINUE && evaluateCondition( parse_tree.arg(pn, 1) )){
+    while(status <= CONTINUE && evaluateCondition( parse_tree.arg<1>(pn) )){
         status = NORMAL;
         size_t stack_size = stack.size();
-        interpretStmt( parse_tree.arg(pn, 3) );
+        interpretStmt( parse_tree.arg<3>(pn) );
         if(status < RETURN){
             stack.trim(stack_size);
-            interpretStmt(parse_tree.arg(pn, 2));
+            interpretStmt(parse_tree.arg<2>(pn));
         }
     }
 
@@ -139,21 +139,21 @@ void Interpreter::forStmt(ParseNode pn){
 }
 
 void Interpreter::ifStmt(ParseNode pn){
-    if(status == NORMAL && evaluateCondition( parse_tree.arg(pn, 0) )){
+    if(status == NORMAL && evaluateCondition( parse_tree.arg<0>(pn) )){
         size_t stack_size = stack.size();
-        interpretStmt( parse_tree.arg(pn, 1) );
+        interpretStmt( parse_tree.arg<1>(pn) );
         if(status < RETURN) stack.trim(stack_size);
     }
 }
 
 void Interpreter::ifElseStmt(ParseNode pn){
-    if(status == NORMAL && evaluateCondition( parse_tree.arg(pn, 0) )){
+    if(status == NORMAL && evaluateCondition( parse_tree.arg<0>(pn) )){
         size_t stack_size = stack.size();
-        interpretStmt( parse_tree.arg(pn, 1) );
+        interpretStmt( parse_tree.arg<1>(pn) );
         if(status < RETURN) stack.trim(stack_size);
     }else if(status == NORMAL){
         size_t stack_size = stack.size();
-        interpretStmt( parse_tree.arg(pn, 2) );
+        interpretStmt( parse_tree.arg<2>(pn) );
         if(status < RETURN) stack.trim(stack_size);
     }
 }
@@ -340,9 +340,9 @@ Value Interpreter::prod(ParseNode pn){
 }
 
 Value Interpreter::big(ParseNode pn, Op type){
-    ParseNode assign = parse_tree.arg(pn, 0);
-    ParseNode stop = parse_tree.arg(pn, 1);
-    ParseNode body = parse_tree.arg(pn, 2);
+    ParseNode assign = parse_tree.arg<0>(pn);
+    ParseNode stop = parse_tree.arg<1>(pn);
+    ParseNode body = parse_tree.arg<2>(pn);
 
     interpretStmt(assign);
     Value val_start = stack.back();
@@ -455,7 +455,7 @@ void Interpreter::reassign(ParseNode lhs, ParseNode rhs){
 void Interpreter::reassignSubscript(ParseNode lhs, ParseNode rhs){
     size_t num_indices = parse_tree.getNumArgs(lhs)-1;
     Value rvalue = interpretExpr(rhs);
-    ParseNode lvalue_node = parse_tree.arg(lhs, 0);
+    ParseNode lvalue_node = parse_tree.arg<0>(lhs);
     Value& lvalue = read(lvalue_node);
     //VERY IMPORTANT TO READ AFTER STACK MODIFYING OPS, NOT BEFORE!
     //Not a great way to check except making your own variant class
@@ -491,7 +491,7 @@ void Interpreter::reassignSubscript(ParseNode lhs, ParseNode rhs){
                     return;
                 }
 
-                ParseNode index_node = parse_tree.arg(lhs, 1);
+                ParseNode index_node = parse_tree.arg<1>(lhs);
                 Slice s = readSubscript(index_node, lmat.size());
                 if(status != NORMAL) return;
                 auto v = lmat.cols() == 1 ? lmat(s, Slice(0, 1, Eigen::fix<1>)) : lmat(Slice(0, 1, Eigen::fix<1>), s);
@@ -501,9 +501,9 @@ void Interpreter::reassignSubscript(ParseNode lhs, ParseNode rhs){
                 else
                     error(DIMENSION_MISMATCH, rhs);
             }else if(num_indices == 2){
-                ParseNode row_node = parse_tree.arg(lhs, 1);
+                ParseNode row_node = parse_tree.arg<1>(lhs);
                 Slice rows = readSubscript(row_node, lmat.rows());
-                ParseNode col_node = parse_tree.arg(lhs, 2);
+                ParseNode col_node = parse_tree.arg<2>(lhs);
                 Slice cols = readSubscript(col_node, lmat.cols());
                 if(status != NORMAL) return;
                 auto m = lmat(rows, cols);
@@ -527,16 +527,16 @@ void Interpreter::elementWiseAssignment(ParseNode pn){
     ParseNode rhs = parse_tree.rhs(pn);
 
     size_t num_subscripts = parse_tree.getNumArgs(lhs)-1;
-    ParseNode lvalue_node = parse_tree.arg(lhs, 0);
+    ParseNode lvalue_node = parse_tree.arg<0>(lhs);
     Value& lvalue = read(lvalue_node);
 
     if(lvalue.index() == double_index){
-        bool use_first = parse_tree.getOp( parse_tree.arg(lhs, 1) ) != OP_SLICE;
+        bool use_first = parse_tree.getOp( parse_tree.arg<1>(lhs) ) != OP_SLICE;
         bool use_second = num_subscripts>1 &&
-                          parse_tree.getOp( parse_tree.arg(lhs, 2) ) != OP_SLICE;
+                          parse_tree.getOp( parse_tree.arg<2>(lhs) ) != OP_SLICE;
 
-        if(use_first) stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg(lhs, 1))));
-        if(use_second) stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg(lhs, 2))));
+        if(use_first) stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg<1>(lhs))));
+        if(use_second) stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg<2>(lhs))));
         Value rvalue = interpretExpr(rhs);
         stack.pop();
         if(use_first & use_second) stack.pop();
@@ -554,7 +554,7 @@ void Interpreter::elementWiseAssignment(ParseNode pn){
             return;
         }
 
-        stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg(lhs, 1))));
+        stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg<1>(lhs))));
         for(Eigen::Index i = 0; i < lmat.size(); i++){
             stack.back() = static_cast<double>(i);
             Value rvalue = interpretExpr(rhs);
@@ -570,11 +570,11 @@ void Interpreter::elementWiseAssignment(ParseNode pn){
         return;
     }
 
-    Op type_row = parse_tree.getOp( parse_tree.arg(lhs, 1) );
-    Op type_col = parse_tree.getOp( parse_tree.arg(lhs, 2) );
+    Op type_row = parse_tree.getOp( parse_tree.arg<1>(lhs) );
+    Op type_col = parse_tree.getOp( parse_tree.arg<2>(lhs) );
 
     if(type_row == OP_SLICE){
-        stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg(lhs, 2))));
+        stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg<2>(lhs))));
         if(lmat.rows() > 1){
             for(Eigen::Index i = 0; i < lmat.cols(); i++){
                 stack.back() = static_cast<double>(i);
@@ -604,7 +604,7 @@ void Interpreter::elementWiseAssignment(ParseNode pn){
         stack.pop();
         read(lvalue_node) = lmat;
     }else if(type_col == OP_SLICE){
-        stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg(lhs, 1))));
+        stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg<1>(lhs))));
         if(lmat.cols() > 1){
             for(Eigen::Index i = 0; i < lmat.rows(); i++){
                 stack.back() = static_cast<double>(i);
@@ -634,8 +634,8 @@ void Interpreter::elementWiseAssignment(ParseNode pn){
         stack.pop();
         read(lvalue_node) = lmat;
     }else{
-        stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg(lhs, 1))));
-        stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg(lhs, 2))));
+        stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg<1>(lhs))));
+        stack.push(0.0   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg<2>(lhs))));
         for(Eigen::Index i = 0; i < lmat.rows(); i++){
             stack[stack.size()-2] = static_cast<double>(i);
             for(Eigen::Index j = 0; j < lmat.cols(); j++){
@@ -688,7 +688,7 @@ Value& Interpreter::readClosedVar(ParseNode pn) const noexcept {
 
 Value Interpreter::matrix(ParseNode pn){
     size_t nargs = parse_tree.getNumArgs(pn);
-    if(nargs == 1) return interpretExpr(parse_tree.arg(pn, 0));
+    if(nargs == 1) return interpretExpr(parse_tree.arg<0>(pn));
     size_t typeset_rows = parse_tree.getFlag(pn);
     size_t typeset_cols = nargs/typeset_rows;
     assert(typeset_cols*typeset_rows == nargs);
@@ -754,7 +754,8 @@ Value Interpreter::matrix(ParseNode pn){
 }
 
 Value Interpreter::str(ParseNode pn) const {
-    return parse_tree.getString(pn);
+    std::string s = parse_tree.str(pn);
+    return s.substr(1, s.size()-2);
 }
 
 Value Interpreter::anonFun(ParseNode pn){
@@ -770,7 +771,7 @@ Value Interpreter::anonFun(ParseNode pn){
 }
 
 Value Interpreter::call(ParseNode call) {
-    Value v = interpretExpr( parse_tree.arg(call, 0) );
+    Value v = interpretExpr( parse_tree.arg<0>(call) );
 
     switch (v.index()) {
         case Lambda_index:{
@@ -790,7 +791,7 @@ Value Interpreter::call(ParseNode call) {
 }
 
 void Interpreter::callStmt(ParseNode pn){
-    Value v = interpretExpr( parse_tree.arg(pn, 0) );
+    Value v = interpretExpr( parse_tree.arg<0>(pn) );
 
     switch (v.index()) {
         case Lambda_index:
@@ -881,7 +882,7 @@ Value Interpreter::innerCall(ParseNode call, Closure& closure, ParseNode fn, boo
 }
 
 Value Interpreter::elementAccess(ParseNode pn){
-    Value lhs = interpretExpr( parse_tree.arg(pn, 0) );
+    Value lhs = interpretExpr( parse_tree.arg<0>(pn) );
     size_t num_indices = parse_tree.getNumArgs(pn)-1;
 
     if(lhs.index() == double_index){
@@ -898,7 +899,7 @@ Value Interpreter::elementAccess(ParseNode pn){
                 return NIL;
             }
             Eigen::Map<const Eigen::VectorXd> vec(mat.data(), mat.size());
-            ParseNode index_node = parse_tree.arg(pn, 1);
+            ParseNode index_node = parse_tree.arg<1>(pn);
             Slice s = readSubscript(index_node, mat.size());
             if(status != NORMAL) return NIL;
             const auto& v = vec(s);
@@ -906,9 +907,9 @@ Value Interpreter::elementAccess(ParseNode pn){
             else if(mat.rows() == 1) return v.eval().transpose();
             else return v;
         }else if(num_indices == 2){
-            ParseNode row_node = parse_tree.arg(pn, 1);
+            ParseNode row_node = parse_tree.arg<1>(pn);
             Slice rows = readSubscript(row_node, mat.rows());
-            ParseNode col_node = parse_tree.arg(pn, 2);
+            ParseNode col_node = parse_tree.arg<2>(pn);
             Slice cols = readSubscript(col_node, mat.cols());
             if(status != NORMAL) return NIL;
             const auto& m = mat(rows, cols);
@@ -930,10 +931,10 @@ Interpreter::Slice Interpreter::readSubscript(ParseNode pn, Eigen::Index sze){
         return Slice(0, sze, Eigen::fix<1>);
     }
 
-    ParseNode first = parse_tree.arg(pn, 0);
-    ParseNode last = parse_tree.arg(pn, 1);
+    ParseNode first = parse_tree.arg<0>(pn);
+    ParseNode last = parse_tree.arg<1>(pn);
 
-    Eigen::Index s = nargs == 3 ? readDouble(parse_tree.arg(pn, 2)) : 1;
+    Eigen::Index s = nargs == 3 ? readDouble(parse_tree.arg<2>(pn)) : 1;
     if(s == 0){
         error(INDEX_OUT_OF_RANGE, pn);
         return Slice(INVALID, INVALID, INVALID);

@@ -5,7 +5,6 @@
 #include <typeset_model.h>
 #include <typeset_line.h>
 #include <string_view>
-#include <unordered_map>
 
 #ifndef NDEBUG
 #include <iostream>
@@ -39,6 +38,7 @@ void Scanner::scanToken() alloc_except {
 
     uint32_t code = controller->scan();
 
+    //EVENTUALLY: look at symbol perfect hashing
     switch (code) {
         HOPE_SCANNER_CASES
 
@@ -87,7 +87,7 @@ void Scanner::scanNumber() alloc_except {
     createToken(INTEGER);
 }
 
-const std::unordered_map<std::string_view, TokenType> Scanner::keywords {
+HOPE_STATIC_MAP<std::string_view, TokenType> Scanner::keywords {
     HOPE_KEYWORD_MAP
 };
 

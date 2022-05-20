@@ -41,6 +41,7 @@ make
 #### Bundled software
 
 * [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) (Header-only linear algebra)
+* [parallel-hashmap](https://github.com/greg7mdp/parallel-hashmap) (Header-only, very fast and memory-friendly hashmaps and btrees)
 * [readerwriterqueue](https://github.com/cameron314/readerwriterqueue) (Lock-free queue for single-producer/single-consumer messages)
 * [spdlog](https://github.com/gabime/spdlog) (Very fast, header-only/compiled, C++ logging library.)
 * Fonts with extensive unicode support:

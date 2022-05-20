@@ -5,10 +5,10 @@ from wcwidth import wcwidth
 def main():
     header_writer = cpp.HeaderWriter(
         name="unicode_zerowidth",
-        includes=["unordered_set"],
+        includes=["hope_common.h"],
     )
 
-    header_writer.write("static const std::unordered_set<uint32_t> ZERO_WIDTH_CHARS = {\n")
+    header_writer.write("static static_set<uint32_t> ZERO_WIDTH_CHARS = {\n")
     for i in range(256, 1000000):
         ch = chr(i)
         if wcwidth(ch) == 0:
