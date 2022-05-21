@@ -10,9 +10,9 @@ namespace Code {
 
 struct Token {
     Typeset::Selection sel;
-    TokenType type;
+    HopeTokenType type;
 
-    Token(const Typeset::Selection& sel, TokenType type) noexcept
+    Token(const Typeset::Selection& sel, HopeTokenType type) noexcept
         : sel(sel), type(type) {}
 };
 

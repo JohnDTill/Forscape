@@ -91,7 +91,7 @@ public:
         painter.drawElipse(x, y, ellipse_width, height());
 
         painter.setScriptLevel(parent->script_level);
-        double offset = getDescent(SEM_DEFAULT, parent->script_level);
+        double offset = DESCENT[scriptDepth()];
         double xp = x+width-c_width-(ELEMENT_HPADDING-COMMA_OFFSET);
         for(size_t i = 0; i < numArgs(); i+=2){
             Subphrase* v = arg(i);

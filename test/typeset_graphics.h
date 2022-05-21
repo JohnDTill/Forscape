@@ -15,7 +15,6 @@ inline bool testTypesetGraphics(){
     Typeset::Text& t = *l->front();
 
     t.str = "print(\"Hello world!\")";
-    t.updateWidth();
     double unformatted_width = t.getWidth();
 
     if(unformatted_width == 0){
@@ -24,7 +23,6 @@ inline bool testTypesetGraphics(){
     }
 
     t.tag(SEM_STRING, 6, 20);
-    t.updateWidth();
     double formatted_width = t.getWidth();
 
     if(unformatted_width != formatted_width){

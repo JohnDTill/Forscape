@@ -15,7 +15,7 @@ namespace Typeset {
 class MarkerLink;
 class Model;
 
-class View : public Widget {
+class View : public QWidget {
     Q_OBJECT
 
 public:

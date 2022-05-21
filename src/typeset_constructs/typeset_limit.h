@@ -26,8 +26,8 @@ public:
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }
 
     virtual void updateSizeSpecific() noexcept override {
-        double word_width = getWidth(SEM_DEFAULT, scriptDepth(), "lim");
-        double arrow_width = getWidth(SEM_DEFAULT, first()->script_level, "→");
+        double word_width = CHARACTER_WIDTHS[scriptDepth()]*3;
+        double arrow_width = CHARACTER_WIDTHS[first()->script_level];
         double lower_width = first()->width + arrow_width + second()->width;
         if(word_width > lower_width){
             width = word_width;

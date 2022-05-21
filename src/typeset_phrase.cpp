@@ -47,7 +47,7 @@ void Phrase::appendConstruct(Construct* c, Text* t){
 
 size_t Phrase::serialChars() const noexcept{
     size_t sze = 0;
-    for(Text* t : texts) sze += t->size();
+    for(Text* t : texts) sze += t->numChars();
     for(Construct* c : constructs) sze += c->serialChars();
 
     return sze;
@@ -263,7 +263,6 @@ Construct* Phrase::constructAt(double x, double y) const noexcept{
 }
 
 void Phrase::updateSize() noexcept{
-    texts[0]->updateWidth();
     width = texts[0]->getWidth();
     above_center = texts[0]->aboveCenter();
     under_center = texts[0]->underCenter();
@@ -273,7 +272,6 @@ void Phrase::updateSize() noexcept{
         width += constructs[i]->width;
         above_center = std::max(above_center, constructs[i]->above_center);
         under_center = std::max(under_center, constructs[i]->under_center);
-        texts[i+1]->updateWidth();
         width += texts[i+1]->getWidth();
     }
 

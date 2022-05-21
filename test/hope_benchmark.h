@@ -15,8 +15,8 @@ static constexpr size_t ITER_SCANNER = 500000;
 static constexpr size_t ITER_PARSER = 500000;
 static constexpr size_t ITER_SYMBOL_TABLE = 50000;
 static constexpr size_t ITER_INTERPRETER = 5000;
-static constexpr size_t ITER_CALC_SIZE = 30;
-static constexpr size_t ITER_LAYOUT = 500;
+static constexpr size_t ITER_CALC_SIZE = 500000;
+static constexpr size_t ITER_LAYOUT = 1000000;
 static constexpr size_t ITER_PAINT = 500;
 static constexpr size_t ITER_LOOP = 500;
 
@@ -86,14 +86,16 @@ void runBenchmark(){
     Typeset::View view;
     //view.show();
 
-    view.resize(QSize(1920, 1080));
+    view.resize(QSize(1920*2, 1080*2));
     QImage img(view.size(), QImage::Format_RGB32);
     QPainter painter(&img);
     view.setModel(m);
 
     startClock();
-    for(size_t i = 0; i < ITER_PAINT; i++)
-        view.render(&painter);
+    for(size_t i = 0; i < ITER_PAINT; i++) view.render(&painter);
+    //30hz => 33.33ms, 60hz => 16.67ms, 144hz => 6.944ms
+    //DO THIS: 4k@144hz is decent, but painting is in serial with other GUI thread costs
+    //         check for obvious improvements
     report("Paint", ITER_PAINT);
     #endif
 

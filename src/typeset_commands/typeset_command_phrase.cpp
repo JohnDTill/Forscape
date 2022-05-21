@@ -13,7 +13,7 @@ namespace Typeset {
 CommandPhrase* CommandPhrase::insert(Text* tL, size_t iL, Line* l){
     Text* tF = l->front();
     Text* tB = l->back();
-    size_t iR = tB->size();
+    size_t iR = tB->numChars();
     std::string removed = tF->str;
     tB->str += tL->str.substr(iL);
     std::vector<Construct*> constructs;
@@ -66,7 +66,7 @@ CommandPhrase::CommandPhrase(Text* tL, const std::string& removed, size_t iR, co
     : tL(tL), removed(removed), iR(iR), constructs(c), texts(t), is_insertion(is_insertion) {}
 
 void CommandPhrase::insert(Controller& controller){
-    size_t iL = tL->size() - (texts.back()->size()-iR);
+    size_t iL = tL->numChars() - (texts.back()->numChars()-iR);
     tL->str.erase(iL);
     tL->str += removed;
 
@@ -79,7 +79,7 @@ void CommandPhrase::insert(Controller& controller){
 }
 
 void CommandPhrase::remove(Controller& controller){
-    size_t iL = tL->size()-removed.size();
+    size_t iL = tL->numChars()-removed.size();
     tL->str.erase(iL);
     tL->str += texts.back()->str.substr(iR);
 

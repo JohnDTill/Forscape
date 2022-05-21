@@ -65,7 +65,8 @@ static uint32_t expand(char ch) noexcept{
     return static_cast<uint32_t>(static_cast<uint8_t>(ch));
 }
 
-inline uint32_t codepointInt(const std::string& str, size_t index = 0) noexcept {
+template<typename StringType>
+inline uint32_t codepointInt(StringType str, size_t index = 0) noexcept {
     assert(index < str.size());
 
     uint8_t ch = str[index];
@@ -92,9 +93,7 @@ inline bool isSingleCodepoint(const std::string& str) noexcept {
     return codepointSize(str[0]) == (str.size() - (str.back() == '\0'));
 }
 
-inline size_t graphemeSize(const std::string& str, size_t index) noexcept {
-    assert(index < str.size());
-
+inline size_t numBytesInGrapheme(const std::string& str, size_t index) noexcept {
     size_t start = index;
     do {
         index += codepointSize(str[index]);
@@ -112,6 +111,18 @@ inline size_t graphemeSizeLeft(const std::string& str, size_t index) noexcept {
     } while( isZeroWidth(codepointInt(str, index)) );
 
     return end-index;
+}
+
+template<typename StringType>
+inline size_t countGraphemes(StringType str) noexcept {
+    size_t num_graphemes = 0;
+    size_t index = 0;
+    while(index < str.size()){
+        num_graphemes += !isZeroWidth(codepointInt(str, index));
+        index += codepointSize(str[index]);
+    }
+
+    return num_graphemes;
 }
 
 inline std::string fromCode(uint32_t code){

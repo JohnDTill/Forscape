@@ -341,7 +341,7 @@ void Controller::backspace() noexcept{
     }else if(isNested()){
         selectConstruct(subphrase()->parent);
     }else if(Line* l = prevLine()){
-        Command* cmd = deleteSelectionLine(l->back(), l->back()->size(), active.text, active.index);
+        Command* cmd = deleteSelectionLine(l->back(), l->back()->numChars(), active.text, active.index);
         getModel()->mutate(cmd, *this);
     }
 }
@@ -689,7 +689,7 @@ void Controller::deleteAdditionalChar(Command* cmd){
             m->premutate();
             rm->removeAdditionalChar();
             m->postmutate();
-        }else if(rm->index == active.index+graphemeSize(active.text->str, active.index)){
+        }else if(rm->index == active.index+numBytesInGrapheme(active.text->str, active.index)){
             Model* m = getModel();
             m->premutate();
             rm->removeCharLeft();
@@ -831,7 +831,7 @@ double Controller::xAnchor() const{
 
 uint32_t Controller::advance() noexcept{
     assert(notAtTextEnd());
-    return static_cast<uint8_t>(active.text->at(active.index++));
+    return static_cast<uint8_t>(active.text->charAt(active.index++));
 }
 
 bool Controller::peek(char ch) const noexcept{
@@ -888,16 +888,16 @@ void Controller::selectToNumberEnd() noexcept{
 
 bool Controller::selectToStringEnd() noexcept{
     for(;;){
-        if(active.index >= active.text->size()){
+        if(active.index >= active.text->numChars()){
             if(Text* t = active.text->nextTextInPhrase()){
                 active.text = t;
                 active.index = 0;
             }else{
-                active.index = active.text->size();
+                active.index = active.text->numChars();
                 return false;
             }
         }else{
-            char ch = active.text->at(active.index++);
+            char ch = active.text->charAt(active.index++);
             switch (ch) {
                 case '"': return true;
                 case '\\': active.index++;

@@ -1,11 +1,13 @@
 #ifndef HOPE_UNICODE_ZEROWIDTH_H
 #define HOPE_UNICODE_ZEROWIDTH_H
 
-#include <unordered_set>
+//DO THIS: make this lookup faster, then reduce calls by better process and caching
+
+#include <hope_common.h>
 
 namespace Hope {
 
-static const std::unordered_set<uint32_t> ZERO_WIDTH_CHARS = {
+static HOPE_STATIC_SET<uint32_t> ZERO_WIDTH_CHARS = {
     32972,
     33228,
     33484,
@@ -1876,7 +1878,7 @@ static const std::unordered_set<uint32_t> ZERO_WIDTH_CHARS = {
     2944901363,
 };
 
-inline bool isZeroWidth(uint32_t code){return ZERO_WIDTH_CHARS.find(code) != ZERO_WIDTH_CHARS.end();}
+inline bool isZeroWidth(uint32_t code) noexcept {return ZERO_WIDTH_CHARS.find(code) != ZERO_WIDTH_CHARS.end();}
 
 } // namespace Hope
 

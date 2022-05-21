@@ -454,13 +454,13 @@ Selection Model::idAt(double x, double y) noexcept{
     Text* t = l->textNearest(x, y);
     if(!t->containsX(x) || !t->containsY(y)) return Selection();
 
-    size_t index = t->indexLeft(x);
+    size_t index = t->charIndexLeft(x);
 
     SemanticType type = t->getTypeLeftOf(index);
     if(!isId(type)) return Selection();
 
     size_t start = 0;
-    size_t end = t->size();
+    size_t end = t->numChars();
     for(auto it = t->tags.rbegin(); it != t->tags.rend(); it++){
         if(it->index <= index){
             start = it->index;
@@ -488,12 +488,12 @@ Selection Model::idAt(const Marker& marker) noexcept{
         if(tag.index == marker.index){
             if(!isId(tag.type)) continue;
             size_t start = marker.index;
-            size_t end = i+1==marker.text->tags.size() ? marker.text->size() : marker.text->tags[i+1].index;
+            size_t end = i+1==marker.text->tags.size() ? marker.text->numChars() : marker.text->tags[i+1].index;
             return Selection(marker.text, start, end);
         }else if(tag.index < marker.index){
             if(!isId(tag.type)) return Selection();
             size_t start = tag.index;
-            size_t end = i+1==marker.text->tags.size() ? marker.text->size() : marker.text->tags[i+1].index;
+            size_t end = i+1==marker.text->tags.size() ? marker.text->numChars() : marker.text->tags[i+1].index;
             return Selection(marker.text, start, end);
         }
     }

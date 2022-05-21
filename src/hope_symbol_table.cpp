@@ -80,7 +80,7 @@ std::vector<Typeset::Selection> SymbolTable::getSuggestions(const Typeset::Marke
     while(left.atTextStart()){
         if(left.atFirstTextInPhrase()) return std::vector<Typeset::Selection>();
         left.text = loc.text->prevTextAsserted();
-        left.index = left.text->size();
+        left.index = left.text->numChars();
     }
     left.decrementToPrevWord();
     Typeset::Selection typed(left, loc);

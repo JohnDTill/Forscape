@@ -21,10 +21,10 @@ public:
     double symbol_width;
 
     virtual void updateSizeSpecific() noexcept override {
-        symbol_width = getWidth(SEM_DEFAULT, parent->script_level, "⋃");
+        symbol_width = CHARACTER_WIDTHS[scriptDepth()];
         width = std::max(symbol_width, child()->width);
-        above_center = getAboveCenter(SEM_DEFAULT, parent->script_level);
-        under_center = getUnderCenter(SEM_DEFAULT, parent->script_level) + child()->height();
+        above_center = ABOVE_CENTER[scriptDepth()];
+        under_center = UNDER_CENTER[scriptDepth()] + child()->height();
     }
 
     virtual void updateChildPositions() override {

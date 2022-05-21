@@ -25,7 +25,7 @@ public:
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }
 
     virtual void updateSizeSpecific() noexcept override {
-        double word_width = getWidth(SEM_DEFAULT, scriptDepth(), std::string(word.data(), word.size()));
+        double word_width = CHARACTER_WIDTHS[scriptDepth()]*word.size();
         if(word_width > child()->width){
             width = word_width;
             word_offset = 0;

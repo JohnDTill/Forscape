@@ -41,13 +41,14 @@ class Text {
         Construct* nextConstructAsserted() const noexcept;
         Construct* prevConstructAsserted() const noexcept;
         void writeString(std::string& out, size_t& curr) const noexcept;
-        void writeString(std::string& out, size_t& curr, size_t pos, size_t len = std::string::npos) const noexcept;
+        void writeString(std::string& out, size_t& curr, size_t pos) const noexcept;
+        void writeString(std::string& out, size_t& curr, size_t pos, size_t len) const noexcept;
         bool isTopLevel() const noexcept;
         bool isNested() const noexcept;
-        size_t size() const noexcept;
+        size_t numChars() const noexcept;
         bool empty() const noexcept;
-        char at(size_t index) const noexcept;
         std::string substr(size_t pos, size_t len = std::string::npos) const;
+        char charAt(size_t char_index) const noexcept;
         std::string_view codepointAt(size_t index) const noexcept;
         std::string_view graphemeAt(size_t index) const noexcept;
         size_t leadingSpaces() const noexcept;
@@ -69,19 +70,17 @@ class Text {
         #endif
 
         #ifndef HOPE_TYPESET_HEADLESS
-        double aboveCenter() const;
-        double underCenter() const;
-        double height() const;
-        void updateWidth();
-        void invalidateX() noexcept;
-        double xLocal(size_t index) const;
+        double aboveCenter() const noexcept;
+        double underCenter() const noexcept;
+        double height() const noexcept;
+        double xLocal(size_t index) const noexcept;
         double xPhrase(size_t index) const;
         double xGlobal(size_t index) const;
         double xRight() const noexcept;
         double getWidth() const noexcept;
         uint8_t scriptDepth() const noexcept;
-        size_t indexNearest(double x_in) const noexcept;
-        size_t indexLeft(double x_in) const noexcept;
+        size_t charIndexNearest(double x_in) const noexcept;
+        size_t charIndexLeft(double x_in) const noexcept;
         void paint(Painter& painter, bool forward = true) const;
         void paintUntil(Painter& painter, size_t stop, bool forward = true) const;
         void paintAfter(Painter& painter, size_t start, bool forward = true) const;
@@ -97,7 +96,6 @@ class Text {
 
     private:
         Phrase* parent;
-        double width;
 };
 
 }

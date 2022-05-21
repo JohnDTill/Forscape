@@ -12,6 +12,19 @@
 #include <QLabel>
 #include <QPainterPath>
 
+//DO THIS - codegen
+static constexpr double ASCENT[3] = {
+    12.34375,
+    8.546875,
+    6.65625,
+};
+
+static constexpr double CAPHEIGHT[3] = {
+    9.421875,
+    6.515625,
+    5.0625,
+};
+
 namespace Hope {
 
 namespace Typeset {
@@ -35,9 +48,11 @@ static QFont line_font;
 
 static QFont readFont(const QString& file, const QString& name, const QString& family){
     int id = QFontDatabase::addApplicationFont(file);
+    #ifdef NDEBUG
+    (void)id;
+    #endif
     assert(id!=-1);
     QFont font = QFontDatabase().font(name, family, depthToFontSize(0));
-    font.setKerning(false); //Probably can't have kerning and draw overlapping subtext
 
     return font;
 }
@@ -76,49 +91,6 @@ static QColor getColor(SemanticType type) noexcept {
     return Typeset::getColour(sem_colours[type]);
 }
 
-static double getWidth(const QFont& font, const std::string& text){
-    return QFontMetricsF(font).horizontalAdvance( QString::fromStdString(text) );
-}
-
-static double getWidth(const QFont& font, char ch){
-    return QFontMetricsF(font).horizontalAdvance(ch);
-}
-
-double getWidth(SemanticType type, uint8_t depth, const std::string& text){
-    return getWidth(getFont(type, depth), text);
-}
-
-double getWidth(SemanticType type, uint8_t depth, char ch){
-    return getWidth(getFont(type, depth), ch);
-}
-
-double getHeight(SemanticType type, uint8_t depth){
-    QFontMetrics fm(getFont(type, depth));
-    return fm.capHeight()+fm.descent();
-}
-
-double getAscent(SemanticType type, uint8_t depth){
-    return QFontMetrics(getFont(type, depth)).ascent();
-}
-
-double getDescent(SemanticType type, uint8_t depth){
-    return QFontMetrics(getFont(type, depth)).descent();
-}
-
-double getXHeight(SemanticType type, uint8_t depth){
-    return QFontMetrics(getFont(type, depth)).xHeight();
-}
-
-double getAboveCenter(SemanticType type, uint8_t depth){
-    QFontMetrics fm(getFont(type, depth));
-    return fm.capHeight() - static_cast<double>(fm.xHeight()+fm.capHeight())/3;
-}
-
-double getUnderCenter(SemanticType type, uint8_t depth){
-    QFontMetrics fm(getFont(type, depth));
-    return fm.descent() + static_cast<double>(fm.xHeight()+fm.capHeight())/3;
-}
-
 Painter::Painter(WrappedPainter& painter)
     : painter(painter) {}
 
@@ -146,44 +118,41 @@ void Painter::setOffset(double x, double y){
     x_offset = x;
 }
 
-void Painter::drawText(double x, double y, const std::string& text, bool forward){
+void Painter::drawText(double x, double y, std::string_view text, bool forward){
     x += x_offset;
-    QString q_str = QString::fromStdString(text);
+    QString q_str = QString::fromUtf8(text.data(), text.size());
 
     if(forward){
-        y += painter.fontMetrics().capHeight();
+        y += CAPHEIGHT[depth];
         painter.drawText(x, y, q_str);
     }else{
-        y += painter.fontMetrics().capHeight();
-        y -= painter.fontMetrics().ascent();
-        double h = painter.fontMetrics().height();
-        double w = QFontMetricsF(painter.font()).horizontalAdvance(q_str);
+        y += CAPHEIGHT[depth];
+        y -= ASCENT[depth];
+        double h = CHARACTER_HEIGHTS[depth];
+        double w = CHARACTER_WIDTHS[depth]*q_str.size();
         painter.drawText(QRectF(x, y, w, h), Qt::AlignRight|Qt::AlignBaseline, q_str);
     }
 }
 
-void Painter::drawHighlightedGrouping(double x, double y, double w, const std::string& text){
+void Painter::drawHighlightedGrouping(double x, double y, double w, std::string_view text){
     x += x_offset;
 
     painter.setPen(getColour(COLOUR_GROUPINGBACKGROUND));
     painter.setBrush(getColour(COLOUR_GROUPINGBACKGROUND));
-    painter.drawRect(x, y, w, painter.fontMetrics().ascent());
+    painter.drawRect(x, y, w, ASCENT[depth]);
 
     painter.setPen(getColour(COLOUR_GROUPINGHIGHLIGHT));
-    y += painter.fontMetrics().capHeight();
-    painter.drawText(x, y, QString::fromStdString(text));
+    y += CAPHEIGHT[depth];
+    painter.drawText(x, y, QString::fromUtf8(text.data(), text.size()));
 
     painter.setPen(getColour(COLOUR_CURSOR));
     painter.setBrush(getColour(COLOUR_CURSOR));
 }
 
-void Painter::drawSymbol(double x, double y, const std::string& text){
+void Painter::drawSymbol(double x, double y, std::string_view text){
     x += x_offset;
-    QFont font = painter.font();
-    font.setPointSizeF(1*font.pointSizeF());
-    painter.setFont(font);
-    y += painter.fontMetrics().capHeight();
-    painter.drawText(x, y, QString::fromStdString(text));
+    y += CAPHEIGHT[depth];
+    painter.drawText(x, y, QString::fromUtf8(text.data(), text.size()));
 }
 
 void Painter::drawLine(double x, double y, double w, double h){
@@ -315,20 +284,14 @@ void Painter::drawDot(double x, double y){
     painter.drawText(x, y, QChar('.'));
 }
 
-double Painter::getWidth(const std::string& text){
-    assert(painter.font().kerning() == false);
-    return QFontMetricsF(painter.font()).horizontalAdvance( QString::fromStdString(text) );
-}
-
 void Painter::drawLineNumber(double y, size_t num, bool active){
     if(active) painter.setPen(getColour(COLOUR_LINENUMACTIVE));
     else painter.setPen(getColour(COLOUR_LINENUMPASSIVE));
 
     painter.setFont(line_font);
-    QFontMetricsF fm (painter.font());
     QString str = QString::number(num);
-    qreal x = x_offset - fm.horizontalAdvance(str);
-    y += painter.fontMetrics().descent() / 2;
+    qreal x = x_offset - CHARACTER_WIDTHS[depth]*str.size();
+    y += DESCENT[0] / 2;
     painter.drawText(x, y, str);
 }
 
@@ -339,10 +302,10 @@ void Painter::setSelectionMode(){
 void Painter::drawSymbol(char ch, double x, double y, double w, double h){
     x += x_offset;
 
-    double scale_x = w / QFontMetricsF(painter.font()).horizontalAdvance(ch);
-    double scale_y = h / painter.fontMetrics().ascent();
+    double scale_x = w / CHARACTER_WIDTHS[depth];
+    double scale_y = h / ASCENT[depth];
     x /= scale_x;
-    y = (y + h - painter.fontMetrics().descent()) / scale_y;
+    y = (y + h - DESCENT[depth]) / scale_y;
 
     QTransform transform = painter.transform();
     painter.scale(scale_x, scale_y);
@@ -350,14 +313,14 @@ void Painter::drawSymbol(char ch, double x, double y, double w, double h){
     painter.setTransform(transform);
 }
 
-void Painter::drawSymbol(const std::string& str, double x, double y, double w, double h){
+void Painter::drawSymbol(std::string_view str, double x, double y, double w, double h){
     x += x_offset;
 
-    QString qstr = QString::fromStdString(str);
-    double scale_x = w / QFontMetricsF(painter.font()).horizontalAdvance(qstr);
-    double scale_y = h / painter.fontMetrics().ascent();
+    QString qstr = QString::fromUtf8(str.data(), str.size());
+    double scale_x = w / CHARACTER_WIDTHS[depth]*qstr.size();
+    double scale_y = h / ASCENT[depth];
     x /= scale_x;
-    y = (y + h - painter.fontMetrics().descent()) / scale_y;
+    y = (y + h - DESCENT[depth]) / scale_y;
 
     QTransform transform = painter.transform();
     painter.scale(scale_x, scale_y);
