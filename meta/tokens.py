@@ -18,7 +18,7 @@ def main():
         inner_namespace="Code",
     )
 
-    header_writer.write("enum TokenType {\n")
+    header_writer.write("enum HopeTokenType {\n")
     for token in tokens:
         header_writer.write(f"    {token.enum.upper()},\n")
     for construct in constructs:

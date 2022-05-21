@@ -97,7 +97,7 @@ inline size_t numBytesInGrapheme(const std::string& str, size_t index) noexcept 
     size_t start = index;
     do {
         index += codepointSize(str[index]);
-    } while(index < str.size() && isZeroWidth(codepointInt(str, index)));
+    } while(index < str.size() && !isAscii(str[index]) && isZeroWidth(codepointInt(str, index)));
 
     return index - start;
 }
@@ -118,8 +118,13 @@ inline size_t countGraphemes(StringType str) noexcept {
     size_t num_graphemes = 0;
     size_t index = 0;
     while(index < str.size()){
-        num_graphemes += !isZeroWidth(codepointInt(str, index));
-        index += codepointSize(str[index]);
+        if(isAscii(str[index])){
+            index++;
+            num_graphemes++;
+        }else{
+            num_graphemes += !isZeroWidth(codepointInt(str, index));
+            index += codepointSize(str[index]);
+        }
     }
 
     return num_graphemes;
