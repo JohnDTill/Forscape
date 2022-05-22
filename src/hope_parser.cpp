@@ -28,6 +28,13 @@ void Parser::parseAll() alloc_except {
     Typeset::Selection c(tokens.front().sel.left, tokens.back().sel.right);
     parse_tree.root = parse_tree.finishNary(OP_BLOCK, c);
 
+    //Patch lazy calculator
+    if(parse_tree.getNumArgs(parse_tree.root) == 1){
+        ParseNode stmt = parse_tree.child(parse_tree.root);
+        if(parse_tree.getOp(stmt) == OP_EXPR_STMT)
+            parse_tree.setOp(stmt, OP_PRINT);
+    }
+
     assert(!errors.empty() || parse_tree.inFinalState());
     assert((errors.empty() == (error_node == NONE)) || (scanner_error && (error_node == NONE)));
 }

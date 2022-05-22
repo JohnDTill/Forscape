@@ -11,9 +11,10 @@ def main():
     header_writer.write(
         "inline bool isZeroWidth(uint32_t code) noexcept {\n"
         "    switch(code){\n")
-    for i in range(256, 1000000):
+    for i in range(256, 1114112):
         ch = chr(i)
         if wcwidth(ch) == 0:
+            print(f"{i},")
             header_writer.write(f"        case {unicode.to_num(ch)}:\n")
     header_writer.write(
         "            return true;\n"

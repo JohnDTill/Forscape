@@ -121,14 +121,14 @@ void SymbolSubstitutionEditor::populateFromMap(){
         first_item->setTextAlignment(Qt::AlignCenter);
         uint32_t first = entry.first.first;
         first_item->setData(Qt::UserRole, first);
-        first_item->setText(QString::fromStdString(Hope::fromCode(first)));
+        first_item->setText(QString::fromStdString(Hope::fromCodepointBytes(first)));
         setItem(row, FIRST_COL, first_item);
 
         QTableWidgetItem* second_item = new QTableWidgetItem();
         second_item->setTextAlignment(Qt::AlignCenter);
         uint32_t second = entry.first.second;
         second_item->setData(Qt::UserRole, second);
-        second_item->setText(QString::fromStdString(Hope::fromCode(second)));
+        second_item->setText(QString::fromStdString(Hope::fromCodepointBytes(second)));
         setItem(row, SECOND_COL, second_item);
 
         QTableWidgetItem* final_item = new QTableWidgetItem();

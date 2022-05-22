@@ -6,7 +6,6 @@
 //         probably:
 //            - Finish the codegen, verify it looks good on Linux, and merge
 //            - Update the size calculations with the new assumption that width and layout only change on mutation
-//            - Can spend a bit of time speeding up the zero-width char lookup
 //            - Make sure the console has a buffer/line limit to prevent overload
 
 #include "typeset_controller.h"

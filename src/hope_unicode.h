@@ -28,8 +28,14 @@ inline constexpr bool isAscii(char ch) noexcept{
     return ch >> 7 == 0;
 }
 
+#ifndef NDEBUG
+inline constexpr bool seventhBitSet(char ch) noexcept{
+    return (ch & (1 << 6));
+}
+#endif
+
 inline constexpr bool sixthBitSet(char ch) noexcept{
-    return !(ch & (1 << 5));
+    return (ch & (1 << 5));
 }
 
 inline constexpr bool sixthBitUnset(char ch) noexcept{
@@ -37,7 +43,7 @@ inline constexpr bool sixthBitUnset(char ch) noexcept{
 }
 
 inline constexpr bool fifthBitSet(char ch) noexcept{
-    return !(ch & (1 << 4));
+    return (ch & (1 << 4));
 }
 
 inline constexpr bool fifthBitUnset(char ch) noexcept{
@@ -113,6 +119,57 @@ inline size_t graphemeSizeLeft(const std::string& str, size_t index) noexcept {
     return end-index;
 }
 
+inline std::string fromCodepointBytes(uint32_t bytes){
+    std::string str;
+    str += static_cast<uint8_t>(bytes);
+
+    if(bytes & (1 << 7)){
+        str += static_cast<uint8_t>(bytes >> 8);
+        if(bytes & (1 << 6)){
+            str += static_cast<uint8_t>(bytes >> 16);
+            if(bytes & (1 << 5)) str += static_cast<uint8_t>(bytes >> 24);
+        }
+    }
+
+    return str;
+}
+
+inline constexpr uint32_t constructScannerCode(uint32_t code) noexcept {
+    uint32_t val = static_cast<uint32_t>(1 << 7) | code;
+    assert(isContinuationCharacter(val));
+    //Map constructs to continuation characters since they are free
+    //   NOTE: this assumes valid UTF-8
+
+    return val;
+}
+
+template<uint8_t N>
+inline constexpr uint32_t firstBits(uint8_t ch) noexcept {
+    return ch & ((1 << N) - 1);
+}
+
+template<typename StringType>
+inline uint32_t codepoint(StringType str, size_t index) noexcept {
+    assert(index < str.size());
+
+    uint32_t first = static_cast<uint8_t>(str[index]);
+    if(isAscii(first)) return first;
+    assert(seventhBitSet(first));
+    if(sixthBitUnset(first)){
+        uint32_t b2 = firstBits<6>(str[index+1]);
+        return (firstBits<5>(first) << 6) | b2;
+    }else if(fifthBitSet(first)){
+        uint32_t b2 = firstBits<6>(str[index+1]);
+        uint32_t b3 = firstBits<6>(str[index+2]);
+        uint32_t b4 = firstBits<6>(str[index+3]);
+        return (firstBits<3>(first) << 18) | (b2 << 12) | (b3 << 6) | b4;
+    }else{
+        uint32_t b2 = firstBits<6>(str[index+1]);
+        uint32_t b3 = firstBits<6>(str[index+2]);
+        return (firstBits<4>(first) << 12) | (b2 << 6) | b3;
+    }
+}
+
 template<typename StringType>
 inline size_t countGraphemes(StringType str) noexcept {
     size_t num_graphemes = 0;
@@ -128,30 +185,6 @@ inline size_t countGraphemes(StringType str) noexcept {
     }
 
     return num_graphemes;
-}
-
-inline std::string fromCode(uint32_t code){
-    std::string str;
-    str += static_cast<uint8_t>(code);
-
-    if(code & (1 << 7)){
-        str += static_cast<uint8_t>(code >> 8);
-        if(code & (1 << 6)){
-            str += static_cast<uint8_t>(code >> 16);
-            if(code & (1 << 5)) str += static_cast<uint8_t>(code >> 24);
-        }
-    }
-
-    return str;
-}
-
-inline constexpr uint32_t constructScannerCode(uint32_t code) noexcept {
-    uint32_t val = static_cast<uint32_t>(1 << 7) | code;
-    assert(isContinuationCharacter(val));
-    //Map constructs to continuation characters since they are free
-    //   NOTE: this assumes valid UTF-8
-
-    return val;
 }
 
 }
