@@ -173,7 +173,9 @@ static void updateDoubleClickTime() noexcept {
     double_click_time = std::chrono::steady_clock::now();
 }
 
-View::View()
+std::list<View*> View::all_views;
+
+View::View() noexcept
     : model(Model::fromSerial("")),
       controller(model) {
     setFocusPolicy(Qt::ClickFocus);
@@ -191,15 +193,20 @@ View::View()
 
     v_scroll = new VerticalScrollBar(Qt::Vertical, this, *this);
     h_scroll = new QScrollBar(Qt::Horizontal, this);
-    connect(v_scroll, SIGNAL(valueChanged(int)), this, SLOT(repaint()));
-    connect(h_scroll, SIGNAL(valueChanged(int)), this, SLOT(repaint()));
+    connect(v_scroll, SIGNAL(valueChanged(int)), this, SLOT(update()));
+    connect(h_scroll, SIGNAL(valueChanged(int)), this, SLOT(update()));
 
     v_scroll->setCursor(Qt::ArrowCursor);
     h_scroll->setCursor(Qt::ArrowCursor);
+
+    updateBackgroundColour();
+    setAutoFillBackground(true);
+    all_views.push_back(this);
 }
 
-View::~View(){
+View::~View() noexcept {
     if(model_owned) delete model;
+    all_views.remove(this);
 }
 
 void View::setFromSerial(const std::string& src, bool is_output){
@@ -210,7 +217,7 @@ void View::setFromSerial(const std::string& src, bool is_output){
     updateXSetpoint();
     handleResize();
     updateHighlighting();
-    repaint();
+    update();
 }
 
 std::string View::toSerial() const{
@@ -228,7 +235,7 @@ void View::setModel(Model* m, bool owned){
     model = m;
     controller = Controller(model);
     updateXSetpoint();
-    repaint();
+    update();
     handleResize();
 }
 
@@ -270,7 +277,7 @@ void View::replaceAll(const std::vector<Selection>& targets, const std::string& 
 
     restartCursorBlink();
     ensureCursorVisible();
-    repaint();
+    update();
 }
 
 void View::dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held){
@@ -292,7 +299,7 @@ void View::dispatchClick(double x, double y, int xScreen, int yScreen, bool righ
 
     restartCursorBlink();
     updateHighlighting();
-    repaint();
+    update();
 }
 
 void View::dispatchRelease(double x, double y){
@@ -305,7 +312,7 @@ void View::dispatchRelease(double x, double y){
 
     mouse_hold_state = Hover;
 
-    repaint();
+    update();
 }
 
 void View::dispatchDoubleClick(double x, double y){
@@ -313,7 +320,7 @@ void View::dispatchDoubleClick(double x, double y){
 
     if(!isInLineBox(x)){
         resolveWordClick(x, y);
-        repaint();
+        update();
     }
 
     mouse_hold_state = DoubleClick;
@@ -327,9 +334,9 @@ void View::dispatchHover(double x, double y){
         case Hover: resolveTooltip(x, y); break;
         case SingleClick:
             logger->info("{}dispatchHover({}, {}); //Drag to select", logPrefix(), x, y);
-            resolveShiftClick(x, y); repaint(); break;
-        case DoubleClick: resolveWordDrag(x, y); repaint(); break;
-        case TripleClick: resolveLineDrag(y); repaint(); break;
+            resolveShiftClick(x, y); update(); break;
+        case DoubleClick: resolveWordDrag(x, y); update(); break;
+        case TripleClick: resolveLineDrag(y); update(); break;
         case ClickedOnSelection:
             mouse_hold_state = SelectionDrag;
             QWidget::setCursor(Qt::DragMoveCursor);
@@ -349,7 +356,7 @@ void View::dispatchMousewheel(bool ctrl_held, bool up){
         else scrollDown();
     }
 
-    repaint();
+    update();
 }
 
 void View::resolveClick(double x, double y) noexcept{
@@ -601,7 +608,7 @@ void View::restartCursorBlink() noexcept{
 
 void View::stopCursorBlink(){
     show_cursor = false;
-    repaint();
+    update();
     cursor_blink_timer->stop();
 }
 
@@ -621,7 +628,7 @@ bool View::scrolledToBottom() const noexcept{
 
 void View::scrollToBottom(){
     v_scroll->setValue(v_scroll->maximum());
-    repaint();
+    update();
 }
 
 bool View::lineNumbersShown() const noexcept{
@@ -689,7 +696,7 @@ void View::goToLine(size_t line_num){
     controller.setBothToBackOf(model->lines[line_num]->back());
     ensureCursorVisible();
     restartCursorBlink();
-    repaint();
+    update();
 }
 
 bool View::isRunning() const noexcept{
@@ -700,6 +707,12 @@ void View::reenable() noexcept{
     assert(model->interpreter.status == Code::Interpreter::FINISHED);
     is_running = false;
     allow_write = true;
+}
+
+void View::updateBackgroundColour() noexcept {
+    QPalette pal = QPalette();
+    pal.setColor(QPalette::Window, getColour(COLOUR_BACKGROUND));
+    setPalette(pal);
 }
 
 double View::xOrigin() const{
@@ -786,13 +799,13 @@ void View::focusOutEvent(QFocusEvent* e){
         if(allow_write) controller.tab();
         ensureCursorVisible();
         updateHighlighting();
-        repaint();
+        update();
     }else if(e->reason() == Qt::BacktabFocusReason){
         setFocus(Qt::BacktabFocusReason);
         if(allow_write) controller.detab();
         ensureCursorVisible();
         updateHighlighting();
-        repaint();
+        update();
     }else{
         stopCursorBlink();
         //EVENTUALLY: why was this here?
@@ -809,7 +822,7 @@ void View::resizeEvent(QResizeEvent* e){
 
 void View::onBlink() noexcept{
     show_cursor = !show_cursor && hasFocus();
-    repaint();
+    update();
     cursor_blink_timer->start(CURSOR_BLINK_INTERVAL);
 }
 
@@ -829,8 +842,8 @@ void View::cut(){
 
     ensureCursorVisible();
     updateHighlighting();
-    repaint();
-    v_scroll->repaint();
+    update();
+    v_scroll->update();
     qApp->processEvents();
 
     emit textChanged();
@@ -847,8 +860,8 @@ void View::del(){
 
     ensureCursorVisible();
     updateHighlighting();
-    repaint();
-    v_scroll->repaint();
+    update();
+    v_scroll->update();
     qApp->processEvents();
 
     emit textChanged();
@@ -863,11 +876,6 @@ void View::setCursorAppearance(double x, double y){
             QWidget::setCursor(isInLineBox(x) ? Qt::ArrowCursor : Qt::IBeamCursor);
         }
     }
-}
-
-void View::drawBackground(const QRect& rect){
-    QPainter p(this);
-    p.fillRect(rect, getColour(COLOUR_BACKGROUND));
 }
 
 void View::drawModel(double xL, double yT, double xR, double yB){
@@ -899,9 +907,9 @@ void View::drawModel(double xL, double yT, double xR, double yB){
 
     model->paint(painter, xL, yT, xR, yB);
     model->paintGroupings(painter, cursor);
-    controller.paintSelection(painter);
+    controller.paintSelection(painter, yT, yB);
     if(show_cursor){
-        if(insert_mode) controller.paintInsertCursor(painter);
+        if(insert_mode) controller.paintInsertCursor(painter, yT, yB);
         else controller.paintCursor(painter);
     }
 }
@@ -1025,9 +1033,9 @@ void View::undo(){
     ensureCursorVisible();
     updateHighlighting();
     recommender->hide();
-    repaint();
+    update();
 
-    v_scroll->repaint();
+    v_scroll->update();
     qApp->processEvents();
 
     emit textChanged();
@@ -1040,8 +1048,8 @@ void View::redo(){
     ensureCursorVisible();
     updateHighlighting();
     recommender->hide();
-    repaint();
-    v_scroll->repaint();
+    update();
+    v_scroll->update();
     qApp->processEvents();
 
     emit textChanged();
@@ -1083,7 +1091,7 @@ void View::goToDef(){
     controller = symbol_table.getSel(lookup->second);
     restartCursorBlink();
     ensureCursorVisible();
-    repaint();
+    update();
 }
 
 void View::findUsages(){
@@ -1154,7 +1162,7 @@ void View::handleKey(int key, int modifiers, const std::string& str){
         case Qt::Key_Home|Ctrl: controller.moveToStartOfDocument(); updateXSetpoint(); restartCursorBlink(); update(); break;
         case Qt::Key_End|Ctrl: controller.moveToEndOfDocument(); updateXSetpoint(); restartCursorBlink(); update(); break;
         case Qt::Key_Right|Shift: controller.selectNextChar(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_Left|Shift: controller.selectPrevChar(); updateXSetpoint(); restartCursorBlink(); update(); repaint(); break;
+        case Qt::Key_Left|Shift: controller.selectPrevChar(); updateXSetpoint(); restartCursorBlink(); update(); update(); break;
         case Qt::Key_Right|CtrlShift: controller.selectNextWord(); updateXSetpoint(); restartCursorBlink(); update(); break;
         case Qt::Key_Left|CtrlShift: controller.selectPrevWord(); updateXSetpoint(); restartCursorBlink(); update(); break;
         case Qt::Key_Down|Shift: controller.selectNextLine(x_setpoint); restartCursorBlink(); update(); break;
@@ -1236,8 +1244,8 @@ void View::handleKey(int key, int modifiers, const std::string& str){
     }
     ensureCursorVisible();
     updateHighlighting();
-    repaint();
-    v_scroll->repaint();
+    update();
+    v_scroll->update();
     qApp->processEvents();
 
     emit textChanged();
@@ -1249,8 +1257,8 @@ void View::paste(const std::string& str){
 
     ensureCursorVisible();
     updateHighlighting();
-    repaint();
-    v_scroll->repaint();
+    update();
+    v_scroll->update();
     qApp->processEvents();
 
     emit textChanged();
@@ -1269,8 +1277,8 @@ void View::rename(const std::string& str){
 
     ensureCursorVisible();
     updateHighlighting();
-    repaint();
-    v_scroll->repaint();
+    update();
+    v_scroll->update();
     qApp->processEvents();
 
     emit textChanged();
@@ -1293,8 +1301,8 @@ void View::takeRecommendation(const std::string& str){
 
     ensureCursorVisible();
     updateHighlighting();
-    repaint();
-    v_scroll->repaint();
+    update();
+    v_scroll->update();
     qApp->processEvents();
 
     emit textChanged();
@@ -1307,7 +1315,6 @@ void View::paintEvent(QPaintEvent* event){
     double xR = xModel(r.x() + r.width());
     double yB = yModel(r.y() + r.height());
 
-    drawBackground(event->rect());
     drawModel(xL, yT, xR, yB);
     drawLinebox(yT, yB);
     fillInScrollbarCorner();

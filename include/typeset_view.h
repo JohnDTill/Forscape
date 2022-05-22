@@ -1,6 +1,10 @@
 #ifndef TYPESET_VIEW_H
 #define TYPESET_VIEW_H
 
+//DO THIS: selected text stops drawing after line 493447
+//DO THIS: drag to scroll isn't working
+//DO THIS: the app becomes nearly unresponsive in a script that just keeps printing
+
 #include "typeset_controller.h"
 #include "typeset_painter.h"
 
@@ -19,8 +23,9 @@ class View : public QWidget {
     Q_OBJECT
 
 public:
-    View();
-    virtual ~View() override;
+    static std::list<View*> all_views;
+    View() noexcept;
+    virtual ~View() noexcept override;
     void setFromSerial(const std::string& src, bool is_output = false);
     std::string toSerial() const;
     Model* getModel() const noexcept;
@@ -49,6 +54,7 @@ public:
     View* console = nullptr;
     bool isRunning() const noexcept;
     void reenable() noexcept;
+    void updateBackgroundColour() noexcept;
 
 protected:
     void dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held);
@@ -125,7 +131,6 @@ protected:
 
 protected:
     void setCursorAppearance(double x, double y);
-    void drawBackground(const QRect& rect);
     void drawLinebox(double yT, double yB);
     void fillInScrollbarCorner();
     void handleResize();

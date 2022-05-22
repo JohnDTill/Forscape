@@ -200,7 +200,7 @@ SemanticType Text::getTypePrev() const noexcept{
     return SEM_DEFAULT;
 }
 
-void Text::tag(SemanticType type, size_t start, size_t stop){
+void Text::tag(SemanticType type, size_t start, size_t stop) alloc_except {
     assert(std::is_sorted(tags.begin(), tags.end(), [](auto& a, auto& b){return a.index < b.index;}));
 
     SemanticType type_after = getTypeLeftOf(stop);
@@ -224,7 +224,7 @@ void Text::tag(SemanticType type, size_t start, size_t stop){
     assert(std::is_sorted(tags.begin(), tags.end(), [](auto& a, auto& b){return a.index < b.index;}));
 }
 
-void Text::tagBack(SemanticType type){
+void Text::tagBack(SemanticType type) alloc_except {
     assert(tags.empty() || tags.back().index != numChars());
     tags.push_back( SemanticTag(numChars(), type) );
 }
@@ -408,7 +408,7 @@ bool Text::containsXInBounds(double x_test, size_t start, size_t stop) const noe
     return x_test >= xGlobal(start) && x_test <= xGlobal(stop);
 }
 
-void Text::resize() {
+void Text::resize() noexcept {
     parent->resize();
 }
 #endif

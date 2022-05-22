@@ -61,8 +61,8 @@ class Text {
 
         SemanticType getTypeLeftOf(size_t index) const noexcept;
         SemanticType getTypePrev() const noexcept;
-        void tag(SemanticType type, size_t start, size_t stop);
-        void tagBack(SemanticType type);
+        void tag(SemanticType type, size_t start, size_t stop) alloc_except;
+        void tagBack(SemanticType type) alloc_except;
         std::vector<SemanticTag> tags;
 
         #ifdef HOPE_SEMANTIC_DEBUGGING
@@ -89,7 +89,7 @@ class Text {
         bool containsX(double x_test) const noexcept;
         bool containsY(double y_test) const noexcept;
         bool containsXInBounds(double x_test, size_t start, size_t stop) const noexcept;
-        void resize();
+        void resize() noexcept;
         double x;
         double y;
         #endif

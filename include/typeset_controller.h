@@ -95,9 +95,9 @@ public:
     void selectNextPage(double setpoint, double page_height) noexcept;
     void selectPrevPage(double setpoint, double page_height) noexcept;
     bool contains(double x, double y) const;
-    void paintSelection(Painter& painter) const;
+    void paintSelection(Painter& painter, double yT, double yB) const;
     void paintCursor(Painter& painter) const;
-    void paintInsertCursor(Painter& painter) const;
+    void paintInsertCursor(Painter& painter, double yT, double yB) const;
     #endif
 
     static constexpr size_t INDENT_SIZE = 4;

@@ -63,8 +63,8 @@ public:
     void paint(Painter& painter) const;
     void paintSelectionText(Painter& painter, bool forward) const;
     void paintSelectionPhrase(Painter& painter, bool forward) const;
-    void paintSelectionLines(Painter& painter, bool forward) const;
-    void paintSelection(Painter& painter, bool forward) const;
+    void paintSelectionLines(Painter& painter, bool forward, double yT, double yB) const;
+    void paintSelection(Painter& painter, bool forward, double yT, double yB) const;
     void paintError(Painter& painter) const;
     void paintErrorSelectionless(Painter& painter) const;
     void paintErrorText(Painter& painter) const;

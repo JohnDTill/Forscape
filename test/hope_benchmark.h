@@ -19,6 +19,9 @@ static constexpr size_t ITER_CALC_SIZE = 500000;
 static constexpr size_t ITER_LAYOUT = 1000000;
 static constexpr size_t ITER_PAINT = 500;
 static constexpr size_t ITER_LOOP = 500;
+static constexpr size_t ITER_PRINT_SIZE = 500;
+static constexpr size_t ITER_PRINT_LAYOUT = 500;
+static constexpr size_t ITER_PRINT_PAINT = 30;
 
 void runBenchmark(){
     std::string src = readFile("../test/interpreter_scripts/in/root_finding_terse.txt");
@@ -93,18 +96,38 @@ void runBenchmark(){
 
     startClock();
     for(size_t i = 0; i < ITER_PAINT; i++) view.render(&painter);
-    //30hz => 33.33ms, 60hz => 16.67ms, 144hz => 6.944ms
-    //DO THIS: 4k@144hz is decent, but painting is in serial with other GUI thread costs
-    //         check for obvious improvements
     report("Paint", ITER_PAINT);
     #endif
 
-    m = Typeset::Model::fromSerial("for(i ← 0; i ≤ 200; i ← i + 1)\n    print(i, \"\\n\")");
+    m = Typeset::Model::fromSerial("for(i ← 0; i ≤ 50000; i ← i + 1)\n    print(i, \"\\n\")");
 
     startClock();
     for(size_t i = 0; i < ITER_LOOP; i++)
         m->run();
-    report("Print Loop", ITER_LOOP);
+    report("Print 50000 Loop", ITER_LOOP);
+
+    #ifndef HOPE_TYPESET_HEADLESS
+    Typeset::Model* temp = m;
+    m = Typeset::Model::fromSerial(m->run());
+    delete temp;
+
+    startClock();
+    for(size_t i = 0; i < ITER_PRINT_SIZE; i++)
+        m->calculateSizes();
+    report("Print output size", ITER_PRINT_SIZE);
+
+    startClock();
+    for(size_t i = 0; i < ITER_PRINT_LAYOUT; i++)
+        m->updateLayout();
+    report("Print output layout", ITER_PRINT_LAYOUT);
+
+    view.resize(QSize(1920*2, 1080*2));
+    view.setModel(m);
+
+    startClock();
+    for(size_t i = 0; i < ITER_PRINT_PAINT; i++) view.render(&painter);
+    report("Print output Paint", ITER_PRINT_PAINT);
+    #endif
 
     recordResults();
 }

@@ -610,7 +610,7 @@ void Selection::paintSelectionPhrase(Painter& painter, bool forward) const{
     phrase()->paintMid(painter, tL, iL, tR, iR, forward);
 }
 
-void Selection::paintSelectionLines(Painter& painter, bool forward) const {
+void Selection::paintSelectionLines(Painter& painter, bool forward, double yT, double yB) const {
     double y = lL->y;
     double h = lL->height();
 
@@ -625,7 +625,11 @@ void Selection::paintSelectionLines(Painter& painter, bool forward) const {
     }
     lL->paintAfter(painter, tL, iL, forward);
 
-    for(Line* l = lL->nextAsserted(); l != lR; l = l->nextAsserted()){
+    Line* l = lL->nextAsserted();
+    Line* candidate = l->nearestAbove(yT);
+    if(candidate->id > l->id) l = candidate;
+    for(; l != lR; l = l->nextAsserted()){
+        if(l->y > yB) return;
         painter.drawSelection(l->x, l->y, l->width + NEWLINE_EXTRA, l->height());
         l->paint(painter, forward);
     }
@@ -640,12 +644,12 @@ void Selection::paintSelectionLines(Painter& painter, bool forward) const {
     lR->paintUntil(painter, tR, iR, forward);
 }
 
-void Selection::paintSelection(Painter& painter, bool forward) const{
+void Selection::paintSelection(Painter& painter, bool forward, double yT, double yB) const {
     painter.setSelectionMode();
 
     if(isTextSelection()) paintSelectionText(painter, forward);
     else if(isPhraseSelection()) paintSelectionPhrase(painter, forward);
-    else paintSelectionLines(painter, forward);
+    else paintSelectionLines(painter, forward, yT, yB);
 }
 
 void Selection::paintError(Painter& painter) const{
