@@ -734,6 +734,32 @@ void Selection::paintHighlightPhrase(Painter& painter) const{
 
     painter.drawHighlight(x, y, w, h);
 }
+
+double Selection::yTop() const noexcept{
+    if(isTextSelection()) return tL->y;
+    else if(isPhraseSelection()) return phrase()->y;
+    else return lL->y;
+}
+
+double Selection::yBot() const noexcept{
+    if(isTextSelection()) return tR->yBot();
+    else if(isPhraseSelection()) return phrase()->yBottom();
+    else return lR->yBottom();
+}
+
+double Selection::yTopPhrase() const noexcept{
+    return phrase()->y;
+}
+
+double Selection::yBotPhrase() const noexcept{
+    return phrase()->yBottom();
+}
+
+bool Selection::overlapsY(double yT, double yB) const noexcept {
+    const double yT_this = yTop();
+    const double yB_this = yBot();
+    return (yT_this >= yT && yT_this <= yB) || (yB_this >= yT && yB_this <= yB);
+}
 #endif
 
 }

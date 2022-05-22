@@ -282,6 +282,10 @@ double Text::xRight() const noexcept{
     return x + getWidth();
 }
 
+double Text::yBot() const noexcept{
+    return y + height();
+}
+
 double Text::getWidth() const noexcept {
     return CHARACTER_WIDTHS[scriptDepth()] * countGraphemes(str);
 }

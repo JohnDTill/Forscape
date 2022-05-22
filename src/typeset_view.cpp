@@ -36,10 +36,10 @@ namespace Hope {
 
 namespace Typeset {
 
-class View::VerticalScrollBar : public QScrollBar{
+class View::VerticalScrollBar : public QScrollBar {
 private:
     const View& view;
-    bool vScrollActive() const noexcept{
+    bool vScrollActive() const noexcept {
         return singleStep() < maximum();
     }
 
@@ -47,102 +47,92 @@ private:
     static constexpr size_t V_PADDING = 15;
     static constexpr size_t H_PADDING = 6;
 
-    void paintErrorsProportional(){
-        const Model& m = *view.getModel();
+    int errorRegionPixelHeight() const noexcept {
+        return height() - 2*V_PADDING;
+    }
 
-        QPainter p(this);
-        p.setBrush(getColour(COLOUR_WARNINGBORDER));
-        p.setPen(getColour(COLOUR_WARNINGBORDER));
-        for(const Code::Error& err : m.warnings){
-            Phrase* p_start = err.selection.left.phrase();
-            Phrase* p_end = err.selection.right.phrase();
-            double y_start = p_start->y;
-            double y_end = p_end->yBottom();
+    int errorRegionPixelWidth() const noexcept {
+        return width() - 2*H_PADDING;
+    }
 
-            size_t pixel_start = (y_start/m.height()) * (height() - 2*V_PADDING) + V_PADDING;
-            size_t pixel_end = (y_end/m.height()) * (height() - 2*V_PADDING) + V_PADDING;
+    static void paintProportionally(
+                QPainter& painter,
+                const std::vector<Code::Error>& errors,
+                const int error_region_height,
+                const double model_height,
+                const double w) alloc_except {
+        //When the view is tall, we determine which rows to paint before painting
+        static std::vector<bool> pixels; //GUI is single-threaded, so make this static
+        pixels.resize(error_region_height);
+        std::fill(pixels.begin(), pixels.end(), 0);
 
-            int x = H_PADDING;
-            int w = width() - 2*H_PADDING;
-            int y = pixel_start;
-            int h = std::min<int>(pixel_end - pixel_start, MAX_ERROR_HEIGHT);
-            h = std::max<int>(h, 1);
-            p.drawRect(x, y, w, h);
+        const double scaling = error_region_height / model_height;
+        for(const Code::Error& err : errors){
+            const size_t pixel_start = err.selection.yTopPhrase() * scaling + V_PADDING;
+            const size_t pixel_end = std::min(
+                static_cast<size_t>(err.selection.yBotPhrase() * scaling) + V_PADDING,
+                pixel_start+MAX_ERROR_HEIGHT);
+            for(size_t i = pixel_start; i <= pixel_end; i++) pixels[i] = true;
         }
 
-        p.setBrush(getColour(COLOUR_ERRORBORDER));
-        p.setPen(getColour(COLOUR_ERRORBORDER));
-        for(const Code::Error& err : m.errors){
-            Phrase* p_start = err.selection.left.phrase();
-            Phrase* p_end = err.selection.right.phrase();
-            double y_start = p_start->y;
-            double y_end = p_end->yBottom();
-
-            size_t pixel_start = (y_start/m.height()) * (height() - 2*V_PADDING) + V_PADDING;
-            size_t pixel_end = (y_end/m.height()) * (height() - 2*V_PADDING) + V_PADDING;
-
-            int x = H_PADDING;
-            int w = width() - 2*H_PADDING;
-            int y = pixel_start;
-            int h = std::min<int>(pixel_end - pixel_start, MAX_ERROR_HEIGHT);
-            h = std::max<int>(h, 1);
-            p.drawRect(x, y, w, h);
+        int start = 0;
+        while(start < pixels.size()){
+            if(pixels[start++]){
+                int end = start;
+                while(end < pixels.size() && pixels[end]) end++;
+                painter.drawRect(H_PADDING, start, w, end-start);
+                start = end+1;
+            }
         }
     }
 
-    void paintErrorsAbsolute(){
+    void paintErrorsProportional(QPainter& painter) const {
         const Model& m = *view.getModel();
+        const double model_height = m.height();
+        const int error_region_height = errorRegionPixelHeight();
+        const int w = errorRegionPixelWidth();
 
-        QPainter p(this);
-        p.setBrush(getColour(COLOUR_WARNINGBORDER));
-        p.setPen(getColour(COLOUR_WARNINGBORDER));
-        for(const Code::Error& err : m.warnings){
-            Phrase* p_start = err.selection.left.phrase();
-            Phrase* p_end = err.selection.right.phrase();
-            double y_start = p_start->y;
-            double y_end = p_end->yBottom();
+        painter.setBrush(getColour(COLOUR_WARNINGBORDER));
+        painter.setPen(getColour(COLOUR_WARNINGBORDER));
+        paintProportionally(painter, m.warnings, error_region_height, model_height, w);
 
-            size_t pixel_start = view.yScreen(y_start);
-            size_t pixel_end = view.yScreen(y_end);
+        painter.setBrush(getColour(COLOUR_ERRORBORDER));
+        painter.setPen(getColour(COLOUR_ERRORBORDER));
+        paintProportionally(painter, m.errors, error_region_height, model_height, w);
+    }
 
-            int x = H_PADDING;
-            int w = width() - 2*H_PADDING;
-            int y = pixel_start;
-            int h = std::min<int>(pixel_end - pixel_start, MAX_ERROR_HEIGHT);
-            h = std::max<int>(h, 1);
-            p.drawRect(x, y, w, h);
+    void paintAbsolute(QPainter& painter, const std::vector<Code::Error>& errors, const double w) const {
+        for(const Code::Error& err : errors){
+            int y = view.yScreen( err.selection.yTopPhrase() );
+            int h = std::max(1, std::min<int>(MAX_ERROR_HEIGHT, view.yScreen(err.selection.yBotPhrase()) - y));
+            painter.drawRect(H_PADDING, y, w, h);
         }
+    }
 
-        p.setBrush(getColour(COLOUR_ERRORBORDER));
-        p.setPen(getColour(COLOUR_ERRORBORDER));
-        for(const Code::Error& err : m.errors){
-            Phrase* p_start = err.selection.left.phrase();
-            Phrase* p_end = err.selection.right.phrase();
-            double y_start = p_start->y;
-            double y_end = p_end->yBottom();
+    void paintErrorsAbsolute(QPainter& painter) const {
+        const Model& m = *view.getModel();
+        const int w = errorRegionPixelWidth();
 
-            size_t pixel_start = view.yScreen(y_start);
-            size_t pixel_end = view.yScreen(y_end);
+        painter.setBrush(getColour(COLOUR_WARNINGBORDER));
+        painter.setPen(getColour(COLOUR_WARNINGBORDER));
+        paintAbsolute(painter, m.warnings, w);
 
-            int x = H_PADDING;
-            int w = width() - 2*H_PADDING;
-            int y = pixel_start;
-            int h = std::min<int>(pixel_end - pixel_start, MAX_ERROR_HEIGHT);
-            h = std::max<int>(h, 1);
-            p.drawRect(x, y, w, h);
-        }
+        painter.setBrush(getColour(COLOUR_ERRORBORDER));
+        painter.setPen(getColour(COLOUR_ERRORBORDER));
+        paintAbsolute(painter, m.errors, w);
     }
 
 public:
-    VerticalScrollBar(Qt::Orientation orientation, QWidget* parent, const View& view)
+    VerticalScrollBar(Qt::Orientation orientation, QWidget* parent, const View& view) noexcept
         : QScrollBar(orientation, parent), view(view){}
 
 protected:
     void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE{
         QScrollBar::paintEvent(event);
 
-        if(vScrollActive()) paintErrorsProportional();
-        else paintErrorsAbsolute();
+        QPainter painter(this);
+        if(vScrollActive()) paintErrorsProportional(painter);
+        else paintErrorsAbsolute(painter);
     }
 };
 
@@ -220,15 +210,15 @@ void View::setFromSerial(const std::string& src, bool is_output){
     update();
 }
 
-std::string View::toSerial() const{
+std::string View::toSerial() const alloc_except {
     return model->toSerial();
 }
 
-Model* View::getModel() const noexcept{
+Model* View::getModel() const noexcept {
     return model;
 }
 
-void View::setModel(Model* m, bool owned){
+void View::setModel(Model* m, bool owned) noexcept {
     if(model_owned) delete model;
     highlighted_words.clear();
     model_owned = owned;
@@ -252,7 +242,7 @@ void View::runThread(View* console){
     }
 }
 
-void View::setLineNumbersVisible(bool show){
+void View::setLineNumbersVisible(bool show) noexcept {
     logger->info("{}setLineNumbersVisible({});", logPrefix(), show);
 
     if(show_line_nums == show) return;
@@ -260,11 +250,11 @@ void View::setLineNumbersVisible(bool show){
     update();
 }
 
-Controller& View::getController() noexcept{
+Controller& View::getController() noexcept {
     return controller;
 }
 
-void View::setReadOnly(bool read_only) noexcept{
+void View::setReadOnly(bool read_only) noexcept {
     if(allow_write == !read_only) return;
     allow_write = !read_only;
 
@@ -272,7 +262,7 @@ void View::setReadOnly(bool read_only) noexcept{
     else restartCursorBlink();
 }
 
-void View::replaceAll(const std::vector<Selection>& targets, const std::string& name){
+void View::replaceAll(const std::vector<Selection>& targets, const std::string& name) alloc_except {
     model->rename(targets, name, controller);
 
     restartCursorBlink();
@@ -280,7 +270,7 @@ void View::replaceAll(const std::vector<Selection>& targets, const std::string& 
     update();
 }
 
-void View::dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held){
+void View::dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held) alloc_except {
     if(right_click){
         resolveRightClick(x, y, xScreen, yScreen);
     }else if(recentlyDoubleClicked() | isInLineBox(x)){
@@ -565,7 +555,7 @@ bool View::isInLineBox(double x) const noexcept{
     return x-h_scroll->value()/zoom < -MARGIN_LEFT;
 }
 
-void View::updateXSetpoint(){
+void View::updateXSetpoint() noexcept {
     x_setpoint = controller.xActive();
 }
 
@@ -595,18 +585,18 @@ void View::zoomOut() noexcept{
     zoom = std::max(ZOOM_MIN, zoom/ZOOM_DELTA);
 }
 
-void View::resetZoom() noexcept{
+void View::resetZoom() noexcept {
     logger->info("{}resetZoom();", logPrefix());
     zoom = ZOOM_DEFAULT;
 }
 
-void View::restartCursorBlink() noexcept{
+void View::restartCursorBlink() noexcept {
     if(!allow_write) return;
     show_cursor = true;
     cursor_blink_timer->start(CURSOR_BLINK_INTERVAL);
 }
 
-void View::stopCursorBlink(){
+void View::stopCursorBlink() noexcept {
     show_cursor = false;
     update();
     cursor_blink_timer->stop();
@@ -653,7 +643,7 @@ size_t View::currentLine() const noexcept{
     return controller.activeLine()->id;
 }
 
-void View::ensureCursorVisible(){
+void View::ensureCursorVisible() noexcept{
     handleResize();
 
     double xModel = controller.xActive();
@@ -715,19 +705,19 @@ void View::updateBackgroundColour() noexcept {
     setPalette(pal);
 }
 
-double View::xOrigin() const{
+double View::xOrigin() const noexcept {
     return getLineboxWidth() + MARGIN_LEFT - h_scroll->value()/zoom;
 }
 
-double View::yOrigin() const{
+double View::yOrigin() const noexcept {
     return MARGIN_TOP - v_scroll->value()/zoom;
 }
 
-double View::getLineboxWidth() const noexcept{
+double View::getLineboxWidth() const noexcept {
     return show_line_nums*LINEBOX_WIDTH;
 }
 
-void View::recommend(){
+void View::recommend() {
     auto suggestions = model->symbol_builder.symbol_table.getSuggestions(controller.active);
     if(suggestions.empty()){
         recommender->hide();
@@ -892,16 +882,19 @@ void View::drawModel(double xL, double yT, double xR, double yB){
     setColour(COLOUR_ERRORBORDER, getColour(COLOUR_WARNINGBORDER));
 
     for(const Code::Error& e : model->warnings)
-        e.selection.paintError(painter);
+        if(e.selection.overlapsY(yT, yB))
+            e.selection.paintError(painter);
 
     setColour(COLOUR_ERRORBACKGROUND, error_background);
     setColour(COLOUR_ERRORBORDER, error_border);
 
     for(const Code::Error& e : model->errors)
-        e.selection.paintError(painter);
+        if(e.selection.overlapsY(yT, yB))
+            e.selection.paintError(painter);
 
     for(const Selection& c : highlighted_words)
-        c.paintHighlight(painter);
+        if(c.overlapsY(yT, yB))
+            c.paintHighlight(painter);
 
     const Typeset::Marker& cursor = getController().active;
 
@@ -956,7 +949,8 @@ void View::fillInScrollbarCorner(){
     int y = v_scroll->height();
     int w = v_scroll->width();
     int h = h_scroll->height();
-    QBrush brush = v_scroll->palette().window();
+
+    QBrush brush = QGuiApplication::palette().window();
     p.fillRect(x, y, w, h, brush);
 }
 

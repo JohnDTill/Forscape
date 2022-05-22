@@ -18,9 +18,9 @@ static constexpr size_t ITER_INTERPRETER = 5000;
 static constexpr size_t ITER_CALC_SIZE = 500000;
 static constexpr size_t ITER_LAYOUT = 1000000;
 static constexpr size_t ITER_PAINT = 500;
-static constexpr size_t ITER_LOOP = 500;
-static constexpr size_t ITER_PRINT_SIZE = 500;
-static constexpr size_t ITER_PRINT_LAYOUT = 500;
+static constexpr size_t ITER_LOOP = 10;
+static constexpr size_t ITER_PRINT_SIZE = 100;
+static constexpr size_t ITER_PRINT_LAYOUT = 100;
 static constexpr size_t ITER_PRINT_PAINT = 30;
 
 void runBenchmark(){
@@ -99,16 +99,18 @@ void runBenchmark(){
     report("Paint", ITER_PAINT);
     #endif
 
-    m = Typeset::Model::fromSerial("for(i ← 0; i ≤ 50000; i ← i + 1)\n    print(i, \"\\n\")");
+    #define N_PRINTS "1000000"
+
+    m = Typeset::Model::fromSerial("for(i ← 0; i ≤ " N_PRINTS "; i ← i + 1)\n    print(i, \"\\n\")");
 
     startClock();
     for(size_t i = 0; i < ITER_LOOP; i++)
         m->run();
-    report("Print 50000 Loop", ITER_LOOP);
+    report("Print " N_PRINTS, ITER_LOOP);
 
     #ifndef HOPE_TYPESET_HEADLESS
     Typeset::Model* temp = m;
-    m = Typeset::Model::fromSerial(m->run());
+    m = Typeset::Model::fromSerial(m->run(), true);
     delete temp;
 
     startClock();

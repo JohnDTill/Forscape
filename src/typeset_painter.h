@@ -16,31 +16,31 @@ namespace Hope {
 namespace Typeset {
 
 //DO THIS - codegen these
-extern constexpr double CHARACTER_WIDTHS[3] {
+inline constexpr double CHARACTER_WIDTHS[3] {
     7.796875,
     5.390625,
     4.1875,
 };
 
-extern constexpr double ABOVE_CENTER[3] = {
+inline constexpr double ABOVE_CENTER[3] = {
     3.66666666666666696272613990004,
     3,
     2,
 };
 
-extern constexpr double UNDER_CENTER[3] = {
+inline constexpr double UNDER_CENTER[3] = {
     8.33333333333333214909544039983,
     6,
     5,
 };
 
-extern constexpr double CHARACTER_HEIGHTS[3] {
+inline constexpr double CHARACTER_HEIGHTS[3] {
     12,
     9,
     7,
 };
 
-extern constexpr double DESCENT[3] {
+inline constexpr double DESCENT[3] {
     3.125,
     2.15625,
     1.6875,

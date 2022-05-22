@@ -130,7 +130,13 @@ void Painter::drawText(double x, double y, std::string_view text, bool forward){
         y -= ASCENT[depth];
         double h = CHARACTER_HEIGHTS[depth];
         double w = CHARACTER_WIDTHS[depth]*q_str.size();
-        painter.drawText(QRectF(x, y, w, h), Qt::AlignRight|Qt::AlignBaseline, q_str);
+        #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+        painter.drawText(x, y, w, h, Qt::AlignRight|Qt::AlignBaseline, q_str);
+        #else //Qt6 truncates large inputs
+        painter.translate(x, y);
+        painter.drawText(0, 0, w, h, Qt::AlignRight|Qt::AlignBaseline, q_str);
+        painter.translate(-x, -y);
+        #endif
     }
 }
 

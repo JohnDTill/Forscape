@@ -77,6 +77,7 @@ class Text {
         double xPhrase(size_t index) const;
         double xGlobal(size_t index) const;
         double xRight() const noexcept;
+        double yBot() const noexcept;
         double getWidth() const noexcept;
         uint8_t scriptDepth() const noexcept;
         size_t charIndexNearest(double x_in) const noexcept;

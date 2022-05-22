@@ -1,9 +1,10 @@
 #ifndef TYPESET_VIEW_H
 #define TYPESET_VIEW_H
 
-//DO THIS: selected text stops drawing after line 493447
 //DO THIS: drag to scroll isn't working
+//DO THIS: document load doesn't reset h-scroll
 //DO THIS: the app becomes nearly unresponsive in a script that just keeps printing
+//         it's the sizing that causes problems, so that is encouraging. it can be cached
 
 #include "typeset_controller.h"
 #include "typeset_painter.h"
@@ -27,15 +28,15 @@ public:
     View() noexcept;
     virtual ~View() noexcept override;
     void setFromSerial(const std::string& src, bool is_output = false);
-    std::string toSerial() const;
+    std::string toSerial() const alloc_except;
     Model* getModel() const noexcept;
-    void setModel(Model* m, bool owned = true);
+    void setModel(Model* m, bool owned = true) noexcept;
     void runThread(View* output);
-    void setLineNumbersVisible(bool show);
+    void setLineNumbersVisible(bool show) noexcept;
     Controller& getController() noexcept;
     void setReadOnly(bool read_only) noexcept;
-    void replaceAll(const std::vector<Selection>& targets, const std::string& name);
-    void ensureCursorVisible();
+    void replaceAll(const std::vector<Selection>& targets, const std::string& name) alloc_except;
+    void ensureCursorVisible() noexcept;
     void updateModel() noexcept;
     void zoomIn() noexcept;
     void zoomOut() noexcept;
@@ -57,7 +58,7 @@ public:
     void updateBackgroundColour() noexcept;
 
 protected:
-    void dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held);
+    void dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held) alloc_except;
     void dispatchRelease(double x, double y);
     void dispatchDoubleClick(double x, double y);
     void dispatchHover(double x, double y);
@@ -73,15 +74,15 @@ protected:
     void resolveSelectionDrag(double x, double y);
     bool isInLineBox(double x) const noexcept;
     void drawModel(double xL, double yT, double xR, double yB);
-    void updateXSetpoint();
+    void updateXSetpoint() noexcept;
     double xModel(double xScreen) const noexcept;
     double yModel(double yScreen) const noexcept;
     double xScreen(double xModel) const noexcept;
     double yScreen(double yModel) const noexcept;
     void restartCursorBlink() noexcept;
-    void stopCursorBlink();
-    double xOrigin() const;
-    double yOrigin() const;
+    void stopCursorBlink() noexcept;
+    double xOrigin() const noexcept;
+    double yOrigin() const noexcept;
     double getLineboxWidth() const noexcept;
     void recommend();
 
