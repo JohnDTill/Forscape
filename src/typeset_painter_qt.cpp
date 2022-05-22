@@ -44,7 +44,6 @@ bool is_init = false;
 
 static constexpr size_t N_DEPTHS = 3;
 QFont fonts[N_DEPTHS*NUM_SEM_TYPES];
-static QFont line_font;
 
 static QFont readFont(const QString& file, const QString& name, const QString& family){
     int id = QFontDatabase::addApplicationFont(file);
@@ -67,9 +66,6 @@ void Painter::init(){
     loaded_fonts[JULIAMONO_ITALIC] = readFont(":/fonts/JuliaMono-RegularItalic.ttf", "JuliaMono", "Italic");
     loaded_fonts[JULIAMONO_BOLD] = readFont(":/fonts/JuliaMono-Bold.ttf", "JuliaMono", "Bold");
     loaded_fonts[JULIAMONO_BOLD_ITALIC] = readFont(":/fonts/JuliaMono-BoldItalic.ttf", "JuliaMono", "Bold Italic");
-
-    line_font = loaded_fonts[JULIAMONO_REGULAR];
-    line_font.setPointSize(8);
 
     for(size_t i = 0; i < NUM_SEM_TYPES; i++){
         QFont font = loaded_fonts[font_enum[i]];
@@ -293,11 +289,21 @@ void Painter::drawDot(double x, double y){
 void Painter::drawLineNumber(double y, size_t num, bool active){
     if(active) painter.setPen(getColour(COLOUR_LINENUMACTIVE));
     else painter.setPen(getColour(COLOUR_LINENUMPASSIVE));
-
-    painter.setFont(line_font);
+    y += CAPHEIGHT[0];
     QString str = QString::number(num);
-    qreal x = x_offset - CHARACTER_WIDTHS[depth]*str.size();
-    y += DESCENT[0] / 2;
+
+    qreal x = x_offset;
+    if(num < 1000000){
+        painter.setFont(getFont(SEM_DEFAULT, 0));
+        x -= CHARACTER_WIDTHS[0]*str.size();
+    }else if(num < 100000000){
+        painter.setFont(getFont(SEM_DEFAULT, 1));
+        x -= CHARACTER_WIDTHS[1]*str.size();
+    }else{
+        painter.setFont(getFont(SEM_DEFAULT, 2));
+        x -= CHARACTER_WIDTHS[2]*str.size();
+    }
+
     painter.drawText(x, y, str);
 }
 

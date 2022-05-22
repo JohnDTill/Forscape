@@ -81,6 +81,7 @@ Subphrase* Phrase::asSubphrase() noexcept{
 
 Text* Phrase::text(size_t index) const noexcept{
     assert(index < texts.size());
+    assert(texts[index]->id == index);
     return texts[index];
 }
 
@@ -128,6 +129,7 @@ Text* Phrase::nextTextAsserted(const Text* t) const noexcept{
 
 Text* Phrase::prevTextAsserted(const Text* t) const noexcept{
     assert(t->id);
+    assert(text(t->id) == t);
     return text(t->id-1);
 }
 

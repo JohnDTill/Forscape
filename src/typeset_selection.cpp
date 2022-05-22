@@ -748,11 +748,11 @@ double Selection::yBot() const noexcept{
 }
 
 double Selection::yTopPhrase() const noexcept{
-    return phrase()->y;
+    return tL->getParent()->y;
 }
 
 double Selection::yBotPhrase() const noexcept{
-    return phrase()->yBottom();
+    return tL->getParent()->yBottom();
 }
 
 bool Selection::overlapsY(double yT, double yB) const noexcept {

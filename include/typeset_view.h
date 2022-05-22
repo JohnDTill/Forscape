@@ -1,8 +1,6 @@
 #ifndef TYPESET_VIEW_H
 #define TYPESET_VIEW_H
 
-//DO THIS: drag to scroll isn't working
-//DO THIS: document load doesn't reset h-scroll
 //DO THIS: the app becomes nearly unresponsive in a script that just keeps printing
 //         it's the sizing that causes problems, so that is encouraging. it can be cached
 
@@ -92,8 +90,8 @@ protected:
     static constexpr double ZOOM_DELTA = 1.1; static_assert(ZOOM_DELTA > 1);
     static constexpr size_t CURSOR_BLINK_INTERVAL = 600;
     static constexpr bool ALLOW_SELECTION_DRAG = true;
-    static constexpr double LINEBOX_WIDTH = 25;
     static constexpr double LINE_NUM_OFFSET = 5;
+    static constexpr double LINEBOX_WIDTH = CHARACTER_WIDTHS[0]*6+2*LINE_NUM_OFFSET;
     static constexpr double MARGIN_LEFT = 10;
     static constexpr double MARGIN_RIGHT = 10;
     static constexpr double MARGIN_TOP = 10;

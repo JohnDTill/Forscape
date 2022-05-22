@@ -69,9 +69,9 @@ private:
         const double scaling = error_region_height / model_height;
         for(const Code::Error& err : errors){
             const size_t pixel_start = err.selection.yTopPhrase() * scaling + V_PADDING;
-            const size_t pixel_end = std::min(
+            const size_t pixel_end = std::min(std::min(
                 static_cast<size_t>(err.selection.yBotPhrase() * scaling) + V_PADDING,
-                pixel_start+MAX_ERROR_HEIGHT);
+                pixel_start+MAX_ERROR_HEIGHT), static_cast<size_t>(error_region_height)-1);
             for(size_t i = pixel_start; i <= pixel_end; i++) pixels[i] = true;
         }
 
@@ -204,6 +204,7 @@ void View::setFromSerial(const std::string& src, bool is_output){
     model_owned = true;
     model = Model::fromSerial(src, is_output);
     controller = Controller(model);
+    h_scroll->setValue(h_scroll->minimum());
     updateXSetpoint();
     handleResize();
     updateHighlighting();
@@ -355,10 +356,11 @@ void View::resolveClick(double x, double y) noexcept{
     updateXSetpoint();
 }
 
-void View::resolveShiftClick(double x, double y) noexcept{
+void View::resolveShiftClick(double x, double y) noexcept {
     Phrase* p = controller.isTopLevel() ? model->nearestLine(y) : controller.phrase();
     controller.shiftClick(p, x);
     updateXSetpoint();
+    ensureCursorVisible();
 }
 
 void View::resolveRightClick(double x, double y, int xScreen, int yScreen){
@@ -918,7 +920,7 @@ void View::drawLinebox(double yT, double yB){
     QPainter qpainter(this);
     Painter painter(qpainter);
     painter.setZoom(zoom);
-    painter.setOffset(LINEBOX_WIDTH - LINE_NUM_OFFSET, yOrigin() + 3);
+    painter.setOffset(LINEBOX_WIDTH - LINE_NUM_OFFSET, yOrigin());
 
     size_t iL;
     size_t iR;
@@ -936,10 +938,9 @@ void View::drawLinebox(double yT, double yB){
 
     for(size_t i = start->id; i <= end->id; i++){
         Line*& l = model->lines[i];
-        double y = l->y + l->above_center;
         size_t n = l->id+1;
         bool active = (l->id >= iL) & (l->id <= iR);
-        painter.drawLineNumber(y, n, active);
+        painter.drawLineNumber(l->front()->y, n, active);
     }
 }
 
