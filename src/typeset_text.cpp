@@ -63,6 +63,14 @@ bool Text::empty() const noexcept{
     return str.empty();
 }
 
+void Text::setString(std::string_view str) noexcept {
+    this->str = str;
+
+    #ifndef HOPE_TYPESET_HEADLESS
+    resize();
+    #endif
+}
+
 std::string Text::substr(size_t pos, size_t len) const{
     return str.substr(pos, len);
 }
@@ -287,7 +295,11 @@ double Text::yBot() const noexcept{
 }
 
 double Text::getWidth() const noexcept {
-    return CHARACTER_WIDTHS[scriptDepth()] * countGraphemes(str);
+    return width;
+}
+
+void Text::updateWidth() noexcept {
+    width = CHARACTER_WIDTHS[scriptDepth()] * countGraphemes(str);
 }
 
 uint8_t Text::scriptDepth() const noexcept {
@@ -413,6 +425,7 @@ bool Text::containsXInBounds(double x_test, size_t start, size_t stop) const noe
 }
 
 void Text::resize() noexcept {
+    width = STALE;
     parent->resize();
 }
 #endif

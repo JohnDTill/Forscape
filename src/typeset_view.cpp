@@ -20,6 +20,10 @@
 #include <QStyle>
 #include <QTimer>
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#define globalPosition globalPos
+#endif
+
 static std::chrono::time_point throttle_time =
         std::chrono::steady_clock::time_point{std::chrono::milliseconds{0}};
 
@@ -482,6 +486,7 @@ void View::resolveLineDrag(double y) noexcept{
         controller.active.setToFrontOf(active_line);
     }
 
+    ensureCursorVisible();
     updateXSetpoint();
 }
 
@@ -749,12 +754,14 @@ void View::keyPressEvent(QKeyEvent* e){
 void View::mousePressEvent(QMouseEvent* e){
     if(focusWidget() != this) return;
 
-    double click_x = xModel(e->x());
-    double click_y = yModel(e->y());
+    auto pos = e->pos();
+    double click_x = xModel(pos.x());
+    double click_y = yModel(pos.y());
     bool right_click = e->buttons() == Qt::RightButton;
     bool shift_held = e->modifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
 
-    dispatchClick(click_x, click_y, e->globalX(), e->globalY(), right_click, shift_held);
+    auto global_pos = e->globalPosition();
+    dispatchClick(click_x, click_y, global_pos.x(), global_pos.y(), right_click, shift_held);
 
     recommender->hide();
 }
@@ -859,7 +866,7 @@ void View::del(){
     emit textChanged();
 }
 
-void View::setCursorAppearance(double x, double y){
+void View::setCursorAppearance(double x, double y) {
     if(mouse_hold_state != SelectionDrag){
         Construct* con = model->constructAt(x, y);
         if(con && con->constructCode() == MARKERLINK){
@@ -870,8 +877,7 @@ void View::setCursorAppearance(double x, double y){
     }
 }
 
-void View::drawModel(double xL, double yT, double xR, double yB){
-    QPainter qpainter(this);
+void View::drawModel(double xL, double yT, double xR, double yB) {
     Painter painter(qpainter);
     painter.setZoom(zoom);
     painter.setOffset(xOrigin(), yOrigin());
@@ -909,15 +915,14 @@ void View::drawModel(double xL, double yT, double xR, double yB){
     }
 }
 
-void View::drawLinebox(double yT, double yB){
+void View::drawLinebox(double yT, double yB) {
     if(!show_line_nums) return;
 
-    QPainter p(this);
-    p.setBrush(getColour(COLOUR_LINEBOXFILL));
-    p.setPen(getColour(COLOUR_LINEBOXBORDER));
-    p.drawRect(-1, -1, 1+LINEBOX_WIDTH*zoom, height()+2);
+    qpainter.resetTransform();
+    qpainter.setBrush(getColour(COLOUR_LINEBOXFILL));
+    qpainter.setPen(getColour(COLOUR_LINEBOXBORDER));
+    qpainter.drawRect(-1, -1, 1+LINEBOX_WIDTH*zoom, height()+2);
 
-    QPainter qpainter(this);
     Painter painter(qpainter);
     painter.setZoom(zoom);
     painter.setOffset(LINEBOX_WIDTH - LINE_NUM_OFFSET, yOrigin());
@@ -945,14 +950,14 @@ void View::drawLinebox(double yT, double yB){
 }
 
 void View::fillInScrollbarCorner(){
-    QPainter p(this);
     int x = h_scroll->width();
     int y = v_scroll->height();
     int w = v_scroll->width();
     int h = h_scroll->height();
 
     QBrush brush = QGuiApplication::palette().window();
-    p.fillRect(x, y, w, h, brush);
+    qpainter.resetTransform();
+    qpainter.fillRect(x, y, w, h, brush);
 }
 
 void View::handleResize(){
@@ -1304,6 +1309,9 @@ void View::takeRecommendation(const std::string& str){
 }
 
 void View::paintEvent(QPaintEvent* event){
+    qpainter.begin(this);
+    qpainter.setRenderHints(QPainter::Antialiasing|QPainter::TextAntialiasing);
+
     QRect r = event->rect();
     double xL = xModel(r.x());
     double yT = yModel(r.y());
@@ -1314,6 +1322,8 @@ void View::paintEvent(QPaintEvent* event){
     drawLinebox(yT, yB);
     fillInScrollbarCorner();
     QWidget::paintEvent(event);
+
+    qpainter.end();
 }
 
 QImage View::toPng() const{

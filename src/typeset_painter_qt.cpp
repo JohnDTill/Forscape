@@ -51,7 +51,12 @@ static QFont readFont(const QString& file, const QString& name, const QString& f
     (void)id;
     #endif
     assert(id!=-1);
+    #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QFont font = QFontDatabase::font(name, family, depthToFontSize(0));
+    #else
     QFont font = QFontDatabase().font(name, family, depthToFontSize(0));
+    #endif
+    font.setKerning(false);
 
     return font;
 }

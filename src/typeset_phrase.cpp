@@ -87,6 +87,7 @@ Text* Phrase::text(size_t index) const noexcept{
 
 Construct* Phrase::construct(size_t index) const noexcept{
     assert(index < constructs.size());
+    assert(constructs[index]->id == index);
     return constructs[index];
 }
 
@@ -265,16 +266,19 @@ Construct* Phrase::constructAt(double x, double y) const noexcept{
 }
 
 void Phrase::updateSize() noexcept{
+    text(0)->updateWidth();
     width = texts[0]->getWidth();
     above_center = texts[0]->aboveCenter();
     under_center = texts[0]->underCenter();
 
-    for(size_t i = 0; i < constructs.size(); i++){
-        constructs[i]->updateSize();
+    for(size_t i = 0; i < constructs.size();){
+        construct(i)->updateSize();
         width += constructs[i]->width;
         above_center = std::max(above_center, constructs[i]->above_center);
         under_center = std::max(under_center, constructs[i]->under_center);
-        width += texts[i+1]->getWidth();
+        i++;
+        text(i)->updateWidth();
+        width += texts[i]->getWidth();
     }
 
     if(width == 0 && !isLine()) width = EMPTY_PHRASE_WIDTH_RATIO*height();

@@ -22,6 +22,7 @@ inline constexpr T debug_cast(IN_TYPE in) noexcept {
 typedef size_t ParseNode;
 extern inline constexpr size_t NONE = std::numeric_limits<size_t>::max();
 extern inline constexpr size_t UNKNOWN_SIZE = 0;
+extern inline constexpr double STALE = std::numeric_limits<double>::quiet_NaN();
 
 #ifndef NDEBUG
 #define DEBUG_INIT_NONE =NONE

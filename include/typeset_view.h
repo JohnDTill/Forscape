@@ -3,6 +3,11 @@
 
 //DO THIS: the app becomes nearly unresponsive in a script that just keeps printing
 //         it's the sizing that causes problems, so that is encouraging. it can be cached
+//         probably:
+//            - Finish the codegen, verify it looks good on Linux, and merge
+//            - Update the size calculations with the new assumption that width and layout only change on mutation
+//            - Can spend a bit of time speeding up the zero-width char lookup
+//            - Make sure the console has a buffer/line limit to prevent overload
 
 #include "typeset_controller.h"
 #include "typeset_painter.h"
@@ -84,9 +89,9 @@ protected:
     double getLineboxWidth() const noexcept;
     void recommend();
 
-    static constexpr double ZOOM_DEFAULT = 2.0;
-    static constexpr double ZOOM_MAX = 5.0; static_assert(ZOOM_DEFAULT <= ZOOM_MAX);
-    static constexpr double ZOOM_MIN = 0.75; static_assert(ZOOM_DEFAULT >= ZOOM_MIN);
+    static constexpr double ZOOM_DEFAULT = 1.2;
+    static constexpr double ZOOM_MAX = 2.5*ZOOM_DEFAULT; static_assert(ZOOM_DEFAULT <= ZOOM_MAX);
+    static constexpr double ZOOM_MIN = 0.375/2*ZOOM_DEFAULT; static_assert(ZOOM_DEFAULT >= ZOOM_MIN);
     static constexpr double ZOOM_DELTA = 1.1; static_assert(ZOOM_DELTA > 1);
     static constexpr size_t CURSOR_BLINK_INTERVAL = 600;
     static constexpr bool ALLOW_SELECTION_DRAG = true;
@@ -115,6 +120,7 @@ protected:
 
 //Qt specific code
 protected:
+    QPainter qpainter;
     void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE;
     virtual void keyPressEvent(QKeyEvent* e) override final;
     virtual void mousePressEvent(QMouseEvent* e) override final;

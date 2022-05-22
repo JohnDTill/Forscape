@@ -5,9 +5,7 @@
 #include <string>
 #include <vector>
 
-#ifdef TYPESET_MEMORY_DEBUG
 #include <hope_common.h>
-#endif
 
 namespace Hope {
 
@@ -47,6 +45,7 @@ class Text {
         bool isNested() const noexcept;
         size_t numChars() const noexcept;
         bool empty() const noexcept;
+        void setString(std::string_view str) alloc_except;
         std::string substr(size_t pos, size_t len = std::string::npos) const;
         char charAt(size_t char_index) const noexcept;
         std::string_view codepointAt(size_t index) const noexcept;
@@ -79,6 +78,7 @@ class Text {
         double xRight() const noexcept;
         double yBot() const noexcept;
         double getWidth() const noexcept;
+        void updateWidth() noexcept;
         uint8_t scriptDepth() const noexcept;
         size_t charIndexNearest(double x_in) const noexcept;
         size_t charIndexLeft(double x_in) const noexcept;
@@ -91,12 +91,13 @@ class Text {
         bool containsY(double y_test) const noexcept;
         bool containsXInBounds(double x_test, size_t start, size_t stop) const noexcept;
         void resize() noexcept;
-        double x;
-        double y;
+        double x = STALE;
+        double y = STALE;
         #endif
 
     private:
         Phrase* parent;
+        double width = 0;
 };
 
 }
