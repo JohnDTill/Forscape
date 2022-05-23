@@ -114,7 +114,7 @@ inline size_t graphemeSizeLeft(const std::string& str, size_t index) noexcept {
     do {
         assert(index != 0);
         while(isContinuationCharacter(str[--index]));
-    } while( isZeroWidth(codepointInt(str, index)) );
+    } while( !isAscii(str[index]) && isZeroWidth(codepointInt(str, index)) );
 
     return end-index;
 }
@@ -148,6 +148,8 @@ inline constexpr uint32_t firstBits(uint8_t ch) noexcept {
     return ch & ((1 << N) - 1);
 }
 
+//Found perfect hash of unicode numbers, but using full uint32_t bytes was better
+/*
 template<typename StringType>
 inline uint32_t codepoint(StringType str, size_t index) noexcept {
     assert(index < str.size());
@@ -169,6 +171,7 @@ inline uint32_t codepoint(StringType str, size_t index) noexcept {
         return (firstBits<4>(first) << 12) | (b2 << 6) | b3;
     }
 }
+*/
 
 template<typename StringType>
 inline size_t countGraphemes(StringType str) noexcept {

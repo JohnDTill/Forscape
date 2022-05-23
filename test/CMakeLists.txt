@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
-#set(TEST_QT ON) #DO THIS: delete before merge
-option(TEST_QT OFF)
+set(TEST_QT ON) #DO THIS: delete before merge
+#option(TEST_QT OFF)
 
 project(HopeTests LANGUAGES CXX)
 

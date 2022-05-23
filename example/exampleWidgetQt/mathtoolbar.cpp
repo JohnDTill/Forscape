@@ -49,7 +49,7 @@ void MathToolbar::setupSymbolTable(){
     //Set properties
     symbol_table = new QTableWidget((HOPE_NUM_KEYWORDS-1)/symbol_table_cols+1, symbol_table_cols, this);
     //QFont table_font = Globals::fonts[0];
-    QFont table_font = QFontDatabase().font("Quivira", "Regular", ENTRY_WIDTH/VISIBLE_ROWS);
+    QFont table_font = QFontDatabase().font("JuliaMono", "Regular", ENTRY_WIDTH/VISIBLE_ROWS);
     symbol_table->setFont(table_font);
     symbol_table->setFocusPolicy(Qt::NoFocus);
     symbol_table->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::MinimumExpanding);

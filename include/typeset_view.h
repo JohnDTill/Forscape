@@ -1,13 +1,6 @@
 #ifndef TYPESET_VIEW_H
 #define TYPESET_VIEW_H
 
-//DO THIS: the app becomes nearly unresponsive in a script that just keeps printing
-//         it's the sizing that causes problems, so that is encouraging. it can be cached
-//         probably:
-//            - Finish the codegen, verify it looks good on Linux, and merge
-//            - Update the size calculations with the new assumption that width and layout only change on mutation
-//            - Make sure the console has a buffer/line limit to prevent overload
-
 #include "typeset_controller.h"
 #include "typeset_painter.h"
 

@@ -2,13 +2,6 @@
 <qresource>
     <file>lambda.ico</file>
     <file>toolbar_glyphs.otf</file>
-    <file>fonts/cmunbi.ttf</file>
-    <file>fonts/cmunbx.ttf</file>
-    <file>fonts/cmunbmr.ttf</file>
-    <file>fonts/cmunrm.ttf</file>
-    <file>fonts/cmuntb.ttf</file>
-    <file>fonts/cmunti.ttf</file>
-    <file>fonts/Quivira.otf</file>
 	<file>fonts/JuliaMono-Bold.ttf</file>
     <file>fonts/JuliaMono-BoldItalic.ttf</file>
     <file>fonts/JuliaMono-Regular.ttf</file>

@@ -12,7 +12,7 @@
 #include <QLabel>
 #include <QPainterPath>
 
-//DO THIS - codegen
+//EVENTUALLY: probably want to codegen these
 static constexpr double ASCENT[3] = {
     12.34375,
     8.546875,
@@ -66,7 +66,7 @@ void Painter::init(){
 
     std::array<QFont, NUM_FONTS> loaded_fonts;
 
-    //DO THIS: codegen font loading
+    //EVENTUALLY: codegen font loading
     loaded_fonts[JULIAMONO_REGULAR] = readFont(":/fonts/JuliaMono-Regular.ttf", "JuliaMono", "Regular");
     loaded_fonts[JULIAMONO_ITALIC] = readFont(":/fonts/JuliaMono-RegularItalic.ttf", "JuliaMono", "Italic");
     loaded_fonts[JULIAMONO_BOLD] = readFont(":/fonts/JuliaMono-Bold.ttf", "JuliaMono", "Bold");

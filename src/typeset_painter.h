@@ -15,7 +15,7 @@ namespace Hope {
 
 namespace Typeset {
 
-//DO THIS - codegen these
+//EVENTUALLY: probably want to codegen these
 inline constexpr double CHARACTER_WIDTHS[3] {
     7.796875,
     5.390625,
