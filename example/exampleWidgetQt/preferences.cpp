@@ -1,8 +1,10 @@
 #include "preferences.h"
 #include "ui_preferences.h"
 
+#include "hope_common.h"
 #include "keywordsubstitutioneditor.h"
 #include <typeset_themes.h>
+#include <typeset_view.h>
 #include <QColorDialog>
 #include <QScrollBar>
 #include <QSettings>
@@ -97,6 +99,7 @@ void Preferences::onColourSelect(QTableWidgetItem* item){
     Hope::Typeset::setColour(role, colour);
     addCustomDropdownIfNotPresent();
     emit colourChanged();
+    QCoreApplication::processEvents();
     updateWindows();
 }
 
@@ -111,7 +114,11 @@ void Preferences::removeCustomDropdownIfPresent(){
     ui->colour_dropdown->removeItem(ui->colour_dropdown->count()-1);
 }
 
-void Preferences::updateWindows() const{
+void Preferences::updateWindows() const {
+    //EVENTUALLY: a bit hacky, but auto drawing the background from QPalette is much faster than manual
+    for(Hope::Typeset::View* view : Hope::Typeset::View::all_views)
+        view->updateBackgroundColour();
+
     for(auto window : QGuiApplication::topLevelWindows())
         window->requestUpdate();
 }

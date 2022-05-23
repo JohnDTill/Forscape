@@ -29,10 +29,10 @@ public:
     }
 
     virtual void updateSizeSpecific() noexcept override {
-        symbol_width = 1*getWidth(SEM_DEFAULT, parent->script_level, "∫");
+        symbol_width = CHARACTER_WIDTHS[scriptDepth()];
         width = std::max(symbol_width, std::max(first()->width, second()->width));
-        above_center = getAboveCenter(SEM_DEFAULT, parent->script_level) + first()->height();
-        under_center = 1*getUnderCenter(SEM_DEFAULT, parent->script_level) + second()->height();
+        above_center = ABOVE_CENTER[scriptDepth()] + first()->height();
+        under_center = UNDER_CENTER[scriptDepth()] + second()->height();
     }
 
     virtual void updateChildPositions() override {

@@ -49,6 +49,10 @@ Line* Line::nearestLine(double y) const noexcept{
     return parent->nearestLine(y);
 }
 
+Line* Line::nearestAbove(double y) const noexcept{
+    return parent->nearestAbove(y);
+}
+
 void Line::resize() noexcept{
     updateSize();
     parent->updateLayout();

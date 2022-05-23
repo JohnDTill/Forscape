@@ -15,10 +15,13 @@ static constexpr size_t ITER_SCANNER = 500000;
 static constexpr size_t ITER_PARSER = 500000;
 static constexpr size_t ITER_SYMBOL_TABLE = 50000;
 static constexpr size_t ITER_INTERPRETER = 5000;
-static constexpr size_t ITER_CALC_SIZE = 30;
-static constexpr size_t ITER_LAYOUT = 500;
+static constexpr size_t ITER_CALC_SIZE = 500000;
+static constexpr size_t ITER_LAYOUT = 1000000;
 static constexpr size_t ITER_PAINT = 500;
-static constexpr size_t ITER_LOOP = 500;
+static constexpr size_t ITER_LOOP = 10;
+static constexpr size_t ITER_PRINT_SIZE = 100;
+static constexpr size_t ITER_PRINT_LAYOUT = 100;
+static constexpr size_t ITER_PRINT_PAINT = 30;
 
 void runBenchmark(){
     std::string src = readFile("../test/interpreter_scripts/in/root_finding_terse.txt");
@@ -86,23 +89,47 @@ void runBenchmark(){
     Typeset::View view;
     //view.show();
 
-    view.resize(QSize(1920, 1080));
+    view.resize(QSize(1920*2, 1080*2));
     QImage img(view.size(), QImage::Format_RGB32);
     QPainter painter(&img);
     view.setModel(m);
 
     startClock();
-    for(size_t i = 0; i < ITER_PAINT; i++)
-        view.render(&painter);
+    for(size_t i = 0; i < ITER_PAINT; i++) view.render(&painter);
     report("Paint", ITER_PAINT);
     #endif
 
-    m = Typeset::Model::fromSerial("for(i ← 0; i ≤ 200; i ← i + 1)\n    print(i, \"\\n\")");
+    #define N_PRINTS "1000000"
+
+    m = Typeset::Model::fromSerial("for(i ← 0; i ≤ " N_PRINTS "; i ← i + 1)\n    print(i, \"\\n\")");
 
     startClock();
     for(size_t i = 0; i < ITER_LOOP; i++)
         m->run();
-    report("Print Loop", ITER_LOOP);
+    report("Print " N_PRINTS, ITER_LOOP);
+
+    #ifndef HOPE_TYPESET_HEADLESS
+    Typeset::Model* temp = m;
+    m = Typeset::Model::fromSerial(m->run(), true);
+    delete temp;
+
+    startClock();
+    for(size_t i = 0; i < ITER_PRINT_SIZE; i++)
+        m->calculateSizes();
+    report("Print output size", ITER_PRINT_SIZE);
+
+    startClock();
+    for(size_t i = 0; i < ITER_PRINT_LAYOUT; i++)
+        m->updateLayout();
+    report("Print output layout", ITER_PRINT_LAYOUT);
+
+    view.resize(QSize(1920*2, 1080*2));
+    view.setModel(m);
+
+    startClock();
+    for(size_t i = 0; i < ITER_PRINT_PAINT; i++) view.render(&painter);
+    report("Print output Paint", ITER_PRINT_PAINT);
+    #endif
 
     recordResults();
 }

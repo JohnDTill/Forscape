@@ -97,6 +97,7 @@ void Plot::paintEvent(QPaintEvent* event){
     painter.resetTransform();
     painter.setPen(pen);
 
+    //EVENTUALLY: codegen font metrics
     QFont title_font = Hope::Typeset::getFont(Hope::SEM_DEFAULT, 0);
     title_font.setPointSize(14);
     painter.setFont(title_font);

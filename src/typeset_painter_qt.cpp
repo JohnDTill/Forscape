@@ -12,6 +12,19 @@
 #include <QLabel>
 #include <QPainterPath>
 
+//EVENTUALLY: probably want to codegen these
+static constexpr double ASCENT[3] = {
+    12.34375,
+    8.546875,
+    6.65625,
+};
+
+static constexpr double CAPHEIGHT[3] = {
+    9.421875,
+    6.515625,
+    5.0625,
+};
+
 namespace Hope {
 
 namespace Typeset {
@@ -31,13 +44,19 @@ bool is_init = false;
 
 static constexpr size_t N_DEPTHS = 3;
 QFont fonts[N_DEPTHS*NUM_SEM_TYPES];
-static QFont line_font;
 
 static QFont readFont(const QString& file, const QString& name, const QString& family){
     int id = QFontDatabase::addApplicationFont(file);
+    #ifdef NDEBUG
+    (void)id;
+    #endif
     assert(id!=-1);
+    #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QFont font = QFontDatabase::font(name, family, depthToFontSize(0));
+    #else
     QFont font = QFontDatabase().font(name, family, depthToFontSize(0));
-    font.setKerning(false); //Probably can't have kerning and draw overlapping subtext
+    #endif
+    font.setKerning(false);
 
     return font;
 }
@@ -45,21 +64,13 @@ static QFont readFont(const QString& file, const QString& name, const QString& f
 void Painter::init(){
     is_init = true;
 
-    line_font = readFont(":/fonts/cmunbmr.ttf", "CMU Bright", "Roman");
-    line_font.setPointSize(8);
-
     std::array<QFont, NUM_FONTS> loaded_fonts;
-    loaded_fonts[CMU_SERIF_BOLD] = readFont(":/fonts/cmunbx.ttf", "CMU Serif", "Bold");
-    loaded_fonts[CMU_SERIF_BOLD_ITALIC] = readFont(":/fonts/cmunbi.ttf", "CMU Serif", "Bold Italic");
-    loaded_fonts[CMU_SERIF_ITALIC] = readFont(":/fonts/cmunti.ttf", "CMU Serif", "Italic");
-    loaded_fonts[QUIVIRA_REGULAR] = readFont(":/fonts/Quivira.otf", "Quivira", "Regular");
-    #ifdef __linux__
-    //WORKAROUND: for some reason CMU Serif Roman font metrics work especially poorly in Linux
-    loaded_fonts[CMU_SERIF_ROMAN] = loaded_fonts[QUIVIRA_REGULAR];
-    #else
-    loaded_fonts[CMU_SERIF_ROMAN] = readFont(":/fonts/cmunrm.ttf", "CMU Serif", "Roman");
-    #endif
-    loaded_fonts[CMU_TYPEWRITER_TEXT_BOLD] = readFont(":/fonts/cmuntb.ttf", "CMU Typewriter Text", "Bold");
+
+    //EVENTUALLY: codegen font loading
+    loaded_fonts[JULIAMONO_REGULAR] = readFont(":/fonts/JuliaMono-Regular.ttf", "JuliaMono", "Regular");
+    loaded_fonts[JULIAMONO_ITALIC] = readFont(":/fonts/JuliaMono-RegularItalic.ttf", "JuliaMono", "Italic");
+    loaded_fonts[JULIAMONO_BOLD] = readFont(":/fonts/JuliaMono-Bold.ttf", "JuliaMono", "Bold");
+    loaded_fonts[JULIAMONO_BOLD_ITALIC] = readFont(":/fonts/JuliaMono-BoldItalic.ttf", "JuliaMono", "Bold Italic");
 
     for(size_t i = 0; i < NUM_SEM_TYPES; i++){
         QFont font = loaded_fonts[font_enum[i]];
@@ -79,49 +90,6 @@ const QFont& getFont(SemanticType type, uint8_t depth) noexcept {
 
 static QColor getColor(SemanticType type) noexcept {
     return Typeset::getColour(sem_colours[type]);
-}
-
-static double getWidth(const QFont& font, const std::string& text){
-    return QFontMetricsF(font).horizontalAdvance( QString::fromStdString(text) );
-}
-
-static double getWidth(const QFont& font, char ch){
-    return QFontMetricsF(font).horizontalAdvance(ch);
-}
-
-double getWidth(SemanticType type, uint8_t depth, const std::string& text){
-    return getWidth(getFont(type, depth), text);
-}
-
-double getWidth(SemanticType type, uint8_t depth, char ch){
-    return getWidth(getFont(type, depth), ch);
-}
-
-double getHeight(SemanticType type, uint8_t depth){
-    QFontMetrics fm(getFont(type, depth));
-    return fm.capHeight()+fm.descent();
-}
-
-double getAscent(SemanticType type, uint8_t depth){
-    return QFontMetrics(getFont(type, depth)).ascent();
-}
-
-double getDescent(SemanticType type, uint8_t depth){
-    return QFontMetrics(getFont(type, depth)).descent();
-}
-
-double getXHeight(SemanticType type, uint8_t depth){
-    return QFontMetrics(getFont(type, depth)).xHeight();
-}
-
-double getAboveCenter(SemanticType type, uint8_t depth){
-    QFontMetrics fm(getFont(type, depth));
-    return fm.capHeight() - static_cast<double>(fm.xHeight()+fm.capHeight())/3;
-}
-
-double getUnderCenter(SemanticType type, uint8_t depth){
-    QFontMetrics fm(getFont(type, depth));
-    return fm.descent() + static_cast<double>(fm.xHeight()+fm.capHeight())/3;
 }
 
 Painter::Painter(WrappedPainter& painter)
@@ -151,44 +119,47 @@ void Painter::setOffset(double x, double y){
     x_offset = x;
 }
 
-void Painter::drawText(double x, double y, const std::string& text, bool forward){
+void Painter::drawText(double x, double y, std::string_view text, bool forward){
     x += x_offset;
-    QString q_str = QString::fromStdString(text);
+    QString q_str = QString::fromUtf8(text.data(), text.size());
 
     if(forward){
-        y += painter.fontMetrics().capHeight();
+        y += CAPHEIGHT[depth];
         painter.drawText(x, y, q_str);
     }else{
-        y += painter.fontMetrics().capHeight();
-        y -= painter.fontMetrics().ascent();
-        double h = painter.fontMetrics().height();
-        double w = QFontMetricsF(painter.font()).horizontalAdvance(q_str);
-        painter.drawText(QRectF(x, y, w, h), Qt::AlignRight|Qt::AlignBaseline, q_str);
+        y += CAPHEIGHT[depth];
+        y -= ASCENT[depth];
+        double h = CHARACTER_HEIGHTS[depth];
+        double w = CHARACTER_WIDTHS[depth]*q_str.size();
+        #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+        painter.drawText(x, y, w, h, Qt::AlignRight|Qt::AlignBaseline, q_str);
+        #else //Qt6 truncates large inputs
+        painter.translate(x, y);
+        painter.drawText(0, 0, w, h, Qt::AlignRight|Qt::AlignBaseline, q_str);
+        painter.translate(-x, -y);
+        #endif
     }
 }
 
-void Painter::drawHighlightedGrouping(double x, double y, double w, const std::string& text){
+void Painter::drawHighlightedGrouping(double x, double y, double w, std::string_view text){
     x += x_offset;
 
     painter.setPen(getColour(COLOUR_GROUPINGBACKGROUND));
     painter.setBrush(getColour(COLOUR_GROUPINGBACKGROUND));
-    painter.drawRect(x, y, w, painter.fontMetrics().ascent());
+    painter.drawRect(x, y, w, ASCENT[depth]);
 
     painter.setPen(getColour(COLOUR_GROUPINGHIGHLIGHT));
-    y += painter.fontMetrics().capHeight();
-    painter.drawText(x, y, QString::fromStdString(text));
+    y += CAPHEIGHT[depth];
+    painter.drawText(x, y, QString::fromUtf8(text.data(), text.size()));
 
     painter.setPen(getColour(COLOUR_CURSOR));
     painter.setBrush(getColour(COLOUR_CURSOR));
 }
 
-void Painter::drawSymbol(double x, double y, const std::string& text){
+void Painter::drawSymbol(double x, double y, std::string_view text){
     x += x_offset;
-    QFont font = painter.font();
-    font.setPointSizeF(1*font.pointSizeF());
-    painter.setFont(font);
-    y += painter.fontMetrics().capHeight();
-    painter.drawText(x, y, QString::fromStdString(text));
+    y += CAPHEIGHT[depth];
+    painter.drawText(x, y, QString::fromUtf8(text.data(), text.size()));
 }
 
 void Painter::drawLine(double x, double y, double w, double h){
@@ -320,20 +291,24 @@ void Painter::drawDot(double x, double y){
     painter.drawText(x, y, QChar('.'));
 }
 
-double Painter::getWidth(const std::string& text){
-    assert(painter.font().kerning() == false);
-    return QFontMetricsF(painter.font()).horizontalAdvance( QString::fromStdString(text) );
-}
-
 void Painter::drawLineNumber(double y, size_t num, bool active){
     if(active) painter.setPen(getColour(COLOUR_LINENUMACTIVE));
     else painter.setPen(getColour(COLOUR_LINENUMPASSIVE));
-
-    painter.setFont(line_font);
-    QFontMetricsF fm (painter.font());
+    y += CAPHEIGHT[0];
     QString str = QString::number(num);
-    qreal x = x_offset - fm.horizontalAdvance(str);
-    y += painter.fontMetrics().descent() / 2;
+
+    qreal x = x_offset;
+    if(num < 1000000){
+        painter.setFont(getFont(SEM_DEFAULT, 0));
+        x -= CHARACTER_WIDTHS[0]*str.size();
+    }else if(num < 100000000){
+        painter.setFont(getFont(SEM_DEFAULT, 1));
+        x -= CHARACTER_WIDTHS[1]*str.size();
+    }else{
+        painter.setFont(getFont(SEM_DEFAULT, 2));
+        x -= CHARACTER_WIDTHS[2]*str.size();
+    }
+
     painter.drawText(x, y, str);
 }
 
@@ -344,10 +319,10 @@ void Painter::setSelectionMode(){
 void Painter::drawSymbol(char ch, double x, double y, double w, double h){
     x += x_offset;
 
-    double scale_x = w / QFontMetricsF(painter.font()).horizontalAdvance(ch);
-    double scale_y = h / painter.fontMetrics().ascent();
+    double scale_x = w / CHARACTER_WIDTHS[depth];
+    double scale_y = h / ASCENT[depth];
     x /= scale_x;
-    y = (y + h - painter.fontMetrics().descent()) / scale_y;
+    y = (y + h - DESCENT[depth]) / scale_y;
 
     QTransform transform = painter.transform();
     painter.scale(scale_x, scale_y);
@@ -355,14 +330,14 @@ void Painter::drawSymbol(char ch, double x, double y, double w, double h){
     painter.setTransform(transform);
 }
 
-void Painter::drawSymbol(const std::string& str, double x, double y, double w, double h){
+void Painter::drawSymbol(std::string_view str, double x, double y, double w, double h){
     x += x_offset;
 
-    QString qstr = QString::fromStdString(str);
-    double scale_x = w / QFontMetricsF(painter.font()).horizontalAdvance(qstr);
-    double scale_y = h / painter.fontMetrics().ascent();
+    QString qstr = QString::fromUtf8(str.data(), str.size());
+    double scale_x = w / CHARACTER_WIDTHS[depth]*qstr.size();
+    double scale_y = h / ASCENT[depth];
     x /= scale_x;
-    y = (y + h - painter.fontMetrics().descent()) / scale_y;
+    y = (y + h - DESCENT[depth]) / scale_y;
 
     QTransform transform = painter.transform();
     painter.scale(scale_x, scale_y);

@@ -12,7 +12,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <iostream>
 
 namespace Hope {
 
@@ -34,14 +33,18 @@ void Text::setParent(Phrase* p) noexcept{
     parent = p;
 }
 
-void Text::writeString(std::string& out, size_t& curr) const noexcept{
-    for(const char& ch : str) out[curr++] = ch;
+void Text::writeString(std::string& out, size_t& curr) const noexcept {
+    memcpy(&out[curr], str.data(), numChars());
+    curr += numChars();
 }
 
-void Text::writeString(std::string& out, size_t& curr, size_t pos, size_t len) const noexcept{
-    size_t stop = (len == std::string::npos) ? size() : pos + len;
-    for(size_t i = pos; i < stop; i++)
-        out[curr++] = at(i);
+void Text::writeString(std::string& out, size_t& curr, size_t pos) const noexcept {
+    writeString(out, curr, pos, numChars()-pos);
+}
+
+void Text::writeString(std::string& out, size_t& curr, size_t pos, size_t len) const noexcept {
+    memcpy(&out[curr], &str[pos], len);
+    curr += len;
 }
 
 bool Text::isTopLevel() const noexcept{
@@ -52,7 +55,7 @@ bool Text::isNested() const noexcept{
     return !isTopLevel();
 }
 
-size_t Text::size() const noexcept{
+size_t Text::numChars() const noexcept{
     return str.size();
 }
 
@@ -60,26 +63,34 @@ bool Text::empty() const noexcept{
     return str.empty();
 }
 
-char Text::at(size_t index) const noexcept{
-    return str[index];
+void Text::setString(std::string_view str) noexcept {
+    this->str = str;
+
+    #ifndef HOPE_TYPESET_HEADLESS
+    resize();
+    #endif
 }
 
 std::string Text::substr(size_t pos, size_t len) const{
     return str.substr(pos, len);
 }
 
+char Text::charAt(size_t index) const noexcept{
+    return str[index];
+}
+
 std::string_view Text::codepointAt(size_t index) const noexcept{
-    return std::string_view(str.data()+index, codepointSize(at(index)));
+    return std::string_view(str.data()+index, codepointSize(charAt(index)));
 }
 
 std::string_view Text::graphemeAt(size_t index) const noexcept{
-    return std::string_view(str.data()+index, graphemeSize(str, index));
+    return std::string_view(str.data()+index, numBytesInGrapheme(str, index));
 }
 
 size_t Text::leadingSpaces() const noexcept{
-    for(size_t i = 0; i < size(); i++)
-        if(str[i] != ' ') return i;
-    return size();
+    for(size_t i = 0; i < numChars(); i++)
+        if(charAt(i) != ' ') return i;
+    return numChars();
 }
 
 std::string_view Text::checkKeyword(size_t iR) const noexcept{
@@ -197,7 +208,7 @@ SemanticType Text::getTypePrev() const noexcept{
     return SEM_DEFAULT;
 }
 
-void Text::tag(SemanticType type, size_t start, size_t stop){
+void Text::tag(SemanticType type, size_t start, size_t stop) alloc_except {
     assert(std::is_sorted(tags.begin(), tags.end(), [](auto& a, auto& b){return a.index < b.index;}));
 
     SemanticType type_after = getTypeLeftOf(stop);
@@ -221,9 +232,9 @@ void Text::tag(SemanticType type, size_t start, size_t stop){
     assert(std::is_sorted(tags.begin(), tags.end(), [](auto& a, auto& b){return a.index < b.index;}));
 }
 
-void Text::tagBack(SemanticType type){
-    assert(tags.empty() || tags.back().index != size());
-    tags.push_back( SemanticTag(size(), type) );
+void Text::tagBack(SemanticType type) alloc_except {
+    assert(tags.empty() || tags.back().index != numChars());
+    tags.push_back( SemanticTag(numChars(), type) );
 }
 
 #ifdef HOPE_SEMANTIC_DEBUGGING
@@ -242,53 +253,20 @@ std::string Text::toSerialWithSemanticTags() const{
 #endif
 
 #ifndef HOPE_TYPESET_HEADLESS
-double Text::aboveCenter() const {
-    return getAboveCenter(SEM_DEFAULT, scriptDepth());
+double Text::aboveCenter() const noexcept {
+    return ABOVE_CENTER[scriptDepth()];
 }
 
-double Text::underCenter() const {
-    return getUnderCenter(SEM_DEFAULT, scriptDepth());
+double Text::underCenter() const noexcept {
+    return UNDER_CENTER[scriptDepth()];
 }
 
-double Text::height() const {
-    return getHeight(SEM_DEFAULT, scriptDepth());
+double Text::height() const noexcept {
+    return CHARACTER_HEIGHTS[scriptDepth()];
 }
 
-void Text::updateWidth(){
-    width = 0;
-    uint8_t depth = scriptDepth();
-    SemanticType type = getTypePrev();
-    size_t start = 0;
-
-    for(const SemanticTag& tag : tags){
-        width += Hope::Typeset::getWidth(type, depth, str.substr(start, tag.index-start));
-        start = tag.index;
-        type = tag.type;
-    }
-    width += Hope::Typeset::getWidth(type, depth, str.substr(start));
-
-    invalidateX();
-}
-
-void Text::invalidateX() noexcept {
-    x = std::numeric_limits<double>::quiet_NaN();
-}
-
-double Text::xLocal(size_t index) const{
-    double left = 0;
-    uint8_t depth = scriptDepth();
-    SemanticType type = getTypePrev();
-    size_t start = 0;
-
-    for(const SemanticTag& tag : tags){
-        if(tag.index >= index) break;
-        left += Hope::Typeset::getWidth(type, depth, str.substr(start, tag.index-start));
-        start = tag.index;
-        type = tag.type;
-    }
-    left += Hope::Typeset::getWidth(type, depth, str.substr(start, index-start));
-
-    return left;
+double Text::xLocal(size_t index) const noexcept {
+    return CHARACTER_WIDTHS[scriptDepth()] * countGraphemes(std::string_view(str.data(), index));
 }
 
 double Text::xPhrase(size_t index) const{
@@ -309,165 +287,119 @@ double Text::xGlobal(size_t index) const{
 }
 
 double Text::xRight() const noexcept{
-    return x + width;
+    return x + getWidth();
 }
 
-double Text::getWidth() const noexcept{
+double Text::yBot() const noexcept{
+    return y + height();
+}
+
+double Text::getWidth() const noexcept {
     return width;
 }
 
-uint8_t Text::scriptDepth() const noexcept{
+void Text::updateWidth() noexcept {
+    width = CHARACTER_WIDTHS[scriptDepth()] * countGraphemes(str);
+}
+
+uint8_t Text::scriptDepth() const noexcept {
     return parent->script_level;
 }
 
-size_t Text::indexNearest(double x_in) const noexcept{
-    x_in -= x;
-
-    if(x_in <= 0) return 0;
-    else if(x_in >= width) return size();
-
-    double left = 0;
-    uint8_t depth = scriptDepth();
-    SemanticType type = getTypePrev();
-    size_t index = 0;
-
-    for(const SemanticTag& tag : tags){
-        while(index < tag.index){
-            size_t glyph_size = codepointSize(str[index]);
-            double w = glyph_size == 1 ?
-                       Hope::Typeset::getWidth(type, depth, str[index]) :
-                       Hope::Typeset::getWidth(type, depth, str.substr(index, glyph_size));
-            if(left+w/2 >= x_in) return index;
-            left += w;
-            index += glyph_size;
-        }
-
-        type = tag.type;
-    }
-    while(index < size()){
-        size_t glyph_size = codepointSize(str[index]);
-        double w = glyph_size == 1 ?
-                   Hope::Typeset::getWidth(type, depth, str[index]) :
-                   Hope::Typeset::getWidth(type, depth, str.substr(index, glyph_size));
-        if(left+w/2 >= x_in) return index;
-        left += w;
-        index += glyph_size;
-    }
-
-    return size();
+size_t Text::charIndexNearest(double x_in) const noexcept {
+    return charIndexLeft(x_in + CHARACTER_WIDTHS[scriptDepth()]/2);
 }
 
-size_t Text::indexLeft(double x_in) const noexcept{
-    x_in -= x;
-
-    if(x_in <= 0) return 0;
-    else if(x_in >= width) return size();
-
-    double left = 0;
-    uint8_t depth = scriptDepth();
-    SemanticType type = getTypePrev();
+size_t Text::charIndexLeft(double x_in) const noexcept {
+    double grapheme_index = (x_in-x) / CHARACTER_WIDTHS[scriptDepth()];
+    if(grapheme_index < 0) return 0;
     size_t index = 0;
-
-    for(const SemanticTag& tag : tags){
-        while(index < tag.index){
-            size_t glyph_size = codepointSize(str[index]);
-            left += glyph_size == 1 ?
-                    Hope::Typeset::getWidth(type, depth, str[index]) :
-                    Hope::Typeset::getWidth(type, depth, str.substr(index, glyph_size));
-            if(left > x_in) return index;
-            index += glyph_size;
-        }
-
-        type = tag.type;
-    }
-    while(index < size()){
-        size_t glyph_size = codepointSize(str[index]);
-        left += glyph_size == 1 ?
-                Hope::Typeset::getWidth(type, depth, str[index]) :
-                Hope::Typeset::getWidth(type, depth, str.substr(index, glyph_size));
-        if(left > x_in) return index;
-        index += glyph_size;
-    }
-
-    return size();
+    for(size_t i = 0; i < static_cast<size_t>(grapheme_index) && index < numChars(); i++)
+        index += numBytesInGrapheme(str, index);
+    return index;
 }
 
-void Text::paint(Painter& painter, bool forward) const{
+void Text::paint(Painter& painter, bool forward) const {
     size_t start = 0;
     double x = this->x;
+    double char_width = CHARACTER_WIDTHS[scriptDepth()];
     for(const SemanticTag& tag : tags){
-        std::string substr = str.substr(start, tag.index-start);
+        std::string_view substr(&str[start], tag.index-start);
         painter.drawText(x, y, substr, forward);
-        x += painter.getWidth(substr);
+        x += char_width * countGraphemes(substr);
         start = tag.index;
         painter.setType(tag.type);
     }
-    painter.drawText(x, y, str.substr(start), forward);
+    painter.drawText(x, y, std::string_view(&str[start], numChars()-start), forward);
 }
 
-void Text::paintUntil(Painter& painter, size_t stop, bool forward) const{
+void Text::paintUntil(Painter& painter, size_t stop, bool forward) const {
     size_t start = 0;
     double x = this->x;
+    double char_width = CHARACTER_WIDTHS[scriptDepth()];
     for(const SemanticTag& tag : tags){
         if(tag.index >= stop) break;
-        std::string substr = str.substr(start, tag.index-start);
+        std::string_view substr(&str[start], tag.index-start);
         painter.drawText(x, y, substr, forward);
-        x += painter.getWidth(substr);
+        x += char_width * countGraphemes(substr);
         start = tag.index;
         painter.setType(tag.type);
     }
-    painter.drawText(x, y, str.substr(start, stop - start), forward);
+    painter.drawText(x, y, std::string_view(&str[start], stop-start), forward);
 }
 
-void Text::paintAfter(Painter& painter, size_t start, bool forward) const{
+void Text::paintAfter(Painter& painter, size_t start, bool forward) const {
     double x = this->x + xLocal(start);
     painter.setType(getTypeLeftOf(start));
+    double char_width = CHARACTER_WIDTHS[scriptDepth()];
 
     for(const SemanticTag& tag : tags){
         if(tag.index > start){
-            std::string substr = str.substr(start, tag.index-start);
+            std::string_view substr(&str[start], tag.index-start);
             painter.drawText(x, y, substr, forward);
-            x += painter.getWidth(substr);
+            x += char_width * countGraphemes(substr);
             start = tag.index;
             painter.setType(tag.type);
         }
     }
 
-    painter.drawText(x, y, str.substr(start), forward);
+    painter.drawText(x, y, std::string_view(&str[start], numChars()-start), forward);
 }
 
-void Text::paintMid(Painter& painter, size_t start, size_t stop, bool forward) const{
+void Text::paintMid(Painter& painter, size_t start, size_t stop, bool forward) const {
     painter.setScriptLevel(scriptDepth());
     double x = this->x + xLocal(start);
     painter.setType(getTypeLeftOf(start));
+    double char_width = CHARACTER_WIDTHS[scriptDepth()];
 
     for(const SemanticTag& tag : tags){
         if(tag.index > start){
             if(tag.index >= stop) break;
-            std::string substr = str.substr(start, tag.index-start);
+            std::string_view substr(&str[start], tag.index-start);
             painter.drawText(x, y, substr, forward);
-            x += painter.getWidth(substr);
+            x += char_width * countGraphemes(substr);
             start = tag.index;
             painter.setType(tag.type);
         }
     }
 
-    painter.drawText(x, y, str.substr(start, stop-start), forward);
+    painter.drawText(x, y, std::string_view(&str[start], stop-start), forward);
 }
 
-void Text::paintGrouping(Painter& painter, size_t start) const{
-    assert(start < size());
+void Text::paintGrouping(Painter& painter, size_t start) const {
+    assert(start < numChars());
     size_t stop = start + codepointSize(str[start]);
 
     painter.setScriptLevel(scriptDepth());
     double x = this->x + xLocal(start);
     painter.setType(getTypeLeftOf(start));
+    double char_width = CHARACTER_WIDTHS[scriptDepth()];
 
     for(const SemanticTag& tag : tags){
         if(tag.index > start){
             if(tag.index >= stop) break;
-            std::string substr = str.substr(start, tag.index-start);
-            double width = painter.getWidth(substr);
+            std::string_view substr(&str[start], tag.index-start);
+            double width = char_width * countGraphemes(substr);
             painter.drawHighlightedGrouping(x, y, width, substr);
             x += width;
             start = tag.index;
@@ -475,25 +407,25 @@ void Text::paintGrouping(Painter& painter, size_t start) const{
         }
     }
 
-    std::string substr = str.substr(start, stop-start);
-    double width = painter.getWidth(substr);
+    std::string_view substr(&str[start], stop-start);
+    double width = char_width * countGraphemes(substr);
     painter.drawHighlightedGrouping(x, y, width, substr);
 }
 
-bool Text::containsX(double x_test) const noexcept{
-    return (x_test >= x) & (x_test <= x + width);
+bool Text::containsX(double x_test) const noexcept {
+    return (x_test >= x) & (x_test <= x + getWidth());
 }
 
-bool Text::containsY(double y_test) const noexcept{
+bool Text::containsY(double y_test) const noexcept {
     return (y_test >= y) & (y_test <= y + height());
 }
 
-bool Text::containsXInBounds(double x_test, size_t start, size_t stop) const noexcept{
+bool Text::containsXInBounds(double x_test, size_t start, size_t stop) const noexcept {
     return x_test >= xGlobal(start) && x_test <= xGlobal(stop);
 }
 
-void Text::resize(){
-    updateWidth();
+void Text::resize() noexcept {
+    width = STALE;
     parent->resize();
 }
 #endif

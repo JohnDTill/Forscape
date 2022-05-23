@@ -46,7 +46,7 @@ public:
 
     virtual void updateSizeSpecific() noexcept override {
         assert(scriptDepth() == 0);
-        width = getWidth(SEM_DEFAULT, 0, "Line " + std::to_string(line_id+1) + ':');
+        width = CHARACTER_WIDTHS[0] * (6 + std::to_string(line_id+1).size());
         above_center = prev()->aboveCenter();
         under_center = prev()->underCenter();
     }

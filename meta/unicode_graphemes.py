@@ -8,18 +8,22 @@ def main():
         includes=["hope_common.h"],
     )
 
-    header_writer.write("static static_set<uint32_t> ZERO_WIDTH_CHARS = {\n")
-    for i in range(256, 1000000):
+    header_writer.write(
+        "inline bool isZeroWidth(uint32_t code) noexcept {\n"
+        "    switch(code){\n")
+    for i in range(256, 1114112):
         ch = chr(i)
         if wcwidth(ch) == 0:
-            header_writer.write(f"    {unicode.to_num(ch)},\n")
-    header_writer.write("};\n\n")
-    header_writer.write("inline bool isZeroWidth(uint32_t code){"
-                        "return ZERO_WIDTH_CHARS.find(code) != ZERO_WIDTH_CHARS.end();"
-                        "}\n\n")
+            print(f"{i},")
+            header_writer.write(f"        case {unicode.to_num(ch)}:\n")
+    header_writer.write(
+        "            return true;\n"
+        "        default: return false;\n"
+        "    }\n"
+        "};\n\n")
 
     header_writer.finalize()
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()

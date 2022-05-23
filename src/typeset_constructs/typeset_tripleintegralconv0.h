@@ -14,9 +14,9 @@ public:
 
     #ifndef HOPE_TYPESET_HEADLESS
     virtual void updateSizeSpecific() noexcept override {
-        width = getWidth(SEM_DEFAULT, parent->script_level, "∰");
-        above_center = getAboveCenter(SEM_DEFAULT, parent->script_level);
-        under_center = getUnderCenter(SEM_DEFAULT, parent->script_level);
+        width = CHARACTER_WIDTHS[scriptDepth()];
+        above_center = ABOVE_CENTER[scriptDepth()];
+        under_center = UNDER_CENTER[scriptDepth()];
     }
 
     virtual void paintSpecific(Painter& painter) const override {

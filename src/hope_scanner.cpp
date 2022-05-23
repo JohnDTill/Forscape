@@ -78,7 +78,7 @@ void Scanner::comment() alloc_except {
     createToken(COMMENT);
 }
 
-void Scanner::createToken(TokenType type) alloc_except {
+void Scanner::createToken(HopeTokenType type) alloc_except {
     tokens.push_back( Token(Typeset::Selection(controller->anchor, controller->active), type) );
 }
 
@@ -87,7 +87,7 @@ void Scanner::scanNumber() alloc_except {
     createToken(INTEGER);
 }
 
-HOPE_STATIC_MAP<std::string_view, TokenType> Scanner::keywords {
+HOPE_STATIC_MAP<std::string_view, HopeTokenType> Scanner::keywords {
     HOPE_KEYWORD_MAP
 };
 
@@ -108,7 +108,7 @@ void Scanner::unrecognizedSymbol() alloc_except {
     error(UNRECOGNIZED_SYMBOL);
 }
 
-void Scanner::scanConstruct(TokenType type) alloc_except {
+void Scanner::scanConstruct(HopeTokenType type) alloc_except {
     createToken(type);
     controller->consolidateToAnchor();
     controller->moveToNextChar();

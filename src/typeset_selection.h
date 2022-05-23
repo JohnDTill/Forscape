@@ -63,8 +63,8 @@ public:
     void paint(Painter& painter) const;
     void paintSelectionText(Painter& painter, bool forward) const;
     void paintSelectionPhrase(Painter& painter, bool forward) const;
-    void paintSelectionLines(Painter& painter, bool forward) const;
-    void paintSelection(Painter& painter, bool forward) const;
+    void paintSelectionLines(Painter& painter, bool forward, double yT, double yB) const;
+    void paintSelection(Painter& painter, bool forward, double yT, double yB) const;
     void paintError(Painter& painter) const;
     void paintErrorSelectionless(Painter& painter) const;
     void paintErrorText(Painter& painter) const;
@@ -73,6 +73,11 @@ public:
     void paintHighlight(Painter& painter) const;
     void paintHighlightText(Painter& painter) const;
     void paintHighlightPhrase(Painter& painter) const;
+    double yTop() const noexcept;
+    double yBot() const noexcept;
+    double yTopPhrase() const noexcept;
+    double yBotPhrase() const noexcept;
+    bool overlapsY(double yT, double yB) const noexcept;
 
     static constexpr double EMPTY_SUBPHRASE_MARGIN = 6;
     #endif

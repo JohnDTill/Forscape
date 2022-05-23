@@ -15,22 +15,23 @@ namespace Typeset {
 class MarkerLink;
 class Model;
 
-class View : public Widget {
+class View : public QWidget {
     Q_OBJECT
 
 public:
-    View();
-    virtual ~View() override;
+    static std::list<View*> all_views;
+    View() noexcept;
+    virtual ~View() noexcept override;
     void setFromSerial(const std::string& src, bool is_output = false);
-    std::string toSerial() const;
+    std::string toSerial() const alloc_except;
     Model* getModel() const noexcept;
-    void setModel(Model* m, bool owned = true);
+    void setModel(Model* m, bool owned = true) noexcept;
     void runThread(View* output);
-    void setLineNumbersVisible(bool show);
+    void setLineNumbersVisible(bool show) noexcept;
     Controller& getController() noexcept;
     void setReadOnly(bool read_only) noexcept;
-    void replaceAll(const std::vector<Selection>& targets, const std::string& name);
-    void ensureCursorVisible();
+    void replaceAll(const std::vector<Selection>& targets, const std::string& name) alloc_except;
+    void ensureCursorVisible() noexcept;
     void updateModel() noexcept;
     void zoomIn() noexcept;
     void zoomOut() noexcept;
@@ -49,9 +50,10 @@ public:
     View* console = nullptr;
     bool isRunning() const noexcept;
     void reenable() noexcept;
+    void updateBackgroundColour() noexcept;
 
 protected:
-    void dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held);
+    void dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held) alloc_except;
     void dispatchRelease(double x, double y);
     void dispatchDoubleClick(double x, double y);
     void dispatchHover(double x, double y);
@@ -67,26 +69,26 @@ protected:
     void resolveSelectionDrag(double x, double y);
     bool isInLineBox(double x) const noexcept;
     void drawModel(double xL, double yT, double xR, double yB);
-    void updateXSetpoint();
+    void updateXSetpoint() noexcept;
     double xModel(double xScreen) const noexcept;
     double yModel(double yScreen) const noexcept;
     double xScreen(double xModel) const noexcept;
     double yScreen(double yModel) const noexcept;
     void restartCursorBlink() noexcept;
-    void stopCursorBlink();
-    double xOrigin() const;
-    double yOrigin() const;
+    void stopCursorBlink() noexcept;
+    double xOrigin() const noexcept;
+    double yOrigin() const noexcept;
     double getLineboxWidth() const noexcept;
     void recommend();
 
-    static constexpr double ZOOM_DEFAULT = 2.0;
-    static constexpr double ZOOM_MAX = 5.0; static_assert(ZOOM_DEFAULT <= ZOOM_MAX);
-    static constexpr double ZOOM_MIN = 0.75; static_assert(ZOOM_DEFAULT >= ZOOM_MIN);
+    static constexpr double ZOOM_DEFAULT = 1.2;
+    static constexpr double ZOOM_MAX = 2.5*ZOOM_DEFAULT; static_assert(ZOOM_DEFAULT <= ZOOM_MAX);
+    static constexpr double ZOOM_MIN = 0.375/2*ZOOM_DEFAULT; static_assert(ZOOM_DEFAULT >= ZOOM_MIN);
     static constexpr double ZOOM_DELTA = 1.1; static_assert(ZOOM_DELTA > 1);
     static constexpr size_t CURSOR_BLINK_INTERVAL = 600;
     static constexpr bool ALLOW_SELECTION_DRAG = true;
-    static constexpr double LINEBOX_WIDTH = 25;
     static constexpr double LINE_NUM_OFFSET = 5;
+    static constexpr double LINEBOX_WIDTH = CHARACTER_WIDTHS[0]*6+2*LINE_NUM_OFFSET;
     static constexpr double MARGIN_LEFT = 10;
     static constexpr double MARGIN_RIGHT = 10;
     static constexpr double MARGIN_TOP = 10;
@@ -110,6 +112,7 @@ protected:
 
 //Qt specific code
 protected:
+    QPainter qpainter;
     void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE;
     virtual void keyPressEvent(QKeyEvent* e) override final;
     virtual void mousePressEvent(QMouseEvent* e) override final;
@@ -125,7 +128,6 @@ protected:
 
 protected:
     void setCursorAppearance(double x, double y);
-    void drawBackground(const QRect& rect);
     void drawLinebox(double yT, double yB);
     void fillInScrollbarCorner();
     void handleResize();

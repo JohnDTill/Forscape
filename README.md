@@ -46,6 +46,7 @@ make
 * [spdlog](https://github.com/gabime/spdlog) (Very fast, header-only/compiled, C++ logging library.)
 * Fonts with extensive unicode support:
   * [Computer Modern](https://www.fontsquirrel.com/fonts/computer-modern)
+  * [JuliaMono](https://github.com/cormullion/juliamono)
   * [Quivira](http://quivira-font.com/)
 
 ## License

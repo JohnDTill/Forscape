@@ -5,7 +5,7 @@
 #include <sstream>
 #include "report.h"
 
-static size_t glyphSize(char ch) noexcept{
+static size_t bytesInCodepoint(char ch) noexcept{
     if(ch >> 7 == 0) return 1;
     assert((ch & (1 << 6)) != 0);
     if((ch & (1 << 5)) == 0) return 2;
@@ -45,7 +45,7 @@ inline bool testTypesetController(){
             curr++;
             controller.moveToNextChar();
         }else{
-            curr += glyphSize(ch);
+            curr += bytesInCodepoint(ch);
             controller.selectNextChar();
 
             if(controller.selectedText().front() != ch){

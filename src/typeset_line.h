@@ -23,6 +23,7 @@ public:
 
     #ifndef HOPE_TYPESET_HEADLESS
     Line* nearestLine(double y) const noexcept;
+    Line* nearestAbove(double y) const noexcept;
     virtual void resize() noexcept override;
     #endif
 

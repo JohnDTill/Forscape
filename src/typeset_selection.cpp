@@ -106,9 +106,9 @@ bool Selection::operator==(const Selection& other) const noexcept{
         }
 
         Typeset::Text* A_prefix_t = lL->back();
-        Typeset::Selection A_prefix(left, Typeset::Marker(A_prefix_t, A_prefix_t->size()));
+        Typeset::Selection A_prefix(left, Typeset::Marker(A_prefix_t, A_prefix_t->numChars()));
         Typeset::Text* B_prefix_t = other.lL->back();
-        Typeset::Selection B_prefix(other.left, Typeset::Marker(B_prefix_t, B_prefix_t->size()));
+        Typeset::Selection B_prefix(other.left, Typeset::Marker(B_prefix_t, B_prefix_t->numChars()));
 
         Typeset::Selection A_suffex(Typeset::Marker(lR->front(), 0), right);
         Typeset::Selection B_suffex(Typeset::Marker(other.lR->front(), 0), other.right);
@@ -237,9 +237,9 @@ void Selection::formatString() const noexcept{
 void Selection::format(SemanticType type) const noexcept{
     if(isTextSelection()) tL->tag(type, iL, iR);
     else if(isPhraseSelection()){
-        tL->tag(type, iL, tL->size());
+        tL->tag(type, iL, tL->numChars());
         Text* tc = tL->nextConstructAsserted()->frontTextAsserted();
-        tc->tag(type, 0, tc->size());
+        tc->tag(type, 0, tc->numChars());
     }
 }
 
@@ -311,9 +311,9 @@ std::string Selection::selectedTextSelection() const {
 
 std::string Selection::selectedPhrase() const{
     assert(isPhraseSelection());
-    size_t serial_chars = (tL->size()-iL) + iR + tL->nextConstructInPhrase()->serialChars();
+    size_t serial_chars = (tL->numChars()-iL) + iR + tL->nextConstructInPhrase()->serialChars();
     for(Text* t = tL->nextTextInPhrase(); t != tR; t = t->nextTextInPhrase())
-        serial_chars += t->size() + t->nextConstructInPhrase()->serialChars();
+        serial_chars += t->numChars() + t->nextConstructInPhrase()->serialChars();
 
     std::string out;
     out.resize(serial_chars);
@@ -333,13 +333,13 @@ std::string Selection::selectedPhrase() const{
 std::string Selection::selectedLines() const{
     assert(!isPhraseSelection());
 
-    size_t serial_chars = (tL->size()-iL) + iR + 1;
+    size_t serial_chars = (tL->numChars()-iL) + iR + 1;
     for(Text* t = lL->back(); t != tL; t = t->prevTextAsserted())
-        serial_chars += t->size() + t->prevConstructAsserted()->serialChars();
+        serial_chars += t->numChars() + t->prevConstructAsserted()->serialChars();
     for(Line* l = lL->nextAsserted(); l != lR; l = l->nextAsserted())
         serial_chars += l->serialChars() + 1;
     for(Text* t = lR->front(); t != tR; t = t->nextTextAsserted())
-        serial_chars += t->size() + t->nextConstructAsserted()->serialChars();
+        serial_chars += t->numChars() + t->nextConstructAsserted()->serialChars();
 
     std::string out;
     out.resize(serial_chars);
@@ -610,7 +610,7 @@ void Selection::paintSelectionPhrase(Painter& painter, bool forward) const{
     phrase()->paintMid(painter, tL, iL, tR, iR, forward);
 }
 
-void Selection::paintSelectionLines(Painter& painter, bool forward) const {
+void Selection::paintSelectionLines(Painter& painter, bool forward, double yT, double yB) const {
     double y = lL->y;
     double h = lL->height();
 
@@ -625,7 +625,11 @@ void Selection::paintSelectionLines(Painter& painter, bool forward) const {
     }
     lL->paintAfter(painter, tL, iL, forward);
 
-    for(Line* l = lL->nextAsserted(); l != lR; l = l->nextAsserted()){
+    Line* l = lL->nextAsserted();
+    Line* candidate = l->nearestAbove(yT);
+    if(candidate->id > l->id) l = candidate;
+    for(; l != lR; l = l->nextAsserted()){
+        if(l->y > yB) return;
         painter.drawSelection(l->x, l->y, l->width + NEWLINE_EXTRA, l->height());
         l->paint(painter, forward);
     }
@@ -640,12 +644,12 @@ void Selection::paintSelectionLines(Painter& painter, bool forward) const {
     lR->paintUntil(painter, tR, iR, forward);
 }
 
-void Selection::paintSelection(Painter& painter, bool forward) const{
+void Selection::paintSelection(Painter& painter, bool forward, double yT, double yB) const {
     painter.setSelectionMode();
 
     if(isTextSelection()) paintSelectionText(painter, forward);
     else if(isPhraseSelection()) paintSelectionPhrase(painter, forward);
-    else paintSelectionLines(painter, forward);
+    else paintSelectionLines(painter, forward, yT, yB);
 }
 
 void Selection::paintError(Painter& painter) const{
@@ -729,6 +733,32 @@ void Selection::paintHighlightPhrase(Painter& painter) const{
     double h = phrase()->height();
 
     painter.drawHighlight(x, y, w, h);
+}
+
+double Selection::yTop() const noexcept{
+    if(isTextSelection()) return tL->y;
+    else if(isPhraseSelection()) return phrase()->y;
+    else return lL->y;
+}
+
+double Selection::yBot() const noexcept{
+    if(isTextSelection()) return tR->yBot();
+    else if(isPhraseSelection()) return phrase()->yBottom();
+    else return lR->yBottom();
+}
+
+double Selection::yTopPhrase() const noexcept{
+    return tL->getParent()->y;
+}
+
+double Selection::yBotPhrase() const noexcept{
+    return tL->getParent()->yBottom();
+}
+
+bool Selection::overlapsY(double yT, double yB) const noexcept {
+    const double yT_this = yTop();
+    const double yB_this = yBot();
+    return (yT_this >= yT && yT_this <= yB) || (yB_this >= yT && yB_this <= yB);
 }
 #endif
 

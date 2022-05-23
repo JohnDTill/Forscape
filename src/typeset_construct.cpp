@@ -279,8 +279,8 @@ bool Construct::hasSmallChild() const noexcept{
     Text* t = child()->front();
     if( child()->hasConstructs() ){
         return false;
-    }else if(t->size() == 1){
-        switch (t->at(0)) {
+    }else if(t->numChars() == 1){
+        switch (t->charAt(0)) {
             case 'a':
             case 'c':
             case 'e':
@@ -302,9 +302,9 @@ bool Construct::hasSmallChild() const noexcept{
 
             default: return false;
         }
-    }else if(t->size() == 2){
-        uint16_t first = static_cast<uint8_t>(t->at(0));
-        uint16_t second = static_cast<uint8_t>(t->at(1));
+    }else if(t->numChars() == 2){
+        uint16_t first = static_cast<uint8_t>(t->charAt(0));
+        uint16_t second = static_cast<uint8_t>(t->charAt(1));
         switch (first | (second << 8)) {
             case 45518:
             case 46030:

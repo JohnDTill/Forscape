@@ -17,7 +17,7 @@ namespace Typeset {
 Marker::Marker() {}
 
 Marker::Marker(const Model* model) noexcept
-    : text(model->lastText()), index(text->size()) {}
+    : text(model->lastText()), index(text->numChars()) {}
 
 Marker::Marker(Text* t, size_t i) noexcept
     : text(t), index(i) {}
@@ -35,7 +35,7 @@ void Marker::setToFrontOf(Text* t) noexcept{
 
 void Marker::setToBackOf(Text* t) noexcept{
     text = t;
-    index = t->size();
+    index = t->numChars();
 }
 
 void Marker::setToFrontOf(const Phrase* p) noexcept{
@@ -56,12 +56,12 @@ bool Marker::isNested() const noexcept{
 
 char Marker::charRight() const noexcept{
     assert(notAtTextEnd());
-    return text->at(index);
+    return text->charAt(index);
 }
 
 char Marker::charLeft() const noexcept{
     assert(notAtTextStart());
-    return text->at(index-1);
+    return text->charAt(index-1);
 }
 
 Phrase* Marker::phrase() const noexcept{
@@ -91,7 +91,7 @@ Line* Marker::prevLine() const noexcept{
 }
 
 bool Marker::atTextEnd() const noexcept{
-    return index == text->size();
+    return index == text->numChars();
 }
 
 bool Marker::atTextStart() const noexcept{
@@ -99,7 +99,7 @@ bool Marker::atTextStart() const noexcept{
 }
 
 bool Marker::notAtTextEnd() const noexcept{
-    return index < text->size();
+    return index < text->numChars();
 }
 
 bool Marker::notAtTextStart() const noexcept{
@@ -125,7 +125,7 @@ void Marker::incrementGrapheme() noexcept{
 
     incrementCodepoint();
     size_t backup = index;
-    while(index < text->size() && isZeroWidth(scanGlyph()))
+    while(index < text->numChars() && isZeroWidth(scanGlyph()))
         backup = index;
     index = backup;
 }
@@ -159,12 +159,12 @@ void Marker::decrementToPrevWord() noexcept{
     if(isAlphaNumeric(ch)){
         while(index && isAlphaNumeric( charRight() ))
             decrementGrapheme();
-        if(index!=0 || !isAlphaNumeric( text->at(0) ))
+        if(index!=0 || !isAlphaNumeric( text->charAt(0) ))
             incrementGrapheme();
     }else{
         while(index && !isAlphaNumeric( charRight() ))
             decrementGrapheme();
-        if(index!=0 || isAlphaNumeric( text->at(0) ))
+        if(index!=0 || isAlphaNumeric( text->charAt(0) ))
             incrementGrapheme();
     }
 }
@@ -182,7 +182,7 @@ size_t Marker::countSpacesLeft() const noexcept{
     for(;;){
         if(i == 0) return index - i;
         i--;
-        if(text->at(i) != ' ') return index - (i + 1);
+        if(text->charAt(i) != ' ') return index - (i + 1);
     }
 }
 
@@ -204,7 +204,7 @@ bool Marker::onlySpacesLeft() const noexcept{
     size_t i = index;
     while(i){
         i--;
-        if(text->at(i) != ' ') return false;
+        if(text->charAt(i) != ' ') return false;
     }
     return true;
 }
@@ -240,18 +240,18 @@ double Marker::y() const noexcept{
 
 void Marker::setToPointOf(Text* t, double setpoint) {
     text = t;
-    index = text->indexNearest(setpoint);
+    index = text->charIndexNearest(setpoint);
 }
 
 void Marker::setToLeftOf(Text* t, double setpoint) {
     text = t;
-    index = text->indexLeft(setpoint);
+    index = text->charIndexLeft(setpoint);
 }
 #endif
 
 uint32_t Marker::advance() noexcept{
     assert(notAtTextEnd());
-    return static_cast<uint8_t>(text->at(index++));
+    return static_cast<uint8_t>(text->charAt(index++));
 }
 
 bool Marker::peek(char ch) const noexcept{
@@ -311,7 +311,7 @@ bool Marker::selectToStringEnd() noexcept{
             if(Text* t = text->nextTextInPhrase()) text = t;
             else return false;
         }
-    } while(text->at(index++) != '"');
+    } while(text->charAt(index++) != '"');
 
     return true;
 }

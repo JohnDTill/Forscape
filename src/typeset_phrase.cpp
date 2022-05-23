@@ -47,7 +47,7 @@ void Phrase::appendConstruct(Construct* c, Text* t){
 
 size_t Phrase::serialChars() const noexcept{
     size_t sze = 0;
-    for(Text* t : texts) sze += t->size();
+    for(Text* t : texts) sze += t->numChars();
     for(Construct* c : constructs) sze += c->serialChars();
 
     return sze;
@@ -81,11 +81,13 @@ Subphrase* Phrase::asSubphrase() noexcept{
 
 Text* Phrase::text(size_t index) const noexcept{
     assert(index < texts.size());
+    assert(texts[index]->id == index);
     return texts[index];
 }
 
 Construct* Phrase::construct(size_t index) const noexcept{
     assert(index < constructs.size());
+    assert(constructs[index]->id == index);
     return constructs[index];
 }
 
@@ -128,6 +130,7 @@ Text* Phrase::nextTextAsserted(const Text* t) const noexcept{
 
 Text* Phrase::prevTextAsserted(const Text* t) const noexcept{
     assert(t->id);
+    assert(text(t->id) == t);
     return text(t->id-1);
 }
 
@@ -263,18 +266,19 @@ Construct* Phrase::constructAt(double x, double y) const noexcept{
 }
 
 void Phrase::updateSize() noexcept{
-    texts[0]->updateWidth();
+    text(0)->updateWidth();
     width = texts[0]->getWidth();
     above_center = texts[0]->aboveCenter();
     under_center = texts[0]->underCenter();
 
-    for(size_t i = 0; i < constructs.size(); i++){
-        constructs[i]->updateSize();
+    for(size_t i = 0; i < constructs.size();){
+        construct(i)->updateSize();
         width += constructs[i]->width;
         above_center = std::max(above_center, constructs[i]->above_center);
         under_center = std::max(under_center, constructs[i]->under_center);
-        texts[i+1]->updateWidth();
-        width += texts[i+1]->getWidth();
+        i++;
+        text(i)->updateWidth();
+        width += texts[i]->getWidth();
     }
 
     if(width == 0 && !isLine()) width = EMPTY_PHRASE_WIDTH_RATIO*height();

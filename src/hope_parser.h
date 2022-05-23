@@ -59,7 +59,7 @@ private:
     ParseNode parenGrouping() alloc_except;
     ParseNode paramList() alloc_except;
     ParseNode captureList() alloc_except;
-    ParseNode grouping(size_t type, TokenType close) alloc_except;
+    ParseNode grouping(size_t type, HopeTokenType close) alloc_except;
     ParseNode norm() alloc_except;
     ParseNode innerProduct() alloc_except;
     ParseNode integer() alloc_except;
@@ -70,7 +70,7 @@ private:
     ParseNode call(ParseNode id) alloc_except;
     ParseNode lambda(ParseNode params) alloc_except;
     ParseNode fraction() alloc_except;
-    ParseNode fractionDeriv(const Typeset::Selection& c, Op type, TokenType tt) alloc_except;
+    ParseNode fractionDeriv(const Typeset::Selection& c, Op type, HopeTokenType tt) alloc_except;
     ParseNode fractionDefault(const Typeset::Selection& c) alloc_except;
     ParseNode binomial() alloc_except;
     ParseNode superscript(ParseNode lhs) alloc_except;
@@ -93,14 +93,14 @@ private:
     ParseNode error(ErrorCode code) alloc_except;
     ParseNode error(ErrorCode code, const Typeset::Selection& c) alloc_except;
     void advance() noexcept;
-    bool match(TokenType type) noexcept;
-    bool peek(TokenType type) const noexcept;
-    bool lookahead(TokenType type) const noexcept;
-    void require(TokenType type) noexcept;
-    void consume(TokenType type) noexcept;
+    bool match(HopeTokenType type) noexcept;
+    bool peek(HopeTokenType type) const noexcept;
+    bool lookahead(HopeTokenType type) const noexcept;
+    void require(HopeTokenType type) noexcept;
+    void consume(HopeTokenType type) noexcept;
     void skipNewlines() noexcept;
     void skipNewline() noexcept;
-    TokenType currentType() const noexcept;
+    HopeTokenType currentType() const noexcept;
     ParseNode makeTerminalNode(size_t type) alloc_except;
     ParseNode terminalAndAdvance(size_t type) alloc_except;
     const Typeset::Selection selection() const noexcept;

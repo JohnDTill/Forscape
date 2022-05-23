@@ -62,7 +62,8 @@ void SymbolTableBuilder::resolveSymbols() alloc_except {
 
 void SymbolTableBuilder::reset() noexcept {
     symbol_table.reset(parse_tree.getLeft(parse_tree.root));
-    assert(map.empty());
+    //assert(map.empty()); //Not necessarily empty due to errors
+    map.clear();
     assert(refs.empty());
     assert(ref_frames.empty());
     lexical_depth = GLOBAL_DEPTH;
@@ -346,7 +347,7 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
     Typeset::Marker m = left;
     while(m != right){
         m.incrementGrapheme();
-        if(m.index == m.text->size()) m = right;
+        if(m.index == m.text->numChars()) m = right;
 
         auto lookup = map.find(Typeset::Selection(left, m));
         if(lookup == map.end()){
@@ -362,7 +363,7 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
     m = left;
     while(m != right){
         m.incrementGrapheme();
-        if(m.index == m.text->size()) m = right;
+        if(m.index == m.text->numChars()) m = right;
 
         Typeset::Selection sel(left, m);
         auto lookup = map.find(sel);
@@ -381,7 +382,7 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
     assert(left.text != right.text);
 
     Typeset::Marker m = left;
-    Typeset::Marker end(m.text, m.text->size());
+    Typeset::Marker end(m.text, m.text->numChars());
     Typeset::Marker new_right = end;
     end.decrementGrapheme();
     if(left == end){

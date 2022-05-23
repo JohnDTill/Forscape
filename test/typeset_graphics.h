@@ -14,8 +14,7 @@ inline bool testTypesetGraphics(){
     Typeset::Line* l = new Typeset::Line(model);
     Typeset::Text& t = *l->front();
 
-    t.str = "print(\"Hello world!\")";
-    t.updateWidth();
+    t.setString("print(\"Hello world!\")");
     double unformatted_width = t.getWidth();
 
     if(unformatted_width == 0){
@@ -24,7 +23,7 @@ inline bool testTypesetGraphics(){
     }
 
     t.tag(SEM_STRING, 6, 20);
-    t.updateWidth();
+    t.resize();
     double formatted_width = t.getWidth();
 
     if(unformatted_width != formatted_width){

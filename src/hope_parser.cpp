@@ -28,6 +28,13 @@ void Parser::parseAll() alloc_except {
     Typeset::Selection c(tokens.front().sel.left, tokens.back().sel.right);
     parse_tree.root = parse_tree.finishNary(OP_BLOCK, c);
 
+    //Patch lazy calculator
+    if(parse_tree.getNumArgs(parse_tree.root) == 1){
+        ParseNode stmt = parse_tree.child(parse_tree.root);
+        if(parse_tree.getOp(stmt) == OP_EXPR_STMT)
+            parse_tree.setOp(stmt, OP_PRINT);
+    }
+
     assert(!errors.empty() || parse_tree.inFinalState());
     assert((errors.empty() == (error_node == NONE)) || (scanner_error && (error_node == NONE)));
 }
@@ -656,7 +663,7 @@ ParseNode Parser::captureList() alloc_except {
     }
 }
 
-ParseNode Parser::grouping(size_t type, TokenType close) alloc_except {
+ParseNode Parser::grouping(size_t type, HopeTokenType close) alloc_except {
     Typeset::Marker left = lMark();
     advance();
     ParseNode nested = disjunction();
@@ -898,7 +905,7 @@ ParseNode Parser::fraction() alloc_except{
     }
 }
 
-ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, TokenType tt) alloc_except{
+ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, HopeTokenType tt) alloc_except{
     advance();
     if(match(ARGCLOSE)){
         consume(tt);
@@ -1257,7 +1264,7 @@ void Parser::advance() noexcept{
     index++;
 }
 
-bool Parser::match(TokenType type) noexcept{
+bool Parser::match(HopeTokenType type) noexcept{
     if(tokens[index].type == type){
         advance();
         return true;
@@ -1266,20 +1273,20 @@ bool Parser::match(TokenType type) noexcept{
     }
 }
 
-bool Parser::peek(TokenType type) const noexcept{
+bool Parser::peek(HopeTokenType type) const noexcept{
     return tokens[index].type == type;
 }
 
-bool Parser::lookahead(TokenType type) const noexcept{
+bool Parser::lookahead(HopeTokenType type) const noexcept{
     assert(index+1 < tokens.size());
     return tokens[index+1].type == type;
 }
 
-void Parser::require(TokenType type) noexcept{
+void Parser::require(HopeTokenType type) noexcept{
     if(tokens[index].type != type) error(CONSUME);
 }
 
-void Parser::consume(TokenType type) noexcept{
+void Parser::consume(HopeTokenType type) noexcept{
     if(tokens[index].type == type){
         advance();
     }else{
@@ -1296,7 +1303,7 @@ void Parser::skipNewline() noexcept{
     else if(tokens[index].type == NEWLINE) index++;
 }
 
-TokenType Parser::currentType() const noexcept{
+HopeTokenType Parser::currentType() const noexcept{
     return tokens[index].type;
 }
 

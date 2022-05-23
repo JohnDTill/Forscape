@@ -30,7 +30,7 @@ CommandLine* CommandLine::insert(Text* tL, size_t iL, std::vector<Line*> lines){
     }
 
     Text* tR = lines.back()->back();
-    size_t iR = tR->size();
+    size_t iR = tR->numChars();
     source_fragment.writeTo(tR, iR);
 
     return new CommandLine(true, tL, iL, source_fragment, insert_fragment, lines, tR, iR);

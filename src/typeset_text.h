@@ -5,9 +5,7 @@
 #include <string>
 #include <vector>
 
-#ifdef TYPESET_MEMORY_DEBUG
 #include <hope_common.h>
-#endif
 
 namespace Hope {
 
@@ -41,13 +39,15 @@ class Text {
         Construct* nextConstructAsserted() const noexcept;
         Construct* prevConstructAsserted() const noexcept;
         void writeString(std::string& out, size_t& curr) const noexcept;
-        void writeString(std::string& out, size_t& curr, size_t pos, size_t len = std::string::npos) const noexcept;
+        void writeString(std::string& out, size_t& curr, size_t pos) const noexcept;
+        void writeString(std::string& out, size_t& curr, size_t pos, size_t len) const noexcept;
         bool isTopLevel() const noexcept;
         bool isNested() const noexcept;
-        size_t size() const noexcept;
+        size_t numChars() const noexcept;
         bool empty() const noexcept;
-        char at(size_t index) const noexcept;
+        void setString(std::string_view str) alloc_except;
         std::string substr(size_t pos, size_t len = std::string::npos) const;
+        char charAt(size_t char_index) const noexcept;
         std::string_view codepointAt(size_t index) const noexcept;
         std::string_view graphemeAt(size_t index) const noexcept;
         size_t leadingSpaces() const noexcept;
@@ -60,8 +60,8 @@ class Text {
 
         SemanticType getTypeLeftOf(size_t index) const noexcept;
         SemanticType getTypePrev() const noexcept;
-        void tag(SemanticType type, size_t start, size_t stop);
-        void tagBack(SemanticType type);
+        void tag(SemanticType type, size_t start, size_t stop) alloc_except;
+        void tagBack(SemanticType type) alloc_except;
         std::vector<SemanticTag> tags;
 
         #ifdef HOPE_SEMANTIC_DEBUGGING
@@ -69,19 +69,19 @@ class Text {
         #endif
 
         #ifndef HOPE_TYPESET_HEADLESS
-        double aboveCenter() const;
-        double underCenter() const;
-        double height() const;
-        void updateWidth();
-        void invalidateX() noexcept;
-        double xLocal(size_t index) const;
+        double aboveCenter() const noexcept;
+        double underCenter() const noexcept;
+        double height() const noexcept;
+        double xLocal(size_t index) const noexcept;
         double xPhrase(size_t index) const;
         double xGlobal(size_t index) const;
         double xRight() const noexcept;
+        double yBot() const noexcept;
         double getWidth() const noexcept;
+        void updateWidth() noexcept;
         uint8_t scriptDepth() const noexcept;
-        size_t indexNearest(double x_in) const noexcept;
-        size_t indexLeft(double x_in) const noexcept;
+        size_t charIndexNearest(double x_in) const noexcept;
+        size_t charIndexLeft(double x_in) const noexcept;
         void paint(Painter& painter, bool forward = true) const;
         void paintUntil(Painter& painter, size_t stop, bool forward = true) const;
         void paintAfter(Painter& painter, size_t start, bool forward = true) const;
@@ -90,14 +90,14 @@ class Text {
         bool containsX(double x_test) const noexcept;
         bool containsY(double y_test) const noexcept;
         bool containsXInBounds(double x_test, size_t start, size_t stop) const noexcept;
-        void resize();
-        double x;
-        double y;
+        void resize() noexcept;
+        double x = STALE;
+        double y = STALE;
         #endif
 
     private:
         Phrase* parent;
-        double width;
+        double width = 0;
 };
 
 }

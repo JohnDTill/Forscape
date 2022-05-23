@@ -25,7 +25,7 @@ static bool testExpressionType(const std::string& src, Op type){
     ParseNode root = parse_tree.root;
     assert(parse_tree.getOp(root) == OP_BLOCK);
     ParseNode stmt = parse_tree.arg(root, 0);
-    assert(parse_tree.getOp(stmt) == OP_EXPR_STMT);
+    assert(parse_tree.getOp(stmt) == OP_PRINT);
     ParseNode expr = parse_tree.child(stmt);
     if(parse_tree.getOp(expr) != type){
         std::cout << "Expected type " << type << ", got "
@@ -81,7 +81,7 @@ inline bool testParser() {
     passing &= testExpressionType("2 + 2*1", OP_ADDITION);
     passing &= testExpressionType("3x", OP_IMPLICIT_MULTIPLY);
 
-    passing &= testStatementType("2", OP_EXPR_STMT);
+    passing &= testStatementType("2", OP_PRINT);
     passing &= testStatementType("x = 2", OP_EQUAL);
     passing &= testStatementType("x + y = 2.5", OP_EQUAL);
     passing &= testStatementType("3x + 2y = 6", OP_EQUAL);

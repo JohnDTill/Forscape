@@ -15,16 +15,40 @@ namespace Hope {
 
 namespace Typeset {
 
+//EVENTUALLY: probably want to codegen these
+inline constexpr double CHARACTER_WIDTHS[3] {
+    7.796875,
+    5.390625,
+    4.1875,
+};
+
+inline constexpr double ABOVE_CENTER[3] = {
+    3.66666666666666696272613990004,
+    3,
+    2,
+};
+
+inline constexpr double UNDER_CENTER[3] = {
+    8.33333333333333214909544039983,
+    6,
+    5,
+};
+
+inline constexpr double CHARACTER_HEIGHTS[3] {
+    12,
+    9,
+    7,
+};
+
+inline constexpr double DESCENT[3] {
+    3.125,
+    2.15625,
+    1.6875,
+};
+
+
 uint8_t depthToFontSize(uint8_t depth) noexcept;
 const QFont& getFont(SemanticType type, uint8_t depth) noexcept;
-double getWidth(SemanticType type, uint8_t depth, const std::string& text);
-double getWidth(SemanticType type, uint8_t depth, char ch);
-double getHeight(SemanticType type, uint8_t depth);
-double getAscent(SemanticType type, uint8_t depth);
-double getDescent(SemanticType type, uint8_t depth);
-double getXHeight(SemanticType type, uint8_t depth);
-double getAboveCenter(SemanticType type, uint8_t depth);
-double getUnderCenter(SemanticType type, uint8_t depth);
 
 class Painter {
 public:
@@ -35,10 +59,10 @@ public:
     void setTypeIfAppropriate(SemanticType type);
     void setScriptLevel(uint8_t depth);
     void setOffset(double x, double y);
-    void drawText(double x, double y, const std::string& text, bool forward = true);
+    void drawText(double x, double y, std::string_view text, bool forward = true);
     void drawText(double x, double y, char ch);
-    void drawHighlightedGrouping(double x, double y, double w, const std::string& text);
-    void drawSymbol(double x, double y, const std::string& text);
+    void drawHighlightedGrouping(double x, double y, double w, std::string_view text);
+    void drawSymbol(double x, double y, std::string_view text);
     void drawLine(double x, double y, double w, double h);
     void drawPath(const std::vector<std::pair<double,double> >& points);
     void drawRect(double x, double y, double w, double h);
@@ -51,11 +75,10 @@ public:
     void drawLeftParen(double x, double y, double w, double h);
     void drawRightParen(double x, double y, double w, double h);
     void drawDot(double x, double y);
-    double getWidth(const std::string& text);
     void drawLineNumber(double y, size_t num, bool active);
     void setSelectionMode();
     void drawSymbol(char ch, double x, double y, double w, double h);
-    void drawSymbol(const std::string& str, double x, double y, double w, double h);
+    void drawSymbol(std::string_view str, double x, double y, double w, double h);
 
     #ifdef HOPE_TYPESET_LAYOUT_DEBUG
     void drawDebugPhrase(double x, double y, double w, double u, double v);
