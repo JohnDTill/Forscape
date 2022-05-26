@@ -59,7 +59,7 @@ std::string Selection::str() const{
 std::string_view Selection::strView() const noexcept{
     assert(isTextSelection());
     assert(iR >= iL);
-    return std::string_view(tL->str.data()+iL, characterSpan());
+    return std::string_view(tL->getString().data()+iL, characterSpan());
 }
 
 bool Selection::operator==(const Selection& other) const noexcept{
@@ -79,7 +79,7 @@ bool Selection::operator==(const Selection& other) const noexcept{
         for(size_t i = 1; i < sze; i++){
             Text* A_text = phrase()->text( tL->id+i );
             Text* B_text = other.phrase()->text( other.tL->id+i );
-            if(A_text->str != B_text->str) return false;
+            if(A_text->getString() != B_text->getString()) return false;
         }
 
         for(size_t i = 0; i < sze; i++){
@@ -144,7 +144,7 @@ bool Selection::startsWith(const Selection& other) const noexcept{
             index++;
             other_index++;
             if(other_index < other.right.text->id){
-                if(phrase()->text(index)->str != other.phrase()->text(other_index)->str) return false;
+                if(phrase()->text(index)->getString() != other.phrase()->text(other_index)->getString()) return false;
             }else{
                 std::string_view right_bit = other.right.strLeft();
                 return right_bit == right.strLeft().substr(0, right_bit.size());
@@ -160,9 +160,9 @@ size_t Selection::hashDesignedForIdentifiers() const noexcept{
     //Rare non-flat ids have additional text in a single script, e.g. n_a or x^*
     Construct* c = tL->nextConstructAsserted(); //This could fail on newlines
     Text* tc = c->frontTextAsserted(); //I think all id-constructs have args
-    size_t h = std::hash<std::string_view>()( std::string_view(tL->str.data()+iL) );
+    size_t h = std::hash<std::string_view>()( std::string_view(tL->getString().data()+iL) );
     h ^= c->constructCode();
-    h ^= std::hash<std::string>()(tc->str);
+    h ^= std::hash<std::string>()(tc->getString());
 
     return h;
 }
@@ -306,7 +306,7 @@ size_t Selection::textSpan() const noexcept{
 }
 
 std::string Selection::selectedTextSelection() const {
-    return tR->substr(iL, characterSpan());
+    return std::string(tR->view(iL, characterSpan()));
 }
 
 std::string Selection::selectedPhrase() const{
@@ -370,7 +370,7 @@ std::string Selection::selectedLines() const{
 std::vector<Selection> Selection::findCaseInsensitiveText(const std::string& target) const{
     std::vector<Selection> hits;
 
-    const std::string& str = tL->str;
+    const std::string& str = tL->getString();
     size_t stop = iR-target.size();
     auto result = str.find(target, iL);
     while(result != std::string::npos && result <= stop){
@@ -384,7 +384,7 @@ std::vector<Selection> Selection::findCaseInsensitiveText(const std::string& tar
 std::vector<Selection> Selection::findCaseInsensitivePhrase(const std::string& target) const{
     std::vector<Selection> hits;
 
-    const std::string& strL = tL->str;
+    const std::string& strL = tL->getString();
     auto result = strL.find(target, iL);
     while(result != std::string::npos){
         hits.push_back( Selection(tL, result, result+target.size()) );
@@ -397,7 +397,7 @@ std::vector<Selection> Selection::findCaseInsensitivePhrase(const std::string& t
         phrase()->construct(i)->findCaseInsensitive(target, hits);
     }
 
-    const std::string& strR = tR->str;
+    const std::string& strR = tR->getString();
     size_t stop = iR-target.size();
     result = strR.find(target);
     while(result != std::string::npos && result <= stop){
@@ -411,7 +411,7 @@ std::vector<Selection> Selection::findCaseInsensitivePhrase(const std::string& t
 std::vector<Selection> Selection::findCaseInsensitiveLines(const std::string& target) const{
     std::vector<Selection> hits;
 
-    const std::string& strL = tL->str;
+    const std::string& strL = tL->getString();
     auto result = strL.find(target, iL);
     while(result != std::string::npos){
         hits.push_back( Selection(tL, result, result+target.size()) );
@@ -432,7 +432,7 @@ std::vector<Selection> Selection::findCaseInsensitiveLines(const std::string& ta
         lR->construct(i)->findCaseInsensitive(target, hits);
     }
 
-    const std::string& strR = tR->str;
+    const std::string& strR = tR->getString();
     size_t stop = iR-target.size();
     result = strR.find(target);
     while(result != std::string::npos && result <= stop){

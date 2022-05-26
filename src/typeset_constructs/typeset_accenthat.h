@@ -31,7 +31,7 @@ public:
         under_center = child()->under_center;
     }
 
-    virtual void updateChildPositions() override {
+    virtual void updateChildPositions() noexcept override {
         child()->x = x;
         child()->y = y + !should_drop*voffset;
     }

@@ -53,7 +53,7 @@ public:
         width = first()->width - SCRIPT_OVERLAP + second()->width + extra_width;
     }
 
-    virtual void updateChildPositions() override {
+    virtual void updateChildPositions() noexcept override {
         first()->x = x;
         first()->y = y;
         second()->x = x + first()->width - SCRIPT_OVERLAP + extra_width + hfudge - MARGIN_RIGHT;

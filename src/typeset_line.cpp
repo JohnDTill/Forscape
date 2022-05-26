@@ -11,6 +11,8 @@ Line::Line()
     #ifndef HOPE_TYPESET_HEADLESS
     script_level = 0;
     #endif
+
+    x = 0; //DO THIS - delete
 }
 
 Line::Line(Model* model){
@@ -18,6 +20,8 @@ Line::Line(Model* model){
     #ifndef HOPE_TYPESET_HEADLESS
     script_level = 0;
     #endif
+
+    x = 0; //DO THIS - delete
 }
 
 bool Line::isLine() const noexcept {
@@ -55,8 +59,19 @@ Line* Line::nearestAbove(double y) const noexcept{
 
 void Line::resize() noexcept{
     updateSize();
-    parent->updateLayout();
+    parent->updateLayout(); //DO THIS
 }
+
+#ifndef NDEBUG
+void Line::invalidateWidth() noexcept{
+    width = STALE;
+    if(parent) parent->width = STALE;
+}
+
+void Line::invalidateDims() noexcept{
+    width = above_center = under_center = parent->height = STALE;
+}
+#endif
 #endif
 
 }

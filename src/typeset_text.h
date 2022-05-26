@@ -46,7 +46,17 @@ class Text {
         size_t numChars() const noexcept;
         bool empty() const noexcept;
         void setString(std::string_view str) alloc_except;
-        std::string substr(size_t pos, size_t len = std::string::npos) const;
+        void setString(const char* ch, size_t sze) alloc_except;
+        void append(std::string_view appended) alloc_except;
+        void prependSpaces(size_t num_spaces) alloc_except;
+        void removeLeadingSpaces(size_t num_spaces) noexcept;
+        void overwrite(size_t start, const std::string& in) alloc_except;
+        void overwrite(size_t start, std::string_view in) alloc_except;
+        void insert(size_t start, const std::string& in) alloc_except;
+        void erase(size_t start, size_t size) noexcept;
+        std::string_view from(size_t index) const noexcept;
+        std::string_view view(size_t start, size_t sze) const noexcept;
+        const std::string& getString() const noexcept;
         char charAt(size_t char_index) const noexcept;
         std::string_view codepointAt(size_t index) const noexcept;
         std::string_view graphemeAt(size_t index) const noexcept;
@@ -54,8 +64,8 @@ class Text {
         std::string_view checkKeyword(size_t iR) const noexcept;
         void findCaseInsensitive(const std::string& target, std::vector<Selection>& hits);
         bool precedes(Text* other) const noexcept;
+        const char* data() const noexcept;
 
-        std::string str;
         size_t id;
 
         SemanticType getTypeLeftOf(size_t index) const noexcept;
@@ -91,13 +101,18 @@ class Text {
         bool containsY(double y_test) const noexcept;
         bool containsXInBounds(double x_test, size_t start, size_t stop) const noexcept;
         void resize() noexcept;
-        double x = STALE;
-        double y = STALE;
+        double x  DEBUG_INIT_STALE;
+        double y  DEBUG_INIT_STALE;
         #endif
 
     private:
         Phrase* parent;
         double width = 0;
+        std::string str;
+
+        #ifndef NDEBUG
+        void invalidateWidth() noexcept;
+        #endif
 };
 
 }

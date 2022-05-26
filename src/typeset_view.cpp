@@ -92,7 +92,7 @@ private:
 
     void paintErrorsProportional(QPainter& painter) const {
         const Model& m = *view.getModel();
-        const double model_height = m.height();
+        const double model_height = m.height; //m.getHeight(); //DO THIS
         const int error_region_height = errorRegionPixelHeight();
         const int w = errorRegionPixelWidth();
 
@@ -973,8 +973,8 @@ void View::handleResize(int w, int h){
     v_scroll->move(display_width, 0);
     h_scroll->setFixedWidth(display_width);
 
-    double model_width = model->width()*zoom;
-    double model_height = (model->height() + MARGIN_TOP + MARGIN_BOT)*zoom;
+    double model_width = model->getWidth()*zoom;
+    double model_height = (model->getHeight() + MARGIN_TOP + MARGIN_BOT)*zoom;
 
     double w_diff_scrn = model_width - model_display_width;
     bool h_scroll_enabled = w_diff_scrn > 0;

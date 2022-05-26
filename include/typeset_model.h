@@ -12,6 +12,25 @@
 #include "hope_static_pass.h"
 #include "hope_interpreter.h"
 
+//DO THIS: typesetting chokes on large documents. I think the problems are:
+// 1) Now that layout is independent of format, the commands should handle resizing.
+//    There should be a debug function which invalidates height/width up the tree
+//    It should be asserted that any size update is applied to an invalid dimension.
+//    It should be asserted that dimensions are valid at later stages
+// 2) We should probably use local coordinates instead of global coordinates.
+//    Most methods using the coordinates will iterate down the tree, in which case
+//    it is possible to calculate global coordinates as needed. E.g. the painter should
+//    be translated before and after visiting a child. This avoids the need to update the whole doc
+//    when the first line changes.
+//    Eliminate Line::x while you're at it.
+// 3) Need to figure out how to deal with line y, since that seems fundamentally O(n), as does
+//    finding the document width. At least we won't have to go into lines.
+//    For massive documents, you might need to fundamentally fudge the scrollabar behaviour.
+//    Actually, there are constraints on movement that help. You can jump to the start or end of a document, and
+//    otherwise you can move in steps, which are large but limited. You can attack the problem from both sides and
+//    you don't need to do an O(n) update
+// 4) Try to replace recursive methods with iterative ones. The fact that elements have ids makes this feasible.
+
 namespace Hope {
 
 namespace Typeset {
@@ -41,9 +60,13 @@ public:
     std::string run();
     void runThread();
     void stop();
-    double width() const noexcept;
-    double height() const noexcept;
+    void updateWidth() noexcept;
+    double getWidth() noexcept;
+    void updateHeight() noexcept;
+    double getHeight() noexcept;
     size_t numLines() const noexcept;
+    double width  DEBUG_INIT_STALE;
+    double height  DEBUG_INIT_STALE;
 
     #ifdef HOPE_SEMANTIC_DEBUGGING
     std::string toSerialWithSemanticTags() const;

@@ -35,7 +35,7 @@ public:
         under_center = UNDER_CENTER[scriptDepth()] + second()->height();
     }
 
-    virtual void updateChildPositions() override {
+    virtual void updateChildPositions() noexcept override {
         first()->x = x + (width - first()->width)/2;
         first()->y = y;
         second()->x = x + (width - second()->width)/2;

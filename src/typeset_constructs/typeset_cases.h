@@ -70,7 +70,7 @@ public:
         above_center = under_center = h/2;
     }
 
-    virtual void updateChildPositions() override {
+    virtual void updateChildPositions() noexcept override {
         double yc = y;
         for(size_t i = 0; i < numArgs(); i+=2){
             Subphrase* v = arg(i);

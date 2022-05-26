@@ -47,7 +47,7 @@ public:
             above_center = child()->height();
     }
 
-    virtual void updateChildPositions() override {
+    virtual void updateChildPositions() noexcept override {
         child()->x = x;
         child()->y = y;
     }

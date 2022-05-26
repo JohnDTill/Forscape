@@ -20,7 +20,7 @@ void AccentBar::updateSizeSpecific() noexcept {
     above_center = child()->above_center + !should_drop * voffset;
 }
 
-void AccentBar::updateChildPositions() {
+void AccentBar::updateChildPositions() noexcept {
     child()->x = x;
     child()->y = y + !should_drop*voffset;
 }

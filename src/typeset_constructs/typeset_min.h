@@ -39,7 +39,7 @@ public:
         under_center = prev()->underCenter() + child()->height();
     }
 
-    virtual void updateChildPositions() override {
+    virtual void updateChildPositions() noexcept override {
         child()->x = x + child_offset;
         child()->y = y + prev()->height();
     }

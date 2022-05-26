@@ -15,7 +15,7 @@ bool InsertChars::isCharacterInsertion() const noexcept{
 }
 
 void InsertChars::insertAdditionalChar(const std::string& str){
-    t->str.insert(index+inserted.size(), str);
+    t->insert(index+inserted.size(), str);
     inserted += str;
     #ifndef HOPE_TYPESET_HEADLESS
     t->resize();
@@ -23,7 +23,7 @@ void InsertChars::insertAdditionalChar(const std::string& str){
 }
 
 void InsertChars::undo(Controller& controller){
-    t->str.erase(index, inserted.size());
+    t->erase(index, inserted.size());
     #ifndef HOPE_TYPESET_HEADLESS
     t->resize();
     #endif
@@ -32,7 +32,7 @@ void InsertChars::undo(Controller& controller){
 }
 
 void InsertChars::redo(Controller& controller){
-    t->str.insert(index, inserted);
+    t->insert(index, inserted);
     #ifndef HOPE_TYPESET_HEADLESS
     t->resize();
     #endif

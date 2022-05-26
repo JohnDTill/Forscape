@@ -22,24 +22,24 @@ bool RemoveChars::isCharacterDeletion() const noexcept {
 void RemoveChars::removeAdditionalChar(){
     std::string_view additional = t->graphemeAt(index);
     removed += additional;
-    t->str.erase(index, additional.size());
+    t->erase(index, additional.size());
     #ifndef HOPE_TYPESET_HEADLESS
     t->resize();
     #endif
 }
 
 void RemoveChars::removeCharLeft(){
-    size_t glyph_size = graphemeSizeLeft(t->str, index);
+    size_t glyph_size = graphemeSizeLeft(t->getString(), index);
     index -= glyph_size;
-    removed.insert(0, t->str.substr(index, glyph_size));
-    t->str.erase(index, glyph_size);
+    removed.insert(0, t->view(index, glyph_size));
+    t->erase(index, glyph_size);
     #ifndef HOPE_TYPESET_HEADLESS
     t->resize();
     #endif
 }
 
 void RemoveChars::undo(Controller& controller){
-    t->str.insert(index, removed);
+    t->insert(index, removed);
     #ifndef HOPE_TYPESET_HEADLESS
     t->resize();
     #endif
@@ -48,7 +48,7 @@ void RemoveChars::undo(Controller& controller){
 }
 
 void RemoveChars::redo(Controller& controller){
-    t->str.erase(index, removed.size());
+    t->erase(index, removed.size());
     #ifndef HOPE_TYPESET_HEADLESS
     t->resize();
     #endif

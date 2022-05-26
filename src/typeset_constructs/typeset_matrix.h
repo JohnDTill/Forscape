@@ -59,11 +59,7 @@ public:
     std::vector<double> D;
 
     virtual void updateSizeSpecific() noexcept override {
-        W.clear();
-        U.clear();
-        D.clear();
-
-        W.resize(cols);
+        W.resize(cols); //DO THIS - realloc somewhere else
         U.resize(rows);
         D.resize(rows);
 
@@ -86,7 +82,7 @@ public:
         above_center = under_center = height/2;
     }
 
-    virtual void updateChildPositions() override {
+    virtual void updateChildPositions() noexcept override {
         double yc = y + BRACKET_TOP_OFFSET;
         for(uint16_t i = 0; i < rows; i++){
             double xc = x + MATRIX_LPADDING + BRACKET_HOFFSET;

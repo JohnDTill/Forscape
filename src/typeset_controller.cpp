@@ -689,7 +689,7 @@ void Controller::deleteAdditionalChar(Command* cmd){
             m->premutate();
             rm->removeAdditionalChar();
             m->postmutate();
-        }else if(rm->index == active.index+numBytesInGrapheme(active.text->str, active.index)){
+        }else if(rm->index == active.index+numBytesInGrapheme(active.text->getString(), active.index)){
             Model* m = getModel();
             m->premutate();
             rm->removeCharLeft();
@@ -778,7 +778,7 @@ Command* Controller::insertSerialNoSelection(const std::string& str){
     }else if(lines[0]->numTexts() > 1){
         return CommandPhrase::insert(active.text, active.index, lines[0]);
     }else{
-        std::string str = lines[0]->front()->str;
+        std::string str = lines[0]->front()->getString();
         delete lines[0];
         return CommandText::insert(active.text, active.index, str);
     }
@@ -907,7 +907,7 @@ bool Controller::selectToStringEnd() noexcept{
 }
 
 std::string_view Controller::selectedFlatText() const noexcept{
-    return std::string_view(anchor.text->str.data() + anchor.index, active.index-anchor.index);
+    return std::string_view(anchor.text->data() + anchor.index, active.index-anchor.index);
 }
 
 Controller::Controller(const Controller& lhs, const Controller& rhs)

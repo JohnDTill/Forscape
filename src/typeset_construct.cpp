@@ -185,16 +185,28 @@ double Construct::height() const noexcept{
     return above_center + under_center;
 }
 
+#ifndef NDEBUG
+void Construct::invalidateWidth() noexcept{
+    width = STALE;
+    parent->invalidateWidth();
+}
+
+void Construct::invalidateDims() noexcept{
+    width = above_center = under_center = STALE;
+    parent->invalidateDims();
+}
+#endif
+
 Construct::ContextAction::ContextAction(const std::string& name, void (*takeAction)(Construct*, Controller&, Subphrase*))
     : takeAction(takeAction), name(name) {}
 
 const std::vector<Construct::ContextAction> Construct::no_actions {};
 
-const std::vector<Construct::ContextAction>& Construct::getContextActions(Subphrase*) const noexcept{
+const std::vector<Construct::ContextAction>& Construct::getContextActions(Subphrase*) const noexcept {
     return no_actions;
 }
 
-void Construct::updateChildPositions(){
+void Construct::updateChildPositions() noexcept {
     // Default does nothing
     // Must override for constructs with children
     assert(numArgs() == 0);

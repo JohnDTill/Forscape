@@ -66,7 +66,7 @@ public:
         }
     }
 
-    virtual void updateChildPositions() override {
+    virtual void updateChildPositions() noexcept override {
         first()->x = x;
         first()->y = y;
 

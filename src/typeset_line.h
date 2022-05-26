@@ -14,7 +14,7 @@ public:
     Line();
     Line(Model* model);
     virtual bool isLine() const noexcept override;
-    Model* parent;
+    Model* parent  DEBUG_INIT_NULLPTR;
     Line* next() const noexcept;
     Line* prev() const noexcept;
     Line* nextAsserted() const noexcept;
@@ -25,6 +25,10 @@ public:
     Line* nearestLine(double y) const noexcept;
     Line* nearestAbove(double y) const noexcept;
     virtual void resize() noexcept override;
+    #ifndef NDEBUG
+    virtual void invalidateWidth() noexcept override;
+    virtual void invalidateDims() noexcept override;
+    #endif
     #endif
 
     size_t scope_depth = 0;

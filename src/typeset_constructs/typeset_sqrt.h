@@ -42,7 +42,7 @@ public:
         width = child()->width + extra_width;
     }
 
-    virtual void updateChildPositions() override {
+    virtual void updateChildPositions() noexcept override {
         child()->x = x + extra_width + hfudge - MARGIN_RIGHT;
         child()->y = y + vgap;
     }

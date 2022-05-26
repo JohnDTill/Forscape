@@ -77,11 +77,16 @@ public:
     void resize() noexcept;
     void paint(Painter& painter) const;
     double height() const noexcept;
-    double width;
-    double above_center;
-    double under_center;
-    double x;
-    double y;
+    double width  DEBUG_INIT_STALE;
+    double above_center  DEBUG_INIT_STALE;
+    double under_center  DEBUG_INIT_STALE;
+    double x  DEBUG_INIT_STALE;
+    double y  DEBUG_INIT_STALE;
+
+    #ifndef NDEBUG
+    void invalidateWidth() noexcept;
+    void invalidateDims() noexcept;
+    #endif
 
     struct ContextAction {
         void(*takeAction)(Construct* con, Controller& c, Subphrase* child);
@@ -108,7 +113,7 @@ protected:
 
     #ifndef HOPE_TYPESET_HEADLESS
     virtual void updateSizeSpecific() noexcept = 0;
-    virtual void updateChildPositions();
+    virtual void updateChildPositions() noexcept;
     virtual void paintSpecific(Painter&) const;
     virtual void invalidateX() noexcept;
     virtual void invalidateY() noexcept;

@@ -20,7 +20,7 @@ public:
 
     #ifndef HOPE_TYPESET_HEADLESS
     virtual void updateSizeSpecific() noexcept override;
-    virtual void updateChildPositions() override;
+    virtual void updateChildPositions() noexcept override;
     virtual void paintSpecific(Painter& painter) const override;
     #endif
 };

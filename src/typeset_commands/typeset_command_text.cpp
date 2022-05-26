@@ -12,7 +12,7 @@ CommandText* CommandText::insert(Text* t, size_t index, const std::string& str){
 }
 
 CommandText* CommandText::remove(Text* t, size_t index, size_t sze){
-    std::string removed = t->str.substr(index, sze);
+    std::string removed(t->view(index, sze));
     return new CommandText(t, index, removed, false);
 }
 
@@ -30,13 +30,13 @@ CommandText::CommandText(Text* t, size_t index, const std::string& str, bool is_
     : t(t), index(index), removed(str), is_insertion(is_insertion) {}
 
 void CommandText::insert(Controller& controller){
-    t->str.insert(index, removed);
+    t->insert(index, removed);
     controller.active.text = controller.anchor.text = t;
     controller.active.index = controller.anchor.index = index + removed.size();
 }
 
 void CommandText::remove(Controller& controller){
-    t->str.erase(index, removed.size());
+    t->erase(index, removed.size());
     controller.active.text = controller.anchor.text = t;
     controller.active.index = controller.anchor.index = index;
 }

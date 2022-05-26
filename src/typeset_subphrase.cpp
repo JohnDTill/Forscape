@@ -40,6 +40,18 @@ void Subphrase::resize() noexcept{
     updateSize();
     parent->resize();
 }
+
+#ifndef NDEBUG
+void Subphrase::invalidateWidth() noexcept{
+    width = STALE;
+    parent->invalidateWidth();
+}
+
+void Subphrase::invalidateDims() noexcept{
+    width = above_center = under_center = STALE;
+    parent->invalidateDims();
+}
+#endif
 #endif
 
 }

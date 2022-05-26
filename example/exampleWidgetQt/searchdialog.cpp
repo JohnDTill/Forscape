@@ -120,17 +120,17 @@ void SearchDialog::on_findAllButton_clicked(){
 
     Typeset::Model* m = out->getModel();
     if(search_str.empty()){
-        m->lastText()->str = "No input for search";
+        m->lastText()->setString("No input for search");
     }else{
         static constexpr std::string_view lead = "Search results for \"";
-        m->lastText()->str = lead.data() + search_str + "\":";
+        m->lastText()->setString(lead.data() + search_str + "\":");
         m->lastText()->tags.push_back( SemanticTag(lead.size()-1, SEM_STRING) );
         m->lastText()->tags.push_back( SemanticTag(lead.size()+search_str.size()+1, SEM_DEFAULT) );
 
         if(hits.empty()){
             m->appendLine();
             Typeset::Text* t = m->lastText();
-            t->str = "NO RESULTS";
+            t->setString("NO RESULTS");
             t->tags.push_back( SemanticTag(0, SEM_ERROR) );
         }
 
