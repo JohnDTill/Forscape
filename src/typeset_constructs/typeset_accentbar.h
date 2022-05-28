@@ -19,7 +19,7 @@ public:
     virtual char constructCode() const noexcept override;
 
     #ifndef HOPE_TYPESET_HEADLESS
-    virtual void updateSizeSpecific() noexcept override;
+    virtual void updateSizeFromChildSizes() noexcept override;
     virtual void updateChildPositions() noexcept override;
     virtual void paintSpecific(Painter& painter) const override;
     #endif

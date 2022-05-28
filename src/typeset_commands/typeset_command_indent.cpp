@@ -54,10 +54,9 @@ CommandIndent::CommandIndent(bool is_insert, Line* first, Line* last, const std:
 void CommandIndent::insert(Controller& c){
     size_t i = 0;
     for(Line* l = first; l != last->next(); l = l->next()){
-        l->front()->prependSpaces(spaces[i++]);
-        #ifndef HOPE_TYPESET_HEADLESS
-        l->front()->resize();
-        #endif
+        Text* t = l->front();
+        size_t num_spaces = spaces[i++];
+        t->prependSpaces(num_spaces);
     }
 
     c.setBothToFrontOf(last->front());
@@ -66,10 +65,8 @@ void CommandIndent::insert(Controller& c){
 void CommandIndent::remove(Controller& c){
     size_t i = 0;
     for(Line* l = first; l != last->next(); l = l->next()){
-        l->front()->removeLeadingSpaces(spaces[i++]);
-        #ifndef HOPE_TYPESET_HEADLESS
-        l->front()->resize();
-        #endif
+        size_t num_spaces = spaces[i++];
+        l->front()->removeLeadingSpaces(num_spaces);
     }
 
     c.setBothToFrontOf(last->front());

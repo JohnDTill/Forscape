@@ -36,7 +36,7 @@ void CommandText::insert(Controller& controller){
 }
 
 void CommandText::remove(Controller& controller){
-    t->erase(index, removed.size());
+    t->erase(index, removed);
     controller.active.text = controller.anchor.text = t;
     controller.active.index = controller.anchor.index = index;
 }

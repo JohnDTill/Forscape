@@ -13,7 +13,7 @@ public:
     virtual char constructCode() const noexcept override { return DOUBLEINTEGRALCONV0; }
 
     #ifndef HOPE_TYPESET_HEADLESS
-    virtual void updateSizeSpecific() noexcept override {
+    virtual void updateSizeFromChildSizes() noexcept override {
         width = CHARACTER_WIDTHS[scriptDepth()];
         above_center = ABOVE_CENTER[scriptDepth()];
         under_center = UNDER_CENTER[scriptDepth()];

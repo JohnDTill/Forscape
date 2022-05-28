@@ -34,7 +34,7 @@ public:
     static constexpr double MARGIN_LEFT = 1.2;
     static constexpr double MARGIN_RIGHT = 2;
 
-    virtual void updateSizeSpecific() noexcept override {
+    virtual void updateSizeFromChildSizes() noexcept override {
         above_center = child()->above_center + vgap;
         under_center = child()->under_center;
         line_height = height() - vfudge;

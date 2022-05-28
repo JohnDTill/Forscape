@@ -406,7 +406,7 @@ void MainWindow::checkOutput(){
 
     if(!print_buffer.empty()){
         bool at_bottom = console->scrolledToBottom();
-        console->getController().insertSerial(print_buffer);
+        console->getModel()->appendSerialToOutput(print_buffer);
         console->updateModel();
         if(at_bottom) console->scrollToBottom();
         print_buffer.clear();

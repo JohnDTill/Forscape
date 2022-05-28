@@ -53,7 +53,7 @@ class Text {
         void overwrite(size_t start, const std::string& in) alloc_except;
         void overwrite(size_t start, std::string_view in) alloc_except;
         void insert(size_t start, const std::string& in) alloc_except;
-        void erase(size_t start, size_t size) noexcept;
+        void erase(size_t start, const std::string& out) noexcept;
         std::string_view from(size_t index) const noexcept;
         std::string_view view(size_t start, size_t sze) const noexcept;
         const std::string& getString() const noexcept;
@@ -100,7 +100,6 @@ class Text {
         bool containsX(double x_test) const noexcept;
         bool containsY(double y_test) const noexcept;
         bool containsXInBounds(double x_test, size_t start, size_t stop) const noexcept;
-        void resize() noexcept;
         double x  DEBUG_INIT_STALE;
         double y  DEBUG_INIT_STALE;
         #endif
@@ -109,10 +108,6 @@ class Text {
         Phrase* parent;
         double width = 0;
         std::string str;
-
-        #ifndef NDEBUG
-        void invalidateWidth() noexcept;
-        #endif
 };
 
 }

@@ -198,7 +198,6 @@ if (${TEST_QT})
     qt_add_resources(EMBEDDED_RESOURCES ${EXAMPLE}/resources.qrc)
     list(APPEND SOURCES
         ${EMBEDDED_RESOURCES}
-        ${TEST}/typeset_graphics.h
         ${SRC}/typeset_painter.h
         ${SRC}/typeset_painter_qt.cpp
         ${SRC}/typeset_view.cpp

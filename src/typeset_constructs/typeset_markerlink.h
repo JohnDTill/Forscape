@@ -44,7 +44,7 @@ public:
         view->goToLine(line_id);
     }
 
-    virtual void updateSizeSpecific() noexcept override {
+    virtual void updateSizeFromChildSizes() noexcept override {
         assert(scriptDepth() == 0);
         width = CHARACTER_WIDTHS[0] * (6 + std::to_string(line_id+1).size());
         above_center = prev()->aboveCenter();

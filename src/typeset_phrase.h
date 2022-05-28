@@ -69,7 +69,6 @@ public:
     double yBottom() const noexcept {return y + height();}
     void updateSize() noexcept;
     void updateLayout() noexcept;
-    virtual void resize() noexcept = 0;
     virtual void paint(Painter& painter, bool forward = true) const;
     virtual void paintUntil(Painter& painter, Text* t_end, size_t index, bool forward = true) const;
     virtual void paintAfter(Painter& painter, Text* t_start, size_t index, bool forward = true) const;

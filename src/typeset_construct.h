@@ -73,8 +73,8 @@ public:
     uint8_t scriptDepth() const noexcept;
     virtual bool increasesScriptDepth(uint8_t id) const noexcept;
     void updateSize() noexcept;
+    virtual void updateSizeFromChildSizes() noexcept = 0;
     void updateLayout() noexcept;
-    void resize() noexcept;
     void paint(Painter& painter) const;
     double height() const noexcept;
     double width  DEBUG_INIT_STALE;
@@ -112,7 +112,6 @@ protected:
     Subphrase* second() const noexcept;
 
     #ifndef HOPE_TYPESET_HEADLESS
-    virtual void updateSizeSpecific() noexcept = 0;
     virtual void updateChildPositions() noexcept;
     virtual void paintSpecific(Painter&) const;
     virtual void invalidateX() noexcept;

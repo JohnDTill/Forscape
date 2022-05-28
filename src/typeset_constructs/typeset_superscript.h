@@ -33,7 +33,7 @@ public:
             above_center = child()->height();
     }
 
-    virtual void updateSizeSpecific() noexcept override {
+    virtual void updateSizeFromChildSizes() noexcept override {
         width = child()->width;
         under_center = 0;
 

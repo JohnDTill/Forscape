@@ -10,18 +10,16 @@ Line::Line()
     : Phrase() {
     #ifndef HOPE_TYPESET_HEADLESS
     script_level = 0;
+    x = 0; //EVENTUALLY: this is const 0
     #endif
-
-    x = 0; //DO THIS - delete
 }
 
 Line::Line(Model* model){
     parent = model;
     #ifndef HOPE_TYPESET_HEADLESS
     script_level = 0;
+    x = 0; //EVENTUALLY: this is const 0
     #endif
-
-    x = 0; //DO THIS - delete
 }
 
 bool Line::isLine() const noexcept {
@@ -34,6 +32,10 @@ Line* Line::next() const noexcept{
 
 Line* Line::prev() const noexcept{
     return parent->prevLine(this);
+}
+
+Line* Line::prevAsserted() const noexcept{
+    return parent->prevLineAsserted(this);
 }
 
 Line* Line::nextAsserted() const noexcept{
@@ -55,11 +57,6 @@ Line* Line::nearestLine(double y) const noexcept{
 
 Line* Line::nearestAbove(double y) const noexcept{
     return parent->nearestAbove(y);
-}
-
-void Line::resize() noexcept{
-    updateSize();
-    parent->updateLayout(); //DO THIS
 }
 
 #ifndef NDEBUG

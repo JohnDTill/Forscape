@@ -13,12 +13,6 @@
 #include <algorithm>
 #include <cassert>
 
-#ifndef NDEBUG
-#define DEBUG_INVALIDATE_WIDTH invalidateWidth();
-#else
-#define DEBUG_INVALIDATE_WIDTH
-#endif
-
 namespace Hope {
 
 namespace Typeset {
@@ -71,80 +65,48 @@ bool Text::empty() const noexcept{
 
 void Text::setString(std::string_view str) noexcept {
     this->str = str;
-    DEBUG_INVALIDATE_WIDTH
-
-    #ifndef HOPE_TYPESET_HEADLESS
-    resize(); //DO THIS: update in commands instead of here
-    #endif
 }
 
 void Text::setString(const char* ch, size_t sze) noexcept{
     str = std::string_view(ch, sze);
-    DEBUG_INVALIDATE_WIDTH
 }
 
 void Text::append(std::string_view appended) noexcept{
     str += appended;
-    DEBUG_INVALIDATE_WIDTH
-
-    //DO THIS - handle size
 }
 
 void Text::prependSpaces(size_t num_spaces) alloc_except {
-    str.insert(0, num_spaces, ' ');
-    DEBUG_INVALIDATE_WIDTH
-
     #ifndef HOPE_TYPESET_HEADLESS
-    resize(); //DO THIS: update in commands instead of here
+    assert(scriptDepth() == 0);
     #endif
+    str.insert(0, num_spaces, ' ');
 }
 
 void Text::removeLeadingSpaces(size_t num_spaces) noexcept {
+    #ifndef HOPE_TYPESET_HEADLESS
+    assert(scriptDepth() == 0);
+    #endif
     assert(str.substr(0, num_spaces) == std::string(num_spaces, ' '));
     str.erase(0, num_spaces);
-    DEBUG_INVALIDATE_WIDTH
-
-    #ifndef HOPE_TYPESET_HEADLESS
-    resize(); //DO THIS: update in commands instead of here
-    #endif
 }
 
 void Text::overwrite(size_t start, const std::string& in) alloc_except {
     str.resize(start + in.size());
     std::memcpy(str.data() + start, in.data(), in.size());
-    DEBUG_INVALIDATE_WIDTH
-
-    #ifndef HOPE_TYPESET_HEADLESS
-    resize(); //DO THIS: update in commands instead of here
-    #endif
 }
 
 void Text::overwrite(size_t start, std::string_view in) noexcept{
     str.resize(start + in.size());
     std::memcpy(str.data() + start, in.data(), in.size());
-    DEBUG_INVALIDATE_WIDTH
-
-    #ifndef HOPE_TYPESET_HEADLESS
-    resize(); //DO THIS: update in commands instead of here
-    #endif
 }
 
 void Text::insert(size_t start, const std::string& in) noexcept{
     str.insert(start, in);
-    DEBUG_INVALIDATE_WIDTH
-
-    #ifndef HOPE_TYPESET_HEADLESS
-    resize(); //DO THIS: update in commands instead of here
-    #endif
 }
 
-void Text::erase(size_t start, size_t size) noexcept{
-    str.erase(start, size);
-    DEBUG_INVALIDATE_WIDTH
-
-    #ifndef HOPE_TYPESET_HEADLESS
-    resize(); //DO THIS: update in commands instead of here
-    #endif
+void Text::erase(size_t start, const std::string& out) noexcept{
+    assert(view(start, out.size()) == out);
+    str.erase(start, out.size());
 }
 
 std::string_view Text::from(size_t index) const noexcept{
@@ -512,18 +474,6 @@ bool Text::containsY(double y_test) const noexcept {
 bool Text::containsXInBounds(double x_test, size_t start, size_t stop) const noexcept {
     return x_test >= xGlobal(start) && x_test <= xGlobal(stop);
 }
-
-void Text::resize() noexcept {
-    width = STALE;
-    parent->resize();
-}
-
-#ifndef NDEBUG
-void Text::invalidateWidth() noexcept{
-    width = STALE;
-    parent->invalidateWidth();
-}
-#endif
 #endif
 
 }

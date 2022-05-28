@@ -92,7 +92,7 @@ private:
 
     void paintErrorsProportional(QPainter& painter) const {
         const Model& m = *view.getModel();
-        const double model_height = m.height; //m.getHeight(); //DO THIS
+        const double model_height = m.height; //m.getHeight(); //EVENTUALLY: can make resizing smarter
         const int error_region_height = errorRegionPixelHeight();
         const int w = errorRegionPixelWidth();
 

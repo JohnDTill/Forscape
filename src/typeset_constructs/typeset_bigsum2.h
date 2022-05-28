@@ -28,7 +28,7 @@ public:
         return caller->id==0 ? second()->textLeftOf(x) : next();
     }
 
-    virtual void updateSizeSpecific() noexcept override {
+    virtual void updateSizeFromChildSizes() noexcept override {
         symbol_width = CHARACTER_WIDTHS[scriptDepth()];
         width = std::max(symbol_width, std::max(first()->width, second()->width));
         above_center = ABOVE_CENTER[scriptDepth()] + first()->height();

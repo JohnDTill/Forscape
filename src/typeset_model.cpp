@@ -260,9 +260,14 @@ Line* Model::prevLine(const Line* l) const noexcept{
     return l->id > 0 ? lines[l->id-1] : nullptr;
 }
 
-Line* Model::nextLineAsserted(const Line *l) const noexcept{
+Line* Model::nextLineAsserted(const Line* l) const noexcept{
     assert(l->id+1 < lines.size());
     return lines[l->id+1];
+}
+
+Line* Model::prevLineAsserted(const Line* l) const noexcept{
+    assert(l->id > 0);
+    return lines[l->id-1];
 }
 
 #ifndef HOPE_TYPESET_HEADLESS
@@ -314,6 +319,27 @@ double Model::getHeight() noexcept{
 
 size_t Model::numLines() const noexcept{
     return lines.size();
+}
+
+void Model::appendSerialToOutput(const std::string& src){
+    assert(is_output);
+
+    Controller controller(this);
+    controller.insertSerial(src);
+
+    //EVENTUALLY: need to guard against large horizontal prints
+    static constexpr size_t MAX_LINES = 8192;
+    if(lines.size() > MAX_LINES){
+        size_t lines_removed = lines.size() - MAX_LINES;
+        for(size_t i = 0; i < lines_removed; i++) delete lines[i];
+        lines.erase(lines.begin(), lines.begin() + lines_removed);
+        for(size_t i = 0; i < MAX_LINES; i++) lines[i]->id = i;
+    }
+
+    #ifndef HOPE_TYPESET_HEADLESS
+    calculateSizes();
+    updateLayout();
+    #endif
 }
 
 void Model::mutate(Command* cmd, Controller& controller){
@@ -559,7 +585,7 @@ void Model::clearFormatting() noexcept{
 void Model::performSemanticFormatting(){
     if(is_output) return;
 
-    clearFormatting();    
+    clearFormatting();
     scanner.scanAll();
     parser.parseAll();
     symbol_builder.resolveSymbols();

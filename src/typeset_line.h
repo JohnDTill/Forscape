@@ -17,6 +17,7 @@ public:
     Model* parent  DEBUG_INIT_NULLPTR;
     Line* next() const noexcept;
     Line* prev() const noexcept;
+    Line* prevAsserted() const noexcept;
     Line* nextAsserted() const noexcept;
     size_t leadingSpaces() const noexcept;
     const std::vector<Line*>& lines() const noexcept;
@@ -24,7 +25,6 @@ public:
     #ifndef HOPE_TYPESET_HEADLESS
     Line* nearestLine(double y) const noexcept;
     Line* nearestAbove(double y) const noexcept;
-    virtual void resize() noexcept override;
     #ifndef NDEBUG
     virtual void invalidateWidth() noexcept override;
     virtual void invalidateDims() noexcept override;

@@ -23,7 +23,7 @@ public:
     virtual char constructCode() const noexcept override { return ACCENTDDDOT; }
 
     #ifndef HOPE_TYPESET_HEADLESS
-    virtual void updateSizeSpecific() noexcept override {
+    virtual void updateSizeFromChildSizes() noexcept override {
         width = child()->width;
         should_drop = hasSmallChild();
         above_center = child()->above_center + !should_drop*voffset;

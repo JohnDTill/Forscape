@@ -29,7 +29,7 @@ public:
         return caller->id==0 ? second()->textLeftOf(x) : next();
     }
 
-    virtual void updateSizeSpecific() noexcept override {
+    virtual void updateSizeFromChildSizes() noexcept override {
         width = std::max(first()->width, second()->width) + 2*hgap + 2*bar_margin;
         above_center = first()->height() + vgap;
         under_center = second()->height() + vgap;
