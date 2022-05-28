@@ -15,16 +15,16 @@ void Error::writeTo(Typeset::Text* t, Typeset::View* caller) const {
     if(caller){
         t->getParent()->appendConstruct(new Typeset::MarkerLink(l, caller));
         t = t->nextTextAsserted();
-        t->str = " - " + message();
+        t->setString(" - " + message());
     }else{
-        t->str = "Line " + line() + " - " + message();
+        t->setString("Line " + line() + " - " + message());
     }
     t->tags.push_back( SemanticTag(0, SEM_ERROR) );
 }
 
 void Error::writeErrors(const std::vector<Error>& errors, Typeset::Model* m, Typeset::View* caller){
     Typeset::Text* t = m->lastText();
-    t->str = "_______________________________";
+    t->setString("_______________________________");
     t->tags.push_back( SemanticTag(0, SEM_ERROR) );
     m->appendLine();
 

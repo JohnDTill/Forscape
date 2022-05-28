@@ -158,22 +158,16 @@ bool Construct::increasesScriptDepth(uint8_t) const noexcept{
 
 void Construct::updateSize() noexcept{
     for(Subphrase* s : args){
-        uint8_t child_depth = parent->script_level + (increasesScriptDepth(static_cast<uint8_t>(s->id)) & (parent->script_level < 2));
-        s->script_level = child_depth;
+        s->script_level = parent->script_level + (increasesScriptDepth(static_cast<uint8_t>(s->id)) & (parent->script_level < 2));
         s->updateSize();
     }
-    updateSizeSpecific();
+    updateSizeFromChildSizes();
 }
 
 void Construct::updateLayout() noexcept{
     updateChildPositions();
     for(Subphrase* s : args)
         s->updateLayout();
-}
-
-void Construct::resize() noexcept{
-    updateSize();
-    parent->resize();
 }
 
 void Construct::paint(Painter& painter) const{
@@ -185,16 +179,28 @@ double Construct::height() const noexcept{
     return above_center + under_center;
 }
 
+#ifndef NDEBUG
+void Construct::invalidateWidth() noexcept{
+    width = STALE;
+    parent->invalidateWidth();
+}
+
+void Construct::invalidateDims() noexcept{
+    width = above_center = under_center = STALE;
+    parent->invalidateDims();
+}
+#endif
+
 Construct::ContextAction::ContextAction(const std::string& name, void (*takeAction)(Construct*, Controller&, Subphrase*))
     : takeAction(takeAction), name(name) {}
 
 const std::vector<Construct::ContextAction> Construct::no_actions {};
 
-const std::vector<Construct::ContextAction>& Construct::getContextActions(Subphrase*) const noexcept{
+const std::vector<Construct::ContextAction>& Construct::getContextActions(Subphrase*) const noexcept {
     return no_actions;
 }
 
-void Construct::updateChildPositions(){
+void Construct::updateChildPositions() noexcept {
     // Default does nothing
     // Must override for constructs with children
     assert(numArgs() == 0);

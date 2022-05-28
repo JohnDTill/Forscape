@@ -210,11 +210,11 @@ bool Marker::onlySpacesLeft() const noexcept{
 }
 
 std::string_view Marker::strRight() const noexcept{
-    return std::string_view(text->str.data()+index);
+    return std::string_view(text->data()+index);
 }
 
 std::string_view Marker::strLeft() const noexcept{
-    return std::string_view(text->str.data(), index);
+    return std::string_view(text->data(), index);
 }
 
 bool Marker::compareRight(const Marker& other) const noexcept{

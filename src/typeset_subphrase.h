@@ -19,7 +19,10 @@ public:
 
     #ifndef HOPE_TYPESET_HEADLESS
     virtual void paint(Painter& painter, bool forward = true) const override;
-    virtual void resize() noexcept override;
+    #ifndef NDEBUG
+    virtual void invalidateWidth() noexcept override;
+    virtual void invalidateDims() noexcept override;
+    #endif
     #endif
 };
 

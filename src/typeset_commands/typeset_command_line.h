@@ -29,7 +29,7 @@ private:
     const bool is_insertion;
 
     struct PhraseRight{
-        std::string str;
+        const std::string str;
         std::vector<Construct*> constructs;
         std::vector<Text*> texts;
 

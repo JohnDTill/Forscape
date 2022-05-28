@@ -65,14 +65,61 @@ bool Text::empty() const noexcept{
 
 void Text::setString(std::string_view str) noexcept {
     this->str = str;
-
-    #ifndef HOPE_TYPESET_HEADLESS
-    resize();
-    #endif
 }
 
-std::string Text::substr(size_t pos, size_t len) const{
-    return str.substr(pos, len);
+void Text::setString(const char* ch, size_t sze) noexcept{
+    str = std::string_view(ch, sze);
+}
+
+void Text::append(std::string_view appended) noexcept{
+    str += appended;
+}
+
+void Text::prependSpaces(size_t num_spaces) alloc_except {
+    #ifndef HOPE_TYPESET_HEADLESS
+    assert(scriptDepth() == 0);
+    #endif
+    str.insert(0, num_spaces, ' ');
+}
+
+void Text::removeLeadingSpaces(size_t num_spaces) noexcept {
+    #ifndef HOPE_TYPESET_HEADLESS
+    assert(scriptDepth() == 0);
+    #endif
+    assert(str.substr(0, num_spaces) == std::string(num_spaces, ' '));
+    str.erase(0, num_spaces);
+}
+
+void Text::overwrite(size_t start, const std::string& in) alloc_except {
+    str.resize(start + in.size());
+    std::memcpy(str.data() + start, in.data(), in.size());
+}
+
+void Text::overwrite(size_t start, std::string_view in) noexcept{
+    str.resize(start + in.size());
+    std::memcpy(str.data() + start, in.data(), in.size());
+}
+
+void Text::insert(size_t start, const std::string& in) noexcept{
+    str.insert(start, in);
+}
+
+void Text::erase(size_t start, const std::string& out) noexcept{
+    assert(view(start, out.size()) == out);
+    str.erase(start, out.size());
+}
+
+std::string_view Text::from(size_t index) const noexcept{
+    assert(index <= str.size());
+    return std::string_view(str.data()+index, str.size()-index);
+}
+
+std::string_view Text::view(size_t start, size_t sze) const noexcept{
+    return std::string_view(str.data()+start, sze);
+}
+
+const std::string& Text::getString() const noexcept{
+    return str;
 }
 
 char Text::charAt(size_t index) const noexcept{
@@ -138,6 +185,10 @@ bool Text::precedes(Text* other) const noexcept{
     }
 
     return t->parent->id < other->parent->id;
+}
+
+const char* Text::data() const noexcept{
+    return str.data();
 }
 
 Phrase* Text::getParent() const noexcept{
@@ -422,11 +473,6 @@ bool Text::containsY(double y_test) const noexcept {
 
 bool Text::containsXInBounds(double x_test, size_t start, size_t stop) const noexcept {
     return x_test >= xGlobal(start) && x_test <= xGlobal(stop);
-}
-
-void Text::resize() noexcept {
-    width = STALE;
-    parent->resize();
 }
 #endif
 

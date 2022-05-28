@@ -32,9 +32,17 @@ public:
     static constexpr double BRACKET_TOP_OFFSET = 2;
     static constexpr double BRACKET_BOT_OFFSET = 0;
 
+    std::vector<double> W; //EVENTUALLY: can eliminate these altogether when dimensions are in parent frame
+    std::vector<double> U;
+    std::vector<double> D;
+
     Matrix(uint16_t rows, uint16_t cols)
         : rows(rows), cols(cols) {
         setupNAargs(rows*cols);
+
+        W.resize(cols);
+        U.resize(rows);
+        D.resize(rows);
     }
 
     virtual void writeArgs(std::string& out, size_t& curr) const noexcept override {
@@ -54,18 +62,10 @@ public:
         return caller->id + cols < numArgs() ? arg(caller->id + cols)->textLeftOf(x) : next();
     }
 
-    std::vector<double> W;
-    std::vector<double> U;
-    std::vector<double> D;
-
-    virtual void updateSizeSpecific() noexcept override {
-        W.clear();
-        U.clear();
-        D.clear();
-
-        W.resize(cols);
-        U.resize(rows);
-        D.resize(rows);
+    virtual void updateSizeFromChildSizes() noexcept override {
+        std::fill(W.begin(), W.begin()+cols, 0);
+        std::fill(U.begin(), U.begin()+rows, 0);
+        std::fill(D.begin(), D.begin()+rows, 0);
 
         for(size_t i = 0; i < rows; i++){
             for(size_t j = 0; j < cols; j++){
@@ -86,7 +86,7 @@ public:
         above_center = under_center = height/2;
     }
 
-    virtual void updateChildPositions() override {
+    virtual void updateChildPositions() noexcept override {
         double yc = y + BRACKET_TOP_OFFSET;
         for(uint16_t i = 0; i < rows; i++){
             double xc = x + MATRIX_LPADDING + BRACKET_HOFFSET;
@@ -144,7 +144,11 @@ public:
         }
 
         rows++;
-        resize();
+
+        if(rows > U.size()){
+            U.resize(rows);
+            D.resize(rows);
+        }
     }
 
     void removeRow(size_t row) noexcept{
@@ -158,7 +162,6 @@ public:
 
         args.resize(numArgs() - cols);
         rows--;
-        resize();
     }
 
     void insertCol(size_t col, const std::vector<Subphrase*>& inserted){
@@ -187,7 +190,7 @@ public:
             args[i]->id = i;
         }
 
-        resize();
+        if(cols > W.size()) W.resize(cols);
     }
 
     void removeCol(size_t col){
@@ -211,7 +214,6 @@ public:
         args.resize(numArgs() - rows);
 
         cols--;
-        resize();
     }
 
     template<bool is_insert>

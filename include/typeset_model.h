@@ -41,9 +41,14 @@ public:
     std::string run();
     void runThread();
     void stop();
-    double width() const noexcept;
-    double height() const noexcept;
+    void updateWidth() noexcept;
+    double getWidth() noexcept;
+    void updateHeight() noexcept;
+    double getHeight() noexcept;
     size_t numLines() const noexcept;
+    void appendSerialToOutput(const std::string& src);
+    double width  DEBUG_INIT_STALE;
+    double height  DEBUG_INIT_STALE;
 
     #ifdef HOPE_SEMANTIC_DEBUGGING
     std::string toSerialWithSemanticTags() const;
@@ -87,6 +92,7 @@ private:
     Line* nextLine(const Line* l) const noexcept;
     Line* prevLine(const Line* l) const noexcept;
     Line* nextLineAsserted(const Line* l) const noexcept;
+    Line* prevLineAsserted(const Line* l) const noexcept;
     #ifndef HOPE_TYPESET_HEADLESS
     Line* nearestLine(double y) const noexcept;
     Line* nearestAbove(double y) const noexcept;

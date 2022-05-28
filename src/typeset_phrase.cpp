@@ -195,7 +195,7 @@ void Phrase::giveUpOwnership() noexcept{
 bool Phrase::sameContent(const Phrase* other) const noexcept{
     if(texts.size() != other->texts.size()) return false;
     for(size_t i = 0; i < texts.size(); i++)
-        if(text(i)->str != other->text(i)->str)
+        if(text(i)->getString() != other->text(i)->getString())
             return false;
     for(size_t i = 0; i < constructs.size(); i++)
         if(!construct(i)->sameContent(other->construct(i)))

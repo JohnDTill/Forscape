@@ -24,14 +24,14 @@ public:
     virtual char constructCode() const noexcept override { return ACCENTHAT; }
 
     #ifndef HOPE_TYPESET_HEADLESS
-    virtual void updateSizeSpecific() noexcept override {
+    virtual void updateSizeFromChildSizes() noexcept override {
         width = child()->width;
         should_drop = hasSmallChild();
         above_center = child()->above_center + !should_drop*voffset;
         under_center = child()->under_center;
     }
 
-    virtual void updateChildPositions() override {
+    virtual void updateChildPositions() noexcept override {
         child()->x = x;
         child()->y = y + !should_drop*voffset;
     }

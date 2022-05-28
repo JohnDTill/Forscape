@@ -14,8 +14,8 @@ CommandPhrase* CommandPhrase::insert(Text* tL, size_t iL, Line* l){
     Text* tF = l->front();
     Text* tB = l->back();
     size_t iR = tB->numChars();
-    std::string removed = tF->str;
-    tB->str += tL->str.substr(iL);
+    std::string removed = tF->getString();
+    tB->append( tL->from(iL) );
     std::vector<Construct*> constructs;
     std::vector<Text*> texts;
     for(Construct* c = tF->nextConstructInPhrase(); c != nullptr; c = c->next()->nextConstructInPhrase()){
@@ -31,7 +31,7 @@ CommandPhrase* CommandPhrase::insert(Text* tL, size_t iL, Line* l){
 }
 
 CommandPhrase* CommandPhrase::remove(Text* tL, size_t iL, Text* tR, size_t iR){
-    std::string removed = tL->str.substr(iL);
+    std::string removed(tL->from(iL));
 
     std::vector<Construct*> constructs;
     std::vector<Text*> texts;
@@ -67,8 +67,7 @@ CommandPhrase::CommandPhrase(Text* tL, const std::string& removed, size_t iR, co
 
 void CommandPhrase::insert(Controller& controller){
     size_t iL = tL->numChars() - (texts.back()->numChars()-iR);
-    tL->str.erase(iL);
-    tL->str += removed;
+    tL->overwrite(iL, removed);
 
     tL->getParent()->insert(tL->id, constructs, texts);
 
@@ -80,8 +79,7 @@ void CommandPhrase::insert(Controller& controller){
 
 void CommandPhrase::remove(Controller& controller){
     size_t iL = tL->numChars()-removed.size();
-    tL->str.erase(iL);
-    tL->str += texts.back()->str.substr(iR);
+    tL->overwrite(iL, texts.back()->from(iR));
 
     tL->getParent()->remove(tL->id, texts.back()->id);
 

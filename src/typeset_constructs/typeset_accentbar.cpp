@@ -13,14 +13,14 @@ AccentBar::AccentBar(){
 char AccentBar::constructCode() const noexcept { return ACCENTBAR; }
 
 #ifndef HOPE_TYPESET_HEADLESS
-void AccentBar::updateSizeSpecific() noexcept {
+void AccentBar::updateSizeFromChildSizes() noexcept {
     width = child()->width;
     under_center = child()->under_center;
     should_drop = hasSmallChild();
     above_center = child()->above_center + !should_drop * voffset;
 }
 
-void AccentBar::updateChildPositions() {
+void AccentBar::updateChildPositions() noexcept {
     child()->x = x;
     child()->y = y + !should_drop*voffset;
 }

@@ -37,7 +37,7 @@ public:
     static constexpr double SCRIPT_OVERLAP = 4;
     static constexpr double RATIO = 4.0/6;
 
-    virtual void updateSizeSpecific() noexcept override {
+    virtual void updateSizeFromChildSizes() noexcept override {
         above_center = second()->above_center + vgap;
 
         if(first()->height()/2 < above_center*RATIO){
@@ -53,7 +53,7 @@ public:
         width = first()->width - SCRIPT_OVERLAP + second()->width + extra_width;
     }
 
-    virtual void updateChildPositions() override {
+    virtual void updateChildPositions() noexcept override {
         first()->x = x;
         first()->y = y;
         second()->x = x + first()->width - SCRIPT_OVERLAP + extra_width + hfudge - MARGIN_RIGHT;

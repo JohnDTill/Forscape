@@ -24,9 +24,6 @@ CommandLine* CommandLine::insert(Text* tL, size_t iL, std::vector<Line*> lines){
     for(size_t i = 0; i < lines.size(); i++){
         lines[i]->parent = lL->parent;
         lines[i]->id = lL->id + 1 + i;
-        #ifndef HOPE_TYPESET_HEADLESS
-        lines[i]->updateSize();
-        #endif
     }
 
     Text* tR = lines.back()->back();
@@ -101,8 +98,8 @@ Model* CommandLine::model(){
     return baseLine()->parent;
 }
 
-CommandLine::PhraseRight::PhraseRight(Text* t, size_t index){
-    str = t->substr(index);
+CommandLine::PhraseRight::PhraseRight(Text* t, size_t index)
+    : str(t->view(index, t->numChars()-index)) {
     Line* l = t->getParent()->asLine();
     for(size_t i = t->id+1; i < l->numTexts(); i++){
         constructs.push_back( l->construct(i-1) );
@@ -111,8 +108,7 @@ CommandLine::PhraseRight::PhraseRight(Text* t, size_t index){
 }
 
 void CommandLine::PhraseRight::writeTo(Text* t, size_t index){
-    t->str.erase(index);
-    t->str += str;
+    t->overwrite(index, str);
 
     Phrase* p = t->getParent();
     p->remove(t->id);

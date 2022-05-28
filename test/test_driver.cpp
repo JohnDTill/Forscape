@@ -12,7 +12,6 @@
 
 #ifdef TEST_QT
 #include <QApplication>
-#include "typeset_graphics.h"
 #endif
 
 int main(int argc, char* argv[]){
@@ -42,9 +41,6 @@ int main(int argc, char* argv[]){
     passing &= testInterpreter();
     passing &= testIllFormedPrograms();
     passing &= testTypesetMutability();
-    #ifdef TEST_QT
-    passing &= testTypesetGraphics();
-    #endif
 
     if(passing) printf("\nAll passing\n\n");
     else printf("\nTEST(S) FAILED\n\n");

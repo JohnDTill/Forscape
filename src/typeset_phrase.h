@@ -69,7 +69,6 @@ public:
     double yBottom() const noexcept {return y + height();}
     void updateSize() noexcept;
     void updateLayout() noexcept;
-    virtual void resize() noexcept = 0;
     virtual void paint(Painter& painter, bool forward = true) const;
     virtual void paintUntil(Painter& painter, Text* t_end, size_t index, bool forward = true) const;
     virtual void paintAfter(Painter& painter, Text* t_start, size_t index, bool forward = true) const;
@@ -77,12 +76,16 @@ public:
     bool contains(double x_test, double y_test) const noexcept;
     bool containsY(double y_test) const noexcept;
     Text* textNearest(double x, double y) const;
-    double width;
-    double above_center;
-    double under_center;
-    double x;
-    double y;
+    double width  DEBUG_INIT_STALE;
+    double above_center  DEBUG_INIT_STALE;
+    double under_center  DEBUG_INIT_STALE;
+    double x  DEBUG_INIT_STALE;
+    double y  DEBUG_INIT_STALE;
     uint8_t script_level;
+    #ifndef NDEBUG
+    virtual void invalidateWidth() noexcept = 0;
+    virtual void invalidateDims() noexcept = 0;
+    #endif
     #endif
 
 private:

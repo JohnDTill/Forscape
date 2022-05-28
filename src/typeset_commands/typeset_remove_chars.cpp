@@ -1,10 +1,8 @@
 #include "typeset_remove_chars.h"
 
+#include <hope_unicode.h>
 #include <typeset_controller.h>
 #include <typeset_text.h>
-#include <hope_unicode.h>
-
-#include <iostream>
 
 namespace Hope {
 
@@ -22,36 +20,24 @@ bool RemoveChars::isCharacterDeletion() const noexcept {
 void RemoveChars::removeAdditionalChar(){
     std::string_view additional = t->graphemeAt(index);
     removed += additional;
-    t->str.erase(index, additional.size());
-    #ifndef HOPE_TYPESET_HEADLESS
-    t->resize();
-    #endif
+    t->erase(index, std::string(additional));
 }
 
 void RemoveChars::removeCharLeft(){
-    size_t glyph_size = graphemeSizeLeft(t->str, index);
+    size_t glyph_size = graphemeSizeLeft(t->getString(), index);
     index -= glyph_size;
-    removed.insert(0, t->str.substr(index, glyph_size));
-    t->str.erase(index, glyph_size);
-    #ifndef HOPE_TYPESET_HEADLESS
-    t->resize();
-    #endif
+    t->erase(index, std::string(t->view(index, glyph_size)));
+    removed.insert(0, t->view(index, glyph_size));
 }
 
 void RemoveChars::undo(Controller& controller){
-    t->str.insert(index, removed);
-    #ifndef HOPE_TYPESET_HEADLESS
-    t->resize();
-    #endif
+    t->insert(index, removed);
     controller.active.text = controller.anchor.text = t;
     controller.active.index = controller.anchor.index = index + removed.size();
 }
 
 void RemoveChars::redo(Controller& controller){
-    t->str.erase(index, removed.size());
-    #ifndef HOPE_TYPESET_HEADLESS
-    t->resize();
-    #endif
+    t->erase(index, removed);
     controller.active.text = controller.anchor.text = t;
     controller.active.index = controller.anchor.index = index;
 }

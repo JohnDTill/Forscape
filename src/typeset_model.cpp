@@ -161,7 +161,7 @@ std::vector<Line*> Model::linesFromSerial(const std::string& src){
         auto ch = src[index++];
 
         if(ch == OPEN){
-            text->str = src.substr(start, index-start-1);
+            text->setString(&src[start], index-start-1);
 
             switch (src[index++]) {
                 HOPE_TYPESET_PARSER_CASES
@@ -170,19 +170,20 @@ std::vector<Line*> Model::linesFromSerial(const std::string& src){
 
             start = index;
         }else if(ch == CLOSE){
-            text->str = src.substr(start, index-start-1);
+            text->setString(&src[start], index-start-1);
             start = index;
             Subphrase* closed_subphrase = static_cast<Subphrase*>(text->getParent());
             text = closed_subphrase->textRightOfSubphrase();
         }else if(ch == '\n' && text->isTopLevel()){
-            text->str = src.substr(start, index-start-1);
+            text->setString(&src[start], index-start-1);
+
             start = index;
             lines.push_back(new Line());
             text = lines.back()->front();
         }
     }
 
-    text->str = src.substr(start, index-start);
+    text->setString(&src[start], index-start);
 
     return lines;
 }
@@ -259,9 +260,14 @@ Line* Model::prevLine(const Line* l) const noexcept{
     return l->id > 0 ? lines[l->id-1] : nullptr;
 }
 
-Line* Model::nextLineAsserted(const Line *l) const noexcept{
+Line* Model::nextLineAsserted(const Line* l) const noexcept{
     assert(l->id+1 < lines.size());
     return lines[l->id+1];
+}
+
+Line* Model::prevLineAsserted(const Line* l) const noexcept{
+    assert(l->id > 0);
+    return lines[l->id-1];
 }
 
 #ifndef HOPE_TYPESET_HEADLESS
@@ -291,19 +297,49 @@ Construct* Model::constructAt(double x, double y) const noexcept{
     return nearestLine(y)->constructAt(x, y);
 }
 
-double Model::width() const noexcept{
-    double w = 0;
-    for(Line* l : lines) w = std::max(w, l->width);
-    return w;
+void Model::updateWidth() noexcept{
+    width = 0;
+    for(Line* l : lines) width = std::max(width, l->width);
 }
 
-double Model::height() const noexcept{
-    return lines.back()->yBottom();
+double Model::getWidth() noexcept{
+    updateWidth();
+    return width;
+}
+
+void Model::updateHeight() noexcept{
+    height = lines.back()->yBottom();
+}
+
+double Model::getHeight() noexcept{
+    updateHeight();
+    return height;
 }
 #endif
 
 size_t Model::numLines() const noexcept{
     return lines.size();
+}
+
+void Model::appendSerialToOutput(const std::string& src){
+    assert(is_output);
+
+    Controller controller(this);
+    controller.insertSerial(src);
+
+    //EVENTUALLY: need to guard against large horizontal prints
+    static constexpr size_t MAX_LINES = 8192;
+    if(lines.size() > MAX_LINES){
+        size_t lines_removed = lines.size() - MAX_LINES;
+        for(size_t i = 0; i < lines_removed; i++) delete lines[i];
+        lines.erase(lines.begin(), lines.begin() + lines_removed);
+        for(size_t i = 0; i < MAX_LINES; i++) lines[i]->id = i;
+    }
+
+    #ifndef HOPE_TYPESET_HEADLESS
+    calculateSizes();
+    updateLayout();
+    #endif
 }
 
 void Model::mutate(Command* cmd, Controller& controller){
@@ -380,11 +416,9 @@ void Model::calculateSizes(){
 }
 
 void Model::updateLayout(){
-    double x = 0;
     double y = 0;
 
     for(Line* l : lines){
-        l->x = x;
         l->y = y;
         l->updateLayout();
         y += l->height() + LINE_VERTICAL_PADDING;
@@ -504,7 +538,7 @@ Selection Model::idAt(const Marker& marker) noexcept{
 Selection Model::find(const std::string& str) noexcept{
     Text* t = firstText();
     for(;;){
-        auto it = t->str.find(str);
+        auto it = t->getString().find(str);
         if(it != std::string::npos){
             size_t start = it;
             size_t end = start + str.size();
@@ -551,7 +585,7 @@ void Model::clearFormatting() noexcept{
 void Model::performSemanticFormatting(){
     if(is_output) return;
 
-    clearFormatting();    
+    clearFormatting();
     scanner.scanAll();
     parser.parseAll();
     symbol_builder.resolveSymbols();

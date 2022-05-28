@@ -50,7 +50,7 @@ public:
         return caller->id + 2 < numArgs() ? arg(caller->id + 2)->textLeftOf(x) : next();
     }
 
-    virtual void updateSizeSpecific() noexcept override {
+    virtual void updateSizeFromChildSizes() noexcept override {
         ellipse_width = prev()->height()*3/4;
 
         v_width = 0;
@@ -70,7 +70,7 @@ public:
         above_center = under_center = h/2;
     }
 
-    virtual void updateChildPositions() override {
+    virtual void updateChildPositions() noexcept override {
         double yc = y;
         for(size_t i = 0; i < numArgs(); i+=2){
             Subphrase* v = arg(i);
@@ -120,8 +120,6 @@ public:
         args[2*row + 1] = second;
         first->id = 2*row;
         second->id = 2*row + 1;
-
-        resize();
     }
 
     void removeRow(size_t row) noexcept{
@@ -131,7 +129,6 @@ public:
         }
 
         args.resize(args.size() - 2);
-        resize();
     }
 
     template<bool is_insert>

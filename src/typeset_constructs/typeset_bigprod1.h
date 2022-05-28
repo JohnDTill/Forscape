@@ -20,14 +20,14 @@ public:
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }
     double symbol_width;
 
-    virtual void updateSizeSpecific() noexcept override {
+    virtual void updateSizeFromChildSizes() noexcept override {
         symbol_width = CHARACTER_WIDTHS[scriptDepth()];
         width = std::max(symbol_width, child()->width);
         above_center = ABOVE_CENTER[scriptDepth()];
         under_center = UNDER_CENTER[scriptDepth()] + child()->height();
     }
 
-    virtual void updateChildPositions() override {
+    virtual void updateChildPositions() noexcept override {
         child()->x = x + (width - child()->width)/2;
         child()->y = y + height() - child()->height();
     }

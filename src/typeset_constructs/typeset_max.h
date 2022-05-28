@@ -24,7 +24,7 @@ public:
     #ifndef HOPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }
 
-    virtual void updateSizeSpecific() noexcept override {
+    virtual void updateSizeFromChildSizes() noexcept override {
         double word_width = CHARACTER_WIDTHS[scriptDepth()]*word.size();
         if(word_width > child()->width){
             width = word_width;
@@ -39,7 +39,7 @@ public:
         under_center = prev()->underCenter() + child()->height();
     }
 
-    virtual void updateChildPositions() override {
+    virtual void updateChildPositions() noexcept override {
         child()->x = x + child_offset;
         child()->y = y + prev()->height();
     }

@@ -51,7 +51,7 @@ public:
             under_center = second()->height();
     }
 
-    virtual void updateSizeSpecific() noexcept override {
+    virtual void updateSizeFromChildSizes() noexcept override {
         width = std::max(first()->width, second()->width);
 
         Text* t = prev();
@@ -66,7 +66,7 @@ public:
         }
     }
 
-    virtual void updateChildPositions() override {
+    virtual void updateChildPositions() noexcept override {
         first()->x = x;
         first()->y = y;
 
