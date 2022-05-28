@@ -303,7 +303,7 @@ void Model::updateWidth() noexcept{
 }
 
 double Model::getWidth() noexcept{
-    updateWidth(); //DO THIS: update as needed, make this const
+    updateWidth();
     return width;
 }
 
@@ -312,7 +312,7 @@ void Model::updateHeight() noexcept{
 }
 
 double Model::getHeight() noexcept{
-    updateHeight(); //DO THIS: remove
+    updateHeight();
     return height;
 }
 #endif
