@@ -291,7 +291,8 @@ void MainWindow::pollInterpreterThread(){
         switch(interpreter.error_code){
             case Hope::Code::NO_ERROR_FOUND: break;
             case Hope::Code::USER_STOP:
-                console->getController().insertSerial("\nScript terminated by user");
+                checkOutput();
+                console->getModel()->appendSerialToOutput("\nScript terminated by user");
                 console->updateModel();
                 console->scrollToBottom();
                 break;
