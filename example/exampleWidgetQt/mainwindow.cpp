@@ -49,8 +49,7 @@
 #define NEW_SCRIPT_TITLE "new script"
 #define MATH_TOOLBAR_VISIBLE "math_tb_visible"
 #define ACTION_TOOLBAR_VISIBLE "action_tb_visible"
-#define WINDOW_GEOMETRY "geometry"
-#define WINDOW_STATE "window_state"
+#define WINDOW_STATE "win_state"
 #define LAST_DIRECTORY "last_dir"
 
 #define LOG_PREFIX "mainwindow->"
@@ -203,18 +202,14 @@ MainWindow::MainWindow(QWidget* parent)
     ui->actionPaste->setShortcutContext(Qt::WidgetShortcut);
     ui->actionDelete->setShortcutContext(Qt::WidgetShortcut);
 
-    if(settings.contains(WINDOW_GEOMETRY))
-        restoreGeometry(settings.value(WINDOW_GEOMETRY).toByteArray());
-
-    if(settings.contains(WINDOW_STATE))
-        restoreState(settings.value(WINDOW_STATE).toByteArray());
-
     connect(&interpreter_poll_timer, SIGNAL(timeout()), this, SLOT(pollInterpreterThread()));
     connect(editor, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
 
     preferences = new Preferences(settings);
     connect(preferences, SIGNAL(colourChanged()), this, SLOT(onColourChanged()));
     onColourChanged();
+
+    loadGeometry();
 }
 
 MainWindow::~MainWindow(){
@@ -223,13 +218,28 @@ MainWindow::~MainWindow(){
     settings.setValue(LINE_NUMBERS_VISIBLE, editor->lineNumbersShown());
     settings.setValue(MATH_TOOLBAR_VISIBLE, ui->actionShow_typesetting_toolbar->isChecked());
     settings.setValue(ACTION_TOOLBAR_VISIBLE, ui->actionShow_action_toolbar->isChecked());
-    settings.setValue(WINDOW_GEOMETRY, saveGeometry());
-    settings.setValue(WINDOW_STATE, saveState());
+    settings.setValue(WINDOW_STATE, QList({QVariant(saveGeometry()), QVariant(saveState())}));
     delete preferences;
     delete ui;
 }
 
-bool MainWindow::isSavedDeepComparison() const{
+void MainWindow::loadGeometry(){
+    if(settings.contains(WINDOW_STATE)){
+        auto win_state = settings.value(WINDOW_STATE).toList();
+        restoreGeometry(win_state[0].toByteArray());
+        restoreState(win_state[1].toByteArray());
+    }
+
+    if(!isMaximized())
+        QTimer::singleShot(1, this, &MainWindow::resizeHackToFixScrollbars);
+}
+
+void MainWindow::resizeHackToFixScrollbars(){
+    resize(width()+1, height()+1);
+    resize(width()-1, height()-1);
+}
+
+bool MainWindow::isSavedDeepComparison() const {
     if(path.isEmpty()) return editor->getModel()->empty();
 
     //Avoid a deep comparison if size from file meta data doesn't match
@@ -784,8 +794,8 @@ void MainWindow::on_actionGo_to_line_triggered(){
     QInputDialog dialog(this);
     dialog.setWindowTitle("Go to line...");
     dialog.setLabelText("Line:");
-    dialog.setIntRange(1, editor->numLines());
-    dialog.setIntValue(editor->currentLine()+1);
+    dialog.setIntRange(1, static_cast<int>(editor->numLines()));
+    dialog.setIntValue(static_cast<int>(editor->currentLine()+1));
     dialog.setIntStep(1);
     QSpinBox* spinbox = dialog.findChild<QSpinBox*>();
 

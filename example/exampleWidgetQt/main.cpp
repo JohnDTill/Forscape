@@ -16,9 +16,7 @@ int main(int argc, char* argv[]){
     Hope::logger->info("/* APP_SESSION_START */");
     Hope::Typeset::setPreset(Hope::Typeset::PRESET_DEFAULT);
     MainWindow w;
-
     w.show();
-    w.resize(w.width()+1, w.height()+1);
     auto code = a.exec();
     Hope::logger->info("/* APP_SESSION_END */");
 

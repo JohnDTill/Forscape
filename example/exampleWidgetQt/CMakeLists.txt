@@ -262,21 +262,19 @@ if(QT_VERSION_MAJOR EQUAL 6)
 endif()
 
 add_compile_definitions($<$<CONFIG:Release>:EIGEN_NO_DEBUG>)
-#EVENTUALLY: get rid of EIGEN_UNSUPPORTED macro and only accept compilers that can handle it
 
 if(MSVC)
     target_compile_options(Forscape PRIVATE
         /Ob3 /W3 #/WX #EVENTUALLY: address warnings
         $<$<CONFIG:Release>:/Oi /Oy>
-        $<$<CONFIG:Debug>:/bigobj>
-        #/bigobj #May be needed to make Eigen unsupported compile
+        $<$<CONFIG:Debug>:/bigobj> #Often needed to make Eigen unsupported compile
     )
     target_link_options(Forscape PRIVATE
         $<$<CONFIG:Release>:/OPT:REF>
     )
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(Forscape PRIVATE
-        $<$<CONFIG:Debug>:-O2> #Need optimisation for MinGW to compile w/ Eigen unsupported
+        $<$<CONFIG:Debug>:-O1> #Need optimisation for MinGW to compile w/ Eigen unsupported
         -Wall -Wextra -pedantic #-Werror #EVENTUALLY: address warnings
         $<$<CONFIG:Release>: -Ofast -fmodulo-sched -fmodulo-sched-allow-regmoves -fgcse-sm -fgcse-las -fdelete-null-pointer-checks
         -fomit-frame-pointer -funroll-loops> #-fwhole-program #EVENTUALLY: couldn't get whole program optimisation working
