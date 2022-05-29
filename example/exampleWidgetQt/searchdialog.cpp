@@ -109,6 +109,7 @@ void SearchDialog::on_findEdit_textChanged(const QString&){
     populateHits();
     in->highlighted_words = hits;
     in->repaint();
+    in->updateVScroll();
 }
 
 

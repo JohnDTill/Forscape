@@ -59,32 +59,41 @@ private:
         return width() - 2*H_PADDING;
     }
 
+    static const Selection& getSelection(const Code::Error& err) noexcept {
+        return err.selection;
+    }
+
+    static const Selection& getSelection(const Selection& sel) noexcept {
+        return sel;
+    }
+
+    template<typename T>
     static void paintProportionally(
                 QPainter& painter,
-                const std::vector<Code::Error>& errors,
+                const std::vector<T>& errors,
                 const int error_region_height,
                 const double model_height,
                 const double w) alloc_except {
         //When the view is tall, we determine which rows to paint before painting
         static std::vector<bool> pixels; //GUI is single-threaded, so make this static
-        pixels.resize(error_region_height);
+        pixels.resize(error_region_height+V_PADDING);
         std::fill(pixels.begin(), pixels.end(), 0);
 
         const double scaling = error_region_height / model_height;
-        for(const Code::Error& err : errors){
-            const size_t pixel_start = err.selection.yTopPhrase() * scaling + V_PADDING;
+        for(const T& err : errors){
+            const size_t pixel_start = getSelection(err).yTopPhrase() * scaling + V_PADDING;
             const size_t pixel_end = std::min(std::min(
-                static_cast<size_t>(err.selection.yBotPhrase() * scaling) + V_PADDING,
-                pixel_start+MAX_ERROR_HEIGHT), static_cast<size_t>(error_region_height)-1);
+                static_cast<size_t>(getSelection(err).yBotPhrase() * scaling) + V_PADDING,
+                pixel_start+MAX_ERROR_HEIGHT), pixels.size()-1);
             for(size_t i = pixel_start; i <= pixel_end; i++) pixels[i] = true;
         }
 
-        int start = 0;
+        size_t start = 0;
         while(start < pixels.size()){
             if(pixels[start++]){
-                int end = start;
+                size_t end = start;
                 while(end < pixels.size() && pixels[end]) end++;
-                painter.drawRect(H_PADDING, start, w, end-start);
+                painter.drawRect(H_PADDING, static_cast<int>(start), w, static_cast<int>(end-start));
                 start = end+1;
             }
         }
@@ -103,12 +112,17 @@ private:
         painter.setBrush(getColour(COLOUR_ERRORBORDER));
         painter.setPen(getColour(COLOUR_ERRORBORDER));
         paintProportionally(painter, m.errors, error_region_height, model_height, w);
+
+        painter.setBrush(getColour(COLOUR_HIGHLIGHTBORDER));
+        painter.setPen(getColour(COLOUR_HIGHLIGHTBORDER));
+        paintProportionally(painter, view.highlighted_words, error_region_height, model_height, w);
     }
 
-    void paintAbsolute(QPainter& painter, const std::vector<Code::Error>& errors, const double w) const {
-        for(const Code::Error& err : errors){
-            int y = view.yScreen( err.selection.yTopPhrase() );
-            int h = std::max(1, std::min<int>(MAX_ERROR_HEIGHT, view.yScreen(err.selection.yBotPhrase()) - y));
+    template<typename T>
+    void paintAbsolute(QPainter& painter, const std::vector<T>& errors, const double w) const {
+        for(const T& err : errors){
+            int y = view.yScreen( getSelection(err).yTopPhrase() );
+            int h = std::max(1, std::min<int>(MAX_ERROR_HEIGHT, view.yScreen(getSelection(err).yBotPhrase()) - y));
             painter.drawRect(H_PADDING, y, w, h);
         }
     }
@@ -124,6 +138,10 @@ private:
         painter.setBrush(getColour(COLOUR_ERRORBORDER));
         painter.setPen(getColour(COLOUR_ERRORBORDER));
         paintAbsolute(painter, m.errors, w);
+
+        painter.setBrush(getColour(COLOUR_HIGHLIGHTBORDER));
+        painter.setPen(getColour(COLOUR_HIGHLIGHTBORDER));
+        paintAbsolute(painter, view.highlighted_words, w);
     }
 
 public:
@@ -710,6 +728,10 @@ void View::updateBackgroundColour() noexcept {
     QPalette pal = QPalette();
     pal.setColor(QPalette::Window, getColour(COLOUR_BACKGROUND));
     setPalette(pal);
+}
+
+void View::updateVScroll() noexcept{
+    v_scroll->repaint();
 }
 
 double View::xOrigin() const noexcept {

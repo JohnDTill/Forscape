@@ -51,6 +51,7 @@ public:
     bool isRunning() const noexcept;
     void reenable() noexcept;
     void updateBackgroundColour() noexcept;
+    void updateVScroll() noexcept;
 
 protected:
     void dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held) alloc_except;
