@@ -121,7 +121,7 @@ void Painter::setOffset(double x, double y){
 
 void Painter::drawText(double x, double y, std::string_view text, bool forward){
     x += x_offset;
-    QString q_str = QString::fromUtf8(text.data(), text.size());
+    QString q_str = QString::fromUtf8(text.data(), static_cast<int>(text.size()));
 
     if(forward){
         y += CAPHEIGHT[depth];
@@ -150,7 +150,7 @@ void Painter::drawHighlightedGrouping(double x, double y, double w, std::string_
 
     painter.setPen(getColour(COLOUR_GROUPINGHIGHLIGHT));
     y += CAPHEIGHT[depth];
-    painter.drawText(x, y, QString::fromUtf8(text.data(), text.size()));
+    painter.drawText(x, y, QString::fromUtf8(text.data(), static_cast<int>(text.size())));
 
     painter.setPen(getColour(COLOUR_CURSOR));
     painter.setBrush(getColour(COLOUR_CURSOR));
@@ -159,7 +159,7 @@ void Painter::drawHighlightedGrouping(double x, double y, double w, std::string_
 void Painter::drawSymbol(double x, double y, std::string_view text){
     x += x_offset;
     y += CAPHEIGHT[depth];
-    painter.drawText(x, y, QString::fromUtf8(text.data(), text.size()));
+    painter.drawText(x, y, QString::fromUtf8(text.data(), static_cast<int>(text.size())));
 }
 
 void Painter::drawLine(double x, double y, double w, double h){
@@ -333,7 +333,7 @@ void Painter::drawSymbol(char ch, double x, double y, double w, double h){
 void Painter::drawSymbol(std::string_view str, double x, double y, double w, double h){
     x += x_offset;
 
-    QString qstr = QString::fromUtf8(str.data(), str.size());
+    QString qstr = QString::fromUtf8(str.data(), static_cast<int>(str.size()));
     double scale_x = w / CHARACTER_WIDTHS[depth]*qstr.size();
     double scale_y = h / ASCENT[depth];
     x /= scale_x;

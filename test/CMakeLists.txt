@@ -221,14 +221,12 @@ endif ()
 add_test(NAME IntegrationTest COMMAND HopeTests.exe)
 
 add_compile_definitions($<$<CONFIG:Release>:EIGEN_NO_DEBUG>)
-#EVENTUALLY: get rid of EIGEN_UNSUPPORTED macro and only accept compilers that can handle it
 
 if(MSVC)
     target_compile_options(HopeTests PRIVATE
         /Ob3 /W3 #/WX #EVENTUALLY: address warnings
         $<$<CONFIG:Release>:/Oi /Oy> #/GL
-        $<$<CONFIG:Debug>:/bigobj>
-        #/bigobj #May be needed to make Eigen unsupported compile
+        $<$<CONFIG:Debug>:/bigobj> #Often needed to make Eigen unsupported compile
     )
     target_link_options(HopeTests PRIVATE
         $<$<CONFIG:Release>:/OPT:REF> #/LTCG
