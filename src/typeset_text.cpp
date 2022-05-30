@@ -147,12 +147,65 @@ std::string_view Text::checkKeyword(size_t iR) const noexcept{
                 std::string_view(str.data()+slash+1, iR-(slash+1));
 }
 
-void Text::findCaseInsensitive(const std::string& target, std::vector<Selection>& hits){
-    auto result = str.find(target);
-    while(result != std::string::npos){
-        hits.push_back( Selection(this, result, result+target.size()) );
-        result = str.find(target, result+target.size());
+static constexpr bool notEqual(char a, char b, bool use_case) noexcept{
+    return a != b && (use_case ||
+           ((a < 'a' || a > 'z' || a - ('a'-'A') != b) &&
+           (b < 'a' || b > 'z' || b - ('a'-'A') != a)));
+}
+
+static constexpr bool alpha(char a) noexcept{
+    return (a >= 'a' && a <= 'z') || (a >= 'A' && a <= 'Z') || a == '_';
+}
+
+static constexpr bool alphaNumeric(char a) noexcept{
+    return (a >= 'a' && a <= 'z') || (a >= 'A' && a <= 'Z') || a == '_' || (a >= '0' && a <= '9');
+}
+
+static bool equal(const std::string& target, const std::string& candidate, size_t offset, bool use_case) noexcept {
+    assert(offset < candidate.size());
+    assert(target.size() <= candidate.size()-offset);
+    for(size_t i = target.size(); i-->0;)
+        if(notEqual(target[i], candidate[i+offset], use_case))
+            return false;
+    return true;
+}
+
+static bool isWordEnd(const std::string& str, size_t index) noexcept {
+    return index >= str.size() || !alphaNumeric(str[index]);
+}
+
+void Text::search(const std::string& target, std::vector<Selection>& hits, size_t start, size_t end, bool use_case, bool word){
+    assert(end >= start);
+    assert(end <= numChars());
+    assert(!target.empty());
+    if(target.size() > end-start) return;
+
+    size_t stop = end-target.size();
+
+    bool word_front = word && alpha(target.front());
+    bool word_back = word && alphaNumeric(target.back());
+
+    //Go to first word
+    if(word_front && !alpha(str[start])) do{ start++; } while(start <= stop && !alpha(str[start]));
+
+    while(start <= stop){
+        if((!word_back || isWordEnd(str, start+target.size())) && equal(target, str, start, use_case)){
+            hits.push_back( Selection(this, start, start+target.size()) );
+            //Go to after the hit
+            start += target.size();
+        }else if(word_front){
+            //Go to the next word
+            do{ start++; } while(start <= stop && alpha(str[start]));
+            do{ start++; } while(start <= stop && !alpha(str[start]));
+        }else{
+            //Go to the next character
+            start++;
+        }
     }
+}
+
+void Text::search(const std::string& target, std::vector<Selection>& hits, bool use_case, bool word){
+    return search(target, hits, 0, numChars(), use_case, word);
 }
 
 bool Text::precedes(Text* other) const noexcept{

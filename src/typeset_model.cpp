@@ -215,12 +215,9 @@ Line* Model::lastLine() const noexcept{
     return lines.back();
 }
 
-std::vector<Selection> Model::findCaseInsensitive(const std::string& str) const{
+void Model::search(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const{
     assert(!str.empty());
-
-    std::vector<Selection> hits;
-    for(Line* l : lines) l->findCaseInsensitive(str, hits);
-    return hits;
+    for(Line* l : lines) l->search(str, hits, use_case, word);
 }
 
 bool Model::empty() const noexcept{

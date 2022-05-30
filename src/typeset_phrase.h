@@ -50,7 +50,7 @@ public:
     void insert(size_t index, const std::vector<Construct*>& c, const std::vector<Text*>& t);
     void giveUpOwnership() noexcept;
     bool sameContent(const Phrase* other) const noexcept;
-    void findCaseInsensitive(const std::string& target, std::vector<Selection>& hits) const;
+    void search(const std::string& target, std::vector<Selection>& hits, bool use_case, bool word) const;
     bool hasConstructs() const noexcept;
     size_t nestingDepth() const noexcept;
     bool empty() const noexcept;

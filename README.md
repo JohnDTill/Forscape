@@ -5,7 +5,7 @@
 
 ### Focus on the problem, not the implementation details
 
-**Forscape** solves engineering problems with an unprecedented level of abstraction so you get reliable results quickly. This high-level approach starts with intuitive syntax. Program with the same notation you use to write equations thanks to our innovative math rendering with semantic formatting. Matrices, fractions, symbols– write code using the same notation you use to think through problems on the whiteboard.
+**Forscape** solves engineering problems with an unprecedented level of abstraction so you get reliable results quickly. This high-level approach starts with intuitive syntax using math rendering with semantic formatting. Matrices, fractions, symbols– write code using the same notation you use to think through problems on the whiteboard.
 
 ![alt text](root_finding.png?raw=true "Forscape")
 
@@ -55,7 +55,11 @@ This project aims to be financially maintainable while ultimately resulting in a
 
 ## Contributing
 
-Feel free to report any bugs in the issue tracker and message me about feature requests or general design discussion. Tests are run automatically and required to pass before merging to main.
+Creating solid design foundations is a current challenge, but this work is interesting and anyone who is willing to tolerate a bit of ambiguity between prototype and production code may enjoy contributing. Forscape development is about learning, having fun, and embracing the Neumann architecture.
+
+Progress and feature ideas are tracked in a [Jira board](https://forscape.atlassian.net/jira/software/c/projects/FOR/boards/1) and backlog. Tests are run automatically by GitHub runners and required to pass before merging to main. There is no official communication outlet yet -- feel free to reach out to me directly with questions or interest.
+
+There is no documentation yet, either user or design docs. [Crafting Interpreters](http://www.craftinginterpreters.com/) is an excellent programming-languages primer and instant classic for anyone wanting to experiment with languages.
 
 [![C++ Integration Tests (ubuntu-latest gcc)](https://github.com/JohnDTill/Forscape/actions/workflows/cpp_integration_tests.yml/badge.svg)](https://github.com/JohnDTill/Forscape/actions/workflows/cpp_integration_tests.yml)
 

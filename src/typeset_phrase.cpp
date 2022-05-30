@@ -203,12 +203,12 @@ bool Phrase::sameContent(const Phrase* other) const noexcept{
     return true;
 }
 
-void Phrase::findCaseInsensitive(const std::string& target, std::vector<Selection>& hits) const{
+void Phrase::search(const std::string& target, std::vector<Selection>& hits, bool use_case, bool word) const{
     for(size_t i = 0; i < constructs.size(); i++){
-        texts[i]->findCaseInsensitive(target, hits);
-        constructs[i]->findCaseInsensitive(target, hits);
+        texts[i]->search(target, hits, use_case, word);
+        constructs[i]->search(target, hits, use_case, word);
     }
-    back()->findCaseInsensitive(target, hits);
+    back()->search(target, hits, use_case, word);
 }
 
 bool Phrase::hasConstructs() const noexcept{

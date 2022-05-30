@@ -260,8 +260,8 @@ bool Construct::sameContent(const Construct* other) const noexcept{
     return true;
 }
 
-void Construct::findCaseInsensitive(const std::string& target, std::vector<Selection>& hits) const{
-    for(Subphrase* arg : args) arg->findCaseInsensitive(target, hits);
+void Construct::search(const std::string& target, std::vector<Selection>& hits, bool use_case, bool word) const{
+    for(Subphrase* arg : args) arg->search(target, hits, use_case, word);
 }
 
 Subphrase* Construct::child() const noexcept{

@@ -4,6 +4,8 @@
 #include <QDialog>
 #include <typeset_selection.h>
 
+class QSettings;
+
 namespace Ui {
 class SearchDialog;
 }
@@ -20,11 +22,11 @@ class SearchDialog : public QDialog{
     Q_OBJECT
 
 public:
-    explicit SearchDialog(QWidget* parent,
-                          Typeset::View* in,
-                          Typeset::View* out,
-                          QString fill_word);
+    explicit SearchDialog(QWidget* parent, Typeset::View* in, Typeset::View* out, QSettings& settings);
     ~SearchDialog();
+    void setWord(QString fill_word);
+    void updateSelection();
+    void saveSettings(QSettings& settings) const;
 
 private slots:
     void on_closeButton_clicked();
@@ -34,21 +36,28 @@ private slots:
     void on_replaceButton_clicked();
     void on_findEdit_textChanged(const QString& arg1);
     void on_findAllButton_clicked();
+    void on_caseBox_stateChanged(int);
+    void on_wordBox_stateChanged(int);
+    void on_selectionBox_stateChanged(int);
+    void populateHits();
 
 private:
+    virtual bool event(QEvent* event) override;
+    virtual void closeEvent(QCloseEvent*) override;
     std::string searchStr() const;
     std::string replaceStr() const;
     void goToNext();
-    void populateHits();
+    void goToPrev();
     void populateHits(const std::string& str);
     void replace(const std::string& str);
     void replaceAll(const std::string& str);
+    void updateInfo();
 
     Ui::SearchDialog* ui;
     Typeset::View* in;
     Typeset::View* out;
     Typeset::Selection sel;
-    std::vector<Hope::Typeset::Selection> hits;
+    std::vector<Hope::Typeset::Selection>& hits;
     size_t index = std::numeric_limits<size_t>::max();
 };
 

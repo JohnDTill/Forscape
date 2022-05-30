@@ -229,7 +229,7 @@ void View::setFromSerial(const std::string& src, bool is_output){
     h_scroll->setValue(h_scroll->minimum());
     updateXSetpoint();
     handleResize();
-    updateHighlighting();
+    updateHighlightingFromCursorLocation();
     update();
 }
 
@@ -311,7 +311,7 @@ void View::dispatchClick(double x, double y, int xScreen, int yScreen, bool righ
     }
 
     restartCursorBlink();
-    updateHighlighting();
+    updateHighlightingFromCursorLocation();
     update();
 }
 
@@ -627,7 +627,7 @@ void View::stopCursorBlink() noexcept {
     cursor_blink_timer->stop();
 }
 
-void View::updateHighlighting(){
+void View::updateHighlightingFromCursorLocation(){
     highlighted_words.clear();
 
     Controller c = model->idAt(controller.active);
@@ -635,6 +635,9 @@ void View::updateHighlighting(){
         auto& symbol_table = model->symbol_builder.symbol_table;
         symbol_table.getSymbolOccurences(c.getAnchor(), highlighted_words);
     }
+
+    update();
+    updateAfterHighlightChange();
 }
 
 bool View::scrolledToBottom() const noexcept{
@@ -730,8 +733,9 @@ void View::updateBackgroundColour() noexcept {
     setPalette(pal);
 }
 
-void View::updateVScroll() noexcept{
-    v_scroll->repaint();
+void View::updateAfterHighlightChange() noexcept{
+    update();
+    v_scroll->update();
 }
 
 double View::xOrigin() const noexcept {
@@ -819,13 +823,13 @@ void View::focusOutEvent(QFocusEvent* e){
         setFocus(Qt::TabFocusReason);
         if(allow_write) controller.tab();
         ensureCursorVisible();
-        updateHighlighting();
+        updateHighlightingFromCursorLocation();
         update();
     }else if(e->reason() == Qt::BacktabFocusReason){
         setFocus(Qt::BacktabFocusReason);
         if(allow_write) controller.detab();
         ensureCursorVisible();
-        updateHighlighting();
+        updateHighlightingFromCursorLocation();
         update();
     }else{
         stopCursorBlink();
@@ -862,7 +866,7 @@ void View::cut(){
     controller.del();
 
     ensureCursorVisible();
-    updateHighlighting();
+    updateHighlightingFromCursorLocation();
     update();
     v_scroll->update();
     qApp->processEvents();
@@ -880,7 +884,7 @@ void View::del(){
     controller.del();
 
     ensureCursorVisible();
-    updateHighlighting();
+    updateHighlightingFromCursorLocation();
     update();
     v_scroll->update();
     qApp->processEvents();
@@ -1053,7 +1057,7 @@ void View::undo(){
 
     model->undo(controller);
     ensureCursorVisible();
-    updateHighlighting();
+    updateHighlightingFromCursorLocation();
     recommender->hide();
     update();
 
@@ -1068,7 +1072,7 @@ void View::redo(){
 
     model->redo(controller);
     ensureCursorVisible();
-    updateHighlighting();
+    updateHighlightingFromCursorLocation();
     recommender->hide();
     update();
     v_scroll->update();
@@ -1265,7 +1269,7 @@ void View::handleKey(int key, int modifiers, const std::string& str){
         setFocus();
     }
     ensureCursorVisible();
-    updateHighlighting();
+    updateHighlightingFromCursorLocation();
     update();
     v_scroll->update();
     qApp->processEvents();
@@ -1278,7 +1282,7 @@ void View::paste(const std::string& str){
     model->mutate(controller.getInsertSerial(str), controller);
 
     ensureCursorVisible();
-    updateHighlighting();
+    updateHighlightingFromCursorLocation();
     update();
     v_scroll->update();
     qApp->processEvents();
@@ -1298,7 +1302,7 @@ void View::rename(const std::string& str){
     replaceAll(occurences, str);
 
     ensureCursorVisible();
-    updateHighlighting();
+    updateHighlightingFromCursorLocation();
     update();
     v_scroll->update();
     qApp->processEvents();
@@ -1322,7 +1326,7 @@ void View::takeRecommendation(const std::string& str){
     QTimer::singleShot(0, this, SLOT(setFocus())); //Delay 1 cycle to avoid whatever input activated item
 
     ensureCursorVisible();
-    updateHighlighting();
+    updateHighlightingFromCursorLocation();
     update();
     v_scroll->update();
     qApp->processEvents();

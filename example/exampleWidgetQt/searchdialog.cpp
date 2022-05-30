@@ -2,11 +2,13 @@
 #include "ui_searchdialog.h"
 
 #include <hope_logging.h>
+#include <mainwindow.h>
 #include <typeset_markerlink.h>
 #include <typeset_model.h>
 #include <typeset_phrase.h>
 #include <typeset_text.h>
 #include <typeset_view.h>
+#include <QBitArray>
 
 #ifndef NDEBUG
 #include <iostream>
@@ -14,12 +16,24 @@
 
 #define LOG_PREFIX "search_dialog->"
 
-SearchDialog::SearchDialog(QWidget* parent, Typeset::View* in, Typeset::View* out, QString fill_word) :
-    QDialog(parent, Qt::WindowSystemMenuHint), ui(new Ui::SearchDialog), in(in), out(out){
+#define SEARCH_SETTINGS "search_pref"
+enum Setting {
+    CaseSensitive,
+    WordOnly,
+    InSelection,
+};
+
+SearchDialog::SearchDialog(QWidget* parent, Typeset::View* in, Typeset::View* out, QSettings& settings) :
+    QDialog(parent, Qt::WindowSystemMenuHint), ui(new Ui::SearchDialog), in(in), out(out), hits(in->highlighted_words) {
     ui->setupUi(this);
-    sel = in->getController().selection();
-    ui->findEdit->setText(fill_word);
     setWindowFlag(Qt::WindowCloseButtonHint);
+
+    if(settings.contains(SEARCH_SETTINGS)){
+        auto saved = settings.value(SEARCH_SETTINGS).toBitArray();
+        ui->caseBox->setChecked(saved[CaseSensitive]);
+        ui->wordBox->setChecked(saved[WordOnly]);
+        ui->selectionBox->setChecked(saved[InSelection]);
+    }
 
     setWindowTitle("Search / Replace");
     setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Minimum);
@@ -28,35 +42,43 @@ SearchDialog::SearchDialog(QWidget* parent, Typeset::View* in, Typeset::View* ou
 
 SearchDialog::~SearchDialog(){
     delete ui;
+}
 
-    in->highlighted_words.clear();
-    in->repaint();
+void SearchDialog::setWord(QString fill_word){
+    ui->findEdit->setText(fill_word);
+    populateHits();
+}
+
+void SearchDialog::updateSelection(){
+    sel = in->getController().selection();
+    bool has_sel = !sel.isEmpty();
+    ui->selectionBox->setVisible(has_sel);
+    ui->selectionOnlyLabel->setVisible(has_sel);
+}
+
+void SearchDialog::saveSettings(QSettings& settings) const{
+    QBitArray to_save(3);
+    to_save[CaseSensitive] = ui->caseBox->isChecked();
+    to_save[WordOnly] = ui->wordBox->isChecked();
+    to_save[InSelection] = ui->selectionBox->isChecked();
+    settings.setValue(SEARCH_SETTINGS, to_save);
 }
 
 void SearchDialog::on_closeButton_clicked(){
     logger->info(LOG_PREFIX "on_closeButton_clicked();");
-
     accept();
 }
 
 
 void SearchDialog::on_findNextButton_clicked(){
     logger->info(LOG_PREFIX "on_findNextButton_clicked();");
-
-    if(!hits.empty()){
-        index++;
-        if(index >= hits.size()) index = 0;
-        in->getController() = hits[index];
-        in->ensureCursorVisible();
-    }
-    in->highlighted_words = hits;
-    in->repaint();
+    goToNext();
 }
 
 
 void SearchDialog::on_findPrevButton_clicked(){
     logger->info(LOG_PREFIX "on_findPrevButton_clicked();");
-    goToNext();
+    goToPrev();
 }
 
 void SearchDialog::on_replaceAllButton_clicked(){
@@ -71,18 +93,38 @@ void SearchDialog::populateHits(){
     populateHits(searchStr());
 }
 
+bool SearchDialog::event(QEvent* event){
+    if(event->type() == QEvent::WindowActivate) populateHits();
+    return QDialog::event(event);
+}
+
+void SearchDialog::closeEvent(QCloseEvent*){
+    hide();
+}
+
 void SearchDialog::populateHits(const std::string& str){
     logger->info(LOG_PREFIX "populateHits({});", cStr(str));
 
-    if(str.empty()){
-        hits.clear();
-    }else{
-        hits = ui->selectionBox->isChecked() ?
-               sel.findCaseInsensitive(str) :
-               in->getModel()->findCaseInsensitive(str);
+    hits.clear();
+    in->getController().deselect();
+    if(!str.empty()){
+        bool use_sel = ui->selectionBox->isVisible() && ui->selectionBox->isChecked();
+        bool use_case = ui->caseBox->isChecked();
+        bool word = ui->wordBox->isChecked();
+        Typeset::Model& m = *in->getModel();
 
-        index = std::numeric_limits<size_t>::max();
+        if(use_sel) sel.search(str, hits, use_case, word);
+        else m.search(str, hits, use_case, word);
+
+        index = 0;
+        if(!hits.empty()){
+            in->getController() = hits[index];
+            in->ensureCursorVisible();
+        }
     }
+
+    updateInfo();
+    in->updateAfterHighlightChange();
 }
 
 void SearchDialog::replace(const std::string& str){
@@ -93,8 +135,9 @@ void SearchDialog::replace(const std::string& str){
     in->getController() = hits[index];
     in->getController().insertText(str);
 
-    populateHits();
-    index--;
+    size_t backup = index-1;
+    populateHits(); //Repopulate instead of erase because maybe substitution causes hits
+    index = backup;
     goToNext();
 }
 
@@ -102,16 +145,22 @@ void SearchDialog::replaceAll(const std::string& str){
     logger->info(LOG_PREFIX "replaceAll({});", cStr(str));
 
     in->replaceAll(hits, str);
-    hits.clear();
+    populateHits();
+}
+
+void SearchDialog::updateInfo(){
+    ui->infoLabel->setText(
+        ui->findEdit->text().isEmpty() ?
+        "" :
+        hits.empty() ?
+        "No hits" :
+        QString::number(index+1) + " / " + QString::number(hits.size())
+    );
 }
 
 void SearchDialog::on_findEdit_textChanged(const QString&){
     populateHits();
-    in->highlighted_words = hits;
-    in->repaint();
-    in->updateVScroll();
 }
-
 
 void SearchDialog::on_findAllButton_clicked(){
     logger->info(LOG_PREFIX "on_findAllButton_clicked();");
@@ -156,12 +205,33 @@ std::string SearchDialog::replaceStr() const{
 
 void SearchDialog::goToNext(){
     if(!hits.empty()){
-        index--;
-        if(index >= hits.size()) index = hits.size()-1;
+        if(++index >= hits.size()) index = 0;
+        updateInfo();
         in->getController() = hits[index];
         in->ensureCursorVisible();
+        in->update();
     }
-    in->highlighted_words = hits;
-    in->repaint();
+}
+
+void SearchDialog::goToPrev(){
+    if(!hits.empty()){
+        if(index-- == 0) index = hits.size()-1;
+        updateInfo();
+        in->getController() = hits[index];
+        in->ensureCursorVisible();
+        in->update();
+    }
+}
+
+void SearchDialog::on_caseBox_stateChanged(int){
+    populateHits();
+}
+
+void SearchDialog::on_wordBox_stateChanged(int){
+    populateHits();
+}
+
+void SearchDialog::on_selectionBox_stateChanged(int){
+    populateHits();
 }
 
