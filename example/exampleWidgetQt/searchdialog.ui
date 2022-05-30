@@ -43,6 +43,9 @@
          <property name="enabled">
           <bool>true</bool>
          </property>
+         <property name="toolTip">
+          <string>English letters only</string>
+         </property>
          <property name="text">
           <string>Case sensitive:</string>
          </property>
@@ -51,7 +54,10 @@
        <item row="2" column="1">
         <widget class="QCheckBox" name="caseBox">
          <property name="enabled">
-          <bool>false</bool>
+          <bool>true</bool>
+         </property>
+         <property name="toolTip">
+          <string>English letters only</string>
          </property>
          <property name="text">
           <string/>
@@ -71,7 +77,7 @@
        <item row="3" column="1">
         <widget class="QCheckBox" name="wordBox">
          <property name="enabled">
-          <bool>false</bool>
+          <bool>true</bool>
          </property>
          <property name="text">
           <string/>
@@ -79,7 +85,10 @@
         </widget>
        </item>
        <item row="4" column="0">
-        <widget class="QLabel" name="label_5">
+        <widget class="QLabel" name="selectionOnlyLabel">
+         <property name="toolTip">
+          <string>Limit search and replace to content selected when search was opened</string>
+         </property>
          <property name="text">
           <string>Selection only:</string>
          </property>
@@ -88,10 +97,20 @@
        <item row="4" column="1">
         <widget class="QCheckBox" name="selectionBox">
          <property name="enabled">
-          <bool>false</bool>
+          <bool>true</bool>
+         </property>
+         <property name="toolTip">
+          <string>Limit search and replace to content selected when search was opened</string>
          </property>
          <property name="text">
           <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="infoLabel">
+         <property name="text">
+          <string>Info</string>
          </property>
         </widget>
        </item>

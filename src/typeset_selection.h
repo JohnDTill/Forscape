@@ -35,8 +35,9 @@ public:
     bool isNested() const noexcept;
     bool isTextSelection() const noexcept;
     bool isPhraseSelection() const noexcept;
+    bool isEmpty() const noexcept;
     Line* getStartLine() const noexcept;
-    std::vector<Selection> findCaseInsensitive(const std::string& str) const;
+    void search(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const;
 
     Marker right;
     Marker left;
@@ -98,9 +99,9 @@ private:
     std::string selectedTextSelection() const;
     std::string selectedPhrase() const;
     std::string selectedLines() const;
-    std::vector<Selection> findCaseInsensitiveText(const std::string& target) const;
-    std::vector<Selection> findCaseInsensitivePhrase(const std::string& target) const;
-    std::vector<Selection> findCaseInsensitiveLines(const std::string& target) const;
+    void searchText(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const;
+    void searchPhrase(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const;
+    void searchLines(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const;
     #ifndef HOPE_TYPESET_HEADLESS
     std::array<double, 4> getDimensions() const noexcept;
     std::array<double, 4> getDimensionsText() const noexcept;

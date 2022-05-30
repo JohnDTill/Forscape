@@ -183,16 +183,20 @@ bool Selection::isPhraseSelection() const noexcept{
     return left.phrase() == right.phrase();
 }
 
+bool Selection::isEmpty() const noexcept{
+    return left == right;
+}
+
 Line* Selection::getStartLine() const noexcept{
     return tL->getLine();
 }
 
-std::vector<Selection> Selection::findCaseInsensitive(const std::string& str) const{
+void Selection::search(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const{
     assert(!str.empty());
 
-    if(isTextSelection()) return findCaseInsensitiveText(str);
-    else if(isPhraseSelection()) return findCaseInsensitivePhrase(str);
-    else return findCaseInsensitiveLines(str);
+    if(isTextSelection()) return searchText(str, hits, use_case, word);
+    else if(isPhraseSelection()) return searchPhrase(str, hits, use_case, word);
+    else return searchLines(str, hits, use_case, word);
 }
 
 size_t Selection::getConstructArgSize() const noexcept{
@@ -367,80 +371,40 @@ std::string Selection::selectedLines() const{
     return out;
 }
 
-std::vector<Selection> Selection::findCaseInsensitiveText(const std::string& target) const{
-    std::vector<Selection> hits;
-
-    const std::string& str = tL->getString();
-    size_t stop = iR-target.size();
-    auto result = str.find(target, iL);
-    while(result != std::string::npos && result <= stop){
-        hits.push_back( Selection(tL, result, result+target.size()) );
-        result = target.find(str, result+target.size());
-    }
-
-    return hits;
+void Selection::searchText(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const{
+    tL->search(str, hits, iL, iR, use_case, word);
 }
 
-std::vector<Selection> Selection::findCaseInsensitivePhrase(const std::string& target) const{
-    std::vector<Selection> hits;
+void Selection::searchPhrase(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const{
+    tL->search(str, hits, iL, tL->numChars(), use_case, word);
 
-    const std::string& strL = tL->getString();
-    auto result = strL.find(target, iL);
-    while(result != std::string::npos){
-        hits.push_back( Selection(tL, result, result+target.size()) );
-        result = strL.find(target, result+target.size());
-    }
-
-    tL->nextConstructAsserted()->findCaseInsensitive(target, hits);
+    tL->nextConstructAsserted()->search(str, hits, use_case, word);
     for(size_t i = tL->id+1; i < tR->id; i++){
-        phrase()->text(i)->findCaseInsensitive(target, hits);
-        phrase()->construct(i)->findCaseInsensitive(target, hits);
+        phrase()->text(i)->search(str, hits, use_case, word);
+        phrase()->construct(i)->search(str, hits, use_case, word);
     }
 
-    const std::string& strR = tR->getString();
-    size_t stop = iR-target.size();
-    result = strR.find(target);
-    while(result != std::string::npos && result <= stop){
-        hits.push_back( Selection(tR, result, result+target.size()) );
-        result = target.find(strR, result+target.size());
-    }
-
-    return hits;
+    tR->search(str, hits, 0, iR, use_case, word);
 }
 
-std::vector<Selection> Selection::findCaseInsensitiveLines(const std::string& target) const{
-    std::vector<Selection> hits;
-
-    const std::string& strL = tL->getString();
-    auto result = strL.find(target, iL);
-    while(result != std::string::npos){
-        hits.push_back( Selection(tL, result, result+target.size()) );
-        result = strL.find(target, result+target.size());
-    }
+void Selection::searchLines(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const{
+    tL->search(str, hits, iL, tL->numChars(), use_case, word);
 
     for(size_t i = tL->id+1; i < lL->numTexts(); i++){
-        lL->construct(i-1)->findCaseInsensitive(target, hits);
-        lL->text(i)->findCaseInsensitive(target, hits);
+        lL->construct(i-1)->search(str, hits, use_case, word);
+        lL->text(i)->search(str, hits, use_case, word);
     }
 
     const std::vector<Line*> lines = getLines();
     for(size_t i = lL->id+1; i < lR->id; i++)
-        lines[i]->findCaseInsensitive(target, hits);
+        lines[i]->search(str, hits, use_case, word);
 
     for(size_t i = 0; i < tR->id; i++){
-        lR->text(i)->findCaseInsensitive(target, hits);
-        lR->construct(i)->findCaseInsensitive(target, hits);
+        lR->text(i)->search(str, hits, use_case, word);
+        lR->construct(i)->search(str, hits, use_case, word);
     }
 
-    const std::string& strR = tR->getString();
-    size_t stop = iR-target.size();
-    result = strR.find(target);
-    while(result != std::string::npos && result <= stop){
-        hits.push_back( Selection(tR, result, result+target.size()) );
-        result = target.find(strR, result+target.size());
-    }
-
-    return hits;
+    tR->search(str, hits, 0, iR, use_case, word);
 }
 
 #ifndef HOPE_TYPESET_HEADLESS

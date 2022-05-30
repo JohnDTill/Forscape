@@ -57,7 +57,7 @@ public:
     std::string toString() const;
     size_t numArgs() const noexcept;
     bool sameContent(const Construct* other) const noexcept;
-    void findCaseInsensitive(const std::string& target, std::vector<Selection>& hits) const;
+    void search(const std::string& target, std::vector<Selection>& hits, bool use_case, bool word) const;
 
     Phrase* parent;
     size_t id;

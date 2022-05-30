@@ -198,10 +198,6 @@ std::string Controller::selectedText() const{
     return selection().str();
 }
 
-std::vector<Selection> Controller::findCaseInsensitive(const std::string& str) const{
-    return selection().findCaseInsensitive(str);
-}
-
 #ifndef HOPE_TYPESET_HEADLESS
 void Controller::moveToNextLine(double setpoint) noexcept{
     if(isNested()) active.setToLeftOf(subphrase()->textDown(setpoint), setpoint);

@@ -62,7 +62,8 @@ class Text {
         std::string_view graphemeAt(size_t index) const noexcept;
         size_t leadingSpaces() const noexcept;
         std::string_view checkKeyword(size_t iR) const noexcept;
-        void findCaseInsensitive(const std::string& target, std::vector<Selection>& hits);
+        void search(const std::string& target, std::vector<Selection>& hits, bool use_case, bool word);
+        void search(const std::string& target, std::vector<Selection>& hits, size_t start, size_t end, bool use_case, bool word);
         bool precedes(Text* other) const noexcept;
         const char* data() const noexcept;
 

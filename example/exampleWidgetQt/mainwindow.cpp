@@ -209,6 +209,8 @@ MainWindow::MainWindow(QWidget* parent)
     connect(preferences, SIGNAL(colourChanged()), this, SLOT(onColourChanged()));
     onColourChanged();
 
+    search = new SearchDialog(this, editor, console, settings);
+
     loadGeometry();
 }
 
@@ -219,6 +221,7 @@ MainWindow::~MainWindow(){
     settings.setValue(MATH_TOOLBAR_VISIBLE, ui->actionShow_typesetting_toolbar->isChecked());
     settings.setValue(ACTION_TOOLBAR_VISIBLE, ui->actionShow_action_toolbar->isChecked());
     settings.setValue(WINDOW_STATE, QList({QVariant(saveGeometry()), QVariant(saveState())}));
+    search->saveSettings(settings);
     delete preferences;
     delete ui;
 }
@@ -528,10 +531,11 @@ QString MainWindow::getLastDir(){
 void MainWindow::on_actionFind_Replace_triggered(){
     if(!editor->isEnabled()) return;
 
+    search->updateSelection();
     Typeset::Controller& c = editor->getController();
     std::string simple_word = c.isTextSelection() ? c.selectedText() : "";
-    SearchDialog search(this, editor, console, QString::fromStdString(simple_word));
-    search.exec();
+    search->setWord(QString::fromStdString(simple_word));
+    search->show();
 }
 
 void MainWindow::on_actionUndo_triggered(){

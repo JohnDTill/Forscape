@@ -36,7 +36,7 @@ public:
     void zoomIn() noexcept;
     void zoomOut() noexcept;
     void resetZoom() noexcept;
-    void updateHighlighting();
+    void updateHighlightingFromCursorLocation();
     bool scrolledToBottom() const noexcept;
     void scrollToBottom();
     bool lineNumbersShown() const noexcept;
@@ -51,7 +51,7 @@ public:
     bool isRunning() const noexcept;
     void reenable() noexcept;
     void updateBackgroundColour() noexcept;
-    void updateVScroll() noexcept;
+    void updateAfterHighlightChange() noexcept;
 
 protected:
     void dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held) alloc_except;

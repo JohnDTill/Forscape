@@ -79,7 +79,7 @@ public:
     Text* lastText() const noexcept;
     Line* appendLine();
     Line* lastLine() const noexcept;
-    std::vector<Selection> findCaseInsensitive(const std::string& str) const;
+    void search(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const;
     bool empty() const noexcept;
     size_t serialChars() const noexcept;
 

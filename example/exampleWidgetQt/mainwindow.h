@@ -12,6 +12,7 @@ QT_END_NAMESPACE
 class MathToolbar;
 class Plot;
 class Preferences;
+class SearchDialog;
 class QGroupBox;
 
 namespace Hope{
@@ -27,11 +28,12 @@ class MainWindow : public QMainWindow{
 public:
     MainWindow(QWidget* parent = nullptr);
     virtual ~MainWindow();
+    QSettings settings;
+    Hope::Typeset::Editor* editor;
 
 private:
-    QSettings settings;
+    SearchDialog* search;
     Ui::MainWindow* ui;
-    Hope::Typeset::Editor* editor;
     Hope::Typeset::Console* console;
     QGroupBox* group_box;
     MathToolbar* math_toolbar;

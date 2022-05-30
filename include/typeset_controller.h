@@ -81,7 +81,6 @@ public:
     void setBothToFrontOf(Text* t) noexcept;
     void setBothToBackOf(Text* t) noexcept;
     std::string selectedText() const;
-    std::vector<Selection> findCaseInsensitive(const std::string& str) const;
     Selection selection() const noexcept;
     bool isTextSelection() const noexcept;
 
