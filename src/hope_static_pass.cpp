@@ -612,9 +612,46 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
         case OP_LENGTH:{
             parse_tree.setScalar(pn);
             ParseNode child = resolveExpr(parse_tree.child(pn));
-            parse_tree.setArg<0>(pn, child);
-            if(parse_tree.getType(child) != NUMERIC) return error(pn, child);
-            return pn;
+            size_t rows = parse_tree.getRows(child);
+            size_t cols = parse_tree.getCols(child);
+            if(rows != UNKNOWN_SIZE && cols != UNKNOWN_SIZE){
+                if(rows > 1 && cols > 1) return error(pn, child, DIMENSION_MISMATCH);
+                parse_tree.setOp(pn, OP_INTEGER_LITERAL);
+                parse_tree.setValue(pn, static_cast<double>(rows*cols));
+                return pn;
+            }else{
+                parse_tree.setArg<0>(pn, child);
+                if(parse_tree.getType(child) != NUMERIC) return error(pn, child);
+                return pn;
+            }
+        }
+        case OP_ROWS:{
+            parse_tree.setScalar(pn);
+            ParseNode child = resolveExpr(parse_tree.child(pn));
+            size_t rows = parse_tree.getRows(child);
+            if(rows != UNKNOWN_SIZE){
+                parse_tree.setOp(pn, OP_INTEGER_LITERAL);
+                parse_tree.setValue(pn, static_cast<double>(rows));
+                return pn;
+            }else{
+                parse_tree.setArg<0>(pn, child);
+                if(parse_tree.getType(child) != NUMERIC) return error(pn, child);
+                return pn;
+            }
+        }
+        case OP_COLS:{
+            parse_tree.setScalar(pn);
+            ParseNode child = resolveExpr(parse_tree.child(pn));
+            size_t cols = parse_tree.getCols(child);
+            if(cols != UNKNOWN_SIZE){
+                parse_tree.setOp(pn, OP_INTEGER_LITERAL);
+                parse_tree.setValue(pn, static_cast<double>(cols));
+                return pn;
+            }else{
+                parse_tree.setArg<0>(pn, child);
+                if(parse_tree.getType(child) != NUMERIC) return error(pn, child);
+                return pn;
+            }
         }
         case OP_ARCCOSINE:
         case OP_ARCCOTANGENT:

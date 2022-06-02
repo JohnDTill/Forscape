@@ -83,7 +83,6 @@ private:
     ParseNode nRoot() alloc_except;
     ParseNode oneDim(Op type) alloc_except;
     ParseNode twoDims(Op type) alloc_except;
-    ParseNode length() alloc_except;
     ParseNode trig(Op type) alloc_except;
     ParseNode log() alloc_except;
     ParseNode oneArg(Op type) alloc_except;
