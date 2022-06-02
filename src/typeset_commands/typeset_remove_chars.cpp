@@ -26,8 +26,8 @@ void RemoveChars::removeAdditionalChar(){
 void RemoveChars::removeCharLeft(){
     size_t glyph_size = graphemeSizeLeft(t->getString(), index);
     index -= glyph_size;
-    t->erase(index, std::string(t->view(index, glyph_size)));
     removed.insert(0, t->view(index, glyph_size));
+    t->erase(index, std::string(t->view(index, glyph_size)));
 }
 
 void RemoveChars::undo(Controller& controller){

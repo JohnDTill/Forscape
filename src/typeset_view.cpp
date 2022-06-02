@@ -266,8 +266,6 @@ void View::runThread(View* console){
 }
 
 void View::setLineNumbersVisible(bool show) noexcept {
-    logger->info("{}setLineNumbersVisible({});", logPrefix(), show);
-
     if(show_line_nums == show) return;
     show_line_nums = show;
     update();
