@@ -538,7 +538,9 @@ ParseNode Parser::primary() alloc_except {
         case TOKEN_ACCENTHAT: return oneArgConstruct(OP_ACCENT_HAT);
 
         //Keyword funcs
-        case LENGTH: return length();
+        case LENGTH: return oneArg(OP_LENGTH);
+        case ROWS: return oneArg(OP_ROWS);
+        case COLS: return oneArg(OP_COLS);
         case SIN: return trig(OP_SINE);
         case COS: return trig(OP_COSINE);
         case TAN: return trig(OP_TANGENT);
@@ -1141,20 +1143,6 @@ ParseNode Parser::twoDims(Op type) alloc_except{
     parsing_dims = false;
 
     return pn;
-}
-
-ParseNode Parser::length() alloc_except{
-    Typeset::Marker left = lMark();
-    advance();
-    Typeset::Marker lparen_mark = lMark();
-    consume(LEFTPAREN);
-    ParseNode arg = expression();
-    Typeset::Marker right = rMark();
-    consume(RIGHTPAREN);
-    registerGrouping(Typeset::Selection(lparen_mark, right));
-
-    if(!noErrors()) return error_node;
-    return parse_tree.addUnary(OP_LENGTH, Typeset::Selection(left, right), arg);
 }
 
 ParseNode Parser::trig(Op type) alloc_except{
