@@ -1160,33 +1160,57 @@ ParseNode Parser::length() alloc_except{
 ParseNode Parser::trig(Op type) alloc_except{
     const Typeset::Marker& left = lMark();
     advance();
-    if(match(TOKEN_SUPERSCRIPT)){
-        ParseNode power = expression();
-        consume(ARGCLOSE);
-        ParseNode fn = parse_tree.addLeftUnary(type, left, leftUnary());
-        const Typeset::Marker& right = parse_tree.getRight(fn);
-        Typeset::Selection c(left, right);
-        if(parse_tree.getOp(power) == OP_UNARY_MINUS)
-            return error(AMBIGIOUS_TRIG_POWER, c);
-        return parse_tree.addNode<2>(OP_POWER, c, {fn, power});
-    }
+    switch (currentType()) {
+        case TOKEN_SUPERSCRIPT:{
+            advance();
+            ParseNode power = expression();
+            consume(ARGCLOSE);
+            ParseNode fn = parse_tree.addLeftUnary(type, left, leftUnary());
+            const Typeset::Marker& right = parse_tree.getRight(fn);
+            Typeset::Selection c(left, right);
+            if(parse_tree.getOp(power) == OP_UNARY_MINUS)
+                return error(AMBIGIOUS_TRIG_POWER, c);
+            return parse_tree.addNode<2>(OP_POWER, c, {fn, power});
+        }
 
-    return parse_tree.addLeftUnary(type, left, leftUnary());
+        case LEFTPAREN:{
+            //Since parenthesis are optional, they need special handling
+            //so that cos(x)^2 is not parsed as cos(x^2)
+            advance();
+            ParseNode pn = parse_tree.addLeftUnary(type, left, expression());
+            consume(RIGHTPAREN);
+            return pn;
+        }
+
+        default: return parse_tree.addLeftUnary(type, left, leftUnary());
+    }
 }
 
 ParseNode Parser::log() alloc_except{
 const Typeset::Marker& left = lMark();
     advance();
-    if(match(TOKEN_SUBSCRIPT)){
-        ParseNode base = expression();
-        consume(ARGCLOSE);
-        ParseNode arg = leftUnary();
-        const Typeset::Marker& right = parse_tree.getRight(arg);
-        Typeset::Selection c(left, right);
-        return parse_tree.addNode<2>(OP_LOGARITHM_BASE, c, {arg, base});
-    }
+    switch(currentType()){
+        case TOKEN_SUBSCRIPT:{
+            advance();
+            ParseNode base = expression();
+            consume(ARGCLOSE);
+            ParseNode arg = leftUnary();
+            const Typeset::Marker& right = parse_tree.getRight(arg);
+            Typeset::Selection c(left, right);
+            return parse_tree.addNode<2>(OP_LOGARITHM_BASE, c, {arg, base});
+        }
 
-    return parse_tree.addLeftUnary(OP_LOGARITHM, left, leftUnary());
+        case LEFTPAREN:{
+            //Since parenthesis are optional, they need special handling
+            //so that log(x)^2 is not parsed as log(x^2)
+            advance();
+            ParseNode pn = parse_tree.addLeftUnary(OP_LOGARITHM, left, expression());
+            consume(RIGHTPAREN);
+            return pn;
+        }
+
+        default: return parse_tree.addLeftUnary(OP_LOGARITHM, left, leftUnary());
+    }
 }
 
 ParseNode Parser::oneArg(Op type) alloc_except{
