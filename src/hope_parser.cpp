@@ -1153,6 +1153,9 @@ ParseNode Parser::trig(Op type) alloc_except{
             advance();
             ParseNode power = expression();
             consume(ARGCLOSE);
+
+            //DO THIS - make a rule for arguments with correct precedence of parenthesis
+
             ParseNode fn = parse_tree.addLeftUnary(type, left, leftUnary());
             const Typeset::Marker& right = parse_tree.getRight(fn);
             Typeset::Selection c(left, right);
@@ -1164,9 +1167,13 @@ ParseNode Parser::trig(Op type) alloc_except{
         case LEFTPAREN:{
             //Since parenthesis are optional, they need special handling
             //so that cos(x)^2 is not parsed as cos(x^2)
+            const Typeset::Marker& l_mark = lMark();
             advance();
             ParseNode pn = parse_tree.addLeftUnary(type, left, expression());
+            const Typeset::Marker& right = rMark();
             consume(RIGHTPAREN);
+            if(!noErrors()) return error_node;
+            registerGrouping(l_mark, right);
             return pn;
         }
 
@@ -1175,7 +1182,7 @@ ParseNode Parser::trig(Op type) alloc_except{
 }
 
 ParseNode Parser::log() alloc_except{
-const Typeset::Marker& left = lMark();
+    const Typeset::Marker& left = lMark();
     advance();
     switch(currentType()){
         case TOKEN_SUBSCRIPT:{
@@ -1191,9 +1198,13 @@ const Typeset::Marker& left = lMark();
         case LEFTPAREN:{
             //Since parenthesis are optional, they need special handling
             //so that log(x)^2 is not parsed as log(x^2)
+            const Typeset::Marker& l_mark = lMark();
             advance();
             ParseNode pn = parse_tree.addLeftUnary(OP_LOGARITHM, left, expression());
+            const Typeset::Marker& right = rMark();
             consume(RIGHTPAREN);
+            if(!noErrors()) return error_node;
+            registerGrouping(l_mark, right);
             return pn;
         }
 
@@ -1208,6 +1219,8 @@ ParseNode Parser::oneArg(Op type) alloc_except{
     ParseNode e = expression();
     const Typeset::Marker& right = rMark();
     consume(RIGHTPAREN);
+    if(!noErrors()) return error_node;
+    registerGrouping(left, right);
     Typeset::Selection c(left, right);
 
     return parse_tree.addUnary(type, c, e);
@@ -1222,6 +1235,8 @@ ParseNode Parser::twoArgs(Op type) alloc_except{
     ParseNode b = expression();
     const Typeset::Marker& right = rMark();
     consume(RIGHTPAREN);
+    if(!noErrors()) return error_node;
+    registerGrouping(left, right);
     Typeset::Selection c(left, right);
 
     return parse_tree.addNode<2>(type, c, {a, b});

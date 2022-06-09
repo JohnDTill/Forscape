@@ -1,0 +1,3 @@
+x = 2
+//DO THIS /f* = 2x
+assert(false)
