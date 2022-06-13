@@ -33,14 +33,14 @@ assert(sin(x)x = sin(x)*x)
 assert(sin2(x)2 = (sin2x)2)
 
 //Single-char implicit mult
-//DO THIS //assert(xx2 = x x2) //Exponent binds to last character
-//DO THIS //assert(yy⊤ = y (y⊤)) //Transpose binds to last character
-//DO THIS //assert(yy+ = y (y+)) //Pseudo-inv binds to last character
-//DO THIS //assert(yy0 = y (y0)) //Access binds to last character
-//DO THIS //assert(xx! = x (x!)) //Factorial binds to last character
-//DO THIS //assert(xh(x) = x*h(x)) //Grouping binds to last character
-//DO THIS //assert( xh(x)2 = x( (h(x))^2 ) )
-//DO THIS //assert(xx*(x)2 = x * x* * x^2)
+assert(xx2 = x x2) //Exponent binds to last character
+assert(yy⊤ = y (y⊤)) //Transpose binds to last character
+assert(yy+ = y (y+)) //Pseudo-inv binds to last character
+assert(yy0 = y (y0)) //Access binds to last character
+assert(xx! = x (x!)) //Factorial binds to last character
+assert(xh(x) = x*h(x)) //Grouping binds to last character
+assert( xh(x)2 = x( (h(x))^2 ) )
+assert(xx*(x)2 = x * x* * x^2)
 assert(xx* = x x*) //Asterisk modifies last character
 assert(xxa = x xa) //Subscript id modifies last character
 

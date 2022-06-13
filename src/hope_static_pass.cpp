@@ -500,7 +500,18 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
             return pn;
         case OP_MATRIX: return resolveMatrix(pn);
         case OP_MULTIPLICATION: return resolveMult(pn, rows_expected, cols_expected);
-        case OP_SUBSCRIPT_ACCESS:
+        case OP_SUBSCRIPT_ACCESS:{
+            ParseNode lhs = parse_tree.arg<0>(pn);
+            if(parse_tree.getOp(lhs) == OP_SINGLE_CHAR_MULT_PROXY) return patchSingleCharMult(pn, lhs);
+            for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
+                ParseNode arg = resolveExpr(parse_tree.arg(pn, i));
+                parse_tree.setArg(pn, i, arg);
+                if(parse_tree.getType(arg) != NUMERIC) return error(pn, arg);
+            }
+            parse_tree.setType(pn, NUMERIC);
+            return pn;
+        }
+
         case OP_ELEMENTWISE_ASSIGNMENT:
             for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
                 ParseNode arg = resolveExpr(parse_tree.arg(pn, i));
@@ -519,7 +530,7 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
             parse_tree.copyDims(pn, expr);
             return expr;
         }
-        case OP_PROXY:
+        case OP_SINGLE_CHAR_MULT_PROXY:
             return resolveExpr(parse_tree.getFlag(pn));
         case OP_POWER: return resolvePower(pn);
         case OP_ARCTANGENT2:
@@ -677,6 +688,9 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
             return pn;
         }
         case OP_FACTORIAL:{
+            ParseNode lhs = parse_tree.child(pn);
+            if(parse_tree.getOp(lhs) == OP_SINGLE_CHAR_MULT_PROXY) return patchSingleCharMult(pn, lhs);
+
             parse_tree.setScalar(pn);
             ParseNode child = enforceSemiPositiveInt(parse_tree.child(pn));
             parse_tree.setArg<0>(pn, child);
@@ -697,6 +711,9 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
             return pn;
         }
         case OP_BIJECTIVE_MAPPING:{
+            ParseNode lhs = parse_tree.child(pn);
+            if(parse_tree.getOp(lhs) == OP_SINGLE_CHAR_MULT_PROXY) return patchSingleCharMult(pn, lhs);
+
             parse_tree.setType(pn, NUMERIC);
             ParseNode child = resolveExpr(parse_tree.child(pn));
             parse_tree.setArg<0>(pn, child);
@@ -704,6 +721,9 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
             return pn;
         }
         case OP_DAGGER:{
+            ParseNode lhs = parse_tree.child(pn);
+            if(parse_tree.getOp(lhs) == OP_SINGLE_CHAR_MULT_PROXY) return patchSingleCharMult(pn, lhs);
+
             parse_tree.setType(pn, NUMERIC);
             ParseNode child = resolveExpr(parse_tree.child(pn));
             parse_tree.setArg<0>(pn, child);
@@ -712,6 +732,9 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
             return pn;
         }
         case OP_PSEUDO_INVERSE:{
+            ParseNode lhs = parse_tree.child(pn);
+            if(parse_tree.getOp(lhs) == OP_SINGLE_CHAR_MULT_PROXY) return patchSingleCharMult(pn, lhs);
+
             parse_tree.setType(pn, NUMERIC);
             ParseNode child = resolveExpr(parse_tree.child(pn), cols_expected, rows_expected);
             parse_tree.setArg<0>(pn, child);
@@ -720,6 +743,9 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
             return pn;
         }
         case OP_TRANSPOSE:{
+            ParseNode lhs = parse_tree.child(pn);
+            if(parse_tree.getOp(lhs) == OP_SINGLE_CHAR_MULT_PROXY) return patchSingleCharMult(pn, lhs);
+
             parse_tree.setType(pn, NUMERIC);
             ParseNode child = resolveExpr(parse_tree.child(pn), cols_expected, rows_expected);
             if(parse_tree.getType(child) != NUMERIC) return error(pn, child);
@@ -869,7 +895,10 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
             //Parsed something with unclear precedence, like h(x)^y
             //This node is binary, with h as LHS and (x)^y as RHS
             //The first arg of RHS would be the arg, if this is a call
-            ParseNode lhs = resolveExpr(parse_tree.arg<0>(pn));
+            ParseNode lhs = parse_tree.lhs(pn);
+            if(parse_tree.getOp(lhs) == OP_SINGLE_CHAR_MULT_PROXY) return patchSingleCharMult(pn, lhs);
+
+            lhs = resolveExpr(parse_tree.arg<0>(pn));
             if(isAbstractFunctionGroup(parse_tree.getType(lhs))){
                 ParseNode high_prec = parse_tree.arg<1>(pn);
                 parse_tree.setArg<1>(pn, parse_tree.arg<0>(high_prec));
@@ -888,7 +917,21 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
     }
 }
 
+ParseNode StaticPass::patchSingleCharMult(ParseNode parent, ParseNode mult) noexcept {
+    assert(parse_tree.getOp(mult) == OP_SINGLE_CHAR_MULT_PROXY);
+
+    mult = parse_tree.getFlag(mult);
+    size_t index = parse_tree.getNumArgs(mult)-1;
+    parse_tree.setArg<0>(parent, parse_tree.arg(mult, index));
+    parse_tree.setArg(mult, index, parent);
+
+    return resolveMult(mult);
+}
+
 size_t StaticPass::callSite(size_t pn) noexcept{
+    ParseNode lhs = parse_tree.arg<0>(pn);
+    if(parse_tree.getOp(lhs) == OP_SINGLE_CHAR_MULT_PROXY) return patchSingleCharMult(pn, lhs);
+
     //pn = parse_tree.clone(pn);
     ParseNode call_expr = resolveExpr(parse_tree.arg<0>(pn));
     parse_tree.setArg<0>(pn, call_expr);
@@ -1344,7 +1387,10 @@ ParseNode StaticPass::resolveOnesMatrix(ParseNode pn){
 }
 
 ParseNode StaticPass::resolvePower(ParseNode pn){
-    ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
+    ParseNode lhs = parse_tree.lhs(pn);
+    if(parse_tree.getOp(lhs) == OP_SINGLE_CHAR_MULT_PROXY) return patchSingleCharMult(pn, lhs);
+
+    lhs = resolveExpr(lhs);
     parse_tree.setArg<0>(pn, lhs);
     if(parse_tree.getType(lhs) != NUMERIC) return error(pn, lhs);
     ParseNode rhs = resolveExpr(parse_tree.rhs(pn));

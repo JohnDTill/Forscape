@@ -375,7 +375,7 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
     ParseNode mult = parse_tree.finishNary(OP_IMPLICIT_MULTIPLY);
 
     parse_tree.setFlag(pn, mult);
-    parse_tree.setOp(pn, OP_PROXY);
+    parse_tree.setOp(pn, OP_SINGLE_CHAR_MULT_PROXY);
 }
 
 void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except {
@@ -405,7 +405,7 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
     parse_tree.addNaryChild(new_id);
     for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++)
         parse_tree.addNaryChild(parse_tree.arg(pn, i));
-    ParseNode script = parse_tree.finishNary(OP_IDENTIFIER, Typeset::Selection(end, right));
+    ParseNode script = parse_tree.finishNary(parse_tree.getFlag(pn), Typeset::Selection(end, right));
     resolveExpr(script);
 
     parse_tree.prepareNary();
@@ -424,7 +424,7 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
     ParseNode mult = parse_tree.finishNary(OP_IMPLICIT_MULTIPLY);
 
     parse_tree.setFlag(pn, mult);
-    parse_tree.setOp(pn, OP_PROXY);
+    parse_tree.setOp(pn, OP_SINGLE_CHAR_MULT_PROXY);
 }
 
 void SymbolTableBuilder::resolveConditional1(
@@ -590,6 +590,7 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn) alloc_except {
     #define UNDECLARED_ELEMS (!declared(id) || (parse_tree.getOp(rhs) == OP_IDENTIFIER && !declared(rhs)))
 
     if(lhs_type_eligible && rhs_type_eligible && UNDECLARED_ELEMS){
+        parse_tree.setFlag(pn, OP_SUBSCRIPT_ACCESS); //EVENTUALLY: this is held together with duct tape and prayers
         parse_tree.setOp(pn, OP_IDENTIFIER);
         resolveReference<true>(pn);
     }else{
