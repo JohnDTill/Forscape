@@ -53,7 +53,9 @@ private:
     ParseNode leftUnary() alloc_except;
     ParseNode implicitMult() alloc_except;
     ParseNode collectImplicitMult(ParseNode n) alloc_except;
+    ParseNode call_or_mult(ParseNode n) alloc_except;
     ParseNode rightUnary() alloc_except;
+    ParseNode rightUnary(ParseNode n) alloc_except;
     ParseNode primary() alloc_except;
     ParseNode string() alloc_except;
     ParseNode parenGrouping() alloc_except;
@@ -67,7 +69,6 @@ private:
     ParseNode identifierFollowOn(ParseNode id) alloc_except;
     ParseNode isolatedIdentifier() alloc_except;
     ParseNode param() alloc_except;
-    ParseNode call(ParseNode id) alloc_except;
     ParseNode lambda(ParseNode params) alloc_except;
     ParseNode fraction() alloc_except;
     ParseNode fractionDeriv(const Typeset::Selection& c, Op type, HopeTokenType tt) alloc_except;
@@ -87,6 +88,7 @@ private:
     ParseNode log() alloc_except;
     ParseNode oneArg(Op type) alloc_except;
     ParseNode twoArgs(Op type) alloc_except;
+    ParseNode arg() alloc_except;
     ParseNode big(Op type) alloc_except;
     ParseNode oneArgConstruct(Op type) alloc_except;
     ParseNode error(ErrorCode code) alloc_except;

@@ -84,6 +84,7 @@ public:
 
     void prepareNary() alloc_except;
     void addNaryChild(ParseNode pn) alloc_except;
+    ParseNode popNaryChild() noexcept;
     ParseNode finishNary(Op type, const Selection& sel) alloc_except;
     ParseNode finishNary(Op type) alloc_except;
 

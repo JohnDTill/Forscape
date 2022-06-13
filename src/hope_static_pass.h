@@ -125,6 +125,7 @@ private:
         Type fillDefaultsAndInstantiate(ParseNode call_node, CallSignature sig);
         ParseNode resolveExprTop(size_t pn, size_t rows_expected = 0, size_t cols_expected = 0);
         ParseNode resolveExpr(size_t pn, size_t rows_expected = 0, size_t cols_expected = 0) noexcept;
+        ParseNode patchSingleCharMult(ParseNode parent, ParseNode mult) noexcept;
         size_t callSite(size_t pn) noexcept;
         size_t implicitMult(size_t pn, size_t start = 0) noexcept;
         Type instantiateSetOfFuncs(ParseNode call_node, Type fun_group, CallSignature& sig);
