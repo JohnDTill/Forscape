@@ -13,31 +13,35 @@ assert(4/2x = 4/(2x)) //Implicit binds tighter than normal mult
 assert(2x! = 2(x!)) //Factorial binds tighter
 assert(y y⊤ = y(y⊤)) //Superscript binds tighter
 
-//Single-char implicit mult
-h(a) = 3/a
-//DO THIS //assert(xx2 = x x2) //Exponent binds to last character
-//DO THIS //assert(yy⊤ = y (y⊤)) //Transpose binds to last character
-//DO THIS //assert(yy+ = y (y+)) //Pseudo-inv binds to last character
-//DO THIS //assert(xx! = x (x!)) //Factorial binds to last character
-//DO THIS //assert(xh(x) = x*h(x)) //Grouping binds to last character
-assert(xx* = x x*) //Asterisk modifies last character
-assert(xxa = x xa) //Subscript id modifies last character
-
 //Grouping mult
+f(a) = a1
+h(a) = 3/a
 assert(h(x)2 = (h(x))2) //Exponent applied after call
-//DO THIS //assert(x(x)2 = x * x2) //Exponent applied before mult
+assert(x(x)2 = x * x2) //Exponent applied before mult
+assert(f(y)0 = (f(y))0) //Access applied after call
+assert(y(y0) = y * y0) //Access applied before mult
 assert(h(x)! = (h(x))!)
-//DO THIS //assert(x(x)! = x(x!))
-//DO THIS //assert( xh(x)2 = x( (h(x))^2 ) )
-//DO THIS //assert(xx*(x)2 = x * x* * x^2)
+assert(x(x)! = x(x!))
 assert(h(x)x = (h(x))*x)
 assert(h(x) h(x) = h(x) * h(x))
 
 //Keyword funcs
 assert(sin(x)2 = (sin(x))2)
 assert(log(x)2 = (log(x))2)
-//DO THIS //assert(log2(x)2 = (log2(x))2)
+assert(log2(x)2 = (log2(x))2)
 assert(sin(x)x = sin(x)*x)
-//DO THIS //assert(sin2(x)2 = (sin2x)2)
+assert(sin2(x)2 = (sin2x)2)
+
+//Single-char implicit mult
+//DO THIS //assert(xx2 = x x2) //Exponent binds to last character
+//DO THIS //assert(yy⊤ = y (y⊤)) //Transpose binds to last character
+//DO THIS //assert(yy+ = y (y+)) //Pseudo-inv binds to last character
+//DO THIS //assert(yy0 = y (y0)) //Access binds to last character
+//DO THIS //assert(xx! = x (x!)) //Factorial binds to last character
+//DO THIS //assert(xh(x) = x*h(x)) //Grouping binds to last character
+//DO THIS //assert( xh(x)2 = x( (h(x))^2 ) )
+//DO THIS //assert(xx*(x)2 = x * x* * x^2)
+assert(xx* = x x*) //Asterisk modifies last character
+assert(xxa = x xa) //Subscript id modifies last character
 
 print("PASS")

@@ -322,6 +322,12 @@ void ParseTree::addNaryChild(ParseNode pn) alloc_except {
     nary_construction_stack.push_back(pn);
 }
 
+ParseNode ParseTree::popNaryChild() noexcept{
+    ParseNode pn = nary_construction_stack.back();
+    nary_construction_stack.pop_back();
+    return pn;
+}
+
 ParseNode ParseTree::finishNary(Op type, const Selection& sel) alloc_except {
     assert(!nary_start.empty());
     assert(notInTree(sel));

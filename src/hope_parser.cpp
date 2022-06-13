@@ -227,7 +227,7 @@ ParseNode Parser::algStatement() alloc_except {
 
     ParseNode id = isolatedIdentifier();
 
-    if(!peek(LEFTPAREN) & !peek(LEFTBRACE))
+    if(!peek(LEFTPAREN) && !peek(LEFTBRACE))
         return parse_tree.addUnary(OP_PROTOTYPE_ALG, id);
 
     ParseNode val_captures = match(LEFTBRACE) ? captureList() : NONE;
@@ -448,9 +448,10 @@ ParseNode Parser::implicitMult() alloc_except {
 
     switch (currentType()) {
         HOPE_IMPLICIT_MULT_TOKENS
-            return collectImplicitMult(n);
-        case INTEGER:
-            return error(TRAILING_CONSTANT);
+        case LEFTPAREN:{
+            ParseNode pn = collectImplicitMult(n);
+            return parse_tree.getNumArgs(pn) != 1 ? pn : parse_tree.child(pn);
+        }
         default:
             return n;
     }
@@ -459,7 +460,6 @@ ParseNode Parser::implicitMult() alloc_except {
 ParseNode Parser::collectImplicitMult(ParseNode n) alloc_except {
     parse_tree.prepareNary();
     parse_tree.addNaryChild(n);
-    parse_tree.addNaryChild(rightUnary());
 
     for(;;){
         if(!noErrors()) return error_node;
@@ -467,6 +467,9 @@ ParseNode Parser::collectImplicitMult(ParseNode n) alloc_except {
         switch (currentType()) {
             HOPE_IMPLICIT_MULT_TOKENS
                 parse_tree.addNaryChild(rightUnary());
+                break;
+            case LEFTPAREN:
+                parse_tree.addNaryChild( call_or_mult(parse_tree.popNaryChild()) );
                 break;
             case INTEGER:
                 return error(TRAILING_CONSTANT);
@@ -476,9 +479,50 @@ ParseNode Parser::collectImplicitMult(ParseNode n) alloc_except {
     }
 }
 
-ParseNode Parser::rightUnary() alloc_except {
-    ParseNode n = primary();
+ParseNode Parser::call_or_mult(ParseNode n) alloc_except {
+    const Typeset::Marker& left = lMark();
+    advance();
 
+    if(match(RIGHTPAREN)){
+        const Typeset::Marker& right = rMarkPrev();
+        registerGrouping(left, right);
+        return parse_tree.addRightUnary(OP_CALL, right, n);
+    }
+
+    ParseNode parenthetical = disjunction();
+    if(match(RIGHTPAREN)){
+        const Typeset::Marker& right = rMarkPrev();
+        registerGrouping(left, right);
+
+        ParseNode post_high_prec = rightUnary(parenthetical);
+        Op op = (post_high_prec == parenthetical) ? OP_CALL : OP_AMBIGUOUS_PARENTHETICAL;
+
+        return parse_tree.addNode<2>(op, {n, post_high_prec});
+    }
+
+    parse_tree.prepareNary();
+    parse_tree.addNaryChild(n);
+    parse_tree.addNaryChild(parenthetical);
+
+    while(!match(RIGHTPAREN)){
+        consume(COMMA);
+        if(!noErrors()) return error_node;
+        parse_tree.addNaryChild(disjunction());
+    }
+
+    if(!noErrors()) return error_node;
+
+    const Typeset::Marker& right = rMarkPrev();
+    registerGrouping(left, right);
+
+    return parse_tree.finishNary(OP_CALL, Typeset::Selection(parse_tree.getLeft(n), right));
+}
+
+ParseNode Parser::rightUnary() alloc_except {
+    return rightUnary(primary());
+}
+
+ParseNode Parser::rightUnary(ParseNode n) alloc_except {
     for(;;){
         switch (currentType()) {
             case EXCLAM:{
@@ -772,7 +816,6 @@ ParseNode Parser::identifier() alloc_except{
 
 ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
     switch (currentType()) {
-        case LEFTPAREN: return call(id);
         case MAPSTO: return lambda(parse_tree.addUnary(OP_LIST, id));
         case TOKEN_SUBSCRIPT:
             if(parse_tree.str(id) == "e"){
@@ -789,11 +832,6 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
                 errors.clear();
                 error_node = NONE;
             }
-
-        //EVENTUALLY: you can't have named lambdas with subscripts because that depends on symbol resolution
-        //            it might make sense to do symbol resolution while parsing.
-        //            Or there are other ways to solve the problem, such as modifying implicit mult to return OP_CALL
-        //            under certain conditions.
 
             return id;
         case TOKEN_SUPERSCRIPT:
@@ -856,29 +894,6 @@ ParseNode Parser::isolatedIdentifier() alloc_except{
 ParseNode Parser::param() alloc_except{
     ParseNode id = isolatedIdentifier();
     return match(EQUALS) ? parse_tree.addNode<2>(OP_EQUAL, {id, expression()}) : id;
-}
-
-ParseNode Parser::call(ParseNode id) alloc_except{
-    Typeset::Marker lmark = lMark();
-
-    parse_tree.prepareNary();
-    parse_tree.addNaryChild(id);
-    advance();
-    if(!peek(RIGHTPAREN)){
-        parse_tree.addNaryChild(expression());
-        while(noErrors() && !peek(RIGHTPAREN)){
-            consume(COMMA);
-            parse_tree.addNaryChild(expression());
-        }
-    }
-
-    Typeset::Marker rmark = rMark();
-    registerGrouping(Typeset::Selection(lmark, rmark));
-
-    size_t n = parse_tree.finishNary(OP_CALL, Typeset::Selection(parse_tree.getLeft(id), rmark));
-    if(noErrors()) advance();
-
-    return n;
 }
 
 ParseNode Parser::lambda(ParseNode params) alloc_except{
@@ -1154,9 +1169,7 @@ ParseNode Parser::trig(Op type) alloc_except{
             ParseNode power = expression();
             consume(ARGCLOSE);
 
-            //DO THIS - make a rule for arguments with correct precedence of parenthesis
-
-            ParseNode fn = parse_tree.addLeftUnary(type, left, leftUnary());
+            ParseNode fn = parse_tree.addLeftUnary(type, left, arg());
             const Typeset::Marker& right = parse_tree.getRight(fn);
             Typeset::Selection c(left, right);
             if(parse_tree.getOp(power) == OP_UNARY_MINUS)
@@ -1164,20 +1177,7 @@ ParseNode Parser::trig(Op type) alloc_except{
             return parse_tree.addNode<2>(OP_POWER, c, {fn, power});
         }
 
-        case LEFTPAREN:{
-            //Since parenthesis are optional, they need special handling
-            //so that cos(x)^2 is not parsed as cos(x^2)
-            const Typeset::Marker& l_mark = lMark();
-            advance();
-            ParseNode pn = parse_tree.addLeftUnary(type, left, expression());
-            const Typeset::Marker& right = rMark();
-            consume(RIGHTPAREN);
-            if(!noErrors()) return error_node;
-            registerGrouping(l_mark, right);
-            return pn;
-        }
-
-        default: return parse_tree.addLeftUnary(type, left, leftUnary());
+        default: return parse_tree.addLeftUnary(type, left, arg());
     }
 }
 
@@ -1189,41 +1189,20 @@ ParseNode Parser::log() alloc_except{
             advance();
             ParseNode base = expression();
             consume(ARGCLOSE);
-            ParseNode arg = leftUnary();
-            const Typeset::Marker& right = parse_tree.getRight(arg);
+            ParseNode child_arg = arg();
+            const Typeset::Marker& right = parse_tree.getRight(child_arg);
             Typeset::Selection c(left, right);
-            return parse_tree.addNode<2>(OP_LOGARITHM_BASE, c, {arg, base});
+            return parse_tree.addNode<2>(OP_LOGARITHM_BASE, c, {child_arg, base});
         }
 
-        case LEFTPAREN:{
-            //Since parenthesis are optional, they need special handling
-            //so that log(x)^2 is not parsed as log(x^2)
-            const Typeset::Marker& l_mark = lMark();
-            advance();
-            ParseNode pn = parse_tree.addLeftUnary(OP_LOGARITHM, left, expression());
-            const Typeset::Marker& right = rMark();
-            consume(RIGHTPAREN);
-            if(!noErrors()) return error_node;
-            registerGrouping(l_mark, right);
-            return pn;
-        }
-
-        default: return parse_tree.addLeftUnary(OP_LOGARITHM, left, leftUnary());
+        default: return parse_tree.addLeftUnary(OP_LOGARITHM, left, arg());
     }
 }
 
 ParseNode Parser::oneArg(Op type) alloc_except{
-    const Typeset::Marker& left = lMark();
     advance();
-    consume(LEFTPAREN);
-    ParseNode e = expression();
-    const Typeset::Marker& right = rMark();
-    consume(RIGHTPAREN);
-    if(!noErrors()) return error_node;
-    registerGrouping(left, right);
-    Typeset::Selection c(left, right);
 
-    return parse_tree.addUnary(type, c, e);
+    return parse_tree.addUnary(type, arg());
 }
 
 ParseNode Parser::twoArgs(Op type) alloc_except{
@@ -1240,6 +1219,11 @@ ParseNode Parser::twoArgs(Op type) alloc_except{
     Typeset::Selection c(left, right);
 
     return parse_tree.addNode<2>(type, c, {a, b});
+}
+
+ParseNode Parser::arg() alloc_except{
+    if(peek(LEFTPAREN)) return grouping(OP_GROUP_PAREN, RIGHTPAREN);
+    else return leftUnary();
 }
 
 ParseNode Parser::big(Op type) alloc_except{

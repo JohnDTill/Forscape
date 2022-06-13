@@ -6,5 +6,5 @@ print(f (1, 1))
 f*(x) = 2x
 assert(f*(2) = 4)
 
-//DO THIS //fc(x) = 2x
-//assert(fc(2) = 4)
+fc(x) = 2x
+assert(fc(2) = 4)

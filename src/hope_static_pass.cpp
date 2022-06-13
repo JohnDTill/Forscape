@@ -864,6 +864,24 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
             return pn;
         case OP_MATRIX_LITERAL:
             return pn;
+
+        case OP_AMBIGUOUS_PARENTHETICAL: {
+            //Parsed something with unclear precedence, like h(x)^y
+            //This node is binary, with h as LHS and (x)^y as RHS
+            //The first arg of RHS would be the arg, if this is a call
+            ParseNode lhs = resolveExpr(parse_tree.arg<0>(pn));
+            if(isAbstractFunctionGroup(parse_tree.getType(lhs))){
+                ParseNode high_prec = parse_tree.arg<1>(pn);
+                parse_tree.setArg<1>(pn, parse_tree.arg<0>(high_prec));
+                parse_tree.setOp(pn, OP_CALL);
+                parse_tree.setArg<0>(high_prec, pn);
+                return resolveExpr(high_prec);
+            }else{
+                parse_tree.setOp(pn, OP_MULTIPLICATION);
+                return resolveMult(pn);
+            }
+        }
+
         default:
             assert(false);
             return pn;
