@@ -562,6 +562,7 @@ void Model::clearFormatting() noexcept{
     Text* t = firstText();
     for(;;){
         t->tags.clear();
+        t->parse_nodes.clear();
 
         if(Construct* c = t->nextConstructInPhrase()){
             Text* candidate = c->frontText();
@@ -600,7 +601,16 @@ void Model::postmutate(){
     #ifndef HOPE_TYPESET_HEADLESS
     calculateSizes();
     updateLayout();
-    #endif
+#endif
+}
+
+void Model::markParseNode(const Selection& selection, ParseNode pn) noexcept{
+    assert(selection.isTextSelection());
+
+    const Typeset::Marker& left = selection.left;
+    const Typeset::Marker& right = selection.right;
+
+    left.text->tagParseNode(pn, left.index, right.index);
 }
 
 void Model::rename(const std::vector<Selection>& targets, const std::string& name, Controller& c){

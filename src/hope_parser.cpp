@@ -383,16 +383,60 @@ ParseNode Parser::conjunction() alloc_except {
 ParseNode Parser::comparison() alloc_except {
     ParseNode n = addition();
 
+    switch (currentType()) {
+        case EQUALS: advance(); return parse_tree.addNode<2>(OP_EQUAL, {n, addition()});
+        case NOTEQUAL: advance(); return parse_tree.addNode<2>(OP_NOT_EQUAL, {n, addition()});
+        case LESS: return less(n, 0);
+        case LESSEQUAL: return less(n, 1);
+        case GREATER: return greater(n, 0);
+        case GREATEREQUAL: return greater(n, 1);
+        default: return n;
+    }
+}
+
+ParseNode Parser::less(ParseNode first, size_t flag) alloc_except {
+    advance();
+    parse_tree.prepareNary();
+    parse_tree.addNaryChild(first);
+    parse_tree.addNaryChild(addition());
+    size_t comparisons = 1;
+
     for(;;){
-        switch (currentType()) {
-            case EQUALS: advance(); n = parse_tree.addNode<2>(OP_EQUAL, {n, addition()}); break;
-            case NOTEQUAL: advance(); n = parse_tree.addNode<2>(OP_NOT_EQUAL, {n, addition()}); break;
-            case LESS: advance(); n = parse_tree.addNode<2>(OP_LESS, {n, addition()}); break;
-            case LESSEQUAL: advance(); n = parse_tree.addNode<2>(OP_LESS_EQUAL, {n, addition()}); break;
-            case GREATER: advance(); n = parse_tree.addNode<2>(OP_GREATER, {n, addition()}); break;
-            case GREATEREQUAL: advance(); n = parse_tree.addNode<2>(OP_GREATER_EQUAL, {n, addition()}); break;
-            default: return n;
+        if(match(LESSEQUAL)){
+            flag |= (size_t(1) << comparisons);
+        }else if(!match(LESS)){
+            ParseNode pn = parse_tree.finishNary(OP_LESS);
+            parse_tree.setFlag(pn, flag);
+            return pn;
         }
+
+        comparisons++;
+        assert(comparisons < sizeof(size_t)*8); //EVENTUALLY: report an error to the user
+
+        parse_tree.addNaryChild(addition());
+    }
+}
+
+ParseNode Parser::greater(ParseNode first, size_t flag) alloc_except {
+    advance();
+    parse_tree.prepareNary();
+    parse_tree.addNaryChild(first);
+    parse_tree.addNaryChild(addition());
+    size_t comparisons = 1;
+
+    for(;;){
+        if(match(GREATEREQUAL)){
+            flag |= (size_t(1) << comparisons);
+        }else if(!match(GREATER)){
+            ParseNode pn = parse_tree.finishNary(OP_GREATER);
+            parse_tree.setFlag(pn, flag);
+            return pn;
+        }
+
+        comparisons++;
+        assert(comparisons < sizeof(size_t)*8); //EVENTUALLY: report an error to the user
+
+        parse_tree.addNaryChild(addition());
     }
 }
 

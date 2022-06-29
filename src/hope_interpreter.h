@@ -93,6 +93,8 @@ private:
     Value& readGlobal(ParseNode pn) noexcept;
     Value& readClosedVar(ParseNode pn) const noexcept;
     Value matrix(ParseNode pn);
+    Value less(ParseNode pn);
+    Value greater(ParseNode pn);
     Value str(ParseNode pn) const;
     Value anonFun(ParseNode pn);
     Value call(ParseNode pn);
@@ -104,6 +106,7 @@ private:
     static constexpr Eigen::Index INVALID = -1;
     Eigen::Index readIndex(ParseNode pn, Eigen::Index max);
     double readDouble(ParseNode pn);
+    double readDoubleAsserted(ParseNode pn);
     void printNode(const ParseNode& pn);
     static double dot(const Eigen::MatrixXd& a, const Eigen::MatrixXd& b) noexcept;
     static Eigen::MatrixXd hat(const Eigen::MatrixXd& a);

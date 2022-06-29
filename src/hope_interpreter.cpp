@@ -753,6 +753,34 @@ Value Interpreter::matrix(ParseNode pn){
     return mat;
 }
 
+Value Interpreter::less(ParseNode pn){
+    size_t mask = parse_tree.getFlag(pn);
+    double left = readDoubleAsserted(parse_tree.arg<0>(pn));
+
+    for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++){
+        double right = readDoubleAsserted(parse_tree.arg(pn, i));
+        bool inclusive = (mask >> (i-1)) & 1;
+        if(inclusive ? left > right : left >= right) return false;
+        left = right;
+    }
+
+    return true;
+}
+
+Value Interpreter::greater(ParseNode pn){
+    size_t mask = parse_tree.getFlag(pn);
+    double left = readDoubleAsserted(parse_tree.arg<0>(pn));
+
+    for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++){
+        double right = readDoubleAsserted(parse_tree.arg(pn, i));
+        bool inclusive = (mask >> (i-1)) & 1;
+        if(inclusive ? left < right : left <= right) return false;
+        left = right;
+    }
+
+    return true;
+}
+
 Value Interpreter::str(ParseNode pn) const {
     std::string s = parse_tree.str(pn);
     return s.substr(1, s.size()-2);
@@ -981,6 +1009,12 @@ double Interpreter::readDouble(ParseNode pn){
     }else{
         return std::get<double>(v);
     }
+}
+
+double Interpreter::readDoubleAsserted(ParseNode pn){
+    Value v = interpretExpr(pn);
+    assert(v.index() == double_index);
+    return std::get<double>(v);
 }
 
 void Interpreter::printNode(const ParseNode& pn){

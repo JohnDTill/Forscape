@@ -795,15 +795,13 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
             if(parse_tree.getType(rhs) != BOOLEAN) return error(pn, rhs);
             return pn;
         }
-        case OP_GREATER:
-        case OP_GREATER_EQUAL:
         case OP_LESS:
-        case OP_LESS_EQUAL:{
+        case OP_GREATER:{
             parse_tree.setType(pn, BOOLEAN);
-            ParseNode lhs = enforceScalar(parse_tree.lhs(pn));
-            parse_tree.setArg<0>(pn, lhs);
-            ParseNode rhs = enforceScalar(parse_tree.rhs(pn));
-            parse_tree.setArg<1>(pn, rhs);
+            for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
+                ParseNode child = enforceScalar(parse_tree.arg(pn, i));
+                parse_tree.setArg(pn, i, child);
+            }
             return pn;
         }
         case OP_CASES:{

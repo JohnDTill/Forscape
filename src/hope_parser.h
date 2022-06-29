@@ -48,6 +48,8 @@ private:
     ParseNode disjunction() alloc_except;
     ParseNode conjunction() alloc_except;
     ParseNode comparison() alloc_except;
+    ParseNode less(ParseNode first, size_t flag) alloc_except;
+    ParseNode greater(ParseNode first, size_t flag) alloc_except;
     ParseNode addition() alloc_except;
     ParseNode multiplication() alloc_except;
     ParseNode leftUnary() alloc_except;

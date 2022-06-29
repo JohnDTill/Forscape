@@ -119,6 +119,8 @@ private:
     void premutate() noexcept;
     void postmutate();
 
+    void markParseNode(const Typeset::Selection& selection, ParseNode pn) alloc_except;
+
     void rename(const std::vector<Selection>& targets, const std::string& name, Controller& c);
 };
 

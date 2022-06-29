@@ -75,6 +75,26 @@ class Text {
         void tagBack(SemanticType type) alloc_except;
         std::vector<SemanticTag> tags;
 
+        struct ParseNodeTag {
+            ParseNode pn  DEBUG_INIT_NONE;
+            size_t token_start  DEBUG_INIT_NONE;
+            size_t token_end  DEBUG_INIT_NONE;
+
+            ParseNodeTag() noexcept {}
+            ParseNodeTag(ParseNode pn, size_t token_start, size_t token_end) noexcept
+                : pn(pn), token_start(token_start), token_end(token_end) {}
+        };
+
+        std::vector<ParseNodeTag> parse_nodes;
+
+        void tagParseNode(ParseNode pn, size_t token_start, size_t token_end) alloc_except {
+            assert(token_end > token_start);
+            assert(token_end <= numChars());
+            assert(parse_nodes.empty() || token_start >= parse_nodes.back().token_end);
+
+            parse_nodes.push_back(ParseNodeTag(pn, token_start, token_end));
+        }
+
         #ifdef HOPE_SEMANTIC_DEBUGGING
         std::string toSerialWithSemanticTags() const;
         #endif

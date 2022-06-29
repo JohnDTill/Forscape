@@ -99,6 +99,8 @@ public:
 
     static const std::vector<ContextAction> no_actions;
     virtual const std::vector<ContextAction>& getContextActions(Subphrase*) const noexcept;
+
+    ParseNode pn  DEBUG_INIT_NONE;
     #endif
 
     Subphrase* arg(size_t index) const noexcept;
