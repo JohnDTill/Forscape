@@ -502,6 +502,10 @@ Selection Model::idAt(double x, double y) noexcept{
 
     return Selection(t, start, end);
 }
+
+ParseNode Model::parseNodeAt(double x, double y) const noexcept {
+    return nearestLine(y)->parseNodeAt(x, y);
+}
 #endif
 
 #ifndef NDEBUG

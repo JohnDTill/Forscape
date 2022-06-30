@@ -548,6 +548,15 @@ void View::resolveTooltip(double x, double y) noexcept{
         }
     }
 
+    ParseNode pn = model->parseNodeAt(x, y);
+    if(pn != NONE){
+        setToolTipDuration(std::numeric_limits<int>::max());
+
+        QString tooltip = "ParseNode: " + QString::number(pn);
+        setToolTip(tooltip);
+        return;
+    }
+
     clearTooltip();
 }
 

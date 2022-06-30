@@ -98,6 +98,7 @@ private:
     Line* nearestAbove(double y) const noexcept;
     Construct* constructAt(double x, double y) const noexcept;
     Selection idAt(double x, double y) noexcept;
+    ParseNode parseNodeAt(double x, double y) const noexcept;
     #endif
     void clearRedo();
     void remove(size_t start, size_t stop) noexcept;

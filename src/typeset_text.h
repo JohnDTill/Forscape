@@ -123,6 +123,25 @@ class Text {
         bool containsXInBounds(double x_test, size_t start, size_t stop) const noexcept;
         double x  DEBUG_INIT_STALE;
         double y  DEBUG_INIT_STALE;
+
+        ParseNode getParseNode(size_t index) const noexcept {
+            assert(index <= numChars());
+
+            auto search = std::lower_bound(
+                            parse_nodes.rbegin(),
+                            parse_nodes.rend(),
+                            y,
+                            [](const ParseNodeTag& tag, size_t index){return tag.token_start > index;}
+                        );
+
+            if(search == parse_nodes.rend() || search->token_end <= index) return NONE;
+            else return search->pn;
+        }
+
+        ParseNode parseNodeAt(double x) const noexcept {
+            assert(containsX(x));
+            return getParseNode( charIndexLeft(x) );
+        }
         #endif
 
     private:

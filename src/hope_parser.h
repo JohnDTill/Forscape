@@ -114,6 +114,7 @@ private:
     const Typeset::Marker& rMarkPrev() const noexcept;
     bool noErrors() const noexcept;
     void recover() noexcept;
+    void registerParseNodeRegion(ParseNode pn, const Typeset::Marker& left, const Typeset::Marker& right) alloc_except;
 
     const std::vector<Token>& tokens;
     std::vector<Error>& errors;

@@ -44,6 +44,7 @@ public:
 
     size_t getConstructArgSize() const noexcept;
     size_t getMatrixRows() const noexcept;
+    void mapConstructToParseNode(ParseNode pn) const noexcept;
     void formatBasicIdentifier() const noexcept;
     void formatComment() const noexcept;
     void formatKeyword() const noexcept;

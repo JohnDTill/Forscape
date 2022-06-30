@@ -54,6 +54,7 @@ public:
     bool hasConstructs() const noexcept;
     size_t nestingDepth() const noexcept;
     bool empty() const noexcept;
+    ParseNode parseNodeAt(double x, double y) const noexcept;
 
     size_t id;
 

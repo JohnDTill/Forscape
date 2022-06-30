@@ -907,7 +907,8 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
                 return n;
             }
             return id;
-        default: return id;
+        default:
+            return id;
     }
 }
 
@@ -931,7 +932,9 @@ ParseNode Parser::isolatedIdentifier() alloc_except{
             }else{
                 return error(INVALID_PARAMETER);
             }
-        default: return id;
+        default:
+            registerParseNodeRegion(id, lMarkPrev(), rMarkPrev());
+            return id;
     }
 }
 
@@ -1140,6 +1143,7 @@ ParseNode Parser::matrix() alloc_except{
 
     ParseNode m = parse_tree.finishNary(OP_MATRIX, c);
     parse_tree.setFlag(m, c.getMatrixRows());
+    c.mapConstructToParseNode(m);
 
     return m;
 }
@@ -1405,6 +1409,11 @@ bool Parser::noErrors() const noexcept{
 void Parser::recover() noexcept{
     //error_node = NONE;
     index = tokens.size()-1; //Give up for now //EVENTUALLY: improve error recovery
+}
+
+void Parser::registerParseNodeRegion(ParseNode pn, const Typeset::Marker& left, const Typeset::Marker& right) alloc_except {
+    assert(left.text == right.text);
+    left.text->tagParseNode(pn, left.index, right.index);
 }
 
 }

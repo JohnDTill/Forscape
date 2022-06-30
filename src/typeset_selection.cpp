@@ -214,6 +214,13 @@ size_t Selection::getMatrixRows() const noexcept{
     return static_cast<Typeset::Matrix*>(tL->nextConstructAsserted())->rows;
 }
 
+void Selection::mapConstructToParseNode(ParseNode pn) const noexcept{
+    assert(isPhraseSelection());
+    assert(tR->id == tL->id+1);
+
+    tL->nextConstructAsserted()->pn = pn;
+}
+
 void Selection::formatBasicIdentifier() const noexcept{
     formatSimple(SEM_ID);
 }

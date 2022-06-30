@@ -67,6 +67,7 @@ public:
     #endif
 
     #ifndef HOPE_TYPESET_HEADLESS
+    ParseNode parseNodeAt(double x, double y) const noexcept;
     bool contains(double x, double y) const noexcept;
     Construct* constructAt(double x, double y) noexcept;
     Subphrase* argAt(double x, double y) const noexcept;
@@ -99,9 +100,9 @@ public:
 
     static const std::vector<ContextAction> no_actions;
     virtual const std::vector<ContextAction>& getContextActions(Subphrase*) const noexcept;
+    #endif
 
     ParseNode pn  DEBUG_INIT_NONE;
-    #endif
 
     Subphrase* arg(size_t index) const noexcept;
 
