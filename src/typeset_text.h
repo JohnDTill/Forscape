@@ -127,14 +127,15 @@ class Text {
         ParseNode getParseNode(size_t index) const noexcept {
             assert(index <= numChars());
 
-            auto search = std::lower_bound(
+            //DO THIS: this lookup is broken
+            auto search = std::upper_bound(
                             parse_nodes.rbegin(),
                             parse_nodes.rend(),
                             y,
-                            [](const ParseNodeTag& tag, size_t index){return tag.token_start > index;}
+                            [](size_t index, const ParseNodeTag& tag){return index < tag.token_end;}
                         );
 
-            if(search == parse_nodes.rend() || search->token_end <= index) return NONE;
+            if(search == parse_nodes.rend() || index < search->token_start || index >= search->token_end) return NONE;
             else return search->pn;
         }
 

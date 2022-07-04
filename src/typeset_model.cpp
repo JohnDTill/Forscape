@@ -509,7 +509,7 @@ ParseNode Model::parseNodeAt(double x, double y) const noexcept {
 #endif
 
 #ifndef NDEBUG
-std::string Model::parseTreeDot() const{
+std::string Model::parseTreeDot() const {
     return parser.parse_tree.toGraphviz();
 }
 #endif

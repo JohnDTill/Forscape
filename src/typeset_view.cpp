@@ -294,7 +294,7 @@ void View::replaceAll(const std::vector<Selection>& targets, const std::string& 
 void View::dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held) alloc_except {
     if(right_click){
         resolveRightClick(x, y, xScreen, yScreen);
-    }else if(recentlyDoubleClicked() | isInLineBox(x)){
+    }else if(recentlyDoubleClicked() || isInLineBox(x)){
         resolveTripleClick(y);
         mouse_hold_state = TripleClick;
     }else if(shift_held){
@@ -549,11 +549,16 @@ void View::resolveTooltip(double x, double y) noexcept{
     }
 
     ParseNode pn = model->parseNodeAt(x, y);
+    #ifndef NDEBUG
+    hover_node = pn;
+    update();
+    #endif
     if(pn != NONE){
         setToolTipDuration(std::numeric_limits<int>::max());
 
         QString tooltip = "ParseNode: " + QString::number(pn);
         setToolTip(tooltip);
+
         return;
     }
 
@@ -936,6 +941,13 @@ void View::drawModel(double xL, double yT, double xR, double yB) {
     for(const Selection& c : highlighted_words)
         if(c.overlapsY(yT, yB))
             c.paintHighlight(painter);
+
+    #ifndef NDEBUG
+    if(hover_node != NONE){
+        const Typeset::Selection& sel = model->parser.parse_tree.getSelection(hover_node);
+        sel.paintHighlight(painter);
+    }
+    #endif
 
     const Typeset::Marker& cursor = getController().active;
 

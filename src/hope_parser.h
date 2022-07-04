@@ -115,7 +115,10 @@ private:
     bool noErrors() const noexcept;
     void recover() noexcept;
     void registerParseNodeRegion(ParseNode pn, const Typeset::Marker& left, const Typeset::Marker& right) alloc_except;
+    void registerParseNodeRegion(ParseNode pn, const Typeset::Selection& sel) alloc_except;
+    void registerParseNodeRegion(ParseNode pn, size_t index) alloc_except;
 
+    std::vector<size_t> token_map_stack;
     const std::vector<Token>& tokens;
     std::vector<Error>& errors;
     Typeset::Model* model;

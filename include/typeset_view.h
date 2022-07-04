@@ -111,6 +111,10 @@ protected:
     public: double zoom = ZOOM_DEFAULT;
     bool is_running = false;
 
+    #ifndef NDEBUG
+    ParseNode hover_node = NONE;
+    #endif
+
 //Qt specific code
 protected:
     QPainter qpainter;

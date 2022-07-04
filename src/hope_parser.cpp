@@ -41,6 +41,7 @@ void Parser::parseAll() alloc_except {
 
 void Parser::reset() noexcept {
     parse_tree.clear();
+    token_map_stack.clear();
     #ifndef HOPE_TYPESET_HEADLESS
     open_symbols.clear();
     close_symbols.clear();
@@ -334,8 +335,10 @@ ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
 }
 
 ParseNode Parser::assignment(ParseNode lhs) alloc_except {
+    size_t token_id = index;
     advance();
     ParseNode pn = parse_tree.addNode<2>(OP_ASSIGN, {lhs, expression()});
+    registerParseNodeRegion(pn, token_id);
     parse_tree.setFlag(lhs, match(COMMENT) ? parse_tree.addTerminal(OP_COMMENT, selectionPrev()) : NONE);
     return pn;
 }
@@ -395,7 +398,10 @@ ParseNode Parser::comparison() alloc_except {
 }
 
 ParseNode Parser::less(ParseNode first, size_t flag) alloc_except {
+    size_t token_map_index = token_map_stack.size();
+    token_map_stack.push_back(index);
     advance();
+
     parse_tree.prepareNary();
     parse_tree.addNaryChild(first);
     parse_tree.addNaryChild(addition());
@@ -406,10 +412,16 @@ ParseNode Parser::less(ParseNode first, size_t flag) alloc_except {
             flag |= (size_t(1) << comparisons);
         }else if(!match(LESS)){
             ParseNode pn = parse_tree.finishNary(OP_LESS);
+            //DO THIS - this does quite work. The map expects linear construction, but this breaks ordering
+            //          might need to construct an empty element then backfill it
+            for(size_t i = token_map_index; i < token_map_stack.size(); i++)
+                registerParseNodeRegion(pn, token_map_stack[i]);
+            token_map_stack.resize(token_map_index);
             parse_tree.setFlag(pn, flag);
             return pn;
         }
 
+        token_map_stack.push_back(index-1);
         comparisons++;
         assert(comparisons < sizeof(size_t)*8); //EVENTUALLY: report an error to the user
 
@@ -541,7 +553,8 @@ ParseNode Parser::call_or_mult(ParseNode n) alloc_except {
         ParseNode post_high_prec = rightUnary(parenthetical);
         Op op = (post_high_prec == parenthetical) ? OP_CALL : OP_AMBIGUOUS_PARENTHETICAL;
 
-        return parse_tree.addNode<2>(op, {n, post_high_prec});
+        Typeset::Selection sel(parse_tree.getLeft(n), right);
+        return parse_tree.addNode<2>(op, sel, {n, post_high_prec});
     }
 
     parse_tree.prepareNary();
@@ -572,9 +585,17 @@ ParseNode Parser::rightUnary(ParseNode n) alloc_except {
             case EXCLAM:{
                 Typeset::Marker m = rMark();
                 advance();
-                return parse_tree.addRightUnary(OP_FACTORIAL, m, n);
+                ParseNode pn = parse_tree.addRightUnary(OP_FACTORIAL, m, n);
+                registerParseNodeRegion(pn, index-1);
+                return pn;
             }
-            case CARET: advance(); return parse_tree.addNode<2>(OP_POWER, {n, implicitMult()});
+            case CARET:{
+                size_t token_index = index;
+                advance();
+                ParseNode pn = parse_tree.addNode<2>(OP_POWER, {n, implicitMult()});
+                registerParseNodeRegion(pn, token_index);
+                return pn;
+            }
             case TOKEN_SUPERSCRIPT: n = superscript(n); break;
             case TOKEN_SUBSCRIPT: n = subscript(n, rMark()); break;
             case TOKEN_DUALSCRIPT: n = dualscript(n); break;
@@ -1414,6 +1435,15 @@ void Parser::recover() noexcept{
 void Parser::registerParseNodeRegion(ParseNode pn, const Typeset::Marker& left, const Typeset::Marker& right) alloc_except {
     assert(left.text == right.text);
     left.text->tagParseNode(pn, left.index, right.index);
+}
+
+void Parser::registerParseNodeRegion(ParseNode pn, const Typeset::Selection& sel) noexcept {
+    registerParseNodeRegion(pn, sel.left, sel.right);
+}
+
+void Parser::registerParseNodeRegion(ParseNode pn, size_t index) alloc_except {
+    assert(index < tokens.size());
+    registerParseNodeRegion(pn, tokens[index].sel);
 }
 
 }
