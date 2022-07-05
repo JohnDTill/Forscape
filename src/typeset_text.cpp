@@ -528,7 +528,7 @@ bool Text::containsXInBounds(double x_test, size_t start, size_t stop) const noe
     return x_test >= xGlobal(start) && x_test <= xGlobal(stop);
 }
 
-ParseNode Text::getParseNode(size_t index) const noexcept {
+ParseNode Text::parseNodeAtIndex(size_t index) const noexcept {
     assert(index <= numChars());
 
     auto search = std::upper_bound(
@@ -543,9 +543,9 @@ ParseNode Text::getParseNode(size_t index) const noexcept {
                 search->pn;
 }
 
-ParseNode Text::parseNodeAt(double x) const noexcept {
+ParseNode Text::parseNodeAtX(double x) const noexcept {
     assert(containsX(x));
-    return getParseNode( charIndexLeft(x) );
+    return parseNodeAtIndex( charIndexLeft(x) );
 }
 #endif
 

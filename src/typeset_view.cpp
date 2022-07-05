@@ -527,6 +527,7 @@ void View::resolveTooltip(double x, double y) noexcept{
         }
     }
 
+    //DO THIS: delete
     Controller c = model->idAt(x, y);
     if(c.hasSelection()){
         setToolTipDuration(std::numeric_limits<int>::max());
@@ -554,12 +555,35 @@ void View::resolveTooltip(double x, double y) noexcept{
     update();
     #endif
     if(pn != NONE){
-        setToolTipDuration(std::numeric_limits<int>::max());
+        const auto& parse_tree = model->parser.parse_tree;
+        Code::Op op = parse_tree.getOp(pn);
 
-        QString tooltip = "ParseNode: " + QString::number(pn);
-        setToolTip(tooltip);
+        if(op == Code::OP_IDENTIFIER){
+            setToolTipDuration(std::numeric_limits<int>::max());
+            const auto& symbol_table = model->symbol_builder.symbol_table;
+            size_t sym_id = parse_tree.getFlag(pn);
+            const auto& symbol = symbol_table.symbols[sym_id];
 
-        return;
+            THROTTLE(logger->info("{}resolveTooltip({}, {});", logPrefix(), x, y);)
+
+            QString tooltip = "<b>" + QString::fromStdString(parse_tree.str(pn)) + "</b> ∈ "
+                    + QString::fromStdString(model->static_pass.typeString(symbol));
+            if(symbol.comment != NONE)
+                tooltip += "<div style=\"color:green\">" + QString::fromStdString(symbol_table.parse_tree.str(symbol.comment));
+            setToolTip(tooltip);
+            return;
+        }
+        #ifndef NDEBUG
+        else
+        {
+            setToolTipDuration(std::numeric_limits<int>::max());
+
+            QString tooltip = "ParseNode: " + QString::number(pn);
+            setToolTip(tooltip);
+
+            return;
+        }
+        #endif
     }
 
     clearTooltip();
@@ -648,8 +672,25 @@ void View::updateHighlightingFromCursorLocation(){
         symbol_table.getSymbolOccurences(c.getAnchor(), highlighted_words);
     }
 
+    //DO THIS
+    /*
+    const std::pair<ParseNode, ParseNode> parse_nodes = controller.active.parseNodesAround();
+    if(parse_nodes.first != NONE)
+        populateHighlightWordsFromParseNode(parse_nodes.first);
+    if(parse_nodes.second != NONE && parse_nodes.second != parse_nodes.first)
+        populateHighlightWordsFromParseNode(parse_nodes.second);
+    */
+
     update();
     updateAfterHighlightChange();
+}
+
+void View::populateHighlightWordsFromParseNode(ParseNode pn){
+    const auto& parse_tree = model->parser.parse_tree;
+    if(parse_tree.getOp(pn) != Code::OP_IDENTIFIER) return;
+    size_t sym_id = parse_tree.getFlag(pn);
+    const auto& symbol_table = model->symbol_builder.symbol_table;
+    symbol_table.getSymbolOccurences(sym_id, highlighted_words);
 }
 
 bool View::scrolledToBottom() const noexcept{

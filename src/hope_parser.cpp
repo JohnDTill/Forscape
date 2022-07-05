@@ -874,6 +874,7 @@ ParseNode Parser::integer() alloc_except {
 
 ParseNode Parser::identifier() alloc_except{
     ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
+    registerParseNodeRegion(id, index-1);
     return identifierFollowOn(id);
 }
 

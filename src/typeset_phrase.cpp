@@ -393,7 +393,7 @@ ParseNode Phrase::parseNodeAt(double x, double y) const noexcept {
     Text* t = textLeftOf(x);
 
     if(t->containsX(x)){
-        if(t->containsY(y)) return t->parseNodeAt(x);
+        if(t->containsY(y)) return t->parseNodeAtX(x);
         else return NONE;
     }else{
         Construct* c = t->nextConstructAsserted();

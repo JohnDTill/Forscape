@@ -117,6 +117,7 @@ public:
     std::vector<Typeset::Selection> getSuggestions(const Typeset::Marker& loc) const;
     const Typeset::Selection& getSel(size_t sym_index) const noexcept;
     void getSymbolOccurences(const Typeset::Marker& loc, std::vector<Typeset::Selection>& found) const;
+    void getSymbolOccurences(size_t sym_id, std::vector<Typeset::Selection>& found) const;
 
     ScopeId head(ScopeId index) const noexcept;
     void reset(const Typeset::Marker& doc_start) noexcept;

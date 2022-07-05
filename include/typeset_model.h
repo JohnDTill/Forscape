@@ -97,7 +97,7 @@ private:
     Line* nearestLine(double y) const noexcept;
     Line* nearestAbove(double y) const noexcept;
     Construct* constructAt(double x, double y) const noexcept;
-    Selection idAt(double x, double y) noexcept;
+    Selection idAt(double x, double y) noexcept; //DO THIS: delete
     ParseNode parseNodeAt(double x, double y) const noexcept;
     #endif
     void clearRedo();
@@ -119,8 +119,6 @@ private:
     void performSemanticFormatting();
     void premutate() noexcept;
     void postmutate();
-
-    void markParseNode(const Typeset::Selection& selection, ParseNode pn) alloc_except;
 
     void rename(const std::vector<Selection>& targets, const std::string& name, Controller& c);
 };

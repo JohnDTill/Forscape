@@ -132,8 +132,8 @@ class Text {
         double x  DEBUG_INIT_STALE;
         double y  DEBUG_INIT_STALE;
 
-        ParseNode getParseNode(size_t index) const noexcept;
-        ParseNode parseNodeAt(double x) const noexcept;
+        ParseNode parseNodeAtIndex(size_t index) const noexcept;
+        ParseNode parseNodeAtX(double x) const noexcept;
         #endif
 
     private:

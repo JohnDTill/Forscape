@@ -37,6 +37,7 @@ public:
     void zoomOut() noexcept;
     void resetZoom() noexcept;
     void updateHighlightingFromCursorLocation();
+    void populateHighlightWordsFromParseNode(ParseNode pn);
     bool scrolledToBottom() const noexcept;
     void scrollToBottom();
     bool lineNumbersShown() const noexcept;

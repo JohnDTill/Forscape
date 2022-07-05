@@ -113,12 +113,16 @@ const Typeset::Selection& SymbolTable::getSel(size_t sym_index) const noexcept{
     return symbols[sym_index].sel(parse_tree);
 }
 
-void SymbolTable::getSymbolOccurences(const Typeset::Marker& loc, std::vector<Typeset::Selection>& found) const{
+void SymbolTable::getSymbolOccurences(const Typeset::Marker& loc, std::vector<Typeset::Selection>& found) const {
     found.clear();
     auto lookup = occurence_to_symbol_map.find(loc);
     if(lookup == occurence_to_symbol_map.end()) return;
 
     size_t sym_id = lookup->second;
+    getSymbolOccurences(sym_id, found);
+}
+
+void SymbolTable::getSymbolOccurences(size_t sym_id, std::vector<Typeset::Selection>& found) const {
     for(const Usage& usage : usages)
         if(usage.var_id == sym_id)
             found.push_back(parse_tree.getSelection(usage.pn));
