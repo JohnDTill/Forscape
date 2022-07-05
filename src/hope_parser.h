@@ -114,11 +114,13 @@ private:
     const Typeset::Marker& rMarkPrev() const noexcept;
     bool noErrors() const noexcept;
     void recover() noexcept;
-    void registerParseNodeRegion(ParseNode pn, const Typeset::Marker& left, const Typeset::Marker& right) alloc_except;
-    void registerParseNodeRegion(ParseNode pn, const Typeset::Selection& sel) alloc_except;
-    void registerParseNodeRegion(ParseNode pn, size_t index) alloc_except;
+    void registerParseNodeRegion(ParseNode pn, size_t token_index) alloc_except;
+    void registerParseNodeRegionToPatch(size_t token_index) alloc_except;
+    void startPatch() alloc_except;
+    void finishPatch(ParseNode pn) noexcept;
 
-    std::vector<size_t> token_map_stack;
+    std::vector<std::pair<size_t, size_t>> token_map_stack;
+    std::vector<size_t> token_stack_frames;
     const std::vector<Token>& tokens;
     std::vector<Error>& errors;
     Typeset::Model* model;

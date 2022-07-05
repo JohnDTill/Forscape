@@ -87,12 +87,20 @@ class Text {
 
         std::vector<ParseNodeTag> parse_nodes;
 
-        void tagParseNode(ParseNode pn, size_t token_start, size_t token_end) alloc_except {
+        size_t tagParseNode(ParseNode pn, size_t token_start, size_t token_end) alloc_except {
             assert(token_end > token_start);
             assert(token_end <= numChars());
             assert(parse_nodes.empty() || token_start >= parse_nodes.back().token_end);
 
+            size_t index = parse_nodes.size();
             parse_nodes.push_back(ParseNodeTag(pn, token_start, token_end));
+            return index;
+        }
+
+        void retagParseNode(ParseNode pn, size_t index) noexcept {
+            assert(index < parse_nodes.size());
+            assert(parse_nodes[index].pn == NONE);
+            parse_nodes[index].pn = pn;
         }
 
         #ifdef HOPE_SEMANTIC_DEBUGGING
@@ -124,25 +132,8 @@ class Text {
         double x  DEBUG_INIT_STALE;
         double y  DEBUG_INIT_STALE;
 
-        ParseNode getParseNode(size_t index) const noexcept {
-            assert(index <= numChars());
-
-            //DO THIS: this lookup is broken
-            auto search = std::upper_bound(
-                            parse_nodes.rbegin(),
-                            parse_nodes.rend(),
-                            y,
-                            [](size_t index, const ParseNodeTag& tag){return index < tag.token_end;}
-                        );
-
-            if(search == parse_nodes.rend() || index < search->token_start || index >= search->token_end) return NONE;
-            else return search->pn;
-        }
-
-        ParseNode parseNodeAt(double x) const noexcept {
-            assert(containsX(x));
-            return getParseNode( charIndexLeft(x) );
-        }
+        ParseNode getParseNode(size_t index) const noexcept;
+        ParseNode parseNodeAt(double x) const noexcept;
         #endif
 
     private:

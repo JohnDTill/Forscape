@@ -527,6 +527,26 @@ bool Text::containsY(double y_test) const noexcept {
 bool Text::containsXInBounds(double x_test, size_t start, size_t stop) const noexcept {
     return x_test >= xGlobal(start) && x_test <= xGlobal(stop);
 }
+
+ParseNode Text::getParseNode(size_t index) const noexcept {
+    assert(index <= numChars());
+
+    auto search = std::upper_bound(
+                parse_nodes.begin(),
+                parse_nodes.end(),
+                index,
+                [](size_t index, const ParseNodeTag& entry){return index < entry.token_end;}
+            );
+
+    return (search == parse_nodes.end() || search->token_start > index) ?
+                NONE :
+                search->pn;
+}
+
+ParseNode Text::parseNodeAt(double x) const noexcept {
+    assert(containsX(x));
+    return getParseNode( charIndexLeft(x) );
+}
 #endif
 
 }

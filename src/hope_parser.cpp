@@ -335,10 +335,11 @@ ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
 }
 
 ParseNode Parser::assignment(ParseNode lhs) alloc_except {
-    size_t token_id = index;
+    startPatch();
+    registerParseNodeRegionToPatch(index);
     advance();
     ParseNode pn = parse_tree.addNode<2>(OP_ASSIGN, {lhs, expression()});
-    registerParseNodeRegion(pn, token_id);
+    finishPatch(pn);
     parse_tree.setFlag(lhs, match(COMMENT) ? parse_tree.addTerminal(OP_COMMENT, selectionPrev()) : NONE);
     return pn;
 }
@@ -398,8 +399,8 @@ ParseNode Parser::comparison() alloc_except {
 }
 
 ParseNode Parser::less(ParseNode first, size_t flag) alloc_except {
-    size_t token_map_index = token_map_stack.size();
-    token_map_stack.push_back(index);
+    startPatch();
+    registerParseNodeRegionToPatch(index);
     advance();
 
     parse_tree.prepareNary();
@@ -412,16 +413,12 @@ ParseNode Parser::less(ParseNode first, size_t flag) alloc_except {
             flag |= (size_t(1) << comparisons);
         }else if(!match(LESS)){
             ParseNode pn = parse_tree.finishNary(OP_LESS);
-            //DO THIS - this does quite work. The map expects linear construction, but this breaks ordering
-            //          might need to construct an empty element then backfill it
-            for(size_t i = token_map_index; i < token_map_stack.size(); i++)
-                registerParseNodeRegion(pn, token_map_stack[i]);
-            token_map_stack.resize(token_map_index);
+            finishPatch(pn);
             parse_tree.setFlag(pn, flag);
             return pn;
         }
 
-        token_map_stack.push_back(index-1);
+        registerParseNodeRegionToPatch(index-1);
         comparisons++;
         assert(comparisons < sizeof(size_t)*8); //EVENTUALLY: report an error to the user
 
@@ -590,10 +587,11 @@ ParseNode Parser::rightUnary(ParseNode n) alloc_except {
                 return pn;
             }
             case CARET:{
-                size_t token_index = index;
+                startPatch();
+                registerParseNodeRegionToPatch(index);
                 advance();
                 ParseNode pn = parse_tree.addNode<2>(OP_POWER, {n, implicitMult()});
-                registerParseNodeRegion(pn, token_index);
+                finishPatch(pn);
                 return pn;
             }
             case TOKEN_SUPERSCRIPT: n = superscript(n); break;
@@ -954,7 +952,7 @@ ParseNode Parser::isolatedIdentifier() alloc_except{
                 return error(INVALID_PARAMETER);
             }
         default:
-            registerParseNodeRegion(id, lMarkPrev(), rMarkPrev());
+            registerParseNodeRegion(id, index-1);
             return id;
     }
 }
@@ -1432,18 +1430,39 @@ void Parser::recover() noexcept{
     index = tokens.size()-1; //Give up for now //EVENTUALLY: improve error recovery
 }
 
-void Parser::registerParseNodeRegion(ParseNode pn, const Typeset::Marker& left, const Typeset::Marker& right) alloc_except {
-    assert(left.text == right.text);
-    left.text->tagParseNode(pn, left.index, right.index);
+void Parser::registerParseNodeRegion(ParseNode pn, size_t token_index) alloc_except {
+    assert(token_index < tokens.size());
+    assert(parse_tree.isLastAllocatedNode(pn));
+
+    const Typeset::Selection& sel = tokens[token_index].sel;
+    const Typeset::Marker& left = sel.left;
+    left.text->tagParseNode(pn, left.index, sel.right.index);
 }
 
-void Parser::registerParseNodeRegion(ParseNode pn, const Typeset::Selection& sel) noexcept {
-    registerParseNodeRegion(pn, sel.left, sel.right);
+void Parser::registerParseNodeRegionToPatch(size_t token_index) alloc_except {
+    assert(!token_stack_frames.empty());
+    const Typeset::Selection& sel = tokens[token_index].sel;
+    const Typeset::Marker& left = sel.left;
+    size_t tag_index = left.text->tagParseNode(NONE, left.index, sel.right.index);
+    token_map_stack.push_back(std::make_pair(token_index, tag_index));
 }
 
-void Parser::registerParseNodeRegion(ParseNode pn, size_t index) alloc_except {
-    assert(index < tokens.size());
-    registerParseNodeRegion(pn, tokens[index].sel);
+void Parser::startPatch() noexcept {
+    token_stack_frames.push_back(token_map_stack.size());
+}
+
+void Parser::finishPatch(ParseNode pn) noexcept {
+    assert(!token_stack_frames.empty());
+    size_t frame = token_stack_frames.back();
+    token_stack_frames.pop_back();
+
+    for(size_t i = frame; i < token_map_stack.size(); i++){
+        const auto& entry = token_map_stack[i];
+        const Typeset::Marker& m = tokens[entry.first].sel.left;
+        m.text->retagParseNode(pn, entry.second);
+    }
+
+    token_map_stack.resize(frame);
 }
 
 }

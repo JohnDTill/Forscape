@@ -381,6 +381,10 @@ bool ParseTree::isNode(ParseNode pn) const noexcept {
     return created.find(pn) != created.end();
 }
 
+bool ParseTree::isLastAllocatedNode(ParseNode pn) const noexcept {
+    return pn + FIXED_FIELDS + getNumArgs(pn) == data.size();
+}
+
 bool ParseTree::inFinalState() const noexcept {
     return nary_construction_stack.empty() && nary_start.empty();
 }
