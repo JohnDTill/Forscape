@@ -48,7 +48,6 @@ struct Symbol {
 
 enum UsageType{
     DECLARE,
-    REASSIGN,
     READ,
 };
 

@@ -97,10 +97,20 @@ class Text {
             return index;
         }
 
+        void retagParseNodeLast(ParseNode pn) noexcept {
+            assert(!parse_nodes.empty());
+            parse_nodes.back().pn = pn;
+        }
+
+
         void retagParseNode(ParseNode pn, size_t index) noexcept {
             assert(index < parse_nodes.size());
-            assert(parse_nodes[index].pn == NONE);
             parse_nodes[index].pn = pn;
+        }
+
+        void patchParseNode(ParseNode pn, size_t index) noexcept {
+            assert(parse_nodes[index].pn == NONE);
+            retagParseNode(pn, index);
         }
 
         #ifdef HOPE_SEMANTIC_DEBUGGING

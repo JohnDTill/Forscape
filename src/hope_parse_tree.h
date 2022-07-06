@@ -46,6 +46,8 @@ public:
     ParseNode child(ParseNode pn) const noexcept;
     ParseNode valCapList(ParseNode pn) const noexcept;
     ParseNode refCapList(ParseNode pn) const noexcept;
+    void setSymId(ParseNode pn, size_t sym_id) noexcept;
+    size_t getSymId(ParseNode pn) const noexcept;
     void setRefList(ParseNode fn, ParseNode list) noexcept;
     ParseNode paramList(ParseNode pn) const noexcept;
     ParseNode body(ParseNode pn) const noexcept;

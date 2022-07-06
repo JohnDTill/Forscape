@@ -39,7 +39,7 @@ void StaticPass::resolve(){
 
     //EVENTUALLY: replace this with something less janky
     parse_tree.patchClonedTypes();
-    for(Usage& usage : symbol_table.usages){
+    for(const Usage& usage : symbol_table.usages){
         if(usage.type == DECLARE){
             Symbol& sym = symbol_table.symbols[usage.var_id];
             if(sym.type == UNINITIALISED || sym.type == RECURSIVE_CYCLE){
@@ -115,7 +115,7 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
                 parse_tree.setType(pn, OP_REASSIGN_SUBSCRIPT);
                 return pn;
             }else{
-                size_t sym_id = parse_tree.getFlag(parse_tree.getFlag(parse_tree.lhs(pn)));
+                size_t sym_id = parse_tree.getSymId(parse_tree.lhs(pn));
                 Symbol& sym = symbol_table.symbols[sym_id];
 
                 ParseNode rhs = resolveExprTop(parse_tree.rhs(pn), sym.rows, sym.cols);
@@ -434,8 +434,7 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
         case OP_IDENTIFIER:
         case OP_READ_GLOBAL:
         case OP_READ_UPVALUE:{
-            ParseNode var = parse_tree.getFlag(pn);
-            size_t sym_id = parse_tree.getFlag(var);
+            size_t sym_id = parse_tree.getSymId(pn);
             Symbol& sym = symbol_table.symbols[sym_id];
             parse_tree.setRows(pn, sym.rows);
             parse_tree.setCols(pn, sym.cols);

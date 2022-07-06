@@ -45,6 +45,9 @@ void SymbolTableBuilder::resolveSymbols() alloc_except {
     for(const Usage& usage : symbol_table.usages){
         const Symbol& sym = symbol_table.symbols[usage.var_id];
 
+        assert(parse_tree.getOp(usage.pn) != OP_IDENTIFIER ||
+            symbol_table.getSel(parse_tree.getFlag(usage.pn)) == sym.sel(parse_tree));
+
         SemanticType fmt = SEM_ID;
         if(sym.is_ewise_index){
             fmt = SEM_ID_EWISE_INDEX;
@@ -298,6 +301,7 @@ bool SymbolTableBuilder::resolvePotentialIdSub(ParseNode pn) alloc_except {
         return false;
 
     parse_tree.setOp(pn, OP_IDENTIFIER);
+    fixSubIdDocMap(pn);
 
     return true;
 }
@@ -334,7 +338,7 @@ void SymbolTableBuilder::resolveReference(ParseNode pn, size_t sym_id) alloc_exc
     if(sym_id >= cutoff) errors.push_back(Error(parse_tree.getSelection(pn), BAD_DEFAULT_ARG));
 
     Symbol& sym = symbol_table.symbols[sym_id];
-    parse_tree.setFlag(pn, sym.flag);
+    parse_tree.setSymId(pn, sym_id);
     sym.is_used = true;
 
     symbol_table.addOccurence(parse_tree.getLeft(pn), sym_id);
@@ -344,6 +348,8 @@ void SymbolTableBuilder::resolveReference(ParseNode pn, size_t sym_id) alloc_exc
 }
 
 void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except {
+    //DO THIS - update doc map
+
     Typeset::Marker m = left;
     while(m != right){
         m.incrementGrapheme();
@@ -380,6 +386,8 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
 
 void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except {
     assert(left.text != right.text);
+
+    //DO THIS - update doc map
 
     Typeset::Marker m = left;
     Typeset::Marker end(m.text, m.text->numChars());
@@ -592,6 +600,7 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn) alloc_except {
     if(lhs_type_eligible && rhs_type_eligible && UNDECLARED_ELEMS){
         parse_tree.setFlag(pn, OP_SUBSCRIPT_ACCESS); //EVENTUALLY: this is held together with duct tape and prayers
         parse_tree.setOp(pn, OP_IDENTIFIER);
+        fixSubIdDocMap(pn);
         resolveReference<true>(pn);
     }else{
         resolveDefault(pn);
@@ -670,6 +679,20 @@ bool SymbolTableBuilder::declared(ParseNode pn) const noexcept{
 size_t SymbolTableBuilder::symIndex(ParseNode pn) const noexcept{
     const auto& lookup = map.find(parse_tree.getSelection(pn));
     return lookup == map.end() ? NONE : lookup->second;
+}
+
+void SymbolTableBuilder::fixSubIdDocMap(ParseNode pn) const alloc_except {
+    //Update doc map
+    parse_tree.getSelection(pn).mapConstructToParseNode(pn);
+
+    parse_tree.getLeft(parse_tree.lhs(pn)).text->retagParseNodeLast(pn);
+
+    ParseNode sub = parse_tree.rhs(pn);
+    Typeset::Text* t = parse_tree.getLeft(sub).text;
+    if(parse_tree.getOp(sub) == OP_INTEGER_LITERAL)
+        t->tagParseNode(pn, 0, t->numChars());
+    else
+        t->retagParseNode(pn, 0);
 }
 
 void SymbolTableBuilder::increaseLexicalDepth(

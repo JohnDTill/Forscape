@@ -95,6 +95,7 @@ private:
     bool defineLocalScope(ParseNode pn, bool immutable = true) alloc_except;
     bool declared(ParseNode pn) const noexcept;
     size_t symIndex(ParseNode pn) const noexcept;
+    void fixSubIdDocMap(ParseNode pn) const alloc_except;
 };
 
 }

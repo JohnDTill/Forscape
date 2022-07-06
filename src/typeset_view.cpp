@@ -528,6 +528,7 @@ void View::resolveTooltip(double x, double y) noexcept{
     }
 
     //DO THIS: delete
+    /*
     Controller c = model->idAt(x, y);
     if(c.hasSelection()){
         setToolTipDuration(std::numeric_limits<int>::max());
@@ -548,6 +549,7 @@ void View::resolveTooltip(double x, double y) noexcept{
             return;
         }
     }
+    */
 
     ParseNode pn = model->parseNodeAt(x, y);
     #ifndef NDEBUG
@@ -666,20 +668,11 @@ void View::stopCursorBlink() noexcept {
 void View::updateHighlightingFromCursorLocation(){
     highlighted_words.clear();
 
-    Controller c = model->idAt(controller.active);
-    if(c.hasSelection()){
-        auto& symbol_table = model->symbol_builder.symbol_table;
-        symbol_table.getSymbolOccurences(c.getAnchor(), highlighted_words);
-    }
-
-    //DO THIS
-    /*
     const std::pair<ParseNode, ParseNode> parse_nodes = controller.active.parseNodesAround();
     if(parse_nodes.first != NONE)
         populateHighlightWordsFromParseNode(parse_nodes.first);
     if(parse_nodes.second != NONE && parse_nodes.second != parse_nodes.first)
         populateHighlightWordsFromParseNode(parse_nodes.second);
-    */
 
     update();
     updateAfterHighlightChange();

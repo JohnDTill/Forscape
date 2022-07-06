@@ -903,6 +903,8 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
                 advance();
                 advance();
                 parse_tree.setRight(id, rMark());
+                registerParseNodeRegion(id, index-1);
+                parse_tree.getSelection(id).mapConstructToParseNode(id);
                 consume(ARGCLOSE);
                 return identifierFollowOn(id);
             }
@@ -935,11 +937,14 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
 ParseNode Parser::isolatedIdentifier() alloc_except{
     if(!peek(IDENTIFIER)) return error(UNRECOGNIZED_SYMBOL);
     ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
+    registerParseNodeRegion(id, index-1);
     switch (currentType()) {
         case TOKEN_SUBSCRIPT:
             advance();
             if((match(IDENTIFIER) || match(INTEGER)) && match(ARGCLOSE)){
                 parse_tree.setRight(id, rMarkPrev());
+                registerParseNodeRegion(id, index-2);
+                parse_tree.getSelection(id).mapConstructToParseNode(id);
                 return id;
             }else{
                 return error(INVALID_PARAMETER);
@@ -948,12 +953,13 @@ ParseNode Parser::isolatedIdentifier() alloc_except{
             advance();
             if((match(IDENTIFIER) || match(MULTIPLY)) && match(ARGCLOSE)){
                 parse_tree.setRight(id, rMarkPrev());
+                registerParseNodeRegion(id, index-2);
+                parse_tree.getSelection(id).mapConstructToParseNode(id);
                 return id;
             }else{
                 return error(INVALID_PARAMETER);
             }
         default:
-            registerParseNodeRegion(id, index-1);
             return id;
     }
 }
@@ -1460,7 +1466,7 @@ void Parser::finishPatch(ParseNode pn) noexcept {
     for(size_t i = frame; i < token_map_stack.size(); i++){
         const auto& entry = token_map_stack[i];
         const Typeset::Marker& m = tokens[entry.first].sel.left;
-        m.text->retagParseNode(pn, entry.second);
+        m.text->patchParseNode(pn, entry.second);
     }
 
     token_map_stack.resize(frame);

@@ -114,6 +114,18 @@ ParseNode ParseTree::refCapList(ParseNode pn) const noexcept {
     return arg<1>(pn);
 }
 
+void ParseTree::setSymId(ParseNode pn, size_t sym_id) noexcept {
+    assert(isNode(pn));
+    //assert(getOp(pn) == OP_IDENTIFIER); //DO THIS
+    setFlag(pn, sym_id);
+}
+
+size_t ParseTree::getSymId(ParseNode pn) const noexcept{
+    assert(isNode(pn));
+    assert(getOp(pn) == OP_IDENTIFIER);
+    return getFlag(pn);
+}
+
 void ParseTree::setRefList(ParseNode fn, ParseNode list) noexcept {
     assert(getOp(fn) == OP_ALGORITHM || getOp(fn) == OP_LAMBDA);
     setArg<1>(fn, list);
