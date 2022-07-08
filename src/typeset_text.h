@@ -102,7 +102,6 @@ class Text {
             parse_nodes.back().pn = pn;
         }
 
-
         void retagParseNode(ParseNode pn, size_t index) noexcept {
             assert(index < parse_nodes.size());
             parse_nodes[index].pn = pn;
@@ -111,6 +110,23 @@ class Text {
         void patchParseNode(ParseNode pn, size_t index) noexcept {
             assert(parse_nodes[index].pn == NONE);
             retagParseNode(pn, index);
+        }
+
+        void popParseNode() noexcept {
+            assert(!parse_nodes.empty());
+            parse_nodes.pop_back();
+        }
+
+        size_t parseNodeTagIndex(size_t char_index) const noexcept;
+
+        void insertParseNodes(size_t index, size_t n) alloc_except {
+            //DO THIS - don't double allocate
+            std::vector<ParseNodeTag> in(n);
+            parse_nodes.insert(parse_nodes.begin() + index, in.begin(), in.end());
+        }
+
+        void patchParseNode(size_t index, ParseNode pn, size_t start, size_t end) noexcept {
+            parse_nodes[index] = ParseNodeTag(pn, start, end);
         }
 
         #ifdef HOPE_SEMANTIC_DEBUGGING

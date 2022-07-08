@@ -528,6 +528,19 @@ bool Text::containsXInBounds(double x_test, size_t start, size_t stop) const noe
     return x_test >= xGlobal(start) && x_test <= xGlobal(stop);
 }
 
+size_t Text::parseNodeTagIndex(size_t char_index) const noexcept {
+    assert(char_index < numChars());
+
+    auto search = std::upper_bound(
+                parse_nodes.begin(),
+                parse_nodes.end(),
+                char_index,
+                [](size_t index, const ParseNodeTag& entry){return index < entry.token_end;}
+            );
+
+    return std::distance(parse_nodes.begin(), search);
+}
+
 ParseNode Text::parseNodeAtIndex(size_t index) const noexcept {
     assert(index <= numChars());
 

@@ -3,6 +3,7 @@
 #include <code_parsenode_ops.h>
 #include <hope_common.h>
 #include "typeset_model.h"
+#include "typeset_construct.h"
 #include <algorithm>
 #include <cassert>
 
@@ -61,6 +62,8 @@ void SymbolTableBuilder::resolveSymbols() alloc_except {
     }
 
     assert(!errors.empty() || parse_tree.inFinalState());
+
+    //DO THIS: assert all symbols in the doc map go to a valid symbol
 }
 
 void SymbolTableBuilder::reset() noexcept {
@@ -348,9 +351,8 @@ void SymbolTableBuilder::resolveReference(ParseNode pn, size_t sym_id) alloc_exc
 }
 
 void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except {
-    //DO THIS - update doc map
-
     Typeset::Marker m = left;
+    size_t num_terms = 0;
     while(m != right){
         m.incrementGrapheme();
         if(m.index == m.text->numChars()) m = right;
@@ -361,19 +363,32 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
             return;
         }
         left = m;
+        num_terms++;
     }
 
     parse_tree.prepareNary();
 
     left = parse_tree.getLeft(pn);
+    Typeset::Text* t = left.text;
+    size_t index = t->parseNodeTagIndex(left.index);
+    t->insertParseNodes(index, num_terms-1);
     m = left;
     while(m != right){
+        //DO THIS: clean up
+
         m.incrementGrapheme();
         if(m.index == m.text->numChars()) m = right;
 
         Typeset::Selection sel(left, m);
         auto lookup = map.find(sel);
         ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
+        if(left.text != m.text){
+            t->patchParseNode(index++, pn, left.index, t->numChars());
+            sel.mapConstructToParseNode(pn);
+            left.text->nextConstructAsserted()->frontTextAsserted()->retagParseNode(pn, 0);
+        }else{
+            t->patchParseNode(index++, pn, left.index, m.index);
+        }
         resolveReference(pn, lookup->second);
         parse_tree.addNaryChild(pn);
         left = m;
@@ -386,8 +401,6 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
 
 void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except {
     assert(left.text != right.text);
-
-    //DO THIS - update doc map
 
     Typeset::Marker m = left;
     Typeset::Marker end(m.text, m.text->numChars());
@@ -418,17 +431,22 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
 
     parse_tree.prepareNary();
     left = parse_tree.getLeft(pn);
+    Typeset::Text* t = left.text;
+    t->popParseNode();
     m = left;
     while(m != end){
         m.incrementGrapheme();
         Typeset::Selection sel(left, m);
         auto lookup = map.find(sel);
         ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
+        t->tagParseNode(pn, left.index, m.index);
         resolveReference(pn, lookup->second);
         parse_tree.addNaryChild(pn);
         left = m;
     }
     parse_tree.addNaryChild(script);
+    t->tagParseNode(script, left.index, t->numChars());
+    fixSubIdDocMap(script);
     ParseNode mult = parse_tree.finishNary(OP_IMPLICIT_MULTIPLY);
 
     parse_tree.setFlag(pn, mult);
