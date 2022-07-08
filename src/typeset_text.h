@@ -85,7 +85,36 @@ class Text {
                 : pn(pn), token_start(token_start), token_end(token_end) {}
         };
 
-        std::vector<ParseNodeTag> parse_nodes;
+        #ifdef HOPE_SEMANTIC_DEBUGGING
+        std::string toSerialWithSemanticTags() const;
+        #endif
+
+        #ifndef HOPE_TYPESET_HEADLESS
+        double aboveCenter() const noexcept;
+        double underCenter() const noexcept;
+        double height() const noexcept;
+        double xLocal(size_t index) const noexcept;
+        double xPhrase(size_t index) const;
+        double xGlobal(size_t index) const;
+        double xRight() const noexcept;
+        double yBot() const noexcept;
+        double getWidth() const noexcept;
+        void updateWidth() noexcept;
+        uint8_t scriptDepth() const noexcept;
+        size_t charIndexNearest(double x_in) const noexcept;
+        size_t charIndexLeft(double x_in) const noexcept;
+        void paint(Painter& painter, bool forward = true) const;
+        void paintUntil(Painter& painter, size_t stop, bool forward = true) const;
+        void paintAfter(Painter& painter, size_t start, bool forward = true) const;
+        void paintMid(Painter& painter, size_t start, size_t stop, bool forward = true) const;
+        void paintGrouping(Painter& painter, size_t start) const;
+        bool containsX(double x_test) const noexcept;
+        bool containsY(double y_test) const noexcept;
+        bool containsXInBounds(double x_test, size_t start, size_t stop) const noexcept;
+        double x  DEBUG_INIT_STALE;
+        double y  DEBUG_INIT_STALE;
+
+        void populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept;
 
         size_t tagParseNode(ParseNode pn, size_t token_start, size_t token_end) alloc_except {
             assert(token_end > token_start);
@@ -129,37 +158,10 @@ class Text {
             parse_nodes[index] = ParseNodeTag(pn, start, end);
         }
 
-        #ifdef HOPE_SEMANTIC_DEBUGGING
-        std::string toSerialWithSemanticTags() const;
-        #endif
-
-        #ifndef HOPE_TYPESET_HEADLESS
-        double aboveCenter() const noexcept;
-        double underCenter() const noexcept;
-        double height() const noexcept;
-        double xLocal(size_t index) const noexcept;
-        double xPhrase(size_t index) const;
-        double xGlobal(size_t index) const;
-        double xRight() const noexcept;
-        double yBot() const noexcept;
-        double getWidth() const noexcept;
-        void updateWidth() noexcept;
-        uint8_t scriptDepth() const noexcept;
-        size_t charIndexNearest(double x_in) const noexcept;
-        size_t charIndexLeft(double x_in) const noexcept;
-        void paint(Painter& painter, bool forward = true) const;
-        void paintUntil(Painter& painter, size_t stop, bool forward = true) const;
-        void paintAfter(Painter& painter, size_t start, bool forward = true) const;
-        void paintMid(Painter& painter, size_t start, size_t stop, bool forward = true) const;
-        void paintGrouping(Painter& painter, size_t start) const;
-        bool containsX(double x_test) const noexcept;
-        bool containsY(double y_test) const noexcept;
-        bool containsXInBounds(double x_test, size_t start, size_t stop) const noexcept;
-        double x  DEBUG_INIT_STALE;
-        double y  DEBUG_INIT_STALE;
-
         ParseNode parseNodeAtIndex(size_t index) const noexcept;
         ParseNode parseNodeAtX(double x) const noexcept;
+
+        std::vector<ParseNodeTag> parse_nodes;
         #endif
 
     private:

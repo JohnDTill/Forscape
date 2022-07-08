@@ -560,6 +560,17 @@ ParseNode Text::parseNodeAtX(double x) const noexcept {
     assert(containsX(x));
     return parseNodeAtIndex( charIndexLeft(x) );
 }
+
+#ifndef NDEBUG
+void Text::populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept{
+    for(size_t i = 0; i < parse_nodes.size(); i++){
+        const ParseNodeTag& tag = parse_nodes[i];
+        nodes.insert(tag.pn);
+
+        assert(i == 0 || tag.token_start >= parse_nodes[i-1].token_end);
+    }
+}
+#endif
 #endif
 
 }

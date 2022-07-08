@@ -4,6 +4,13 @@
 #include <hope_common.h>
 #include "typeset_model.h"
 
+#ifdef HOPE_TYPESET_HEADLESS
+#define registerParseNodeRegion(a, b)
+#define registerParseNodeRegionToPatch(a)
+#define startPatch()
+#define finishPatch(a)
+#endif
+
 namespace Hope {
 
 namespace Code {
@@ -903,8 +910,10 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
                 advance();
                 advance();
                 parse_tree.setRight(id, rMark());
+                #ifndef HOPE_TYPESET_HEADLESS
                 registerParseNodeRegion(id, index-1);
                 parse_tree.getSelection(id).mapConstructToParseNode(id);
+                #endif
                 consume(ARGCLOSE);
                 return identifierFollowOn(id);
             }
@@ -943,8 +952,10 @@ ParseNode Parser::isolatedIdentifier() alloc_except{
             advance();
             if((match(IDENTIFIER) || match(INTEGER)) && match(ARGCLOSE)){
                 parse_tree.setRight(id, rMarkPrev());
+                #ifndef HOPE_TYPESET_HEADLESS
                 registerParseNodeRegion(id, index-2);
                 parse_tree.getSelection(id).mapConstructToParseNode(id);
+                #endif
                 return id;
             }else{
                 return error(INVALID_PARAMETER);
@@ -953,8 +964,10 @@ ParseNode Parser::isolatedIdentifier() alloc_except{
             advance();
             if((match(IDENTIFIER) || match(MULTIPLY)) && match(ARGCLOSE)){
                 parse_tree.setRight(id, rMarkPrev());
+                #ifndef HOPE_TYPESET_HEADLESS
                 registerParseNodeRegion(id, index-2);
                 parse_tree.getSelection(id).mapConstructToParseNode(id);
+                #endif
                 return id;
             }else{
                 return error(INVALID_PARAMETER);
@@ -1169,7 +1182,9 @@ ParseNode Parser::matrix() alloc_except{
 
     ParseNode m = parse_tree.finishNary(OP_MATRIX, c);
     parse_tree.setFlag(m, c.getMatrixRows());
+    #ifndef HOPE_TYPESET_HEADLESS
     c.mapConstructToParseNode(m);
+    #endif
 
     return m;
 }
@@ -1308,6 +1323,7 @@ ParseNode Parser::big(Op type) alloc_except{
     consume(ARGCLOSE);
     if(!noErrors() || !peek(IDENTIFIER)) return error(UNRECOGNIZED_SYMBOL, err_sel);
     ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
+    registerParseNodeRegion(id, index-1);
     if(!match(EQUALS) && !match(LEFTARROW)) return error(UNRECOGNIZED_SYMBOL, err_sel);
     ParseNode start = expression();
     ParseNode assign = parse_tree.addNode<2>(OP_ASSIGN, {id, start});
@@ -1437,6 +1453,7 @@ void Parser::recover() noexcept{
     index = tokens.size()-1; //Give up for now //EVENTUALLY: improve error recovery
 }
 
+#ifndef HOPE_TYPESET_HEADLESS
 void Parser::registerParseNodeRegion(ParseNode pn, size_t token_index) alloc_except {
     assert(token_index < tokens.size());
     assert(parse_tree.isLastAllocatedNode(pn));
@@ -1471,6 +1488,7 @@ void Parser::finishPatch(ParseNode pn) noexcept {
 
     token_map_stack.resize(frame);
 }
+#endif
 
 }
 

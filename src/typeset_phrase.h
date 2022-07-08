@@ -86,6 +86,7 @@ public:
     #ifndef NDEBUG
     virtual void invalidateWidth() noexcept = 0;
     virtual void invalidateDims() noexcept = 0;
+    void populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept;
     #endif
     #endif
 

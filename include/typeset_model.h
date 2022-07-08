@@ -60,6 +60,9 @@ public:
     void paint(Painter& painter) const;
     void paint(Painter& painter, double xL, double yT, double xR, double yB) const;
     void paintGroupings(Painter& painter, const Typeset::Marker& loc) const;
+    #ifndef NDEBUG
+    void populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept;
+    #endif
     #endif
 
     #ifndef NDEBUG

@@ -17,6 +17,7 @@ private:
     std::vector<Error>& errors;
     std::vector<Error>& warnings;
     ParseTree& parse_tree;
+    Typeset::Model* model;
 
 public:
     SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model) noexcept;
@@ -95,7 +96,10 @@ private:
     bool defineLocalScope(ParseNode pn, bool immutable = true) alloc_except;
     bool declared(ParseNode pn) const noexcept;
     size_t symIndex(ParseNode pn) const noexcept;
+
+    #ifndef HOPE_TYPESET_HEADLESS
     void fixSubIdDocMap(ParseNode pn) const alloc_except;
+    #endif
 };
 
 }

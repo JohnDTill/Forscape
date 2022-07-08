@@ -127,6 +127,10 @@ public:
         const Typeset::Marker& start, ParseNode closure = NONE) alloc_except;
     void closeScope(const Typeset::Marker& stop) alloc_except;
     void finalize() noexcept;
+
+    #ifndef NDEBUG
+    void verifyIdentifier(ParseNode pn) const noexcept;
+    #endif
 };
 
 }

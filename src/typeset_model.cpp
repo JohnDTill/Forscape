@@ -506,6 +506,12 @@ Selection Model::idAt(double x, double y) noexcept{
 ParseNode Model::parseNodeAt(double x, double y) const noexcept {
     return nearestLine(y)->parseNodeAt(x, y);
 }
+
+#ifndef NDEBUG
+void Model::populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept{
+    for(Line* l : lines) l->populateDocMapParseNodes(nodes);
+}
+#endif
 #endif
 
 #ifndef NDEBUG
@@ -566,7 +572,9 @@ void Model::clearFormatting() noexcept{
     Text* t = firstText();
     for(;;){
         t->tags.clear();
+        #ifndef HOPE_TYPESET_HEADLESS
         t->parse_nodes.clear();
+        #endif
 
         if(Construct* c = t->nextConstructInPhrase()){
             Text* candidate = c->frontText();

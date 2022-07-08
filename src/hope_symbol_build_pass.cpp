@@ -27,7 +27,7 @@ HOPE_STATIC_MAP<std::string_view, Op> SymbolTableBuilder::predef {
 };
 
 SymbolTableBuilder::SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model) noexcept
-    : errors(model->errors), warnings(model->warnings), parse_tree(parse_tree), symbol_table(parse_tree) {}
+    : errors(model->errors), warnings(model->warnings), parse_tree(parse_tree), model(model), symbol_table(parse_tree) {}
 
 void SymbolTableBuilder::resolveSymbols() alloc_except {
     reset();
@@ -47,7 +47,7 @@ void SymbolTableBuilder::resolveSymbols() alloc_except {
         const Symbol& sym = symbol_table.symbols[usage.var_id];
 
         assert(parse_tree.getOp(usage.pn) != OP_IDENTIFIER ||
-            symbol_table.getSel(parse_tree.getFlag(usage.pn)) == sym.sel(parse_tree));
+            symbol_table.getSel(parse_tree.getSymId(usage.pn)) == sym.sel(parse_tree));
 
         SemanticType fmt = SEM_ID;
         if(sym.is_ewise_index){
@@ -61,9 +61,28 @@ void SymbolTableBuilder::resolveSymbols() alloc_except {
         parse_tree.getSelection(usage.pn).format(fmt);
     }
 
-    assert(!errors.empty() || parse_tree.inFinalState());
+    #ifndef NDEBUG
+    if(!errors.empty()) return;
+    assert(parse_tree.inFinalState());
 
-    //DO THIS: assert all symbols in the doc map go to a valid symbol
+    /* //DO THIS - verify doc map
+    #ifndef HOPE_TYPESET_HEADLESS
+    static std::unordered_set<ParseNode> doc_map_nodes;
+    doc_map_nodes.clear();
+
+    model->populateDocMapParseNodes(doc_map_nodes);
+
+    //Every identifier in the doc map goes to a valid symbol
+    for(ParseNode pn : doc_map_nodes)
+        if(parse_tree.getOp(pn) == OP_IDENTIFIER)
+            symbol_table.verifyIdentifier(pn);
+
+    //Every usage in the symbol table is in the doc map
+    for(const Usage& usage : symbol_table.usages)
+        assert(doc_map_nodes.find(usage.pn) != doc_map_nodes.end());
+    #endif
+    */
+    #endif
 }
 
 void SymbolTableBuilder::reset() noexcept {
@@ -304,7 +323,9 @@ bool SymbolTableBuilder::resolvePotentialIdSub(ParseNode pn) alloc_except {
         return false;
 
     parse_tree.setOp(pn, OP_IDENTIFIER);
+    #ifndef HOPE_TYPESET_HEADLESS
     fixSubIdDocMap(pn);
+    #endif
 
     return true;
 }
@@ -370,8 +391,12 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
 
     left = parse_tree.getLeft(pn);
     Typeset::Text* t = left.text;
+
+    #ifndef HOPE_TYPESET_HEADLESS
     size_t index = t->parseNodeTagIndex(left.index);
     t->insertParseNodes(index, num_terms-1);
+    #endif
+
     m = left;
     while(m != right){
         //DO THIS: clean up
@@ -382,6 +407,7 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
         Typeset::Selection sel(left, m);
         auto lookup = map.find(sel);
         ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
+        #ifndef HOPE_TYPESET_HEADLESS
         if(left.text != m.text){
             t->patchParseNode(index++, pn, left.index, t->numChars());
             sel.mapConstructToParseNode(pn);
@@ -389,6 +415,7 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
         }else{
             t->patchParseNode(index++, pn, left.index, m.index);
         }
+        #endif
         resolveReference(pn, lookup->second);
         parse_tree.addNaryChild(pn);
         left = m;
@@ -432,21 +459,27 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
     parse_tree.prepareNary();
     left = parse_tree.getLeft(pn);
     Typeset::Text* t = left.text;
+    #ifndef HOPE_TYPESET_HEADLESS
     t->popParseNode();
+    #endif
     m = left;
     while(m != end){
         m.incrementGrapheme();
         Typeset::Selection sel(left, m);
         auto lookup = map.find(sel);
         ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
+        #ifndef HOPE_TYPESET_HEADLESS
         t->tagParseNode(pn, left.index, m.index);
+        #endif
         resolveReference(pn, lookup->second);
         parse_tree.addNaryChild(pn);
         left = m;
     }
     parse_tree.addNaryChild(script);
+    #ifndef HOPE_TYPESET_HEADLESS
     t->tagParseNode(script, left.index, t->numChars());
     fixSubIdDocMap(script);
+    #endif
     ParseNode mult = parse_tree.finishNary(OP_IMPLICIT_MULTIPLY);
 
     parse_tree.setFlag(pn, mult);
@@ -590,7 +623,8 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn) alloc_except {
 
     for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
         ParseNode param = parse_tree.arg(params, i);
-        size_t sym_id = parse_tree.getFlag(param);
+        if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
+        size_t sym_id = parse_tree.getSymId(param);
         if(sym_id != NONE){
             Symbol& sym = symbol_table.symbols[sym_id];
             sym.is_const = !sym.is_reassigned;
@@ -618,7 +652,9 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn) alloc_except {
     if(lhs_type_eligible && rhs_type_eligible && UNDECLARED_ELEMS){
         parse_tree.setFlag(pn, OP_SUBSCRIPT_ACCESS); //EVENTUALLY: this is held together with duct tape and prayers
         parse_tree.setOp(pn, OP_IDENTIFIER);
+        #ifndef HOPE_TYPESET_HEADLESS
         fixSubIdDocMap(pn);
+        #endif
         resolveReference<true>(pn);
     }else{
         resolveDefault(pn);
@@ -699,6 +735,7 @@ size_t SymbolTableBuilder::symIndex(ParseNode pn) const noexcept{
     return lookup == map.end() ? NONE : lookup->second;
 }
 
+#ifndef HOPE_TYPESET_HEADLESS
 void SymbolTableBuilder::fixSubIdDocMap(ParseNode pn) const alloc_except {
     //Update doc map
     parse_tree.getSelection(pn).mapConstructToParseNode(pn);
@@ -712,6 +749,7 @@ void SymbolTableBuilder::fixSubIdDocMap(ParseNode pn) const alloc_except {
     else
         t->retagParseNode(pn, 0);
 }
+#endif
 
 void SymbolTableBuilder::increaseLexicalDepth(
         #ifdef HOPE_USE_SCOPE_NAME
@@ -788,7 +826,7 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end) alloc_
         assert(sel.left != sel.right);
         ParseNode n = parse_tree.addTerminal(op, sel);
         assert(parse_tree.getSelection(n) == sel);
-        parse_tree.setFlag(n, sym_id);
+        parse_tree.setSymId(n, sym_id);
         parse_tree.addNaryChild(n);
 
         if(sym.declaration_closure_depth <= (closure_depth - sym.is_captured_by_value)){

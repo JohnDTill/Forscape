@@ -198,6 +198,11 @@ void Construct::invalidateDims() noexcept{
     width = above_center = under_center = STALE;
     parent->invalidateDims();
 }
+
+void Construct::populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept{
+    for(Subphrase* s : args) s->populateDocMapParseNodes(nodes);
+    if(pn != NONE) nodes.insert(pn); //EVENTUALLY: probably assert(pn != NONE)
+}
 #endif
 
 Construct::ContextAction::ContextAction(const std::string& name, void (*takeAction)(Construct*, Controller&, Subphrase*))

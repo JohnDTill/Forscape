@@ -401,6 +401,16 @@ ParseNode Phrase::parseNodeAt(double x, double y) const noexcept {
         else return NONE;
     }
 }
+
+#ifndef NDEBUG
+void Phrase::populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept{
+    for(size_t i = 0; i < constructs.size(); i++){
+        text(i)->populateDocMapParseNodes(nodes);
+        construct(i)->populateDocMapParseNodes(nodes);
+    }
+    back()->populateDocMapParseNodes(nodes);
+}
+#endif
 #endif
 
 }

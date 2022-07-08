@@ -184,6 +184,16 @@ void SymbolTable::finalize() noexcept {
     scope.usage_end = usages.size();
 }
 
+#ifndef NDEBUG
+void SymbolTable::verifyIdentifier(ParseNode pn) const noexcept {
+    assert(parse_tree.getOp(pn) == OP_IDENTIFIER);
+    size_t sym_id = parse_tree.getSymId(pn);
+    assert(sym_id < symbols.size());
+    const Symbol& sym = symbols[sym_id];
+    assert(parse_tree.getSelection(pn) == sym.sel(parse_tree));
+}
+#endif
+
 }
 
 }

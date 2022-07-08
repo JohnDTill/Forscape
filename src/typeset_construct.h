@@ -87,7 +87,10 @@ public:
     #ifndef NDEBUG
     void invalidateWidth() noexcept;
     void invalidateDims() noexcept;
+    void populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept;
     #endif
+
+    ParseNode pn  DEBUG_INIT_NONE;
 
     struct ContextAction {
         void(*takeAction)(Construct* con, Controller& c, Subphrase* child);
@@ -101,8 +104,6 @@ public:
     static const std::vector<ContextAction> no_actions;
     virtual const std::vector<ContextAction>& getContextActions(Subphrase*) const noexcept;
     #endif
-
-    ParseNode pn  DEBUG_INIT_NONE;
 
     Subphrase* arg(size_t index) const noexcept;
 

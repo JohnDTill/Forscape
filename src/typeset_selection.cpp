@@ -214,13 +214,6 @@ size_t Selection::getMatrixRows() const noexcept{
     return static_cast<Typeset::Matrix*>(tL->nextConstructAsserted())->rows;
 }
 
-void Selection::mapConstructToParseNode(ParseNode pn) const noexcept{
-    assert(isPhraseSelection());
-    assert(tR->id == tL->id+1);
-
-    tL->nextConstructAsserted()->pn = pn;
-}
-
 void Selection::formatBasicIdentifier() const noexcept{
     formatSimple(SEM_ID);
 }
@@ -730,6 +723,13 @@ bool Selection::overlapsY(double yT, double yB) const noexcept {
     const double yT_this = yTop();
     const double yB_this = yBot();
     return (yT_this >= yT && yT_this <= yB) || (yB_this >= yT && yB_this <= yB);
+}
+
+void Selection::mapConstructToParseNode(ParseNode pn) const noexcept{
+    assert(isPhraseSelection());
+    assert(tR->id == tL->id+1);
+
+    tL->nextConstructAsserted()->pn = pn;
 }
 #endif
 

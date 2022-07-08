@@ -44,7 +44,6 @@ public:
 
     size_t getConstructArgSize() const noexcept;
     size_t getMatrixRows() const noexcept;
-    void mapConstructToParseNode(ParseNode pn) const noexcept;
     void formatBasicIdentifier() const noexcept;
     void formatComment() const noexcept;
     void formatKeyword() const noexcept;
@@ -80,6 +79,7 @@ public:
     double yTopPhrase() const noexcept;
     double yBotPhrase() const noexcept;
     bool overlapsY(double yT, double yB) const noexcept;
+    void mapConstructToParseNode(ParseNode pn) const noexcept;
 
     static constexpr double EMPTY_SUBPHRASE_MARGIN = 6;
     #endif
