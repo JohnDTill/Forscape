@@ -478,31 +478,6 @@ void Model::paintGroupings(Painter& painter, const Marker& loc) const{
     #endif
 }
 
-Selection Model::idAt(double x, double y) noexcept{
-    Line* l = nearestLine(y);
-    if(!l->containsY(y)) return Selection();
-
-    Text* t = l->textNearest(x, y);
-    if(!t->containsX(x) || !t->containsY(y)) return Selection();
-
-    size_t index = t->charIndexLeft(x);
-
-    SemanticType type = t->getTypeLeftOf(index);
-    if(!isId(type)) return Selection();
-
-    size_t start = 0;
-    size_t end = t->numChars();
-    for(auto it = t->tags.rbegin(); it != t->tags.rend(); it++){
-        if(it->index <= index){
-            start = it->index;
-            break;
-        }
-        end = it->index;
-    }
-
-    return Selection(t, start, end);
-}
-
 ParseNode Model::parseNodeAt(double x, double y) const noexcept {
     return nearestLine(y)->parseNodeAt(x, y);
 }

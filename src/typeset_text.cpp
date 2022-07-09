@@ -528,6 +528,44 @@ bool Text::containsXInBounds(double x_test, size_t start, size_t stop) const noe
     return x_test >= xGlobal(start) && x_test <= xGlobal(stop);
 }
 
+size_t Text::tagParseNode(ParseNode pn, size_t token_start, size_t token_end) alloc_except {
+    assert(token_end > token_start);
+    assert(token_end <= numChars());
+    assert(parse_nodes.empty() || token_start >= parse_nodes.back().token_end);
+
+    size_t index = parse_nodes.size();
+    parse_nodes.push_back(ParseNodeTag(pn, token_start, token_end));
+    return index;
+}
+
+void Text::retagParseNodeLast(ParseNode pn) noexcept {
+    assert(!parse_nodes.empty());
+    parse_nodes.back().pn = pn;
+}
+
+void Text::retagParseNode(ParseNode pn, size_t index) noexcept {
+    assert(index < parse_nodes.size());
+    parse_nodes[index].pn = pn;
+}
+
+void Text::patchParseNode(ParseNode pn, size_t index) noexcept {
+    assert(parse_nodes[index].pn == NONE);
+    retagParseNode(pn, index);
+}
+
+void Text::patchParseNode(size_t index, ParseNode pn, size_t start, size_t end) noexcept {
+    parse_nodes[index] = ParseNodeTag(pn, start, end);
+}
+
+void Text::popParseNode() noexcept {
+    assert(!parse_nodes.empty());
+    parse_nodes.pop_back();
+}
+
+void Text::insertParseNodes(size_t index, size_t n) alloc_except {
+    parse_nodes.insert(parse_nodes.begin() + index, n, ParseNodeTag(NONE, NONE, NONE));
+}
+
 size_t Text::parseNodeTagIndex(size_t char_index) const noexcept {
     assert(char_index < numChars());
 

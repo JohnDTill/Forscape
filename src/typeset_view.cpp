@@ -1134,7 +1134,7 @@ void View::rename(){
 void View::goToDef(){
     logger->info("{}goToDef();", logPrefix());
 
-    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == OP_IDENTIFIER);
+    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
     auto& symbol_table = model->symbol_builder.symbol_table;
     controller = symbol_table.getSel(model->parseTree().getSymId(contextNode));
     restartCursorBlink();
@@ -1147,7 +1147,7 @@ void View::findUsages(){
 
     assert(console);
 
-    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == OP_IDENTIFIER);
+    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
     auto& symbol_table = model->symbol_builder.symbol_table;
     std::vector<Typeset::Selection> occurences;
     symbol_table.getSymbolOccurences(model->parseTree().getSymId(contextNode), occurences);
@@ -1313,7 +1313,7 @@ void View::paste(const std::string& str){
 void View::rename(const std::string& str){
     logger->info("{}rename({});", logPrefix(), cStr(str));
 
-    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == OP_IDENTIFIER);
+    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
     auto& symbol_table = model->symbol_builder.symbol_table;
     std::vector<Typeset::Selection> occurences;
     symbol_table.getSymbolOccurences(model->parseTree().getSymId(contextNode), occurences);

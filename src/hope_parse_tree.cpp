@@ -116,7 +116,7 @@ ParseNode ParseTree::refCapList(ParseNode pn) const noexcept {
 
 void ParseTree::setSymId(ParseNode pn, size_t sym_id) noexcept {
     assert(isNode(pn));
-    //assert(getOp(pn) == OP_IDENTIFIER); //DO THIS
+    assert(getOp(pn) == OP_IDENTIFIER);
     setFlag(pn, sym_id);
 }
 

@@ -841,7 +841,7 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end) alloc_
         assert(sel.left != sel.right);
         ParseNode n = parse_tree.addTerminal(op, sel);
         assert(parse_tree.getSelection(n) == sel);
-        parse_tree.setSymId(n, sym_id);
+        parse_tree.setFlag(n, sym_id);
         parse_tree.addNaryChild(n);
 
         if(sym.declaration_closure_depth <= (closure_depth - sym.is_captured_by_value)){

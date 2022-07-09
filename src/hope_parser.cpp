@@ -323,7 +323,6 @@ ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
 
     ParseNode id = parse_tree.arg<0>(call);
     if(parse_tree.getOp(id) == OP_SUBSCRIPT_ACCESS){
-        //DO THIS - improve patching the subscript to a single identifier
         parse_tree.setOp(id, OP_IDENTIFIER);
 
         #ifndef HOPE_TYPESET_HEADLESS
