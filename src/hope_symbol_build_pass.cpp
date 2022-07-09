@@ -380,7 +380,6 @@ void SymbolTableBuilder::resolveReference(ParseNode pn, size_t sym_id) alloc_exc
     parse_tree.setSymId(pn, sym_id);
     sym.is_used = true;
 
-    symbol_table.addOccurence(parse_tree.getLeft(pn), sym_id);
     sym.is_closure_nested |= sym.declaration_closure_depth && (closure_depth != sym.declaration_closure_depth);
 
     symbol_table.usages.push_back(Usage(sym_id, pn, READ));
@@ -414,8 +413,6 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
 
     m = left;
     while(m != right){
-        //DO THIS: clean up
-
         m.incrementGrapheme();
         if(m.index == m.text->numChars()) m = right;
 
@@ -592,7 +589,6 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn) alloc_except {
             }
         }else{
             appendEntry(name, lookup->second, true);
-            lookup->second = symbol_table.symbols.size()-1; //DO THIS: what does this do? Why isn't the map updated?
         }
 
         sym.is_prototype = false;
@@ -738,7 +734,6 @@ bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable, bool war
             return false;
         }else{
             appendEntry(pn, lookup->second, immutable, warn_on_shadow);
-            lookup->second = symbol_table.symbols.size()-1;
         }
     }
 
@@ -867,11 +862,12 @@ void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bo
     symbol_table.addSymbol(pn, lexical_depth, closure_depth, NONE, immutable);
 }
 
-void SymbolTableBuilder::appendEntry(ParseNode pn, size_t prev, bool immutable, bool warn_on_shadow) alloc_except {
+void SymbolTableBuilder::appendEntry(ParseNode pn, size_t& old_entry, bool immutable, bool warn_on_shadow) alloc_except {
     //EVENTUALLY: let the user control warnings, decide defaults
     if(warn_on_shadow) warnings.push_back(Error(parse_tree.getSelection(pn), SHADOWING_VAR));
     symbol_table.usages.push_back(Usage(symbol_table.symbols.size(), pn, DECLARE));
-    symbol_table.addSymbol(pn, lexical_depth, closure_depth, prev, immutable);
+    symbol_table.addSymbol(pn, lexical_depth, closure_depth, old_entry, immutable);
+    old_entry = symbol_table.symbols.size()-1;
 }
 
 }

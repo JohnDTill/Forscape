@@ -417,13 +417,11 @@ void View::resolveRightClick(double x, double y, int xScreen, int yScreen){
         }
     }
 
-    Controller c = model->idAt(x, y);
-    if(c.hasSelection()){
-        auto& symbol_table = model->symbol_builder.symbol_table;
-        auto lookup = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
-        append(renameAction, "Rename", rename, true, lookup!=symbol_table.occurence_to_symbol_map.end())
-        append(gotoDefAction, "Go to definition", goToDef, true, lookup!=symbol_table.occurence_to_symbol_map.end())
-        append(gotoDefAction, "Find usages", findUsages, true, console && lookup!=symbol_table.occurence_to_symbol_map.end())
+    contextNode = model->parseNodeAt(x, y);
+    if(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER){
+        append(renameAction, "Rename", rename, true, true)
+        append(gotoDefAction, "Go to definition", goToDef, true, true)
+        append(findUsagesAction, "Find usages", findUsages, true, console)
         menu.addSeparator();
     }
 
@@ -1136,14 +1134,9 @@ void View::rename(){
 void View::goToDef(){
     logger->info("{}goToDef();", logPrefix());
 
-    Controller c = model->idAt(controller.active);
-    assert(c.hasSelection());
-
+    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == OP_IDENTIFIER);
     auto& symbol_table = model->symbol_builder.symbol_table;
-    auto lookup = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
-    assert(lookup != symbol_table.occurence_to_symbol_map.end());
-
-    controller = symbol_table.getSel(lookup->second);
+    controller = symbol_table.getSel(model->parseTree().getSymId(contextNode));
     restartCursorBlink();
     ensureCursorVisible();
     update();
@@ -1154,12 +1147,10 @@ void View::findUsages(){
 
     assert(console);
 
-    Controller c = model->idAt(controller.active);
-    assert(c.hasSelection());
-
+    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == OP_IDENTIFIER);
     auto& symbol_table = model->symbol_builder.symbol_table;
     std::vector<Typeset::Selection> occurences;
-    symbol_table.getSymbolOccurences(c.getAnchor(), occurences);
+    symbol_table.getSymbolOccurences(model->parseTree().getSymId(contextNode), occurences);
 
     Model* m = new Model();
     m->is_output = true;
@@ -1322,12 +1313,11 @@ void View::paste(const std::string& str){
 void View::rename(const std::string& str){
     logger->info("{}rename({});", logPrefix(), cStr(str));
 
-    Controller c = model->idAt(controller.active);
-    assert(c.hasSelection());
-
+    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == OP_IDENTIFIER);
     auto& symbol_table = model->symbol_builder.symbol_table;
     std::vector<Typeset::Selection> occurences;
-    symbol_table.getSymbolOccurences(c.getAnchor(), occurences);
+    symbol_table.getSymbolOccurences(model->parseTree().getSymId(contextNode), occurences);
+
     replaceAll(occurences, str);
 
     ensureCursorVisible();

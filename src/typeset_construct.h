@@ -90,7 +90,7 @@ public:
     void populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept;
     #endif
 
-    ParseNode pn  DEBUG_INIT_NONE;
+    ParseNode pn = NONE; //EVENTUALLY: DEBUG_INIT_NONE;
 
     struct ContextAction {
         void(*takeAction)(Construct* con, Controller& c, Subphrase* child);

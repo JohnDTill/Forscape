@@ -117,13 +117,14 @@ private:
     std::vector<Command*> undo_stack;
     std::vector<Command*> redo_stack;
 
-    Selection idAt(const Marker& marker) noexcept;
     Selection find(const std::string& str) noexcept;
     void performSemanticFormatting();
     void premutate() noexcept;
     void postmutate();
 
     void rename(const std::vector<Selection>& targets, const std::string& name, Controller& c);
+
+    Code::ParseTree& parseTree() noexcept;
 };
 
 }

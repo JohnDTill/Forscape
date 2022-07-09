@@ -32,6 +32,7 @@ def main():
     assert os.path.basename(os.getcwd()) == "meta", "Must run codegen from meta directory"
     if not should_run():
         return
+    shutil.rmtree("../src/generated", ignore_errors=True)
     os.makedirs("../src/generated", exist_ok=True)
     execfile('ast_fields.py')
     execfile('construct_codes.py')

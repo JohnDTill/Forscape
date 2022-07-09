@@ -61,7 +61,7 @@ private:
         const Typeset::Marker& begin, ParseNode pn) alloc_except;
     void decreaseClosureDepth(const Typeset::Marker& end) alloc_except;
     void makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable) alloc_except;
-    void appendEntry(ParseNode pn, size_t prev, bool immutable, bool warn_on_shadow = true) alloc_except;
+    void appendEntry(ParseNode pn, size_t& old_entry, bool immutable, bool warn_on_shadow = true) alloc_except;
     void resolveStmt(ParseNode pn) alloc_except;
     void resolveExpr(ParseNode pn) alloc_except;
     void resolveEquality(ParseNode pn) alloc_except;

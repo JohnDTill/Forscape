@@ -54,15 +54,10 @@ bool ScopeSegment::isEndOfScope() const noexcept{
 }
 
 void SymbolTable::addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed, bool is_const) alloc_except {
-    occurence_to_symbol_map[parse_tree.getLeft(pn)] = symbols.size();
     size_t comment = parse_tree.getFlag(pn);
     parse_tree.setSymId(pn, symbols.size());
     symbols.push_back(Symbol(pn, lexical_depth, closure_depth, shadowed, is_const));
     symbols.back().comment = comment;
-}
-
-void SymbolTable::addOccurence(const Typeset::Marker& left, size_t sym_index) alloc_except {
-    occurence_to_symbol_map[left] = sym_index;
 }
 
 size_t SymbolTable::containingScope(const Typeset::Marker& m) const noexcept{
@@ -113,15 +108,6 @@ const Typeset::Selection& SymbolTable::getSel(size_t sym_index) const noexcept{
     return symbols[sym_index].sel(parse_tree);
 }
 
-void SymbolTable::getSymbolOccurences(const Typeset::Marker& loc, std::vector<Typeset::Selection>& found) const {
-    found.clear();
-    auto lookup = occurence_to_symbol_map.find(loc);
-    if(lookup == occurence_to_symbol_map.end()) return;
-
-    size_t sym_id = lookup->second;
-    getSymbolOccurences(sym_id, found);
-}
-
 void SymbolTable::getSymbolOccurences(size_t sym_id, std::vector<Typeset::Selection>& found) const {
     for(const Usage& usage : usages)
         if(usage.var_id == sym_id)
@@ -137,10 +123,9 @@ ScopeId SymbolTable::head(ScopeId index) const noexcept{
     return index;
 }
 
-void SymbolTable::reset(const Typeset::Marker &doc_start) noexcept{
+void SymbolTable::reset(const Typeset::Marker& doc_start) noexcept{
     scopes.clear();
     symbols.clear();
-    occurence_to_symbol_map.clear();
     usages.clear();
 
     #if !defined(NDEBUG) && !defined(HOPE_TYPESET_HEADLESS)

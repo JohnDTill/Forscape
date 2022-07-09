@@ -116,6 +116,8 @@ protected:
     ParseNode hover_node = NONE;
     #endif
 
+    ParseNode contextNode = NONE;
+
 //Qt specific code
 protected:
     QPainter qpainter;

@@ -520,28 +520,6 @@ std::string Model::parseTreeDot() const {
 }
 #endif
 
-Selection Model::idAt(const Marker& marker) noexcept{
-    //EVENTUALLY this is broken for subscripts.
-    //You need to fundamentally rethink how you find this, perhaps a binary search.
-
-    for(size_t i = marker.text->tags.size(); i-->0;){
-        const SemanticTag& tag = marker.text->tags[i];
-        if(tag.index == marker.index){
-            if(!isId(tag.type)) continue;
-            size_t start = marker.index;
-            size_t end = i+1==marker.text->tags.size() ? marker.text->numChars() : marker.text->tags[i+1].index;
-            return Selection(marker.text, start, end);
-        }else if(tag.index < marker.index){
-            if(!isId(tag.type)) return Selection();
-            size_t start = tag.index;
-            size_t end = i+1==marker.text->tags.size() ? marker.text->numChars() : marker.text->tags[i+1].index;
-            return Selection(marker.text, start, end);
-        }
-    }
-
-    return Selection();
-}
-
 Selection Model::find(const std::string& str) noexcept{
     Text* t = firstText();
     for(;;){
@@ -625,6 +603,10 @@ void Model::rename(const std::vector<Selection>& targets, const std::string& nam
         lst->cmds.push_back( c.insertFirstChar(name) );
     }
     mutate(lst, c);
+}
+
+Code::ParseTree& Model::parseTree() noexcept{
+    return parser.parse_tree;
 }
 
 }

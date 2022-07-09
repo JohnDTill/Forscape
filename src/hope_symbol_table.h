@@ -96,7 +96,6 @@ class SymbolTable{
 public:
     std::vector<ScopeSegment> scopes;
     std::vector<Symbol> symbols;
-    HOPE_UNORDERED_MAP<Typeset::Marker, SymbolId> occurence_to_symbol_map;
     std::vector<Usage> usages;
     ParseTree& parse_tree;
 
@@ -111,11 +110,9 @@ public:
         : parse_tree(parse_tree) {}
 
     void addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed, bool is_const) alloc_except;
-    void addOccurence(const Typeset::Marker& left, size_t sym_index) alloc_except;
     size_t containingScope(const Typeset::Marker& m) const noexcept;
     std::vector<Typeset::Selection> getSuggestions(const Typeset::Marker& loc) const;
     const Typeset::Selection& getSel(size_t sym_index) const noexcept;
-    void getSymbolOccurences(const Typeset::Marker& loc, std::vector<Typeset::Selection>& found) const;
     void getSymbolOccurences(size_t sym_id, std::vector<Typeset::Selection>& found) const;
 
     ScopeId head(ScopeId index) const noexcept;
