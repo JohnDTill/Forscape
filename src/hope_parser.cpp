@@ -322,6 +322,22 @@ ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
     ParseNode body = parse_tree.addUnary(OP_RETURN, expr);
 
     ParseNode id = parse_tree.arg<0>(call);
+    if(parse_tree.getOp(id) == OP_SUBSCRIPT_ACCESS){
+        //DO THIS - improve patching the subscript to a single identifier
+        parse_tree.setOp(id, OP_IDENTIFIER);
+
+        #ifndef HOPE_TYPESET_HEADLESS
+        parse_tree.getLeft(parse_tree.lhs(id)).text->retagParseNodeLast(id);
+
+        ParseNode sub = parse_tree.rhs(id);
+        Typeset::Text* t = parse_tree.getLeft(sub).text;
+        if(parse_tree.getOp(sub) == OP_INTEGER_LITERAL)
+            t->tagParseNode(id, 0, t->numChars());
+        else
+            t->retagParseNode(id, 0);
+        #endif
+    }
+
     ParseNode val_captures = NONE;
     ParseNode ref_upvalues = NONE;
 
@@ -897,6 +913,10 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
                 ParseNode pn = twoDims(OP_IDENTITY_MATRIX);
                 if(noErrors()){
                     parse_tree.getSelection(id).format(SEM_PREDEFINEDMAT);
+                    #ifndef HOPE_TYPESET_HEADLESS
+                    parse_tree.getLeft(pn).text->retagParseNodeLast(pn);
+                    parse_tree.getSelection(pn).mapConstructToParseNode(pn);
+                    #endif
                     return pn;
                 }
                 index = index_backup;
@@ -934,6 +954,10 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
                 if(!noErrors()) return error_node;
                 if(!match(ARGCLOSE)) return error(UNRECOGNIZED_EXPR, Typeset::Selection(rMarkPrev(), rMarkPrev()));
                 ParseNode n = parse_tree.addNode<3>(OP_UNIT_VECTOR, c, {elem, dim0, dim1});
+                #ifndef HOPE_TYPESET_HEADLESS
+                parse_tree.getLeft(n).text->retagParseNodeLast(n);
+                parse_tree.getSelection(n).mapConstructToParseNode(n);
+                #endif
                 parsing_dims = false;
                 return n;
             }

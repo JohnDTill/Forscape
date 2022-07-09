@@ -240,7 +240,9 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
             return pn;
         }
 
-        case OP_ALGORITHM: return resolveAlg(pn);
+        case OP_ALGORITHM:
+        case OP_DEFINE_PROTO:
+            return resolveAlg(pn);
 
         case OP_PROTOTYPE_ALG:{
             size_t sym_id = parse_tree.getFlag(parse_tree.arg(pn, 0));

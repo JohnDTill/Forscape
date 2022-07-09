@@ -77,7 +77,8 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_WHILE: whileStmt(pn); break;
         case OP_FOR: forStmt(pn); break;
         case OP_BLOCK: blockStmt(pn); break;
-        case OP_ALGORITHM: algorithmStmt(pn); break;
+        case OP_ALGORITHM: algorithmStmt(pn, false); break;
+        case OP_DEFINE_PROTO: algorithmStmt(pn, true); break;
         case OP_PROTOTYPE_ALG:
             stack.push(static_cast<void*>(nullptr)
                 DEBUG_STACK_ARG(parse_tree.str(parse_tree.child(pn))));
@@ -163,7 +164,7 @@ void Interpreter::blockStmt(ParseNode pn){
         interpretStmt(parse_tree.arg(pn, i));
 }
 
-void Interpreter::algorithmStmt(ParseNode pn){
+void Interpreter::algorithmStmt(ParseNode pn, bool is_prototyped){
     Algorithm alg(pn);
     Closure* list;
 
@@ -171,13 +172,13 @@ void Interpreter::algorithmStmt(ParseNode pn){
     ParseNode captured = alg.valCap(parse_tree);
     ParseNode upvalues = alg.refCap(parse_tree);
 
-    if(parse_tree.getFlag(pn) == NONE){
-        stack.push(alg   DEBUG_STACK_ARG(parse_tree.str(name)));
-        list = &std::get<Algorithm>(stack.back()).closure;
-    }else{
+    if(is_prototyped){
         Value& place = read(name);
         place = alg;
         list = &std::get<Algorithm>(place).closure;
+    }else{
+        stack.push(alg   DEBUG_STACK_ARG(parse_tree.str(name)));
+        list = &std::get<Algorithm>(stack.back()).closure;
     }
 
     initClosure(*list, captured, upvalues);

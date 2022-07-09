@@ -66,7 +66,6 @@ void SymbolTableBuilder::resolveSymbols() alloc_except {
     assert(parse_tree.inFinalState());
 
     #ifndef HOPE_TYPESET_HEADLESS
-    /* //DO THIS - verify symbols are in doc map
     static std::unordered_set<ParseNode> doc_map_nodes;
     doc_map_nodes.clear();
 
@@ -77,6 +76,7 @@ void SymbolTableBuilder::resolveSymbols() alloc_except {
         if(parse_tree.getOp(pn) == OP_IDENTIFIER)
             symbol_table.verifyIdentifier(pn);
 
+    /* //DO THIS - verify symbols are in doc map
     //Every usage in the symbol table is in the doc map
     for(const Usage& usage : symbol_table.usages)
         assert(doc_map_nodes.find(usage.pn) != doc_map_nodes.end());
@@ -561,20 +561,19 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn) alloc_except {
     auto lookup = map.find(sel);
     if(lookup == map.end()){
         makeEntry(sel, name, true);
-        parse_tree.setFlag(pn, NONE); //This is a kludge to tell the interpreter it's not a prototype
     }else{
-        parse_tree.setFlag(pn, size_t(0));
         size_t index = lookup->second;
         Symbol& sym = symbol_table.symbols[index];
         if(sym.declaration_lexical_depth == lexical_depth){
             if(sym.is_prototype){
                 resolveReference(name, index);
+                parse_tree.setOp(pn, OP_DEFINE_PROTO);
             }else{
                 errors.push_back(Error(sel, TYPE_ERROR));
             }
-        }else if(sym.declaration_lexical_depth == lexical_depth){
+        }else{
             appendEntry(name, lookup->second, true);
-            lookup->second = symbol_table.symbols.size()-1;
+            lookup->second = symbol_table.symbols.size()-1; //DO THIS: what does this do? Why isn't the map updated?
         }
 
         sym.is_prototype = false;

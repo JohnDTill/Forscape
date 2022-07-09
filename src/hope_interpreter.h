@@ -70,7 +70,7 @@ private:
     void ifStmt(ParseNode pn);
     void ifElseStmt(ParseNode pn);
     void blockStmt(ParseNode pn);
-    void algorithmStmt(ParseNode pn);
+    void algorithmStmt(ParseNode pn, bool is_prototyped);
     void initClosure(Closure& closure, ParseNode val_cap, ParseNode ref_cap);
     void breakLocalClosureLinks(Closure& closure, ParseNode val_cap, ParseNode ref_cap);
     void returnStmt(ParseNode pn);
