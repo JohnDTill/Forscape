@@ -247,6 +247,22 @@ void Marker::setToLeftOf(Text* t, double setpoint) {
     text = t;
     index = text->charIndexLeft(setpoint);
 }
+
+std::pair<ParseNode, ParseNode> Marker::parseNodesAround() const noexcept{
+    return std::make_pair(parseNodeLeft(), parseNodeRight());
+}
+
+ParseNode Marker::parseNodeLeft() const noexcept{
+    if(index > 0) return text->parseNodeAtIndex(index-1);
+    else if(text->id > 0) return text->prevConstructAsserted()->pn;
+    else return NONE;
+}
+
+ParseNode Marker::parseNodeRight() const noexcept{
+    if(index < text->numChars()) return text->parseNodeAtIndex(index);
+    else if(const Construct* c = text->nextConstructInPhrase()) return c->pn;
+    else return NONE;
+}
 #endif
 
 uint32_t Marker::advance() noexcept{

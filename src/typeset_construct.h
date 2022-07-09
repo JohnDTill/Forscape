@@ -67,6 +67,7 @@ public:
     #endif
 
     #ifndef HOPE_TYPESET_HEADLESS
+    ParseNode parseNodeAt(double x, double y) const noexcept;
     bool contains(double x, double y) const noexcept;
     Construct* constructAt(double x, double y) noexcept;
     Subphrase* argAt(double x, double y) const noexcept;
@@ -86,7 +87,10 @@ public:
     #ifndef NDEBUG
     void invalidateWidth() noexcept;
     void invalidateDims() noexcept;
+    void populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept;
     #endif
+
+    ParseNode pn = NONE; //EVENTUALLY: DEBUG_INIT_NONE;
 
     struct ContextAction {
         void(*takeAction)(Construct* con, Controller& c, Subphrase* child);

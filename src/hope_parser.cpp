@@ -4,6 +4,13 @@
 #include <hope_common.h>
 #include "typeset_model.h"
 
+#ifdef HOPE_TYPESET_HEADLESS
+#define registerParseNodeRegion(a, b)
+#define registerParseNodeRegionToPatch(a)
+#define startPatch()
+#define finishPatch(a)
+#endif
+
 namespace Hope {
 
 namespace Code {
@@ -41,6 +48,7 @@ void Parser::parseAll() alloc_except {
 
 void Parser::reset() noexcept {
     parse_tree.clear();
+    token_map_stack.clear();
     #ifndef HOPE_TYPESET_HEADLESS
     open_symbols.clear();
     close_symbols.clear();
@@ -314,6 +322,21 @@ ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
     ParseNode body = parse_tree.addUnary(OP_RETURN, expr);
 
     ParseNode id = parse_tree.arg<0>(call);
+    if(parse_tree.getOp(id) == OP_SUBSCRIPT_ACCESS){
+        parse_tree.setOp(id, OP_IDENTIFIER);
+
+        #ifndef HOPE_TYPESET_HEADLESS
+        parse_tree.getLeft(parse_tree.lhs(id)).text->retagParseNodeLast(id);
+
+        ParseNode sub = parse_tree.rhs(id);
+        Typeset::Text* t = parse_tree.getLeft(sub).text;
+        if(parse_tree.getOp(sub) == OP_INTEGER_LITERAL)
+            t->tagParseNode(id, 0, t->numChars());
+        else
+            t->retagParseNode(id, 0);
+        #endif
+    }
+
     ParseNode val_captures = NONE;
     ParseNode ref_upvalues = NONE;
 
@@ -334,8 +357,11 @@ ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
 }
 
 ParseNode Parser::assignment(ParseNode lhs) alloc_except {
+    startPatch();
+    registerParseNodeRegionToPatch(index);
     advance();
     ParseNode pn = parse_tree.addNode<2>(OP_ASSIGN, {lhs, expression()});
+    finishPatch(pn);
     parse_tree.setFlag(lhs, match(COMMENT) ? parse_tree.addTerminal(OP_COMMENT, selectionPrev()) : NONE);
     return pn;
 }
@@ -383,16 +409,65 @@ ParseNode Parser::conjunction() alloc_except {
 ParseNode Parser::comparison() alloc_except {
     ParseNode n = addition();
 
+    switch (currentType()) {
+        case EQUALS: advance(); return parse_tree.addNode<2>(OP_EQUAL, {n, addition()});
+        case NOTEQUAL: advance(); return parse_tree.addNode<2>(OP_NOT_EQUAL, {n, addition()});
+        case LESS: return less(n, 0);
+        case LESSEQUAL: return less(n, 1);
+        case GREATER: return greater(n, 0);
+        case GREATEREQUAL: return greater(n, 1);
+        default: return n;
+    }
+}
+
+ParseNode Parser::less(ParseNode first, size_t flag) alloc_except {
+    startPatch();
+    registerParseNodeRegionToPatch(index);
+    advance();
+
+    parse_tree.prepareNary();
+    parse_tree.addNaryChild(first);
+    parse_tree.addNaryChild(addition());
+    size_t comparisons = 1;
+
     for(;;){
-        switch (currentType()) {
-            case EQUALS: advance(); n = parse_tree.addNode<2>(OP_EQUAL, {n, addition()}); break;
-            case NOTEQUAL: advance(); n = parse_tree.addNode<2>(OP_NOT_EQUAL, {n, addition()}); break;
-            case LESS: advance(); n = parse_tree.addNode<2>(OP_LESS, {n, addition()}); break;
-            case LESSEQUAL: advance(); n = parse_tree.addNode<2>(OP_LESS_EQUAL, {n, addition()}); break;
-            case GREATER: advance(); n = parse_tree.addNode<2>(OP_GREATER, {n, addition()}); break;
-            case GREATEREQUAL: advance(); n = parse_tree.addNode<2>(OP_GREATER_EQUAL, {n, addition()}); break;
-            default: return n;
+        if(match(LESSEQUAL)){
+            flag |= (size_t(1) << comparisons);
+        }else if(!match(LESS)){
+            ParseNode pn = parse_tree.finishNary(OP_LESS);
+            finishPatch(pn);
+            parse_tree.setFlag(pn, flag);
+            return pn;
         }
+
+        registerParseNodeRegionToPatch(index-1);
+        comparisons++;
+        assert(comparisons < sizeof(size_t)*8); //EVENTUALLY: report an error to the user
+
+        parse_tree.addNaryChild(addition());
+    }
+}
+
+ParseNode Parser::greater(ParseNode first, size_t flag) alloc_except {
+    advance();
+    parse_tree.prepareNary();
+    parse_tree.addNaryChild(first);
+    parse_tree.addNaryChild(addition());
+    size_t comparisons = 1;
+
+    for(;;){
+        if(match(GREATEREQUAL)){
+            flag |= (size_t(1) << comparisons);
+        }else if(!match(GREATER)){
+            ParseNode pn = parse_tree.finishNary(OP_GREATER);
+            parse_tree.setFlag(pn, flag);
+            return pn;
+        }
+
+        comparisons++;
+        assert(comparisons < sizeof(size_t)*8); //EVENTUALLY: report an error to the user
+
+        parse_tree.addNaryChild(addition());
     }
 }
 
@@ -497,7 +572,8 @@ ParseNode Parser::call_or_mult(ParseNode n) alloc_except {
         ParseNode post_high_prec = rightUnary(parenthetical);
         Op op = (post_high_prec == parenthetical) ? OP_CALL : OP_AMBIGUOUS_PARENTHETICAL;
 
-        return parse_tree.addNode<2>(op, {n, post_high_prec});
+        Typeset::Selection sel(parse_tree.getLeft(n), right);
+        return parse_tree.addNode<2>(op, sel, {n, post_high_prec});
     }
 
     parse_tree.prepareNary();
@@ -528,9 +604,18 @@ ParseNode Parser::rightUnary(ParseNode n) alloc_except {
             case EXCLAM:{
                 Typeset::Marker m = rMark();
                 advance();
-                return parse_tree.addRightUnary(OP_FACTORIAL, m, n);
+                ParseNode pn = parse_tree.addRightUnary(OP_FACTORIAL, m, n);
+                registerParseNodeRegion(pn, index-1);
+                return pn;
             }
-            case CARET: advance(); return parse_tree.addNode<2>(OP_POWER, {n, implicitMult()});
+            case CARET:{
+                startPatch();
+                registerParseNodeRegionToPatch(index);
+                advance();
+                ParseNode pn = parse_tree.addNode<2>(OP_POWER, {n, implicitMult()});
+                finishPatch(pn);
+                return pn;
+            }
             case TOKEN_SUPERSCRIPT: n = superscript(n); break;
             case TOKEN_SUBSCRIPT: n = subscript(n, rMark()); break;
             case TOKEN_DUALSCRIPT: n = dualscript(n); break;
@@ -811,6 +896,7 @@ ParseNode Parser::integer() alloc_except {
 
 ParseNode Parser::identifier() alloc_except{
     ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
+    registerParseNodeRegion(id, index-1);
     return identifierFollowOn(id);
 }
 
@@ -826,6 +912,10 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
                 ParseNode pn = twoDims(OP_IDENTITY_MATRIX);
                 if(noErrors()){
                     parse_tree.getSelection(id).format(SEM_PREDEFINEDMAT);
+                    #ifndef HOPE_TYPESET_HEADLESS
+                    parse_tree.getLeft(pn).text->retagParseNodeLast(pn);
+                    parse_tree.getSelection(pn).mapConstructToParseNode(pn);
+                    #endif
                     return pn;
                 }
                 index = index_backup;
@@ -839,6 +929,10 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
                 advance();
                 advance();
                 parse_tree.setRight(id, rMark());
+                #ifndef HOPE_TYPESET_HEADLESS
+                registerParseNodeRegion(id, index-1);
+                parse_tree.getSelection(id).mapConstructToParseNode(id);
+                #endif
                 consume(ARGCLOSE);
                 return identifierFollowOn(id);
             }
@@ -859,22 +953,32 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
                 if(!noErrors()) return error_node;
                 if(!match(ARGCLOSE)) return error(UNRECOGNIZED_EXPR, Typeset::Selection(rMarkPrev(), rMarkPrev()));
                 ParseNode n = parse_tree.addNode<3>(OP_UNIT_VECTOR, c, {elem, dim0, dim1});
+                #ifndef HOPE_TYPESET_HEADLESS
+                parse_tree.getLeft(n).text->retagParseNodeLast(n);
+                parse_tree.getSelection(n).mapConstructToParseNode(n);
+                #endif
                 parsing_dims = false;
                 return n;
             }
             return id;
-        default: return id;
+        default:
+            return id;
     }
 }
 
 ParseNode Parser::isolatedIdentifier() alloc_except{
     if(!peek(IDENTIFIER)) return error(UNRECOGNIZED_SYMBOL);
     ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
+    registerParseNodeRegion(id, index-1);
     switch (currentType()) {
         case TOKEN_SUBSCRIPT:
             advance();
             if((match(IDENTIFIER) || match(INTEGER)) && match(ARGCLOSE)){
                 parse_tree.setRight(id, rMarkPrev());
+                #ifndef HOPE_TYPESET_HEADLESS
+                registerParseNodeRegion(id, index-2);
+                parse_tree.getSelection(id).mapConstructToParseNode(id);
+                #endif
                 return id;
             }else{
                 return error(INVALID_PARAMETER);
@@ -883,11 +987,16 @@ ParseNode Parser::isolatedIdentifier() alloc_except{
             advance();
             if((match(IDENTIFIER) || match(MULTIPLY)) && match(ARGCLOSE)){
                 parse_tree.setRight(id, rMarkPrev());
+                #ifndef HOPE_TYPESET_HEADLESS
+                registerParseNodeRegion(id, index-2);
+                parse_tree.getSelection(id).mapConstructToParseNode(id);
+                #endif
                 return id;
             }else{
                 return error(INVALID_PARAMETER);
             }
-        default: return id;
+        default:
+            return id;
     }
 }
 
@@ -1096,6 +1205,9 @@ ParseNode Parser::matrix() alloc_except{
 
     ParseNode m = parse_tree.finishNary(OP_MATRIX, c);
     parse_tree.setFlag(m, c.getMatrixRows());
+    #ifndef HOPE_TYPESET_HEADLESS
+    c.mapConstructToParseNode(m);
+    #endif
 
     return m;
 }
@@ -1234,6 +1346,7 @@ ParseNode Parser::big(Op type) alloc_except{
     consume(ARGCLOSE);
     if(!noErrors() || !peek(IDENTIFIER)) return error(UNRECOGNIZED_SYMBOL, err_sel);
     ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
+    registerParseNodeRegion(id, index-1);
     if(!match(EQUALS) && !match(LEFTARROW)) return error(UNRECOGNIZED_SYMBOL, err_sel);
     ParseNode start = expression();
     ParseNode assign = parse_tree.addNode<2>(OP_ASSIGN, {id, start});
@@ -1362,6 +1475,43 @@ void Parser::recover() noexcept{
     //error_node = NONE;
     index = tokens.size()-1; //Give up for now //EVENTUALLY: improve error recovery
 }
+
+#ifndef HOPE_TYPESET_HEADLESS
+void Parser::registerParseNodeRegion(ParseNode pn, size_t token_index) alloc_except {
+    assert(token_index < tokens.size());
+    assert(parse_tree.isLastAllocatedNode(pn));
+
+    const Typeset::Selection& sel = tokens[token_index].sel;
+    const Typeset::Marker& left = sel.left;
+    left.text->tagParseNode(pn, left.index, sel.right.index);
+}
+
+void Parser::registerParseNodeRegionToPatch(size_t token_index) alloc_except {
+    assert(!token_stack_frames.empty());
+    const Typeset::Selection& sel = tokens[token_index].sel;
+    const Typeset::Marker& left = sel.left;
+    size_t tag_index = left.text->tagParseNode(NONE, left.index, sel.right.index);
+    token_map_stack.push_back(std::make_pair(token_index, tag_index));
+}
+
+void Parser::startPatch() noexcept {
+    token_stack_frames.push_back(token_map_stack.size());
+}
+
+void Parser::finishPatch(ParseNode pn) noexcept {
+    assert(!token_stack_frames.empty());
+    size_t frame = token_stack_frames.back();
+    token_stack_frames.pop_back();
+
+    for(size_t i = frame; i < token_map_stack.size(); i++){
+        const auto& entry = token_map_stack[i];
+        const Typeset::Marker& m = tokens[entry.first].sel.left;
+        m.text->patchParseNode(pn, entry.second);
+    }
+
+    token_map_stack.resize(frame);
+}
+#endif
 
 }
 

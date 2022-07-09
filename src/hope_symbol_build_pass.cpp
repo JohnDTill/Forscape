@@ -3,6 +3,7 @@
 #include <code_parsenode_ops.h>
 #include <hope_common.h>
 #include "typeset_model.h"
+#include "typeset_construct.h"
 #include <algorithm>
 #include <cassert>
 
@@ -26,7 +27,7 @@ HOPE_STATIC_MAP<std::string_view, Op> SymbolTableBuilder::predef {
 };
 
 SymbolTableBuilder::SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model) noexcept
-    : errors(model->errors), warnings(model->warnings), parse_tree(parse_tree), symbol_table(parse_tree) {}
+    : errors(model->errors), warnings(model->warnings), parse_tree(parse_tree), model(model), symbol_table(parse_tree) {}
 
 void SymbolTableBuilder::resolveSymbols() alloc_except {
     reset();
@@ -45,6 +46,9 @@ void SymbolTableBuilder::resolveSymbols() alloc_except {
     for(const Usage& usage : symbol_table.usages){
         const Symbol& sym = symbol_table.symbols[usage.var_id];
 
+        assert(parse_tree.getOp(usage.pn) != OP_IDENTIFIER ||
+            symbol_table.getSel(parse_tree.getSymId(usage.pn)) == sym.sel(parse_tree));
+
         SemanticType fmt = SEM_ID;
         if(sym.is_ewise_index){
             fmt = SEM_ID_EWISE_INDEX;
@@ -57,7 +61,43 @@ void SymbolTableBuilder::resolveSymbols() alloc_except {
         parse_tree.getSelection(usage.pn).format(fmt);
     }
 
-    assert(!errors.empty() || parse_tree.inFinalState());
+    #ifndef NDEBUG
+    if(!errors.empty()) return;
+    assert(parse_tree.inFinalState());
+
+    #ifndef HOPE_TYPESET_HEADLESS
+    static std::unordered_set<ParseNode> doc_map_nodes;
+    doc_map_nodes.clear();
+
+    struct hash {
+        size_t operator() (const Typeset::Selection& a) const noexcept {
+            return reinterpret_cast<size_t>(a.left.text) ^ (a.left.index);
+        }
+    };
+
+    struct cmp {
+        bool operator() (const Typeset::Selection& a, const Typeset::Selection& b) const noexcept {
+            return a.left == b.left && a.right == b.right;
+        }
+    };
+
+    static std::unordered_set<Typeset::Selection, hash, cmp> selection_in_map;
+    selection_in_map.clear();
+
+    model->populateDocMapParseNodes(doc_map_nodes);
+
+    //Every identifier in the doc map goes to a valid symbol
+    for(ParseNode pn : doc_map_nodes)
+        if(parse_tree.getOp(pn) == OP_IDENTIFIER){
+            symbol_table.verifyIdentifier(pn);
+            selection_in_map.insert(parse_tree.getSelection(pn));
+        }
+
+    //Every usage in the symbol table is in the doc map
+    for(const Usage& usage : symbol_table.usages)
+        assert(selection_in_map.find(parse_tree.getSelection(usage.pn)) != selection_in_map.end());
+    #endif
+    #endif
 }
 
 void SymbolTableBuilder::reset() noexcept {
@@ -298,6 +338,9 @@ bool SymbolTableBuilder::resolvePotentialIdSub(ParseNode pn) alloc_except {
         return false;
 
     parse_tree.setOp(pn, OP_IDENTIFIER);
+    #ifndef HOPE_TYPESET_HEADLESS
+    fixSubIdDocMap(pn);
+    #endif
 
     return true;
 }
@@ -334,10 +377,9 @@ void SymbolTableBuilder::resolveReference(ParseNode pn, size_t sym_id) alloc_exc
     if(sym_id >= cutoff) errors.push_back(Error(parse_tree.getSelection(pn), BAD_DEFAULT_ARG));
 
     Symbol& sym = symbol_table.symbols[sym_id];
-    parse_tree.setFlag(pn, sym.flag);
+    parse_tree.setSymId(pn, sym_id);
     sym.is_used = true;
 
-    symbol_table.addOccurence(parse_tree.getLeft(pn), sym_id);
     sym.is_closure_nested |= sym.declaration_closure_depth && (closure_depth != sym.declaration_closure_depth);
 
     symbol_table.usages.push_back(Usage(sym_id, pn, READ));
@@ -345,6 +387,7 @@ void SymbolTableBuilder::resolveReference(ParseNode pn, size_t sym_id) alloc_exc
 
 void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except {
     Typeset::Marker m = left;
+    size_t num_terms = 0;
     while(m != right){
         m.incrementGrapheme();
         if(m.index == m.text->numChars()) m = right;
@@ -355,11 +398,19 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
             return;
         }
         left = m;
+        num_terms++;
     }
 
     parse_tree.prepareNary();
 
     left = parse_tree.getLeft(pn);
+    Typeset::Text* t = left.text;
+
+    #ifndef HOPE_TYPESET_HEADLESS
+    size_t index = t->parseNodeTagIndex(left.index);
+    t->insertParseNodes(index, num_terms-1);
+    #endif
+
     m = left;
     while(m != right){
         m.incrementGrapheme();
@@ -368,6 +419,15 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
         Typeset::Selection sel(left, m);
         auto lookup = map.find(sel);
         ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
+        #ifndef HOPE_TYPESET_HEADLESS
+        if(left.text != m.text){
+            t->patchParseNode(index++, pn, left.index, t->numChars());
+            sel.mapConstructToParseNode(pn);
+            left.text->nextConstructAsserted()->frontTextAsserted()->retagParseNode(pn, 0);
+        }else{
+            t->patchParseNode(index++, pn, left.index, m.index);
+        }
+        #endif
         resolveReference(pn, lookup->second);
         parse_tree.addNaryChild(pn);
         left = m;
@@ -410,17 +470,32 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
 
     parse_tree.prepareNary();
     left = parse_tree.getLeft(pn);
+    Typeset::Text* t = left.text;
+    #ifndef HOPE_TYPESET_HEADLESS
+    t->popParseNode();
+    #endif
     m = left;
     while(m != end){
         m.incrementGrapheme();
         Typeset::Selection sel(left, m);
         auto lookup = map.find(sel);
         ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
+        #ifndef HOPE_TYPESET_HEADLESS
+        t->tagParseNode(pn, left.index, m.index);
+        #endif
         resolveReference(pn, lookup->second);
         parse_tree.addNaryChild(pn);
         left = m;
     }
     parse_tree.addNaryChild(script);
+    #ifndef HOPE_TYPESET_HEADLESS
+    if(parse_tree.getOp(script) == OP_IDENTIFIER){
+        t->tagParseNode(script, left.index, t->numChars());
+        fixSubIdDocMap<false>(script);
+    }else{
+        t->tagParseNode(new_id, left.index, t->numChars());
+    }
+    #endif
     ParseNode mult = parse_tree.finishNary(OP_IMPLICIT_MULTIPLY);
 
     parse_tree.setFlag(pn, mult);
@@ -502,20 +577,18 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn) alloc_except {
     auto lookup = map.find(sel);
     if(lookup == map.end()){
         makeEntry(sel, name, true);
-        parse_tree.setFlag(pn, NONE); //This is a kludge to tell the interpreter it's not a prototype
     }else{
-        parse_tree.setFlag(pn, size_t(0));
         size_t index = lookup->second;
         Symbol& sym = symbol_table.symbols[index];
         if(sym.declaration_lexical_depth == lexical_depth){
             if(sym.is_prototype){
                 resolveReference(name, index);
+                parse_tree.setOp(pn, OP_DEFINE_PROTO);
             }else{
                 errors.push_back(Error(sel, TYPE_ERROR));
             }
-        }else if(sym.declaration_lexical_depth == lexical_depth){
+        }else{
             appendEntry(name, lookup->second, true);
-            lookup->second = symbol_table.symbols.size()-1;
         }
 
         sym.is_prototype = false;
@@ -534,9 +607,10 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn) alloc_except {
 
     for(size_t i = 0; i < val_cap_size; i++){
         ParseNode capture = parse_tree.arg(val_cap, i);
-        defineLocalScope(capture, false); //EVENTUALLY: don't warn about shadowing value captures
+        defineLocalScope(capture, false, false);
         symbol_table.symbols.back().is_captured_by_value = true;
         symbol_table.symbols.back().is_closure_nested = true;
+        symbol_table.symbols.back().comment = NONE; //EVENTUALLY: maybe take the comment of the referenced var
     }
 
     bool expect_default = false;
@@ -564,7 +638,8 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn) alloc_except {
 
     for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
         ParseNode param = parse_tree.arg(params, i);
-        size_t sym_id = parse_tree.getFlag(param);
+        if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
+        size_t sym_id = parse_tree.getSymId(param);
         if(sym_id != NONE){
             Symbol& sym = symbol_table.symbols[sym_id];
             sym.is_const = !sym.is_reassigned;
@@ -592,6 +667,9 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn) alloc_except {
     if(lhs_type_eligible && rhs_type_eligible && UNDECLARED_ELEMS){
         parse_tree.setFlag(pn, OP_SUBSCRIPT_ACCESS); //EVENTUALLY: this is held together with duct tape and prayers
         parse_tree.setOp(pn, OP_IDENTIFIER);
+        #ifndef HOPE_TYPESET_HEADLESS
+        fixSubIdDocMap(pn);
+        #endif
         resolveReference<true>(pn);
     }else{
         resolveDefault(pn);
@@ -631,7 +709,7 @@ void SymbolTableBuilder::resolveDerivative(ParseNode pn) alloc_except {
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable) alloc_except {
+bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable, bool warn_on_shadow) alloc_except {
     Typeset::Selection c = parse_tree.getSelection(pn);
 
     if(parse_tree.getOp(pn) == OP_SUBSCRIPT_ACCESS && !resolvePotentialIdSub(pn)){
@@ -655,8 +733,7 @@ bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable) alloc_ex
             errors.push_back(Error(c, CONST ? REASSIGN_CONSTANT : MUTABLE_CONST_ASSIGN));
             return false;
         }else{
-            appendEntry(pn, lookup->second, immutable);
-            lookup->second = symbol_table.symbols.size()-1;
+            appendEntry(pn, lookup->second, immutable, warn_on_shadow);
         }
     }
 
@@ -671,6 +748,23 @@ size_t SymbolTableBuilder::symIndex(ParseNode pn) const noexcept{
     const auto& lookup = map.find(parse_tree.getSelection(pn));
     return lookup == map.end() ? NONE : lookup->second;
 }
+
+#ifndef HOPE_TYPESET_HEADLESS
+template<bool first>
+void SymbolTableBuilder::fixSubIdDocMap(ParseNode pn) const alloc_except {
+    //Update doc map
+    parse_tree.getSelection(pn).mapConstructToParseNode(pn);
+
+    parse_tree.getLeft(parse_tree.lhs(pn)).text->retagParseNodeLast(pn);
+
+    ParseNode sub = parse_tree.rhs(pn);
+    Typeset::Text* t = parse_tree.getLeft(sub).text;
+    if(first && parse_tree.getOp(sub) == OP_INTEGER_LITERAL)
+        t->tagParseNode(pn, 0, t->numChars());
+    else
+        t->retagParseNode(pn, 0);
+}
+#endif
 
 void SymbolTableBuilder::increaseLexicalDepth(
         #ifdef HOPE_USE_SCOPE_NAME
@@ -768,10 +862,12 @@ void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bo
     symbol_table.addSymbol(pn, lexical_depth, closure_depth, NONE, immutable);
 }
 
-void SymbolTableBuilder::appendEntry(ParseNode pn, size_t prev, bool immutable) alloc_except {
-    warnings.push_back(Error(parse_tree.getSelection(pn), SHADOWING_VAR)); //EVENTUALLY: make this optional, probably default off
+void SymbolTableBuilder::appendEntry(ParseNode pn, size_t& old_entry, bool immutable, bool warn_on_shadow) alloc_except {
+    //EVENTUALLY: let the user control warnings, decide defaults
+    if(warn_on_shadow) warnings.push_back(Error(parse_tree.getSelection(pn), SHADOWING_VAR));
     symbol_table.usages.push_back(Usage(symbol_table.symbols.size(), pn, DECLARE));
-    symbol_table.addSymbol(pn, lexical_depth, closure_depth, prev, immutable);
+    symbol_table.addSymbol(pn, lexical_depth, closure_depth, old_entry, immutable);
+    old_entry = symbol_table.symbols.size()-1;
 }
 
 }

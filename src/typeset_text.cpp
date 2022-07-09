@@ -527,6 +527,88 @@ bool Text::containsY(double y_test) const noexcept {
 bool Text::containsXInBounds(double x_test, size_t start, size_t stop) const noexcept {
     return x_test >= xGlobal(start) && x_test <= xGlobal(stop);
 }
+
+size_t Text::tagParseNode(ParseNode pn, size_t token_start, size_t token_end) alloc_except {
+    assert(token_end > token_start);
+    assert(token_end <= numChars());
+    assert(parse_nodes.empty() || token_start >= parse_nodes.back().token_end);
+
+    size_t index = parse_nodes.size();
+    parse_nodes.push_back(ParseNodeTag(pn, token_start, token_end));
+    return index;
+}
+
+void Text::retagParseNodeLast(ParseNode pn) noexcept {
+    assert(!parse_nodes.empty());
+    parse_nodes.back().pn = pn;
+}
+
+void Text::retagParseNode(ParseNode pn, size_t index) noexcept {
+    assert(index < parse_nodes.size());
+    parse_nodes[index].pn = pn;
+}
+
+void Text::patchParseNode(ParseNode pn, size_t index) noexcept {
+    assert(parse_nodes[index].pn == NONE);
+    retagParseNode(pn, index);
+}
+
+void Text::patchParseNode(size_t index, ParseNode pn, size_t start, size_t end) noexcept {
+    parse_nodes[index] = ParseNodeTag(pn, start, end);
+}
+
+void Text::popParseNode() noexcept {
+    assert(!parse_nodes.empty());
+    parse_nodes.pop_back();
+}
+
+void Text::insertParseNodes(size_t index, size_t n) alloc_except {
+    parse_nodes.insert(parse_nodes.begin() + index, n, ParseNodeTag(NONE, NONE, NONE));
+}
+
+size_t Text::parseNodeTagIndex(size_t char_index) const noexcept {
+    assert(char_index < numChars());
+
+    auto search = std::upper_bound(
+                parse_nodes.begin(),
+                parse_nodes.end(),
+                char_index,
+                [](size_t index, const ParseNodeTag& entry){return index < entry.token_end;}
+            );
+
+    return std::distance(parse_nodes.begin(), search);
+}
+
+ParseNode Text::parseNodeAtIndex(size_t index) const noexcept {
+    assert(index <= numChars());
+
+    auto search = std::upper_bound(
+                parse_nodes.begin(),
+                parse_nodes.end(),
+                index,
+                [](size_t index, const ParseNodeTag& entry){return index < entry.token_end;}
+            );
+
+    return (search == parse_nodes.end() || search->token_start > index) ?
+                NONE :
+                search->pn;
+}
+
+ParseNode Text::parseNodeAtX(double x) const noexcept {
+    assert(containsX(x));
+    return parseNodeAtIndex( charIndexLeft(x) );
+}
+
+#ifndef NDEBUG
+void Text::populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept{
+    for(size_t i = 0; i < parse_nodes.size(); i++){
+        const ParseNodeTag& tag = parse_nodes[i];
+        nodes.insert(tag.pn);
+
+        assert(i == 0 || tag.token_start >= parse_nodes[i-1].token_end);
+    }
+}
+#endif
 #endif
 
 }

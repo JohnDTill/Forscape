@@ -386,6 +386,31 @@ Text* Phrase::textNearest(double x, double y) const{
         }
     }
 }
+
+ParseNode Phrase::parseNodeAt(double x, double y) const noexcept {
+    if(x < this->x || x > this->x + width || !containsY(y)) return NONE;
+
+    Text* t = textLeftOf(x);
+
+    if(t->containsX(x)){
+        if(t->containsY(y)) return t->parseNodeAtX(x);
+        else return NONE;
+    }else{
+        Construct* c = t->nextConstructAsserted();
+        if(c->contains(x, y)) return c->parseNodeAt(x, y);
+        else return NONE;
+    }
+}
+
+#ifndef NDEBUG
+void Phrase::populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept{
+    for(size_t i = 0; i < constructs.size(); i++){
+        text(i)->populateDocMapParseNodes(nodes);
+        construct(i)->populateDocMapParseNodes(nodes);
+    }
+    back()->populateDocMapParseNodes(nodes);
+}
+#endif
 #endif
 
 }

@@ -48,6 +48,8 @@ private:
     ParseNode disjunction() alloc_except;
     ParseNode conjunction() alloc_except;
     ParseNode comparison() alloc_except;
+    ParseNode less(ParseNode first, size_t flag) alloc_except;
+    ParseNode greater(ParseNode first, size_t flag) alloc_except;
     ParseNode addition() alloc_except;
     ParseNode multiplication() alloc_except;
     ParseNode leftUnary() alloc_except;
@@ -112,7 +114,15 @@ private:
     const Typeset::Marker& rMarkPrev() const noexcept;
     bool noErrors() const noexcept;
     void recover() noexcept;
+    #ifndef HOPE_TYPESET_HEADLESS
+    void registerParseNodeRegion(ParseNode pn, size_t token_index) alloc_except;
+    void registerParseNodeRegionToPatch(size_t token_index) alloc_except;
+    void startPatch() alloc_except;
+    void finishPatch(ParseNode pn) noexcept;
+    #endif
 
+    std::vector<std::pair<size_t, size_t>> token_map_stack;
+    std::vector<size_t> token_stack_frames;
     const std::vector<Token>& tokens;
     std::vector<Error>& errors;
     Typeset::Model* model;

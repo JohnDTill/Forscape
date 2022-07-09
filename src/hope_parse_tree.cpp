@@ -105,37 +105,49 @@ ParseNode ParseTree::child(ParseNode pn) const noexcept {
 }
 
 ParseNode ParseTree::valCapList(ParseNode pn) const noexcept {
-    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_LAMBDA);
+    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_DEFINE_PROTO || getOp(pn) == OP_LAMBDA);
     return arg<0>(pn);
 }
 
 ParseNode ParseTree::refCapList(ParseNode pn) const noexcept {
-    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_LAMBDA);
+    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_DEFINE_PROTO || getOp(pn) == OP_LAMBDA);
     return arg<1>(pn);
 }
 
+void ParseTree::setSymId(ParseNode pn, size_t sym_id) noexcept {
+    assert(isNode(pn));
+    assert(getOp(pn) == OP_IDENTIFIER);
+    setFlag(pn, sym_id);
+}
+
+size_t ParseTree::getSymId(ParseNode pn) const noexcept{
+    assert(isNode(pn));
+    assert(getOp(pn) == OP_IDENTIFIER);
+    return getFlag(pn);
+}
+
 void ParseTree::setRefList(ParseNode fn, ParseNode list) noexcept {
-    assert(getOp(fn) == OP_ALGORITHM || getOp(fn) == OP_LAMBDA);
+    assert(getOp(fn) == OP_ALGORITHM || getOp(fn) == OP_DEFINE_PROTO || getOp(fn) == OP_LAMBDA);
     setArg<1>(fn, list);
 }
 
 ParseNode ParseTree::paramList(ParseNode pn) const noexcept {
-    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_LAMBDA);
+    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_DEFINE_PROTO || getOp(pn) == OP_LAMBDA);
     return arg<2>(pn);
 }
 
 ParseNode ParseTree::body(ParseNode pn) const noexcept {
-    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_LAMBDA);
+    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_DEFINE_PROTO || getOp(pn) == OP_LAMBDA);
     return arg<3>(pn);
 }
 
 void ParseTree::setBody(ParseNode pn, ParseNode body) noexcept {
-    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_LAMBDA);
+    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_DEFINE_PROTO || getOp(pn) == OP_LAMBDA);
     setArg<3>(pn, body);
 }
 
 ParseNode ParseTree::algName(ParseNode pn) const noexcept {
-    assert(getOp(pn) == OP_ALGORITHM);
+    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_DEFINE_PROTO);
     return arg<4>(pn);
 }
 
@@ -379,6 +391,10 @@ void ParseTree::patchClonedTypes() noexcept {
 #ifndef NDEBUG
 bool ParseTree::isNode(ParseNode pn) const noexcept {
     return created.find(pn) != created.end();
+}
+
+bool ParseTree::isLastAllocatedNode(ParseNode pn) const noexcept {
+    return pn + FIXED_FIELDS + getNumArgs(pn) == data.size();
 }
 
 bool ParseTree::inFinalState() const noexcept {

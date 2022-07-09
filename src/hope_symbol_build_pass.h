@@ -17,6 +17,7 @@ private:
     std::vector<Error>& errors;
     std::vector<Error>& warnings;
     ParseTree& parse_tree;
+    Typeset::Model* model;
 
 public:
     SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model) noexcept;
@@ -60,7 +61,7 @@ private:
         const Typeset::Marker& begin, ParseNode pn) alloc_except;
     void decreaseClosureDepth(const Typeset::Marker& end) alloc_except;
     void makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable) alloc_except;
-    void appendEntry(ParseNode pn, size_t prev, bool immutable) alloc_except;
+    void appendEntry(ParseNode pn, size_t& old_entry, bool immutable, bool warn_on_shadow = true) alloc_except;
     void resolveStmt(ParseNode pn) alloc_except;
     void resolveExpr(ParseNode pn) alloc_except;
     void resolveEquality(ParseNode pn) alloc_except;
@@ -92,9 +93,13 @@ private:
     void resolveSubscript(ParseNode pn) alloc_except;
     void resolveBig(ParseNode pn) alloc_except;
     void resolveDerivative(ParseNode pn) alloc_except;
-    bool defineLocalScope(ParseNode pn, bool immutable = true) alloc_except;
+    bool defineLocalScope(ParseNode pn, bool immutable = true, bool warn_on_shadow = true) alloc_except;
     bool declared(ParseNode pn) const noexcept;
     size_t symIndex(ParseNode pn) const noexcept;
+
+    #ifndef HOPE_TYPESET_HEADLESS
+    template<bool first = true> void fixSubIdDocMap(ParseNode pn) const alloc_except;
+    #endif
 };
 
 }

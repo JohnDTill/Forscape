@@ -67,6 +67,10 @@ struct Marker{
     void setToLeftOf(Text* t, double setpoint);
     #endif
 
+    std::pair<ParseNode, ParseNode> parseNodesAround() const noexcept;
+    ParseNode parseNodeLeft() const noexcept;
+    ParseNode parseNodeRight() const noexcept;
+
     //Scanner / Parser
     uint32_t advance() noexcept;
     bool peek(char ch) const noexcept;

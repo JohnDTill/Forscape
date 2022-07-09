@@ -54,6 +54,7 @@ public:
     bool hasConstructs() const noexcept;
     size_t nestingDepth() const noexcept;
     bool empty() const noexcept;
+    ParseNode parseNodeAt(double x, double y) const noexcept;
 
     size_t id;
 
@@ -85,6 +86,7 @@ public:
     #ifndef NDEBUG
     virtual void invalidateWidth() noexcept = 0;
     virtual void invalidateDims() noexcept = 0;
+    void populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept;
     #endif
     #endif
 

@@ -75,6 +75,16 @@ class Text {
         void tagBack(SemanticType type) alloc_except;
         std::vector<SemanticTag> tags;
 
+        struct ParseNodeTag {
+            ParseNode pn  DEBUG_INIT_NONE;
+            size_t token_start  DEBUG_INIT_NONE;
+            size_t token_end  DEBUG_INIT_NONE;
+
+            ParseNodeTag() noexcept {}
+            ParseNodeTag(ParseNode pn, size_t token_start, size_t token_end) noexcept
+                : pn(pn), token_start(token_start), token_end(token_end) {}
+        };
+
         #ifdef HOPE_SEMANTIC_DEBUGGING
         std::string toSerialWithSemanticTags() const;
         #endif
@@ -103,6 +113,22 @@ class Text {
         bool containsXInBounds(double x_test, size_t start, size_t stop) const noexcept;
         double x  DEBUG_INIT_STALE;
         double y  DEBUG_INIT_STALE;
+
+        size_t tagParseNode(ParseNode pn, size_t token_start, size_t token_end) alloc_except;
+        void retagParseNodeLast(ParseNode pn) noexcept;
+        void retagParseNode(ParseNode pn, size_t index) noexcept;
+        void patchParseNode(ParseNode pn, size_t index) noexcept;
+        void patchParseNode(size_t index, ParseNode pn, size_t start, size_t end) noexcept;
+        void popParseNode() noexcept;
+        void insertParseNodes(size_t index, size_t n) alloc_except;
+        size_t parseNodeTagIndex(size_t char_index) const noexcept;
+        ParseNode parseNodeAtIndex(size_t index) const noexcept;
+        ParseNode parseNodeAtX(double x) const noexcept;
+        #ifndef NDEBUG
+        void populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept;
+        #endif
+
+        std::vector<ParseNodeTag> parse_nodes;
         #endif
 
     private:

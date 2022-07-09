@@ -724,6 +724,13 @@ bool Selection::overlapsY(double yT, double yB) const noexcept {
     const double yB_this = yBot();
     return (yT_this >= yT && yT_this <= yB) || (yB_this >= yT && yB_this <= yB);
 }
+
+void Selection::mapConstructToParseNode(ParseNode pn) const noexcept{
+    assert(isPhraseSelection());
+    assert(tR->id == tL->id+1);
+
+    tL->nextConstructAsserted()->pn = pn;
+}
 #endif
 
 }

@@ -60,6 +60,9 @@ public:
     void paint(Painter& painter) const;
     void paint(Painter& painter, double xL, double yT, double xR, double yB) const;
     void paintGroupings(Painter& painter, const Typeset::Marker& loc) const;
+    #ifndef NDEBUG
+    void populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept;
+    #endif
     #endif
 
     #ifndef NDEBUG
@@ -97,7 +100,7 @@ private:
     Line* nearestLine(double y) const noexcept;
     Line* nearestAbove(double y) const noexcept;
     Construct* constructAt(double x, double y) const noexcept;
-    Selection idAt(double x, double y) noexcept;
+    ParseNode parseNodeAt(double x, double y) const noexcept;
     #endif
     void clearRedo();
     void remove(size_t start, size_t stop) noexcept;
@@ -113,13 +116,14 @@ private:
     std::vector<Command*> undo_stack;
     std::vector<Command*> redo_stack;
 
-    Selection idAt(const Marker& marker) noexcept;
     Selection find(const std::string& str) noexcept;
     void performSemanticFormatting();
     void premutate() noexcept;
     void postmutate();
 
     void rename(const std::vector<Selection>& targets, const std::string& name, Controller& c);
+
+    Code::ParseTree& parseTree() noexcept;
 };
 
 }

@@ -37,6 +37,7 @@ assert(xx2 = x x2) //Exponent binds to last character
 assert(yy⊤ = y (y⊤)) //Transpose binds to last character
 assert(yy+ = y (y+)) //Pseudo-inv binds to last character
 assert(yy0 = y (y0)) //Access binds to last character
+assert(yy0,1 = y (y0,1)) //Access binds to last character
 assert(xx! = x (x!)) //Factorial binds to last character
 assert(xh(x) = x*h(x)) //Grouping binds to last character
 assert( xh(x)2 = x( (h(x))^2 ) )

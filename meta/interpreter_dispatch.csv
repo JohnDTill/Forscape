@@ -43,10 +43,8 @@ SQRT,MatrixXd,,MatrixXd,a.sqrt(),,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
 ROOT,double,double,double,"std::pow(a,1/b)",,,
 ROOT,MatrixXd,double,MatrixXd,a.pow(1/b),,,a.cols()!=a.rows()=>DIMENSION_MISMATCH
 ROOT,double,MatrixXd,MatrixXd,(b.inverse().log()*a).exp(),,,b.cols()!=b.rows()=>DIMENSION_MISMATCH
-GREATER,double,double,bool,a > b,2 > 1|2 > 2,true|false,
-GREATER_EQUAL,double,double,bool,a >= b,,,
-LESS,double,double,bool,a < b,,,
-LESS_EQUAL,double,double,bool,a <= b,,,
+GREATER,,,,greater(pn),2 > 1|2 > 2,true|false,
+LESS,,,,less(pn),,,
 LOGICAL_AND,bool,bool,bool,a && b,,,
 LOGICAL_NOT,bool,,bool,!a,,,
 LOGICAL_OR,bool,bool,bool,a || b,,,

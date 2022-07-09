@@ -478,59 +478,22 @@ void Model::paintGroupings(Painter& painter, const Marker& loc) const{
     #endif
 }
 
-Selection Model::idAt(double x, double y) noexcept{
-    Line* l = nearestLine(y);
-    if(!l->containsY(y)) return Selection();
-
-    Text* t = l->textNearest(x, y);
-    if(!t->containsX(x) || !t->containsY(y)) return Selection();
-
-    size_t index = t->charIndexLeft(x);
-
-    SemanticType type = t->getTypeLeftOf(index);
-    if(!isId(type)) return Selection();
-
-    size_t start = 0;
-    size_t end = t->numChars();
-    for(auto it = t->tags.rbegin(); it != t->tags.rend(); it++){
-        if(it->index <= index){
-            start = it->index;
-            break;
-        }
-        end = it->index;
-    }
-
-    return Selection(t, start, end);
+ParseNode Model::parseNodeAt(double x, double y) const noexcept {
+    return nearestLine(y)->parseNodeAt(x, y);
 }
+
+#ifndef NDEBUG
+void Model::populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept{
+    for(Line* l : lines) l->populateDocMapParseNodes(nodes);
+}
+#endif
 #endif
 
 #ifndef NDEBUG
-std::string Model::parseTreeDot() const{
+std::string Model::parseTreeDot() const {
     return parser.parse_tree.toGraphviz();
 }
 #endif
-
-Selection Model::idAt(const Marker& marker) noexcept{
-    //EVENTUALLY this is broken for subscripts.
-    //You need to fundamentally rethink how you find this, perhaps a binary search.
-
-    for(size_t i = marker.text->tags.size(); i-->0;){
-        const SemanticTag& tag = marker.text->tags[i];
-        if(tag.index == marker.index){
-            if(!isId(tag.type)) continue;
-            size_t start = marker.index;
-            size_t end = i+1==marker.text->tags.size() ? marker.text->numChars() : marker.text->tags[i+1].index;
-            return Selection(marker.text, start, end);
-        }else if(tag.index < marker.index){
-            if(!isId(tag.type)) return Selection();
-            size_t start = tag.index;
-            size_t end = i+1==marker.text->tags.size() ? marker.text->numChars() : marker.text->tags[i+1].index;
-            return Selection(marker.text, start, end);
-        }
-    }
-
-    return Selection();
-}
 
 Selection Model::find(const std::string& str) noexcept{
     Text* t = firstText();
@@ -562,6 +525,9 @@ void Model::clearFormatting() noexcept{
     Text* t = firstText();
     for(;;){
         t->tags.clear();
+        #ifndef HOPE_TYPESET_HEADLESS
+        t->parse_nodes.clear();
+        #endif
 
         if(Construct* c = t->nextConstructInPhrase()){
             Text* candidate = c->frontText();
@@ -612,6 +578,10 @@ void Model::rename(const std::vector<Selection>& targets, const std::string& nam
         lst->cmds.push_back( c.insertFirstChar(name) );
     }
     mutate(lst, c);
+}
+
+Code::ParseTree& Model::parseTree() noexcept{
+    return parser.parse_tree;
 }
 
 }

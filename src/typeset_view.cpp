@@ -294,7 +294,7 @@ void View::replaceAll(const std::vector<Selection>& targets, const std::string& 
 void View::dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held) alloc_except {
     if(right_click){
         resolveRightClick(x, y, xScreen, yScreen);
-    }else if(recentlyDoubleClicked() | isInLineBox(x)){
+    }else if(recentlyDoubleClicked() || isInLineBox(x)){
         resolveTripleClick(y);
         mouse_hold_state = TripleClick;
     }else if(shift_held){
@@ -417,13 +417,11 @@ void View::resolveRightClick(double x, double y, int xScreen, int yScreen){
         }
     }
 
-    Controller c = model->idAt(x, y);
-    if(c.hasSelection()){
-        auto& symbol_table = model->symbol_builder.symbol_table;
-        auto lookup = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
-        append(renameAction, "Rename", rename, true, lookup!=symbol_table.occurence_to_symbol_map.end())
-        append(gotoDefAction, "Go to definition", goToDef, true, lookup!=symbol_table.occurence_to_symbol_map.end())
-        append(gotoDefAction, "Find usages", findUsages, true, console && lookup!=symbol_table.occurence_to_symbol_map.end())
+    contextNode = model->parseNodeAt(x, y);
+    if(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER){
+        append(renameAction, "Rename", rename, true, true)
+        append(gotoDefAction, "Go to definition", goToDef, true, true)
+        append(findUsagesAction, "Find usages", findUsages, true, console)
         menu.addSeparator();
     }
 
@@ -527,25 +525,41 @@ void View::resolveTooltip(double x, double y) noexcept{
         }
     }
 
-    Controller c = model->idAt(x, y);
-    if(c.hasSelection()){
-        setToolTipDuration(std::numeric_limits<int>::max());
-        const auto& symbol_table = model->symbol_builder.symbol_table;
-        auto lookup = symbol_table.occurence_to_symbol_map.find(c.anchor);
+    ParseNode pn = model->parseNodeAt(x, y);
+    #ifndef NDEBUG
+    hover_node = pn;
+    update();
+    #endif
+    if(pn != NONE){
+        const auto& parse_tree = model->parser.parse_tree;
+        Code::Op op = parse_tree.getOp(pn);
 
-        //EVENTUALLY enable the assertion when idAt accurately reports identifier
-        //assert(lookup != symbol_table.occurence_to_symbol_map.end() || model->errors.size());
-        if(lookup != symbol_table.occurence_to_symbol_map.end()){
+        if(op == Code::OP_IDENTIFIER){
+            setToolTipDuration(std::numeric_limits<int>::max());
+            const auto& symbol_table = model->symbol_builder.symbol_table;
+            size_t sym_id = parse_tree.getFlag(pn);
+            const auto& symbol = symbol_table.symbols[sym_id];
+
             THROTTLE(logger->info("{}resolveTooltip({}, {});", logPrefix(), x, y);)
 
-            const auto& symbol = symbol_table.symbols[lookup->second];
-            QString tooltip = "<b>" + QString::fromStdString(c.selectedText()) + "</b> ∈ "
+            QString tooltip = "<b>" + QString::fromStdString(parse_tree.str(pn)) + "</b> ∈ "
                     + QString::fromStdString(model->static_pass.typeString(symbol));
             if(symbol.comment != NONE)
                 tooltip += "<div style=\"color:green\">" + QString::fromStdString(symbol_table.parse_tree.str(symbol.comment));
             setToolTip(tooltip);
             return;
         }
+        #ifndef NDEBUG
+        else
+        {
+            setToolTipDuration(std::numeric_limits<int>::max());
+
+            QString tooltip = "ParseNode: " + QString::number(pn);
+            setToolTip(tooltip);
+
+            return;
+        }
+        #endif
     }
 
     clearTooltip();
@@ -628,14 +642,22 @@ void View::stopCursorBlink() noexcept {
 void View::updateHighlightingFromCursorLocation(){
     highlighted_words.clear();
 
-    Controller c = model->idAt(controller.active);
-    if(c.hasSelection()){
-        auto& symbol_table = model->symbol_builder.symbol_table;
-        symbol_table.getSymbolOccurences(c.getAnchor(), highlighted_words);
-    }
+    const std::pair<ParseNode, ParseNode> parse_nodes = controller.active.parseNodesAround();
+    if(parse_nodes.first != NONE)
+        populateHighlightWordsFromParseNode(parse_nodes.first);
+    if(parse_nodes.second != NONE && parse_nodes.second != parse_nodes.first)
+        populateHighlightWordsFromParseNode(parse_nodes.second);
 
     update();
     updateAfterHighlightChange();
+}
+
+void View::populateHighlightWordsFromParseNode(ParseNode pn){
+    const auto& parse_tree = model->parser.parse_tree;
+    if(parse_tree.getOp(pn) != Code::OP_IDENTIFIER) return;
+    size_t sym_id = parse_tree.getFlag(pn);
+    const auto& symbol_table = model->symbol_builder.symbol_table;
+    symbol_table.getSymbolOccurences(sym_id, highlighted_words);
 }
 
 bool View::scrolledToBottom() const noexcept{
@@ -928,6 +950,13 @@ void View::drawModel(double xL, double yT, double xR, double yB) {
         if(c.overlapsY(yT, yB))
             c.paintHighlight(painter);
 
+    #ifndef NDEBUG
+    if(hover_node != NONE){
+        const Typeset::Selection& sel = model->parser.parse_tree.getSelection(hover_node);
+        sel.paintHighlight(painter);
+    }
+    #endif
+
     const Typeset::Marker& cursor = getController().active;
 
     model->paint(painter, xL, yT, xR, yB);
@@ -1105,14 +1134,9 @@ void View::rename(){
 void View::goToDef(){
     logger->info("{}goToDef();", logPrefix());
 
-    Controller c = model->idAt(controller.active);
-    assert(c.hasSelection());
-
+    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
     auto& symbol_table = model->symbol_builder.symbol_table;
-    auto lookup = symbol_table.occurence_to_symbol_map.find(c.getAnchor());
-    assert(lookup != symbol_table.occurence_to_symbol_map.end());
-
-    controller = symbol_table.getSel(lookup->second);
+    controller = symbol_table.getSel(model->parseTree().getSymId(contextNode));
     restartCursorBlink();
     ensureCursorVisible();
     update();
@@ -1123,12 +1147,10 @@ void View::findUsages(){
 
     assert(console);
 
-    Controller c = model->idAt(controller.active);
-    assert(c.hasSelection());
-
+    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
     auto& symbol_table = model->symbol_builder.symbol_table;
     std::vector<Typeset::Selection> occurences;
-    symbol_table.getSymbolOccurences(c.getAnchor(), occurences);
+    symbol_table.getSymbolOccurences(model->parseTree().getSymId(contextNode), occurences);
 
     Model* m = new Model();
     m->is_output = true;
@@ -1291,12 +1313,11 @@ void View::paste(const std::string& str){
 void View::rename(const std::string& str){
     logger->info("{}rename({});", logPrefix(), cStr(str));
 
-    Controller c = model->idAt(controller.active);
-    assert(c.hasSelection());
-
+    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
     auto& symbol_table = model->symbol_builder.symbol_table;
     std::vector<Typeset::Selection> occurences;
-    symbol_table.getSymbolOccurences(c.getAnchor(), occurences);
+    symbol_table.getSymbolOccurences(model->parseTree().getSymId(contextNode), occurences);
+
     replaceAll(occurences, str);
 
     ensureCursorVisible();

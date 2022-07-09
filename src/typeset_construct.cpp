@@ -131,6 +131,15 @@ std::string Construct::toStringWithSemanticTags() const{
 #endif
 
 #ifndef HOPE_TYPESET_HEADLESS
+ParseNode Construct::parseNodeAt(double x, double y) const noexcept {
+    if(Subphrase* s = argAt(x, y)){
+        ParseNode pn_from_child = s->parseNodeAt(x, y);
+        if(pn_from_child != NONE) return pn_from_child;
+    }
+
+    return pn;
+}
+
 bool Construct::contains(double x, double y) const noexcept{
     return (x >= this->x) & (x <= this->x + width) & (y >= this->y) & (y <= this->y + height());
 }
@@ -188,6 +197,11 @@ void Construct::invalidateWidth() noexcept{
 void Construct::invalidateDims() noexcept{
     width = above_center = under_center = STALE;
     parent->invalidateDims();
+}
+
+void Construct::populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept{
+    for(Subphrase* s : args) s->populateDocMapParseNodes(nodes);
+    if(pn != NONE) nodes.insert(pn); //EVENTUALLY: probably assert(pn != NONE)
 }
 #endif
 
@@ -252,7 +266,7 @@ size_t Construct::numArgs() const noexcept{
 }
 
 bool Construct::sameContent(const Construct* other) const noexcept{
-    if((constructCode() != other->constructCode()) | (numArgs() != other->numArgs()))
+    if((constructCode() != other->constructCode()) || (numArgs() != other->numArgs()))
         return false;
     for(size_t i = 0; i < numArgs(); i++)
         if(!arg(i)->sameContent(other->arg(i)))
