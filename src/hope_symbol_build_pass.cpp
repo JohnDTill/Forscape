@@ -65,8 +65,8 @@ void SymbolTableBuilder::resolveSymbols() alloc_except {
     if(!errors.empty()) return;
     assert(parse_tree.inFinalState());
 
-    /* //DO THIS - verify doc map
     #ifndef HOPE_TYPESET_HEADLESS
+    /* //DO THIS - verify symbols are in doc map
     static std::unordered_set<ParseNode> doc_map_nodes;
     doc_map_nodes.clear();
 
@@ -80,8 +80,8 @@ void SymbolTableBuilder::resolveSymbols() alloc_except {
     //Every usage in the symbol table is in the doc map
     for(const Usage& usage : symbol_table.usages)
         assert(doc_map_nodes.find(usage.pn) != doc_map_nodes.end());
-    #endif
     */
+    #endif
     #endif
 }
 
@@ -478,7 +478,7 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
     parse_tree.addNaryChild(script);
     #ifndef HOPE_TYPESET_HEADLESS
     t->tagParseNode(script, left.index, t->numChars());
-    fixSubIdDocMap(script);
+    fixSubIdDocMap<false>(script);
     #endif
     ParseNode mult = parse_tree.finishNary(OP_IMPLICIT_MULTIPLY);
 
@@ -593,9 +593,10 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn) alloc_except {
 
     for(size_t i = 0; i < val_cap_size; i++){
         ParseNode capture = parse_tree.arg(val_cap, i);
-        defineLocalScope(capture, false); //EVENTUALLY: don't warn about shadowing value captures
+        defineLocalScope(capture, false, false);
         symbol_table.symbols.back().is_captured_by_value = true;
         symbol_table.symbols.back().is_closure_nested = true;
+        symbol_table.symbols.back().comment = NONE; //EVENTUALLY: maybe take the comment of the referenced var
     }
 
     bool expect_default = false;
@@ -694,7 +695,7 @@ void SymbolTableBuilder::resolveDerivative(ParseNode pn) alloc_except {
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable) alloc_except {
+bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable, bool warn_on_shadow) alloc_except {
     Typeset::Selection c = parse_tree.getSelection(pn);
 
     if(parse_tree.getOp(pn) == OP_SUBSCRIPT_ACCESS && !resolvePotentialIdSub(pn)){
@@ -718,7 +719,7 @@ bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable) alloc_ex
             errors.push_back(Error(c, CONST ? REASSIGN_CONSTANT : MUTABLE_CONST_ASSIGN));
             return false;
         }else{
-            appendEntry(pn, lookup->second, immutable);
+            appendEntry(pn, lookup->second, immutable, warn_on_shadow);
             lookup->second = symbol_table.symbols.size()-1;
         }
     }
@@ -736,6 +737,7 @@ size_t SymbolTableBuilder::symIndex(ParseNode pn) const noexcept{
 }
 
 #ifndef HOPE_TYPESET_HEADLESS
+template<bool first>
 void SymbolTableBuilder::fixSubIdDocMap(ParseNode pn) const alloc_except {
     //Update doc map
     parse_tree.getSelection(pn).mapConstructToParseNode(pn);
@@ -744,7 +746,7 @@ void SymbolTableBuilder::fixSubIdDocMap(ParseNode pn) const alloc_except {
 
     ParseNode sub = parse_tree.rhs(pn);
     Typeset::Text* t = parse_tree.getLeft(sub).text;
-    if(parse_tree.getOp(sub) == OP_INTEGER_LITERAL)
+    if(first && parse_tree.getOp(sub) == OP_INTEGER_LITERAL)
         t->tagParseNode(pn, 0, t->numChars());
     else
         t->retagParseNode(pn, 0);
@@ -847,8 +849,9 @@ void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bo
     symbol_table.addSymbol(pn, lexical_depth, closure_depth, NONE, immutable);
 }
 
-void SymbolTableBuilder::appendEntry(ParseNode pn, size_t prev, bool immutable) alloc_except {
-    warnings.push_back(Error(parse_tree.getSelection(pn), SHADOWING_VAR)); //EVENTUALLY: make this optional, probably default off
+void SymbolTableBuilder::appendEntry(ParseNode pn, size_t prev, bool immutable, bool warn_on_shadow) alloc_except {
+    //EVENTUALLY: let the user control warnings, decide defaults
+    if(warn_on_shadow) warnings.push_back(Error(parse_tree.getSelection(pn), SHADOWING_VAR));
     symbol_table.usages.push_back(Usage(symbol_table.symbols.size(), pn, DECLARE));
     symbol_table.addSymbol(pn, lexical_depth, closure_depth, prev, immutable);
 }
