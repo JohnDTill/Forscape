@@ -69,18 +69,33 @@ void SymbolTableBuilder::resolveSymbols() alloc_except {
     static std::unordered_set<ParseNode> doc_map_nodes;
     doc_map_nodes.clear();
 
+    struct hash {
+        size_t operator() (const Typeset::Selection& a) const noexcept {
+            return reinterpret_cast<size_t>(a.left.text) ^ (a.left.index);
+        }
+    };
+
+    struct cmp {
+        bool operator() (const Typeset::Selection& a, const Typeset::Selection& b) const noexcept {
+            return a.left == b.left && a.right == b.right;
+        }
+    };
+
+    static std::unordered_set<Typeset::Selection, hash, cmp> selection_in_map;
+    selection_in_map.clear();
+
     model->populateDocMapParseNodes(doc_map_nodes);
 
     //Every identifier in the doc map goes to a valid symbol
     for(ParseNode pn : doc_map_nodes)
-        if(parse_tree.getOp(pn) == OP_IDENTIFIER)
+        if(parse_tree.getOp(pn) == OP_IDENTIFIER){
             symbol_table.verifyIdentifier(pn);
+            selection_in_map.insert(parse_tree.getSelection(pn));
+        }
 
-    /* //DO THIS - verify symbols are in doc map
     //Every usage in the symbol table is in the doc map
     for(const Usage& usage : symbol_table.usages)
-        assert(doc_map_nodes.find(usage.pn) != doc_map_nodes.end());
-    */
+        assert(selection_in_map.find(parse_tree.getSelection(usage.pn)) != selection_in_map.end());
     #endif
     #endif
 }
@@ -477,8 +492,12 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
     }
     parse_tree.addNaryChild(script);
     #ifndef HOPE_TYPESET_HEADLESS
-    t->tagParseNode(script, left.index, t->numChars());
-    fixSubIdDocMap<false>(script);
+    if(parse_tree.getOp(script) == OP_IDENTIFIER){
+        t->tagParseNode(script, left.index, t->numChars());
+        fixSubIdDocMap<false>(script);
+    }else{
+        t->tagParseNode(new_id, left.index, t->numChars());
+    }
     #endif
     ParseNode mult = parse_tree.finishNary(OP_IMPLICIT_MULTIPLY);
 

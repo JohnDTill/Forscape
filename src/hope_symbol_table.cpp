@@ -38,7 +38,7 @@ ScopeSegment::ScopeSegment(
         #ifdef HOPE_USE_SCOPE_NAME
         size_t name_start, size_t name_size,
         #endif
-        const Typeset::Marker &start, ParseNode closure, ScopeId parent, ScopeId prev, SymbolId sym_begin, size_t usage_begin) noexcept
+        const Typeset::Marker& start, ParseNode closure, ScopeId parent, ScopeId prev, SymbolId sym_begin, size_t usage_begin) noexcept
     :
       #ifdef HOPE_USE_SCOPE_NAME
       name_start(name_start), name_size(name_size),

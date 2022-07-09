@@ -527,30 +527,6 @@ void View::resolveTooltip(double x, double y) noexcept{
         }
     }
 
-    //DO THIS: delete
-    /*
-    Controller c = model->idAt(x, y);
-    if(c.hasSelection()){
-        setToolTipDuration(std::numeric_limits<int>::max());
-        const auto& symbol_table = model->symbol_builder.symbol_table;
-        auto lookup = symbol_table.occurence_to_symbol_map.find(c.anchor);
-
-        //EVENTUALLY enable the assertion when idAt accurately reports identifier
-        //assert(lookup != symbol_table.occurence_to_symbol_map.end() || model->errors.size());
-        if(lookup != symbol_table.occurence_to_symbol_map.end()){
-            THROTTLE(logger->info("{}resolveTooltip({}, {});", logPrefix(), x, y);)
-
-            const auto& symbol = symbol_table.symbols[lookup->second];
-            QString tooltip = "<b>" + QString::fromStdString(c.selectedText()) + "</b> ∈ "
-                    + QString::fromStdString(model->static_pass.typeString(symbol));
-            if(symbol.comment != NONE)
-                tooltip += "<div style=\"color:green\">" + QString::fromStdString(symbol_table.parse_tree.str(symbol.comment));
-            setToolTip(tooltip);
-            return;
-        }
-    }
-    */
-
     ParseNode pn = model->parseNodeAt(x, y);
     #ifndef NDEBUG
     hover_node = pn;
