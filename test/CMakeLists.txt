@@ -4,6 +4,16 @@ option(TEST_QT OFF)
 
 project(HopeTests LANGUAGES CXX)
 
+include(${CMAKE_BINARY_DIR}/conan-dependencies/conanbuildinfo.cmake)
+conan_basic_setup()
+include_directories(${CONAN_INCLUDE_DIRS})
+
+find_package(Eigen3 REQUIRED)
+#find_package(gmp REQUIRED)
+find_package(phmap REQUIRED)
+find_package(readerwriterqueue REQUIRED)
+find_package(spdlog REQUIRED)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -22,13 +32,13 @@ include_directories(${CONSTRUCT})
 include_directories(${GEN})
 include_directories(${COMMAND})
 
-configure_file(${TEST}/serial_valid.txt ${CMAKE_BINARY_DIR} COPYONLY)
-configure_file(${TEST}/serial_malformed.txt ${CMAKE_BINARY_DIR} COPYONLY)
-configure_file(${TEST}/serial_exhaustive.txt ${CMAKE_BINARY_DIR} COPYONLY)
+configure_file(${TEST}/serial_valid.txt ${CMAKE_BINARY_DIR}/bin COPYONLY)
+configure_file(${TEST}/serial_malformed.txt ${CMAKE_BINARY_DIR}/bin COPYONLY)
+configure_file(${TEST}/serial_exhaustive.txt ${CMAKE_BINARY_DIR}/bin COPYONLY)
 
 add_compile_definitions(TYPESET_MEMORY_DEBUG HOPE_SEMANTIC_DEBUGGING)
 add_compile_definitions(EIGEN_NO_AUTOMATIC_RESIZING)
-add_compile_definitions(BASE_TEST_DIR="../test/interpreter_scripts")
+add_compile_definitions(BASE_TEST_DIR="../../test/interpreter_scripts")
 add_compile_definitions(alloc_except=noexcept)
 
 set(GEN_FILES
@@ -212,7 +222,7 @@ endif ()
 add_executable(HopeTests ${SOURCES})
 
 FIND_PACKAGE ( Threads REQUIRED )
-target_link_libraries(HopeTests PRIVATE Threads::Threads)
+target_link_libraries(HopeTests PRIVATE Threads::Threads ${CONAN_LIBS})
 
 if (${TEST_QT})
 target_link_libraries(HopeTests PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Svg)
