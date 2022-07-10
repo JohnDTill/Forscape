@@ -224,7 +224,7 @@ endif ()
 add_executable(HopeTests ${SOURCES})
 
 FIND_PACKAGE ( Threads REQUIRED )
-target_link_libraries(HopeTests PRIVATE Threads::Threads ${CONAN_LIBS})
+target_link_libraries(${PROJECT_NAME} Threads::Threads ${CONAN_LIBS})
 
 if (${TEST_QT})
 target_link_libraries(HopeTests PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Svg)
