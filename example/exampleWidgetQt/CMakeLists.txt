@@ -244,9 +244,12 @@ else()
     endif()
 endif()
 
+FIND_PACKAGE ( Threads REQUIRED )
 target_link_libraries(Forscape PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::Svg
+    Threads::Threads
+    spdlog::spdlog
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -254,9 +257,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         Qt${QT_VERSION_MAJOR}::SvgWidgets
     )
 endif()
-
-FIND_PACKAGE ( Threads REQUIRED )
-target_link_libraries(Forscape PRIVATE Threads::Threads ${CONAN_LIBS})
 
 set_target_properties(Forscape PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
