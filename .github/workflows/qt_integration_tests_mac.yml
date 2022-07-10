@@ -21,4 +21,6 @@ jobs:
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build_test && make
       - id: run
-        run: cd ${GITHUB_WORKSPACE}/build_test && ./HopeTests -platform offscreen
+        run: cd ${GITHUB_WORKSPACE}/build_test/bin &&
+             export PATH=$PATH:${GITHUB_WORKSPACE}/build_test &&
+             ./HopeTests -platform offscreen
