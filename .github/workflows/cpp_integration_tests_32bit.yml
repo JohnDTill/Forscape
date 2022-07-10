@@ -29,4 +29,4 @@ jobs:
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build_test && make
       - id: run
-        run: cd ${GITHUB_WORKSPACE}/build_test/bin && ./HopeTests
+        run: cd ${GITHUB_WORKSPACE}/build_test && ./HopeTests
