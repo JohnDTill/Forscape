@@ -8,9 +8,13 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
+      - id: install_conan
+        uses: turtlebrowser/get-conan@main
+      - id: run_conan
+        run: cd ${GITHUB_WORKSPACE}/test && conan install --generator cmake_find_package --install-folder ../build_test/conan-dependencies .
       - id: cmake
         run: cd ${GITHUB_WORKSPACE}/test && cmake -B../build_test -S.
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build_test && make
       - id: run
-        run: cd ${GITHUB_WORKSPACE}/build_test && ./HopeTests
+        run: cd ${GITHUB_WORKSPACE}/build_test/bin && ./HopeTests

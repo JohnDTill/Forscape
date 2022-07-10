@@ -4,6 +4,7 @@ option(TEST_QT OFF)
 
 project(HopeTests LANGUAGES CXX)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/conan-dependencies ${CMAKE_MODULE_PATH})
 include(${CMAKE_BINARY_DIR}/conan-dependencies/conanbuildinfo.cmake)
 conan_basic_setup()
@@ -33,9 +34,9 @@ include_directories(${CONSTRUCT})
 include_directories(${GEN})
 include_directories(${COMMAND})
 
-configure_file(${TEST}/serial_valid.txt ${CMAKE_BINARY_DIR}/bin COPYONLY)
-configure_file(${TEST}/serial_malformed.txt ${CMAKE_BINARY_DIR}/bin COPYONLY)
-configure_file(${TEST}/serial_exhaustive.txt ${CMAKE_BINARY_DIR}/bin COPYONLY)
+configure_file(${TEST}/serial_valid.txt ${CMAKE_BINARY_DIR}/bin/serial_valid.txt COPYONLY)
+configure_file(${TEST}/serial_malformed.txt ${CMAKE_BINARY_DIR}/bin/serial_malformed.txt COPYONLY)
+configure_file(${TEST}/serial_exhaustive.txt ${CMAKE_BINARY_DIR}/bin/serial_exhaustive.txt COPYONLY)
 
 add_compile_definitions(TYPESET_MEMORY_DEBUG HOPE_SEMANTIC_DEBUGGING)
 add_compile_definitions(EIGEN_NO_AUTOMATIC_RESIZING)

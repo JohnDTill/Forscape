@@ -8,6 +8,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
+      - id: install_conan
+        uses: turtlebrowser/get-conan@main
+      - id: run_conan
+        run: cd ${GITHUB_WORKSPACE}/test && conan install --generator cmake_find_package --install-folder ../build_test/conan-dependencies .
       - id: cmake
         run: cd $Env:GITHUB_WORKSPACE/test && cmake -B../build_test -S.
       - name: Add msbuild to PATH
@@ -15,4 +19,4 @@ jobs:
       - name: Build app for release
         run: cd $Env:GITHUB_WORKSPACE/build_test && msbuild HopeTests.vcxproj -property:Configuration=Debug
       - id: run
-        run: cd $Env:GITHUB_WORKSPACE/build_test && ./Debug/HopeTests.exe
+        run: cd $Env:GITHUB_WORKSPACE/build_test/bin && ./HopeTests.exe
