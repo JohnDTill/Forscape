@@ -11,3 +11,4 @@ cmake_find_package
 
 [options]
 spdlog:header_only=True
+fmt:header_only=True
