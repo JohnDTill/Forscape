@@ -15,7 +15,11 @@ jobs:
       - id: patch_conan
         run: conan profile new default --detect && conan profile update settings.compiler.libcxx=libstdc++11 default
       - id: run_conan
-        run: cd ${GITHUB_WORKSPACE}/test && conan install --generator cmake_find_package --install-folder ../build_test/conan-dependencies .
+        run: cd ${GITHUB_WORKSPACE}/test &&
+             export CFLAGS=-m32 &&
+             export CXXFLAGS=-m32 &&
+             export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig &&
+             conan install --generator cmake_find_package --install-folder ../build_test/conan-dependencies .
       - id: cmake
         run: cd ${GITHUB_WORKSPACE}/test &&
              export CFLAGS=-m32 &&
