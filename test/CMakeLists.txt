@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-option(TEST_QT OFF)
+set(TEST_QT ON)
 
 project(HopeTests LANGUAGES CXX)
 
@@ -227,7 +227,17 @@ FIND_PACKAGE ( Threads REQUIRED )
 target_link_libraries(${PROJECT_NAME} Threads::Threads spdlog::spdlog)
 
 if (${TEST_QT})
-target_link_libraries(HopeTests PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Svg)
+    target_link_libraries(${PROJECT_NAME}
+        ${CONAN_LIBS}
+        Qt${QT_VERSION_MAJOR}::Svg
+        Qt${QT_VERSION_MAJOR}::Widgets
+        Threads::Threads
+    )
+else()
+    target_link_libraries(${PROJECT_NAME}
+        ${CONAN_LIBS}
+        Threads::Threads
+    )
 endif ()
 
 add_test(NAME IntegrationTest COMMAND HopeTests.exe)

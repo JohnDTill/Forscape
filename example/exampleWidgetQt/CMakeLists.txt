@@ -246,10 +246,10 @@ endif()
 
 FIND_PACKAGE ( Threads REQUIRED )
 target_link_libraries(Forscape PRIVATE
+    ${CONAN_LIBS}
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::Svg
     Threads::Threads
-    spdlog::spdlog
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
