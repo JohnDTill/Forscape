@@ -4,6 +4,7 @@ option(TEST_QT OFF)
 
 project(HopeTests LANGUAGES CXX)
 
+set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/conan-dependencies ${CMAKE_MODULE_PATH})
 include(${CMAKE_BINARY_DIR}/conan-dependencies/conanbuildinfo.cmake)
 conan_basic_setup()
 include_directories(${CONAN_INCLUDE_DIRS})

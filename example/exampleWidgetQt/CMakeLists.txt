@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.5)
 project(Forscape VERSION 0.0.1 LANGUAGES CXX)
 set(EXE_NAME "Forscape")
 
+set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/conan-dependencies ${CMAKE_MODULE_PATH})
 include(${CMAKE_BINARY_DIR}/conan-dependencies/conanbuildinfo.cmake)
 conan_basic_setup()
 include_directories(${CONAN_INCLUDE_DIRS})
