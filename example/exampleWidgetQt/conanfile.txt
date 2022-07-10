@@ -3,7 +3,7 @@ eigen/3.4.0
 # gmp/6.2.1
 parallel-hashmap/1.35
 readerwriterqueue/1.0.6
-spdlog/1.10.0
+spdlog/1.9.2
 
 [generators]
 cmake
