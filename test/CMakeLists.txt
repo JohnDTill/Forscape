@@ -227,14 +227,14 @@ FIND_PACKAGE ( Threads REQUIRED )
 
 if (${TEST_QT})
     target_link_libraries(${PROJECT_NAME}
-        ${CONAN_LIBS}
+        spdlog::spdlog
         Qt${QT_VERSION_MAJOR}::Svg
         Qt${QT_VERSION_MAJOR}::Widgets
         Threads::Threads
     )
 else()
     target_link_libraries(${PROJECT_NAME}
-        ${CONAN_LIBS}
+        spdlog::spdlog
         Threads::Threads
     )
 endif ()
