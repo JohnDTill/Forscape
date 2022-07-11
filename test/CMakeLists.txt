@@ -6,7 +6,7 @@ project(HopeTests LANGUAGES CXX)
 
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/conan-dependencies ${CMAKE_MODULE_PATH})
 include(${CMAKE_BINARY_DIR}/conan-dependencies/conanbuildinfo.cmake)
-conan_basic_setup(TARGETS NO_OUTPUT_DIRS)
+conan_basic_setup(TARGETS NO_OUTPUT_DIRS KEEP_RPATHS)
 include_directories(${CONAN_INCLUDE_DIRS})
 
 find_package(Eigen3 REQUIRED)
