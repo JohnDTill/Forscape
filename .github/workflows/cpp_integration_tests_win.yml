@@ -19,4 +19,4 @@ jobs:
       - name: Build app for release
         run: cd $Env:GITHUB_WORKSPACE/build_test && msbuild HopeTests.vcxproj -property:Configuration=Debug
       - id: run
-        run: cd $Env:GITHUB_WORKSPACE/build_test/bin && ./HopeTests.exe
+        run: cd $Env:GITHUB_WORKSPACE/build_test && ./HopeTests.exe
