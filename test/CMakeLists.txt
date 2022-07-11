@@ -4,6 +4,17 @@ option(TEST_QT OFF)
 
 project(HopeTests LANGUAGES CXX)
 
+set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/conan-dependencies ${CMAKE_MODULE_PATH})
+include(${CMAKE_BINARY_DIR}/conan-dependencies/conanbuildinfo.cmake)
+conan_basic_setup(TARGETS NO_OUTPUT_DIRS KEEP_RPATHS)
+include_directories(${CONAN_INCLUDE_DIRS})
+
+find_package(Eigen3 REQUIRED)
+#find_package(gmp REQUIRED)
+find_package(phmap REQUIRED)
+find_package(readerwriterqueue REQUIRED)
+find_package(spdlog REQUIRED)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -212,10 +223,19 @@ endif ()
 add_executable(HopeTests ${SOURCES})
 
 FIND_PACKAGE ( Threads REQUIRED )
-target_link_libraries(HopeTests PRIVATE Threads::Threads)
 
 if (${TEST_QT})
-target_link_libraries(HopeTests PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Svg)
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        ${CONAN_LIBS}
+        Qt${QT_VERSION_MAJOR}::Svg
+        Qt${QT_VERSION_MAJOR}::Widgets
+        Threads::Threads
+    )
+else()
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        ${CONAN_LIBS}
+        Threads::Threads
+    )
 endif ()
 
 add_test(NAME IntegrationTest COMMAND HopeTests.exe)

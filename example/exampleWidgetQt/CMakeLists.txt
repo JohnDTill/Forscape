@@ -3,6 +3,17 @@ cmake_minimum_required(VERSION 3.5)
 project(Forscape VERSION 0.0.1 LANGUAGES CXX)
 set(EXE_NAME "Forscape")
 
+set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/conan-dependencies ${CMAKE_MODULE_PATH})
+include(${CMAKE_BINARY_DIR}/conan-dependencies/conanbuildinfo.cmake)
+conan_basic_setup()
+include_directories(${CONAN_INCLUDE_DIRS})
+
+find_package(Eigen3 REQUIRED)
+#find_package(gmp REQUIRED)
+find_package(phmap REQUIRED)
+find_package(readerwriterqueue REQUIRED)
+find_package(spdlog REQUIRED)
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_AUTOUIC ON)
@@ -233,9 +244,12 @@ else()
     endif()
 endif()
 
+FIND_PACKAGE ( Threads REQUIRED )
 target_link_libraries(Forscape PRIVATE
+    ${CONAN_LIBS}
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::Svg
+    Threads::Threads
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -243,9 +257,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         Qt${QT_VERSION_MAJOR}::SvgWidgets
     )
 endif()
-
-FIND_PACKAGE ( Threads REQUIRED )
-target_link_libraries(Forscape PRIVATE Threads::Threads)
 
 set_target_properties(Forscape PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com

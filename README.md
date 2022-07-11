@@ -22,8 +22,10 @@ Alternately, install the development prerequisites listed below and compile from
 Use the [.deb file](https://github.com/JohnDTill/Forscape/releases/download/pre-alpha-0.0.2/forscape_0.0.1_amd64.deb) or compile from source using:
 ```
 apt-get install cmake python3 qt5-default libqt5svg5-dev
+pip3 install conan
 git clone https://github.com/JohnDTill/Forscape
 cd ./Forscape/example/exampleWidgetQt
+conan install --generator cmake_find_package .
 cmake CMakeLists.txt
 make
 ./Forscape #Run
@@ -34,11 +36,12 @@ make
 * Qt5/6 (https://www.qt.io/download)
   * QtSvg module
 * Python3 on the system path
+* Conan (after installing, pick up the Qt plugin for easy use)
 
 #### Optional
 * [GraphViz](https://graphviz.org/) on system path for debugging AST
 
-#### Bundled software
+#### External libraries / assets (no setup required)
 
 * [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) (Header-only linear algebra)
 * [parallel-hashmap](https://github.com/greg7mdp/parallel-hashmap) (Header-only, very fast and memory-friendly hashmaps and btrees)

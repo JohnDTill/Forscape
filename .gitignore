@@ -2,6 +2,10 @@
 src/generated/*
 */out/*
 */CMakeCache.txt
+*.exe
+*.dll
+**/config/lambda.ico
+**/com.automath.forscape/meta/LICENSE
 
 #Qt
 *.pro.user*

@@ -8,6 +8,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - id: install_conan
+        uses: turtlebrowser/get-conan@main
+      - id: run_conan
+        run: cd ${GITHUB_WORKSPACE}/test && export CXX=/usr/bin/clang++ &&
+             conan install -e CXX=/usr/bin/clang++ --generator cmake_find_package --install-folder ../build_test/conan-dependencies .
       - id: cmake
         run: cd ${GITHUB_WORKSPACE}/test && export CXX=/usr/bin/clang++ && cmake -B../build_test -S.
       - id: make
