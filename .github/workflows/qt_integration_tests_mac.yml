@@ -7,10 +7,6 @@ jobs:
   build-and-test:
     runs-on: macos-latest
     steps:
-      - id: Qt
-        uses: jurplel/install-qt-action@v2
-        with:
-          modules: qtsvg
       - uses: actions/checkout@v2
       - id: install_conan
         uses: turtlebrowser/get-conan@main
