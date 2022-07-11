@@ -7,6 +7,10 @@ jobs:
   build-and-test:
     runs-on: macos-latest
     steps:
+      - id: Qt
+        uses: jurplel/install-qt-action@v2
+        with:
+          modules: qtsvg
       - uses: actions/checkout@v2
       - id: install_conan
         uses: turtlebrowser/get-conan@main
@@ -16,5 +20,7 @@ jobs:
         run: cd ${GITHUB_WORKSPACE}/test && cmake -DTEST_QT=ON -B../build_test -S.
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build_test && make
+      - id: patch
+        run: macdeployqt ./HopeTests
       - id: run
         run: cd ${GITHUB_WORKSPACE}/build_test && ./HopeTests -platform offscreen
