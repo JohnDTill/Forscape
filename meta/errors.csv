@@ -72,3 +72,4 @@ EXPECT_POSITIVE_INT,,Expect semipositive integer
 EXPECT_NATURAL_NUMBER,,Expect natural number
 CALC_OVERFLOW,,Calculation overflows
 BINOM_K_EXCEED_N,,Binomial coefficient options must exceed choices
+LIMIT_NOT_SUPPORTED,,Limits are not supported yet

@@ -93,6 +93,8 @@ private:
     void resolveSubscript(ParseNode pn) alloc_except;
     void resolveBig(ParseNode pn) alloc_except;
     void resolveDerivative(ParseNode pn) alloc_except;
+    void resolveLimit(ParseNode pn) alloc_except;
+    void resolveDefiniteIntegral(ParseNode pn) alloc_except;
     bool defineLocalScope(ParseNode pn, bool immutable = true, bool warn_on_shadow = true) alloc_except;
     bool declared(ParseNode pn) const noexcept;
     size_t symIndex(ParseNode pn) const noexcept;

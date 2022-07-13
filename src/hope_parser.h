@@ -84,6 +84,8 @@ private:
     ParseNode cases() alloc_except;
     ParseNode squareRoot() alloc_except;
     ParseNode nRoot() alloc_except;
+    ParseNode limit() alloc_except;
+    ParseNode definiteIntegral() alloc_except;
     ParseNode oneDim(Op type) alloc_except;
     ParseNode twoDims(Op type) alloc_except;
     ParseNode trig(Op type) alloc_except;

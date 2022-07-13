@@ -1180,6 +1180,40 @@ Value Interpreter::finiteDiff(ParseNode pn){
     return ans;
 }
 
+Value Interpreter::definiteIntegral(ParseNode pn) {
+    //EVENTUALLY: do more than this poor numerical implementation
+    Value tf_v = interpretExpr(parse_tree.arg<1>(pn));
+    assert(tf_v.index() == double_index);
+    double tf = std::get<double>(tf_v);
+    Value t0_v = interpretExpr(parse_tree.arg<2>(pn));
+    assert(t0_v.index() == double_index);
+    double t0 = std::get<double>(t0_v);
+
+    static constexpr size_t N = 50;
+    const double dt = (tf - t0) / N;
+
+    stack.push(t0 + dt/2, parse_tree.str(parse_tree.arg<0>(pn)));
+
+    ParseNode kernel = parse_tree.arg<3>(pn);
+    Value sample = interpretExpr(kernel);
+    Value under_dt = binaryDispatch(OP_MULTIPLICATION, dt, sample, kernel);
+    Value accumulated = under_dt;
+
+    for(size_t i = 1; i < N; i++){
+        if(error_node != NONE) return NIL;
+        assert(stack.back().index() == double_index);
+        std::get<double>(stack.back()) += dt;
+
+        sample = interpretExpr(kernel);
+        under_dt = binaryDispatch(OP_MULTIPLICATION, dt, sample, kernel);
+        accumulated = binaryDispatch(OP_ADDITION, accumulated, under_dt, kernel);
+    }
+
+    stack.pop();
+
+    return accumulated;
+}
+
 double Interpreter::pNorm(const Eigen::MatrixXd& a, double b) noexcept{
     //EVENTUALLY: eigen has a templated version of lpNorm<b>() for codegen
 

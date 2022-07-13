@@ -113,6 +113,7 @@ private:
     static Eigen::MatrixXd invHat(const Eigen::MatrixXd& a);
     Value unitVector(ParseNode pn);
     Value finiteDiff(ParseNode pn);
+    Value definiteIntegral(ParseNode pn);
     static double pNorm(const Eigen::MatrixXd& a, double b) noexcept;
     static void removeEscapes(std::string& str) noexcept;
     static std::string formatted(double num);

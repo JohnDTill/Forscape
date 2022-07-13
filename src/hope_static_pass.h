@@ -145,6 +145,8 @@ private:
         ParseNode resolveUnaryMinus(ParseNode pn);
         ParseNode resolveUnitVector(ParseNode pn);
         ParseNode resolveZeroMatrix(ParseNode pn);
+        ParseNode resolveLimit(ParseNode pn);
+        ParseNode resolveDefiniteIntegral(ParseNode pn);
         ParseNode copyChildProperties(ParseNode pn) noexcept;
         ParseNode enforceScalar(ParseNode pn);
         ParseNode enforceZero(ParseNode pn);

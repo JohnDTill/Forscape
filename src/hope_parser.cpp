@@ -652,6 +652,8 @@ ParseNode Parser::primary() alloc_except {
         case TOKEN_CASES: return cases();
         case TOKEN_SQRT: return squareRoot();
         case TOKEN_NRT: return nRoot();
+        case TOKEN_LIMIT: return limit();
+        case TOKEN_INTEGRAL2: return definiteIntegral();
 
         case TOKEN_BIGSUM0:
         case TOKEN_BIGSUM1:
@@ -1244,6 +1246,34 @@ ParseNode Parser::nRoot() alloc_except{
     consume(ARGCLOSE);
 
     return parse_tree.addNode<2>(OP_ROOT, c, {arg, base});
+}
+
+ParseNode Parser::limit() alloc_except {
+    const Typeset::Marker& left = lMark();
+    advance();
+    ParseNode id = isolatedIdentifier();
+    consume(ARGCLOSE);
+    ParseNode lim = expression();
+    consume(ARGCLOSE);
+    ParseNode expr = expression();
+    const Typeset::Selection sel(left, rMarkPrev());
+
+    return parse_tree.addNode<3>(OP_LIMIT, sel, {id, lim, expr});
+}
+
+ParseNode Parser::definiteIntegral() alloc_except {
+    const Typeset::Marker& left = lMark();
+    advance();
+    ParseNode tf = expression();
+    consume(ARGCLOSE);
+    ParseNode t0 = expression();
+    consume(ARGCLOSE);
+    ParseNode kernel = expression();
+    consume(DOUBLESTRUCK_D);
+    ParseNode var = isolatedIdentifier();
+    const Typeset::Selection sel(left, rMarkPrev());
+
+    return parse_tree.addNode<4>(OP_DEFINITE_INTEGRAL, sel, {var, tf, t0, kernel});
 }
 
 ParseNode Parser::oneDim(Op type) alloc_except{

@@ -474,22 +474,25 @@ bool MainWindow::saveAs(QString path){
 void MainWindow::open(QString path){
     logger->info("//" LOG_PREFIX "open({})", cStr(path.toStdString()));
 
-    QFile file(path);
-
-    if(!file.open(QIODevice::ReadOnly | QIODevice::Text)){
+    std::ifstream in(path.toStdString());
+    if(!in.is_open()){
         QMessageBox messageBox;
         messageBox.critical(nullptr, "Error", "Could not open \"" + path + "\" to read.");
         messageBox.setFixedSize(500,200);
         return;
     }
 
-    QTextStream in(&file);
-    #ifdef QT5
-    in.setCodec("UTF-8");
-    #endif
+    std::stringstream buffer;
+    buffer << in.rdbuf();
 
-    std::string src = in.readAll().toStdString();
+    std::string src = buffer.str();
+    for(size_t i = 1; i < src.size(); i++)
+        if(src[i] == '\r' && src[i-1] != OPEN)
+            src[i] = '\0';
+    src.erase( std::remove(src.begin(), src.end(), '\0'), src.end() );
+
     logger->info("editor->setFromSerial({});", cStr(src));
+    assert(Hope::isValidSerial(src));
     if(!Hope::isValidSerial(src)){
         QMessageBox messageBox;
         messageBox.critical(nullptr, "Error", "\"" + path + "\" is corrupted.");
@@ -498,7 +501,7 @@ void MainWindow::open(QString path){
     }
 
     editor->setFromSerial(src);
-    setWindowTitle(file.fileName() + WINDOW_TITLE_SUFFIX);
+    setWindowTitle(QFile(path).fileName() + WINDOW_TITLE_SUFFIX);
     settings.setValue(ACTIVE_FILE, path);
     this->path = path;
     unsaved_changes = false;
