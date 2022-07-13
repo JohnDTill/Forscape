@@ -359,6 +359,9 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
     if(!errors.empty()) return pn;
 
     switch (parse_tree.getOp(pn)) {
+        case OP_LIMIT: return resolveLimit(pn);
+        case OP_DEFINITE_INTEGRAL: return resolveDefiniteIntegral(pn);
+
         case OP_GRAVITY:{
             static constexpr double GRAVITY = -9.8067;
 
@@ -1536,6 +1539,56 @@ ParseNode StaticPass::resolveZeroMatrix(ParseNode pn){
         parse_tree.reduceNumArgs(pn, 0);
         return pn;
     }
+
+    return pn;
+}
+
+ParseNode StaticPass::resolveLimit(ParseNode pn) {
+    ParseNode lim = resolveExpr(parse_tree.arg<1>(pn));
+    if(parse_tree.getType(lim) != NUMERIC) return error(pn, lim);
+    parse_tree.setArg<1>(pn, lim);
+
+    ParseNode id = parse_tree.arg<0>(pn);
+    parse_tree.setType(id, NUMERIC);
+    parse_tree.copyDims(id, lim);
+
+    Symbol& id_sym = symbol_table.symbols[parse_tree.getFlag(id)];
+    id_sym.type = NUMERIC;
+    id_sym.rows = parse_tree.getRows(id);
+    id_sym.cols = parse_tree.getCols(id);
+
+    ParseNode expr = resolveExpr(parse_tree.arg<2>(pn));
+    if(parse_tree.getType(expr) != NUMERIC) return error(pn, expr);
+    parse_tree.setArg<2>(pn, expr);
+
+    parse_tree.setType(pn, NUMERIC);
+    parse_tree.copyDims(pn, expr);
+
+    //EVENTUALLY: do symbolic computation with limits
+    //return pn;
+    return error(pn, pn, LIMIT_NOT_SUPPORTED);
+}
+
+ParseNode StaticPass::resolveDefiniteIntegral(ParseNode pn) {
+    ParseNode tf = enforceScalar(parse_tree.arg<1>(pn));
+    parse_tree.setArg<1>(pn, tf);
+    ParseNode t0 = enforceScalar(parse_tree.arg<2>(pn));
+    parse_tree.setArg<2>(pn, t0);
+
+    ParseNode var = parse_tree.arg<0>(pn);
+    parse_tree.setScalar(var);
+
+    Symbol& var_sym = symbol_table.symbols[parse_tree.getFlag(var)];
+    var_sym.type = NUMERIC;
+    var_sym.rows = 1;
+    var_sym.cols = 1;
+
+    ParseNode e = resolveExpr(parse_tree.arg<3>(pn));
+    if(parse_tree.getType(e) != NUMERIC) return error(pn, e);
+    parse_tree.setArg<3>(pn, e);
+
+    parse_tree.setType(pn, NUMERIC);
+    parse_tree.copyDims(pn, e);
 
     return pn;
 }

@@ -180,6 +180,8 @@ void SymbolTableBuilder::resolveExpr(ParseNode pn) alloc_except {
         case OP_IDENTIFIER: resolveReference<true>(pn); break;
         case OP_LAMBDA: resolveLambda(pn); break;
         case OP_SUBSCRIPT_ACCESS: resolveSubscript(pn); break;
+        case OP_LIMIT: resolveLimit(pn); break;
+        case OP_DEFINITE_INTEGRAL: resolveDefiniteIntegral(pn); break;
 
         case OP_SUMMATION:
         case OP_PRODUCT:
@@ -701,10 +703,30 @@ void SymbolTableBuilder::resolveDerivative(ParseNode pn) alloc_except {
 
     increaseLexicalDepth(SCOPE_NAME("-derivative-")  parse_tree.getLeft(pn));
 
-    defineLocalScope(id, true);
-    if(id_index != NONE) warnings.pop_back(); //EVENTUALLY: stupid hack to not warn shadowing
+    defineLocalScope(id, true, false);
     ParseNode expr = parse_tree.arg<0>(pn);
     resolveExpr(expr);
+
+    decreaseLexicalDepth(parse_tree.getRight(pn));
+}
+
+void SymbolTableBuilder::resolveLimit(ParseNode pn) noexcept {
+    resolveExpr(parse_tree.arg<1>(pn));
+    increaseLexicalDepth(SCOPE_NAME("-limit-")  parse_tree.getLeft(pn));
+
+    defineLocalScope(parse_tree.arg<0>(pn), true, false);
+    resolveExpr(parse_tree.arg<2>(pn));
+
+    decreaseLexicalDepth(parse_tree.getRight(pn));
+}
+
+void SymbolTableBuilder::resolveDefiniteIntegral(ParseNode pn) noexcept {
+    resolveExpr(parse_tree.arg<1>(pn));
+    resolveExpr(parse_tree.arg<2>(pn));
+    increaseLexicalDepth(SCOPE_NAME("-def_int-")  parse_tree.getLeft(pn));
+
+    defineLocalScope(parse_tree.arg<0>(pn), true, false);
+    resolveExpr(parse_tree.arg<3>(pn));
 
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
