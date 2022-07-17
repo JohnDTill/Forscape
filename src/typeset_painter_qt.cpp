@@ -166,11 +166,12 @@ void Painter::drawSymbol(double x, double y, std::string_view text){
 
 void Painter::drawLine(double x, double y, double w, double h){
     QPen pen = painter.pen();
-    pen.setWidthF(0.5);
+    static constexpr double THICKNESS = 1.2;
+    pen.setWidthF(THICKNESS);
     painter.setPen(pen);
 
     x += x_offset;
-    painter.drawLine(x, y, x+w, y+h);
+    painter.drawLine(x, y-THICKNESS/2, x+w, y+h-THICKNESS/2);
 }
 
 void Painter::drawPath(const std::vector<std::pair<double, double> >& points){

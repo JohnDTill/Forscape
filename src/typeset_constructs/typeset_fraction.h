@@ -16,9 +16,9 @@ public:
 
     virtual char constructCode() const noexcept override { return FRACTION; }
 
-    static constexpr double hgap = 1;
+    static constexpr double hgap = 5;
     static constexpr double bar_margin = 0;
-    static constexpr double vgap = 1;
+    static constexpr double vgap = 2.5;
 
     #ifndef HOPE_TYPESET_HEADLESS
     virtual Text* textUp(const Subphrase* caller, double x) const noexcept override {
@@ -43,7 +43,7 @@ public:
     }
 
     virtual void paintSpecific(Painter& painter) const override {
-        painter.drawLine(x, y + above_center, width, 0);
+        painter.drawLine(x + hgap, y + above_center, width - 2*hgap, 0);
     }
 
     virtual bool increasesScriptDepth(uint8_t) const noexcept override{

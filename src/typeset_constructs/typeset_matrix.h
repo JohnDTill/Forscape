@@ -24,9 +24,9 @@ public:
     uint16_t cols;
 
     static constexpr double ELEMENT_HPADDING = 5;
-    static constexpr double ELEMENT_VPADDING = 2;
-    static constexpr double MATRIX_LPADDING = 1;
-    static constexpr double MATRIX_RPADDING = 1.7;
+    static constexpr double ELEMENT_VPADDING = 4;
+    static constexpr double MATRIX_LPADDING = 2;
+    static constexpr double MATRIX_RPADDING = 3;
     static constexpr double BRACKET_WIDTH = 2;
     static constexpr double BRACKET_HOFFSET = 3;
     static constexpr double BRACKET_TOP_OFFSET = 2;
