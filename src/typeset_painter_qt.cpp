@@ -71,6 +71,8 @@ void Painter::init(){
     loaded_fonts[CMU_SERIF_MONO_ITALIC] = readFont(":/fonts/CMUSerifMono-Italic.ttf", "CMU Serif Mono", "Italic");
     loaded_fonts[JULIAMONO_BOLD] = readFont(":/fonts/JuliaMono-Bold.ttf", "JuliaMono", "Bold");
     loaded_fonts[CMU_SERIF_MONO_BOLD_ITALIC] = readFont(":/fonts/CMUSerifMono-BoldItalic.ttf", "CMU Serif Mono Bold", "Bold");
+    loaded_fonts[CMU_TYPEWRITER_SCALED_REGULAR] = readFont(":/fonts/CMUTypewriterScaled-Regular.ttf", "CMU Typewriter Scaled", "Regular");
+    loaded_fonts[CMU_TYPEWRITER_SCALED_BOLD_BOLD] = readFont(":/fonts/CMUTypewriterScaled-Bold.ttf", "CMU Typewriter Scaled Bold", "Bold");
 
     for(size_t i = 0; i < NUM_SEM_TYPES; i++){
         QFont font = loaded_fonts[font_enum[i]];
