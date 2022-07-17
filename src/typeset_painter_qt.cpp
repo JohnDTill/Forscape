@@ -69,7 +69,7 @@ void Painter::init(){
     //EVENTUALLY: codegen font loading
     loaded_fonts[JULIAMONO_REGULAR] = readFont(":/fonts/JuliaMono-Regular.ttf", "JuliaMono", "Regular");
     loaded_fonts[CMU_SERIF_MONO_ITALIC] = readFont(":/fonts/CMUSerifMono-Italic.ttf", "CMU Serif Mono", "Italic");
-    loaded_fonts[JULIAMONO_BOLD] = readFont(":/fonts/JuliaMono-Bold.ttf", "JuliaMono", "Bold");
+    loaded_fonts[JULIAMONO_BOLD] = readFont(":/fonts/JuliaMono-BoldTrimmed.ttf", "JuliaMono", "Bold");
     loaded_fonts[CMU_SERIF_MONO_BOLD_ITALIC] = readFont(":/fonts/CMUSerifMono-BoldItalic.ttf", "CMU Serif Mono Bold", "Bold");
     loaded_fonts[CMU_TYPEWRITER_SCALED_REGULAR] = readFont(":/fonts/CMUTypewriterScaled-Regular.ttf", "CMU Typewriter Scaled", "Regular");
     loaded_fonts[CMU_TYPEWRITER_SCALED_BOLD_BOLD] = readFont(":/fonts/CMUTypewriterScaled-Bold.ttf", "CMU Typewriter Scaled Bold", "Bold");
