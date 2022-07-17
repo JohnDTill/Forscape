@@ -2,9 +2,9 @@
 <qresource>
     <file>lambda.ico</file>
     <file>toolbar_glyphs.otf</file>
-	<file>fonts/JuliaMono-Bold.ttf</file>
-    <file>fonts/JuliaMono-BoldItalic.ttf</file>
+    <file>fonts/CMUSerifMono-BoldItalic.ttf</file>
+    <file>fonts/CMUSerifMono-Italic.ttf</file>
+    <file>fonts/JuliaMono-Bold.ttf</file>
     <file>fonts/JuliaMono-Regular.ttf</file>
-    <file>fonts/JuliaMono-RegularItalic.ttf</file>
 </qresource>
 </RCC>

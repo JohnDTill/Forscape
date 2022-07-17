@@ -68,9 +68,9 @@ void Painter::init(){
 
     //EVENTUALLY: codegen font loading
     loaded_fonts[JULIAMONO_REGULAR] = readFont(":/fonts/JuliaMono-Regular.ttf", "JuliaMono", "Regular");
-    loaded_fonts[JULIAMONO_ITALIC] = readFont(":/fonts/JuliaMono-RegularItalic.ttf", "JuliaMono", "Italic");
+    loaded_fonts[CMU_SERIF_MONO_ITALIC] = readFont(":/fonts/CMUSerifMono-Italic.ttf", "CMU Serif Mono", "Italic");
     loaded_fonts[JULIAMONO_BOLD] = readFont(":/fonts/JuliaMono-Bold.ttf", "JuliaMono", "Bold");
-    loaded_fonts[JULIAMONO_BOLD_ITALIC] = readFont(":/fonts/JuliaMono-BoldItalic.ttf", "JuliaMono", "Bold Italic");
+    loaded_fonts[CMU_SERIF_MONO_BOLD_ITALIC] = readFont(":/fonts/CMUSerifMono-BoldItalic.ttf", "CMU Serif Mono Bold", "Bold");
 
     for(size_t i = 0; i < NUM_SEM_TYPES; i++){
         QFont font = loaded_fonts[font_enum[i]];

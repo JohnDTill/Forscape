@@ -1,0 +1,25 @@
+//DO THIS: delete this file
+
+abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 = I2×2
+print(abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789)
+α = 1
+β = 1
+γ = 1
+φ = 1
+ξ = 1
+π = 1
+λ = 1
+Λ = 1
+Γ = 1
+ν = 1
+Ξ = 1
+Π = 1
+Φ = 1
+print(αβγφξπλΛΓνΞΠΦ)
+xc = 1
+π* = 1
+A* = 1
+print(xc)
+print(π*)
+print(π*)
+print(A*)

@@ -1508,6 +1508,8 @@ void Parser::recover() noexcept{
 
 #ifndef HOPE_TYPESET_HEADLESS
 void Parser::registerParseNodeRegion(ParseNode pn, size_t token_index) alloc_except {
+    if(!noErrors()) return;
+
     assert(token_index < tokens.size());
     assert(parse_tree.isLastAllocatedNode(pn));
 
@@ -1529,6 +1531,8 @@ void Parser::startPatch() noexcept {
 }
 
 void Parser::finishPatch(ParseNode pn) noexcept {
+    if(!noErrors()) return;
+
     assert(!token_stack_frames.empty());
     size_t frame = token_stack_frames.back();
     token_stack_frames.pop_back();
