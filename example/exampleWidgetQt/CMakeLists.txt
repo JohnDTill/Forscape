@@ -190,6 +190,7 @@ set(PROJECT_SOURCES
     ${SRC}/typeset_construct.h
     ${SRC}/typeset_controller.cpp
     ${INCLUDE}/typeset_controller.h
+    ${SRC}/typeset_integral_preference.h
     ${SRC}/typeset_line.cpp
     ${SRC}/typeset_line.h
     ${SRC}/typeset_marker.cpp

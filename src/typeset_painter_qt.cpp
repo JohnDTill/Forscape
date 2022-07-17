@@ -160,7 +160,10 @@ void Painter::drawHighlightedGrouping(double x, double y, double w, std::string_
 
 void Painter::drawSymbol(double x, double y, std::string_view text){
     x += x_offset;
-    y += CAPHEIGHT[depth];
+    y += 2*CAPHEIGHT[depth];
+    QFont font = painter.font();
+    font.setPointSizeF(font.pointSizeF()*2);
+    painter.setFont(font);
     painter.drawText(x, y, QString::fromUtf8(text.data(), static_cast<int>(text.size())));
 }
 

@@ -4,6 +4,8 @@
 #include "typeset_construct.h"
 #include "typeset_subphrase.h"
 
+#include "typeset_integral_preference.h"
+
 namespace Hope {
 
 namespace Typeset {
@@ -29,22 +31,41 @@ public:
     }
 
     virtual void updateSizeFromChildSizes() noexcept override {
-        symbol_width = CHARACTER_WIDTHS[scriptDepth()];
-        width = std::max(symbol_width, std::max(first()->width, second()->width));
-        above_center = ABOVE_CENTER[scriptDepth()] + first()->height();
-        under_center = UNDER_CENTER[scriptDepth()] + second()->height();
+        if(integral_bounds_vertical){
+            symbol_width = 2*CHARACTER_WIDTHS[scriptDepth()];
+            width = std::max(symbol_width, std::max(first()->width, second()->width));
+            above_center = 2*ABOVE_CENTER[scriptDepth()] + first()->height();
+            under_center = 2*UNDER_CENTER[scriptDepth()] + second()->height();
+        }else{
+            symbol_width = 2*CHARACTER_WIDTHS[scriptDepth()];
+            width = symbol_width + std::max(first()->width, second()->width - INTEGRAL_SHIFT_LEFT*CHARACTER_WIDTHS[scriptDepth()]);
+            above_center = 2*ABOVE_CENTER[scriptDepth()] + first()->height()*INTEGRAL_RATIO;
+            under_center = 2*UNDER_CENTER[scriptDepth()] + second()->height()*INTEGRAL_RATIO - INTEGRAL_SHIFT_UP * 2*UNDER_CENTER[scriptDepth()];
+        }
     }
 
     virtual void updateChildPositions() noexcept override {
-        first()->x = x + (width - first()->width)/2;
-        first()->y = y;
-        second()->x = x + (width - second()->width)/2;
-        second()->y = y + height() - second()->height();
+        if(integral_bounds_vertical){
+            first()->x = x + (width - first()->width)/2;
+            first()->y = y - 0.5*ABOVE_CENTER[scriptDepth()];
+            second()->x = x + (width - second()->width)/2;
+            second()->y = y + height() - second()->height();
+        }else{
+            first()->x = x + 2*CHARACTER_WIDTHS[scriptDepth()];
+            first()->y = y;
+            second()->x = x + 2*CHARACTER_WIDTHS[scriptDepth()] - INTEGRAL_SHIFT_LEFT*CHARACTER_WIDTHS[scriptDepth()];
+            second()->y = y + height() - second()->height() - INTEGRAL_SHIFT_UP * 2*UNDER_CENTER[scriptDepth()];
+        }
     }
 
     virtual void paintSpecific(Painter& painter) const override {
-        double symbol_x = x + (width - symbol_width) / 2;
-        painter.drawSymbol(symbol_x, y + second()->height(), "∫");
+        if(integral_bounds_vertical){
+            double symbol_x = x + (width - symbol_width) / 2;
+            painter.drawSymbol(symbol_x, y + second()->height(), "∫");
+        }else{
+            double symbol_y = y + first()->height()*INTEGRAL_RATIO;
+            painter.drawSymbol(x, symbol_y, "∫");
+        }
     }
     #endif
 };
