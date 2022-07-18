@@ -25,6 +25,7 @@ private slots:
     void on_keywordAddButton_clicked();
     void on_symbolsDefaultsButton_clicked();
     void on_symbolsAddButton_clicked();
+    void on_integralCheckBox_toggled(bool checked);
 
 signals:
     void colourChanged();

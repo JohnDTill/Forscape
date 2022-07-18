@@ -10,18 +10,28 @@
 #include <QSettings>
 #include <QWindow>
 #include "symbolsubstitutioneditor.h"
+#include "typeset_integral_preference.h"
+
+#define COLOUR_SETTING "COLOUR_PRESET"
+#define INTEGRAL_LAYOUT_SETTING "VERT_INTS"
 
 Preferences::Preferences(QSettings& settings, QWidget* parent) :
     QWidget(parent), ui(new Ui::Preferences), settings(settings){
     ui->setupUi(this);
+
+    if(settings.contains(INTEGRAL_LAYOUT_SETTING)){
+        bool vertical_integrals = settings.value(INTEGRAL_LAYOUT_SETTING).toBool();
+        if(!vertical_integrals) return;
+        ui->integralCheckBox->toggle();
+    }
 
     for(int i = 0; i < Hope::Typeset::NUM_COLOUR_PRESETS; i++){
         std::string_view name = Hope::Typeset::getPresetName(i).data();
         ui->colour_dropdown->addItem(name.data());
     }
 
-    if(settings.contains("COLOUR_PRESET")){
-        QString colour_preset = settings.value("COLOUR_PRESET").toString();
+    if(settings.contains(COLOUR_SETTING)){
+        QString colour_preset = settings.value(COLOUR_SETTING).toString();
         if(colour_preset == "Custom") addCustomDropdownIfNotPresent();
         else for(size_t i = 0; i < Hope::Typeset::NUM_COLOUR_PRESETS; i++)
             if(colour_preset == Hope::Typeset::getPresetName(i).data()){
@@ -65,7 +75,9 @@ Preferences::Preferences(QSettings& settings, QWidget* parent) :
 }
 
 Preferences::~Preferences(){
-    settings.setValue("COLOUR_PRESET", ui->colour_dropdown->currentText());
+    settings.setValue(INTEGRAL_LAYOUT_SETTING, Hope::Typeset::integral_bounds_vertical);
+
+    settings.setValue(COLOUR_SETTING, ui->colour_dropdown->currentText());
     for(size_t i = 0; i < Hope::Typeset::NUM_COLOUR_ROLES; i++){
         std::string_view name = Hope::Typeset::getColourName(i).data();
         const QColor& colour = Hope::Typeset::getColour(i);
@@ -141,8 +153,14 @@ void Preferences::on_symbolsDefaultsButton_clicked(){
     symbol_editor->resetDefaults();
 }
 
-
 void Preferences::on_symbolsAddButton_clicked(){
     symbol_editor->addRow();
+}
+
+void Preferences::on_integralCheckBox_toggled(bool checked){
+    Hope::Typeset::integral_bounds_vertical = checked;
+
+    for(Hope::Typeset::View* view : Hope::Typeset::View::all_views)
+        view->updateModel();
 }
 

@@ -5,7 +5,7 @@ namespace Hope {
 
 namespace Typeset {
 
-bool integral_bounds_vertical = false;
+inline bool integral_bounds_vertical = false;
 
 extern constexpr double INTEGRAL_RATIO = 0.5;
 extern constexpr double INTEGRAL_SHIFT_LEFT = 0.55;
