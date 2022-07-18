@@ -85,21 +85,8 @@ set(CONSTRUCT_FILES
     ${CONSTRUCT}/typeset_accentdot.h
     ${CONSTRUCT}/typeset_accenthat.h
     ${CONSTRUCT}/typeset_accenttilde.h
-    ${CONSTRUCT}/typeset_bigcoprod0.h
-    ${CONSTRUCT}/typeset_bigcoprod1.h
-    ${CONSTRUCT}/typeset_bigcoprod2.h
-    ${CONSTRUCT}/typeset_bigintersection0.h
-    ${CONSTRUCT}/typeset_bigintersection1.h
-    ${CONSTRUCT}/typeset_bigintersection2.h
-    ${CONSTRUCT}/typeset_bigprod0.h
-    ${CONSTRUCT}/typeset_bigprod1.h
-    ${CONSTRUCT}/typeset_bigprod2.h
-    ${CONSTRUCT}/typeset_bigsum0.h
-    ${CONSTRUCT}/typeset_bigsum1.h
-    ${CONSTRUCT}/typeset_bigsum2.h
-    ${CONSTRUCT}/typeset_bigunion0.h
-    ${CONSTRUCT}/typeset_bigunion1.h
-    ${CONSTRUCT}/typeset_bigunion2.h
+    ${CONSTRUCT}/typeset_big_integral.h
+    ${CONSTRUCT}/typeset_big_symbol.h
     ${CONSTRUCT}/typeset_binomial.h
     ${CONSTRUCT}/typeset_cases.h
     ${CONSTRUCT}/typeset_doubleintegral0.h
@@ -111,10 +98,8 @@ set(CONSTRUCT_FILES
     ${CONSTRUCT}/typeset_inf.h
     ${CONSTRUCT}/typeset_integral0.h
     ${CONSTRUCT}/typeset_integral1.h
-    ${CONSTRUCT}/typeset_integral2.h
     ${CONSTRUCT}/typeset_integralconv0.h
     ${CONSTRUCT}/typeset_integralconv1.h
-    ${CONSTRUCT}/typeset_integralconv2.h
     ${CONSTRUCT}/typeset_limit.h
     ${CONSTRUCT}/typeset_markerlink.h
     ${CONSTRUCT}/typeset_matrix.h

@@ -15,6 +15,8 @@ namespace Hope {
 
 namespace Typeset {
 
+inline constexpr double BIG_SYM_SCALE = 2.5;
+
 //EVENTUALLY: probably want to codegen these
 inline constexpr double CHARACTER_WIDTHS[3] {
     7.796875,

@@ -14,7 +14,7 @@ print(mult( 12⊤, 12), "\n")
 
 alg factorial(n){
     if(n = 0) return 1
-    else return 	n+1i = 1i
+    else return 	n+1i=1i
 }
 
 for(i ← 0; i ≤ 5; i ← i + 1)

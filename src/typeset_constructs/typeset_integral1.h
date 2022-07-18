@@ -21,10 +21,10 @@ public:
     double symbol_width;
 
     virtual void updateSizeFromChildSizes() noexcept override {
-        symbol_width = CHARACTER_WIDTHS[scriptDepth()];
+        symbol_width = BIG_SYM_SCALE*CHARACTER_WIDTHS[scriptDepth()];
         width = std::max(symbol_width, child()->width);
-        above_center = ABOVE_CENTER[scriptDepth()];
-        under_center = UNDER_CENTER[scriptDepth()] + child()->height();
+        above_center = BIG_SYM_SCALE*ABOVE_CENTER[scriptDepth()];
+        under_center = BIG_SYM_SCALE*UNDER_CENTER[scriptDepth()] + child()->height();
     }
 
     virtual void updateChildPositions() noexcept override {

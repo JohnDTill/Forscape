@@ -31,6 +31,7 @@ public:
     static constexpr double BRACKET_HOFFSET = 3;
     static constexpr double BRACKET_TOP_OFFSET = 2;
     static constexpr double BRACKET_BOT_OFFSET = 0;
+    static constexpr double BRACKET_VSHIFT = 2;
 
     std::vector<double> W; //EVENTUALLY: can eliminate these altogether when dimensions are in parent frame
     std::vector<double> U;
@@ -105,13 +106,13 @@ public:
 
         double h = height();
 
-        painter.drawLine(x+MATRIX_LPADDING, y, BRACKET_WIDTH, 0);
-        painter.drawLine(x+MATRIX_LPADDING, y, 0, h);
-        painter.drawLine(x+MATRIX_LPADDING, y+h, BRACKET_WIDTH, 0);
+        painter.drawLine(x+MATRIX_LPADDING, y+BRACKET_VSHIFT, BRACKET_WIDTH, 0);
+        painter.drawLine(x+MATRIX_LPADDING, y+BRACKET_VSHIFT, 0, h);
+        painter.drawLine(x+MATRIX_LPADDING, y+BRACKET_VSHIFT+h, BRACKET_WIDTH, 0);
 
-        painter.drawLine(x+width-BRACKET_WIDTH-MATRIX_RPADDING, y, BRACKET_WIDTH, 0);
-        painter.drawLine(x+width-MATRIX_RPADDING, y, 0, h);
-        painter.drawLine(x+width-BRACKET_WIDTH-MATRIX_RPADDING, y+h, BRACKET_WIDTH, 0);
+        painter.drawLine(x+width-BRACKET_WIDTH-MATRIX_RPADDING, y+BRACKET_VSHIFT, BRACKET_WIDTH, 0);
+        painter.drawLine(x+width-MATRIX_RPADDING, y+BRACKET_VSHIFT, 0, h);
+        painter.drawLine(x+width-BRACKET_WIDTH-MATRIX_RPADDING, y+BRACKET_VSHIFT+h, BRACKET_WIDTH, 0);
     }
 
     static std::vector<ContextAction> actions;

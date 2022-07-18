@@ -7,9 +7,9 @@ namespace Typeset {
 
 inline bool integral_bounds_vertical = false;
 
-extern constexpr double INTEGRAL_RATIO = 0.5;
-extern constexpr double INTEGRAL_SHIFT_LEFT = 0.55;
-extern constexpr double INTEGRAL_SHIFT_UP = 0.05;
+inline constexpr double INTEGRAL_RATIO = 0.5;
+inline constexpr double INTEGRAL_SHIFT_LEFT = 0.6;
+inline constexpr double INTEGRAL_SHIFT_UP = 0.05;
 
 }
 
