@@ -68,9 +68,12 @@ void Painter::init(){
 
     //EVENTUALLY: codegen font loading
     loaded_fonts[JULIAMONO_REGULAR] = readFont(":/fonts/JuliaMono-Regular.ttf", "JuliaMono", "Regular");
-    loaded_fonts[JULIAMONO_ITALIC] = readFont(":/fonts/JuliaMono-RegularItalic.ttf", "JuliaMono", "Italic");
-    loaded_fonts[JULIAMONO_BOLD] = readFont(":/fonts/JuliaMono-Bold.ttf", "JuliaMono", "Bold");
-    loaded_fonts[JULIAMONO_BOLD_ITALIC] = readFont(":/fonts/JuliaMono-BoldItalic.ttf", "JuliaMono", "Bold Italic");
+    loaded_fonts[CMU_SERIF_MONO_ITALIC] = readFont(":/fonts/CMUSerifMono-Italic.ttf", "CMU Serif Mono", "Italic");
+    loaded_fonts[TRIMMEDJULIAMONO_BOLD] = readFont(":/fonts/TrimmedJuliaMono-Bold.ttf", "TrimmedJuliaMono", "Bold");
+    loaded_fonts[TRIMMEDJULIAMONO_ITALIC] = readFont(":/fonts/TrimmedJuliaMono-RegularItalic.ttf", "TrimmedJuliaMono", "Italic");
+    loaded_fonts[TRIMMEDJULIAMONO_BOLD_ITALIC] = readFont(":/fonts/TrimmedJuliaMono-BoldItalic.ttf", "TrimmedJuliaMono", "Bold Italic");
+    loaded_fonts[CMU_TYPEWRITER_SCALED_REGULAR] = readFont(":/fonts/CMUTypewriterScaled-Regular.ttf", "CMU Typewriter Scaled", "Regular");
+    loaded_fonts[CMU_TYPEWRITER_SCALED_BOLD_BOLD] = readFont(":/fonts/CMUTypewriterScaled-Bold.ttf", "CMU Typewriter Scaled Bold", "Bold");
 
     for(size_t i = 0; i < NUM_SEM_TYPES; i++){
         QFont font = loaded_fonts[font_enum[i]];
@@ -158,17 +161,21 @@ void Painter::drawHighlightedGrouping(double x, double y, double w, std::string_
 
 void Painter::drawSymbol(double x, double y, std::string_view text){
     x += x_offset;
-    y += CAPHEIGHT[depth];
+    y += BIG_SYM_SCALE*CAPHEIGHT[depth];
+    QFont font = getFont(SEM_BIG_SYM, depth);
+    font.setPointSizeF(font.pointSizeF()*BIG_SYM_SCALE);
+    painter.setFont(font);
     painter.drawText(x, y, QString::fromUtf8(text.data(), static_cast<int>(text.size())));
 }
 
 void Painter::drawLine(double x, double y, double w, double h){
     QPen pen = painter.pen();
-    pen.setWidthF(0.5);
+    static constexpr double THICKNESS = 1.0;
+    pen.setWidthF(THICKNESS);
     painter.setPen(pen);
 
     x += x_offset;
-    painter.drawLine(x, y, x+w, y+h);
+    painter.drawLine(x, y-THICKNESS/2, x+w, y+h-THICKNESS/2);
 }
 
 void Painter::drawPath(const std::vector<std::pair<double, double> >& points){

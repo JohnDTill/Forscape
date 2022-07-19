@@ -5,12 +5,13 @@ String,JuliaMono,Regular,COLOUR_STRING
 Keyword,JuliaMono,Regular,COLOUR_KEYWORD
 Number,JuliaMono,Regular,COLOUR_NUMBER
 Error,JuliaMono,Regular,COLOUR_ERRORTEXT
-Id,JuliaMono,Italic,COLOUR_ID
-Id_Fun_Impure,JuliaMono,Bold,COLOUR_IMPURE
+Id,TrimmedJuliaMono,Italic,COLOUR_ID
+Id_Fun_Impure,CMU_Typewriter_Scaled,Regular,COLOUR_IMPURE
 Link,JuliaMono,Regular,COLOUR_LINK
-PredefinedMat,JuliaMono,Bold Italic,COLOUR_PREDEFMAT
-PredefinedMatNum,JuliaMono,Bold,COLOUR_PREDEFMAT
-Id_Mat,JuliaMono,Bold Italic,COLOUR_ID
-Id_Mat_Impure,JuliaMono,Bold,COLOUR_IMPURE
-Predef,JuliaMono,Italic,COLOUR_PREDEF
-Id_Ewise_Index,JuliaMono,Italic,COLOUR_KEYWORD
+PredefinedMat,TrimmedJuliaMono,Bold Italic,COLOUR_PREDEFMAT
+PredefinedMatNum,TrimmedJuliaMono,Bold,COLOUR_PREDEFMAT
+Id_Mat,TrimmedJuliaMono,Bold Italic,COLOUR_ID
+Id_Mat_Impure,CMU_Typewriter_Scaled_Bold,Bold,COLOUR_IMPURE
+Predef,TrimmedJuliaMono,Italic,COLOUR_PREDEF
+Id_Ewise_Index,CMU_Serif_Mono,Italic,COLOUR_KEYWORD
+Big_Sym,CMU_Serif_Mono,Italic,COLOUR_TEXT

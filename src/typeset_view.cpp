@@ -643,10 +643,10 @@ void View::updateHighlightingFromCursorLocation(){
     highlighted_words.clear();
 
     const std::pair<ParseNode, ParseNode> parse_nodes = controller.active.parseNodesAround();
-    if(parse_nodes.first != NONE)
-        populateHighlightWordsFromParseNode(parse_nodes.first);
-    if(parse_nodes.second != NONE && parse_nodes.second != parse_nodes.first)
+    if(parse_nodes.second != NONE)
         populateHighlightWordsFromParseNode(parse_nodes.second);
+    if(highlighted_words.empty() && parse_nodes.first != NONE)
+        populateHighlightWordsFromParseNode(parse_nodes.first);
 
     update();
     updateAfterHighlightChange();
