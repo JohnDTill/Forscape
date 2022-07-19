@@ -34,7 +34,7 @@ public:
     }
 
     virtual void paintSpecific(Painter& painter) const override {
-        painter.drawSymbol(x, y, getBigSymbolString(type));
+        painter.drawSymbol(x, y, getBigIntegralString(type));
     }
     #endif
 };
