@@ -169,7 +169,7 @@ void Painter::drawSymbol(double x, double y, std::string_view text){
 
 void Painter::drawLine(double x, double y, double w, double h){
     QPen pen = painter.pen();
-    static constexpr double THICKNESS = 1.2;
+    static constexpr double THICKNESS = 1.0;
     pen.setWidthF(THICKNESS);
     painter.setPen(pen);
 

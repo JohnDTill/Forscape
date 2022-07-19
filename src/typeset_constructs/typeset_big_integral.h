@@ -22,6 +22,71 @@ inline constexpr std::string_view getBigIntegralString(size_t type) noexcept {
 }
 
 template<size_t type>
+class BigIntegralSuper0 final : public Construct {
+public:
+    virtual char constructCode() const noexcept override { return type; }
+
+    #ifndef HOPE_TYPESET_HEADLESS
+    virtual void updateSizeFromChildSizes() noexcept override {
+        width = BIG_SYM_SCALE*CHARACTER_WIDTHS[scriptDepth()];
+        above_center = BIG_SYM_SCALE*ABOVE_CENTER[scriptDepth()];
+        under_center = BIG_SYM_SCALE*UNDER_CENTER[scriptDepth()];
+    }
+
+    virtual void paintSpecific(Painter& painter) const override {
+        painter.drawSymbol(x, y, getBigSymbolString(type));
+    }
+    #endif
+};
+
+template<size_t type>
+class BigIntegralSuper1 final : public Construct {
+public:
+    BigIntegralSuper1(){
+        setupUnaryArg();
+    }
+
+    virtual char constructCode() const noexcept override { return type; }
+
+    #ifndef HOPE_TYPESET_HEADLESS
+    virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }
+    double symbol_width;
+
+    virtual void updateSizeFromChildSizes() noexcept override {
+        symbol_width = BIG_SYM_SCALE*CHARACTER_WIDTHS[scriptDepth()];
+        above_center = BIG_SYM_SCALE*ABOVE_CENTER[scriptDepth()];
+
+        if(integral_bounds_vertical){
+            width = std::max(symbol_width, child()->width);
+            under_center = BIG_SYM_SCALE*UNDER_CENTER[scriptDepth()] + child()->height();
+        }else{
+            width = symbol_width + child()->width - INTEGRAL_SHIFT_LEFT*CHARACTER_WIDTHS[scriptDepth()];
+            under_center = BIG_SYM_SCALE*UNDER_CENTER[scriptDepth()] + child()->height()*INTEGRAL_RATIO - INTEGRAL_SHIFT_UP * BIG_SYM_SCALE*UNDER_CENTER[scriptDepth()];
+        }
+    }
+
+    virtual void updateChildPositions() noexcept override {
+        if(integral_bounds_vertical){
+            child()->x = x + (width - child()->width)/2;
+            child()->y = y + height() - child()->height();
+        }else{
+            child()->x = x + BIG_SYM_SCALE*CHARACTER_WIDTHS[scriptDepth()] - INTEGRAL_SHIFT_LEFT*CHARACTER_WIDTHS[scriptDepth()];
+            child()->y = y + height() - child()->height() - INTEGRAL_SHIFT_UP * BIG_SYM_SCALE*UNDER_CENTER[scriptDepth()];
+        }
+    }
+
+    virtual void paintSpecific(Painter& painter) const override {
+        if(integral_bounds_vertical){
+            double symbol_x = x + (width - symbol_width) / 2;
+            painter.drawSymbol(symbol_x, y + second()->height(), getBigIntegralString(type));
+        }else{
+            painter.drawSymbol(x, y, getBigIntegralString(type));
+        }
+    }
+    #endif
+};
+
+template<size_t type>
 class BigIntegralSuper2 final : public Construct {
 public:
     BigIntegralSuper2(){
@@ -43,13 +108,13 @@ public:
     }
 
     virtual void updateSizeFromChildSizes() noexcept override {
+        symbol_width = BIG_SYM_SCALE*CHARACTER_WIDTHS[scriptDepth()];
+
         if(integral_bounds_vertical){
-            symbol_width = BIG_SYM_SCALE*CHARACTER_WIDTHS[scriptDepth()];
             width = std::max(symbol_width, std::max(first()->width, second()->width));
             above_center = BIG_SYM_SCALE*ABOVE_CENTER[scriptDepth()] + first()->height();
             under_center = BIG_SYM_SCALE*UNDER_CENTER[scriptDepth()] + second()->height();
         }else{
-            symbol_width = BIG_SYM_SCALE*CHARACTER_WIDTHS[scriptDepth()];
             width = symbol_width + std::max(first()->width, second()->width - INTEGRAL_SHIFT_LEFT*CHARACTER_WIDTHS[scriptDepth()]);
             above_center = BIG_SYM_SCALE*ABOVE_CENTER[scriptDepth()] + first()->height()*INTEGRAL_RATIO;
             under_center = BIG_SYM_SCALE*UNDER_CENTER[scriptDepth()] + second()->height()*INTEGRAL_RATIO - INTEGRAL_SHIFT_UP * BIG_SYM_SCALE*UNDER_CENTER[scriptDepth()];
@@ -82,7 +147,19 @@ public:
     #endif
 };
 
-//DO THIS: finish consolidating big integrals
+typedef BigIntegralSuper0<DOUBLEINTEGRALCONV0> DoubleIntegralConv0;
+typedef BigIntegralSuper0<DOUBLEINTEGRAL0> DoubleIntegral0;
+typedef BigIntegralSuper0<INTEGRALCONV0> IntegralConv0;
+typedef BigIntegralSuper0<INTEGRAL0> Integral0;
+typedef BigIntegralSuper0<TRIPLEINTEGRALCONV0> TripleIntegralConv0;
+typedef BigIntegralSuper0<TRIPLEINTEGRAL0> TripleIntegral0;
+
+typedef BigIntegralSuper1<DOUBLEINTEGRALCONV1> DoubleIntegralConv1;
+typedef BigIntegralSuper1<DOUBLEINTEGRAL1> DoubleIntegral1;
+typedef BigIntegralSuper1<INTEGRALCONV1> IntegralConv1;
+typedef BigIntegralSuper1<INTEGRAL1> Integral1;
+typedef BigIntegralSuper1<TRIPLEINTEGRALCONV1> TripleIntegralConv1;
+typedef BigIntegralSuper1<TRIPLEINTEGRAL1> TripleIntegral1;
 
 typedef BigIntegralSuper2<INTEGRALCONV2> IntegralConv2;
 typedef BigIntegralSuper2<INTEGRAL2> Integral2;

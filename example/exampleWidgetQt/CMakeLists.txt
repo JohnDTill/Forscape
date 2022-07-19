@@ -89,17 +89,9 @@ set(CONSTRUCT_FILES
     ${CONSTRUCT}/typeset_big_symbol.h
     ${CONSTRUCT}/typeset_binomial.h
     ${CONSTRUCT}/typeset_cases.h
-    ${CONSTRUCT}/typeset_doubleintegral0.h
-    ${CONSTRUCT}/typeset_doubleintegral1.h
-    ${CONSTRUCT}/typeset_doubleintegralconv0.h
-    ${CONSTRUCT}/typeset_doubleintegralconv1.h
     ${CONSTRUCT}/typeset_dualscript.h
     ${CONSTRUCT}/typeset_fraction.h
     ${CONSTRUCT}/typeset_inf.h
-    ${CONSTRUCT}/typeset_integral0.h
-    ${CONSTRUCT}/typeset_integral1.h
-    ${CONSTRUCT}/typeset_integralconv0.h
-    ${CONSTRUCT}/typeset_integralconv1.h
     ${CONSTRUCT}/typeset_limit.h
     ${CONSTRUCT}/typeset_markerlink.h
     ${CONSTRUCT}/typeset_matrix.h
@@ -110,10 +102,6 @@ set(CONSTRUCT_FILES
     ${CONSTRUCT}/typeset_subscript.h
     ${CONSTRUCT}/typeset_sup.h
     ${CONSTRUCT}/typeset_superscript.h
-    ${CONSTRUCT}/typeset_tripleintegral0.h
-    ${CONSTRUCT}/typeset_tripleintegral1.h
-    ${CONSTRUCT}/typeset_tripleintegralconv0.h
-    ${CONSTRUCT}/typeset_tripleintegralconv1.h
 )
 
 set(PROJECT_SOURCES

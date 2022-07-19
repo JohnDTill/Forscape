@@ -59,13 +59,6 @@ def main():
 
     header_writer.finalize()
 
-    header_writer = cpp.HeaderWriter(
-        name="all_constructs",
-        inner_namespace="Typeset",
-        includes=[f"typeset_{entry.name.lower()}.h" for entry in constructs],
-    )
-    header_writer.finalize()
-
     for entry in constructs:
         if entry.implemented == "y":
             continue

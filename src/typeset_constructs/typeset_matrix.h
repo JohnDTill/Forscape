@@ -31,7 +31,7 @@ public:
     static constexpr double BRACKET_HOFFSET = 3;
     static constexpr double BRACKET_TOP_OFFSET = 2;
     static constexpr double BRACKET_BOT_OFFSET = 0;
-    static constexpr double BRACKET_VSHIFT = 2;
+    static constexpr double BRACKET_VSHIFT = 1;
 
     std::vector<double> W; //EVENTUALLY: can eliminate these altogether when dimensions are in parent frame
     std::vector<double> U;
