@@ -6,7 +6,9 @@
     <file>fonts/CMUSerifMono-Italic.ttf</file>
     <file>fonts/CMUTypewriterScaled-Bold.ttf</file>
     <file>fonts/CMUTypewriterScaled-Regular.ttf</file>
-    <file>fonts/JuliaMono-BoldTrimmed.ttf</file>
     <file>fonts/JuliaMono-Regular.ttf</file>
+	<file>fonts/TrimmedJuliaMono-Bold.ttf</file>
+    <file>fonts/TrimmedJuliaMono-RegularItalic.ttf</file>
+	<file>fonts/TrimmedJuliaMono-BoldItalic.ttf</file>
 </qresource>
 </RCC>

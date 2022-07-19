@@ -1,7 +1,7 @@
 SplineFontDB: 3.2
-FontName: JuliaMono-BoldTrimmed
-FullName: JuliaMono Bold Trimmed
-FamilyName: JuliaMono
+FontName: TrimmedJuliaMono-Bold
+FullName: TrimmedJuliaMono Bold
+FamilyName: TrimmedJuliaMono
 Weight: Bold
 Copyright: Copyright 2021 The JuliaMono Project Authors (https://github.com/cormullion/juliamono)
 Version: 0.045; ttfautohint (v1.8.4)
@@ -22,7 +22,7 @@ OS2Version: 4
 OS2_WeightWidthSlopeOnly: 0
 OS2_UseTypoMetrics: 1
 CreationTime: 1650882240
-ModificationTime: 1658090985
+ModificationTime: 1658266458
 PfmFamily: 17
 TTFWeight: 700
 TTFWidth: 5
@@ -264,15 +264,15 @@ ChainSub2: glyph "'ss12' Style Set 12 lookup 52 subtable" 0 0 0 4
 EndFPST
 ContextSub2: glyph "'ss10' Style Set 10 lookup 50 subtable" 0 0 0 1
  String: 1 r
- BString: 0
- FString: 0
+ BString: 0 
+ FString: 0 
  1
   SeqLookup: 0 "Single Substitution lookup 74"
 EndFPST
 ContextSub2: glyph "'ss09' Style Set 9 lookup 49 subtable" 0 0 0 1
  String: 1 f
- BString: 0
- FString: 0
+ BString: 0 
+ FString: 0 
  1
   SeqLookup: 0 "Single Substitution lookup 73"
 EndFPST

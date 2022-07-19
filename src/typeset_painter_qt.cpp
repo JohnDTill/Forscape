@@ -69,8 +69,9 @@ void Painter::init(){
     //EVENTUALLY: codegen font loading
     loaded_fonts[JULIAMONO_REGULAR] = readFont(":/fonts/JuliaMono-Regular.ttf", "JuliaMono", "Regular");
     loaded_fonts[CMU_SERIF_MONO_ITALIC] = readFont(":/fonts/CMUSerifMono-Italic.ttf", "CMU Serif Mono", "Italic");
-    loaded_fonts[JULIAMONO_BOLD] = readFont(":/fonts/JuliaMono-BoldTrimmed.ttf", "JuliaMono", "Bold");
-    loaded_fonts[CMU_SERIF_MONO_BOLD_ITALIC] = readFont(":/fonts/CMUSerifMono-BoldItalic.ttf", "CMU Serif Mono Bold", "Bold");
+    loaded_fonts[TRIMMEDJULIAMONO_BOLD] = readFont(":/fonts/TrimmedJuliaMono-Bold.ttf", "TrimmedJuliaMono", "Bold");
+    loaded_fonts[TRIMMEDJULIAMONO_ITALIC] = readFont(":/fonts/TrimmedJuliaMono-RegularItalic.ttf", "TrimmedJuliaMono", "Italic");
+    loaded_fonts[TRIMMEDJULIAMONO_BOLD_ITALIC] = readFont(":/fonts/TrimmedJuliaMono-BoldItalic.ttf", "TrimmedJuliaMono", "Bold Italic");
     loaded_fonts[CMU_TYPEWRITER_SCALED_REGULAR] = readFont(":/fonts/CMUTypewriterScaled-Regular.ttf", "CMU Typewriter Scaled", "Regular");
     loaded_fonts[CMU_TYPEWRITER_SCALED_BOLD_BOLD] = readFont(":/fonts/CMUTypewriterScaled-Bold.ttf", "CMU Typewriter Scaled Bold", "Bold");
 
@@ -161,7 +162,7 @@ void Painter::drawHighlightedGrouping(double x, double y, double w, std::string_
 void Painter::drawSymbol(double x, double y, std::string_view text){
     x += x_offset;
     y += BIG_SYM_SCALE*CAPHEIGHT[depth];
-    QFont font = getFont(SEM_ID, depth);
+    QFont font = getFont(SEM_BIG_SYM, depth);
     font.setPointSizeF(font.pointSizeF()*BIG_SYM_SCALE);
     painter.setFont(font);
     painter.drawText(x, y, QString::fromUtf8(text.data(), static_cast<int>(text.size())));
