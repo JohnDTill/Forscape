@@ -21,8 +21,8 @@ Preferences::Preferences(QSettings& settings, QWidget* parent) :
 
     if(settings.contains(INTEGRAL_LAYOUT_SETTING)){
         bool vertical_integrals = settings.value(INTEGRAL_LAYOUT_SETTING).toBool();
-        if(!vertical_integrals) return;
-        ui->integralCheckBox->toggle();
+        ui->integralCheckBox->setChecked(vertical_integrals);
+        Hope::Typeset::integral_bounds_vertical = vertical_integrals;
     }
 
     for(int i = 0; i < Hope::Typeset::NUM_COLOUR_PRESETS; i++){
