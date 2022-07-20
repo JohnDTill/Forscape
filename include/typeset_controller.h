@@ -33,6 +33,7 @@ class RemoveChars;
 class Subphrase;
 class Text;
 class View;
+class Editor;
 
 class Controller {
 public:
@@ -186,6 +187,7 @@ private:
     friend Model;
     friend RemoveChars;
     friend View;
+    friend Editor;
 };
 
 }

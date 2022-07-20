@@ -270,8 +270,7 @@ void MainWindow::run(){
 
     if(editor->isRunning()) return;
 
-    console->setModel(Typeset::Model::fromSerial("", true));
-    editor->runThread(console);
+    editor->runThread();
     if(editor->getModel()->errors.empty()){
         interpreter_poll_timer.start(INTERPETER_POLL_PERIOD);
 

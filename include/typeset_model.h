@@ -23,6 +23,7 @@ class Line;
 class Painter;
 class Text;
 class View;
+class Editor;
 
 class Model {   
 public:
@@ -112,6 +113,7 @@ private:
     friend Controller;
     friend Line;
     friend View;
+    friend Editor;
 
     std::vector<Command*> undo_stack;
     std::vector<Command*> redo_stack;
