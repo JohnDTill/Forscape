@@ -15,3 +15,5 @@ Id_Mat_Impure,CMU_Typewriter_Scaled_Bold,Bold,COLOUR_IMPURE
 Predef,TrimmedJuliaMono,Italic,COLOUR_PREDEF
 Id_Ewise_Index,CMU_Serif_Mono,Italic,COLOUR_KEYWORD
 Big_Sym,CMU_Serif_Mono,Italic,COLOUR_TEXT
+Warning,JuliaMono,Regular,COLOUR_WARNINGBORDER
+Bold,TrimmedJuliaMono,Bold,COLOUR_TEXT

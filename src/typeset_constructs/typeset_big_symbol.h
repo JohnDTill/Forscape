@@ -2,7 +2,6 @@
 #define TYPESET_BIG_SYMBOL_H
 
 #include "typeset_construct.h"
-#include "typeset_integral_preference.h"
 #include "typeset_subphrase.h"
 
 namespace Hope {
@@ -14,8 +13,8 @@ inline constexpr std::string_view getBigSymbolString(size_t type) noexcept {
         case BIGPROD0: case BIGPROD1: case BIGPROD2: return "∏";
         case BIGSUM0: case BIGSUM1: case BIGSUM2: return "∑";
         case BIGCOPROD0: case BIGCOPROD1: case BIGCOPROD2: return "∐";
-        case BIGINTERSECTION0: case BIGINTERSECTION1: return "⋂";
-        case BIGUNION0: case BIGUNION1: case BIGUNION2: return "⋃";
+        case BIGINTERSECTION0: case BIGINTERSECTION1: case BIGINTERSECTION2: return "∩";
+        case BIGUNION0: case BIGUNION1: case BIGUNION2: return "∪";
         default: assert(false); return "";
     }
 }

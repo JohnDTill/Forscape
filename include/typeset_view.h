@@ -1,6 +1,10 @@
 #ifndef TYPESET_VIEW_H
 #define TYPESET_VIEW_H
 
+//TODO: make the tooltip visibility logic cleaner
+//TODO: fix the recommender, or decide to leave it for now
+//TODO: figure out the class hierarchy
+
 #include "typeset_controller.h"
 #include "typeset_painter.h"
 
@@ -15,7 +19,7 @@ namespace Typeset {
 class MarkerLink;
 class Model;
 
-class View : public QWidget {
+class View : public QFrame {
     Q_OBJECT
 
 public:
@@ -119,7 +123,7 @@ protected:
     virtual void mouseDoubleClickEvent(QMouseEvent* e) override final;
     virtual void mouseReleaseEvent(QMouseEvent* e) override final;
     virtual void mouseMoveEvent(QMouseEvent* e) override final;
-    virtual void wheelEvent(QWheelEvent* e) override final;
+    virtual void wheelEvent(QWheelEvent* e) override;
     virtual void focusInEvent(QFocusEvent* event) override;
     virtual void focusOutEvent(QFocusEvent* event) override;
     virtual void resizeEvent(QResizeEvent* e) override;
@@ -177,15 +181,44 @@ public:
 };
 
 class LineEdit : public View {
+    Q_OBJECT
+
     //EVENTUALLY: define hierarchy
 public:
     LineEdit();
 
     virtual std::string_view logPrefix() const noexcept override { return "line_edit->"; }
+
+protected:
+    void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE final;
+    virtual void wheelEvent(QWheelEvent* e) override final;
+
+private slots:
+    void fitToContentsVertically() noexcept;
 };
 
 class Label : public View {
+public:
+    Label();
+
+    void clear() noexcept;
+
+    void appendSerial(const std::string& src){
+        controller.moveToEndOfDocument();
+        controller.insertSerial(src);
+    }
+
+    void appendSerial(const std::string& src, SemanticType type);
+
+    void fitToContents() noexcept;
+
+    bool empty() const noexcept;
+
     //DO THIS
+    virtual std::string_view logPrefix() const noexcept override { return "label->"; }
+
+private:
+    void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE final;
 };
 
 class Recommender : public View {
@@ -206,8 +239,11 @@ public:
 
     //EVENTUALLY: define hierarchy
 protected:
+    virtual bool event(QEvent* e) override final;
+
     virtual std::string_view logPrefix() const noexcept override { return "editor->"; }
     virtual void resolveTooltip(double x, double y) noexcept override;
+    void setTooltipForParseNode(ParseNode pn) noexcept;
     virtual void populateContextMenuFromModel(QMenu& menu, double x, double y) override;
     void setTooltipError(const std::string& str);
     void setTooltipWarning(const std::string& str);

@@ -37,6 +37,7 @@ public:
 
     Model();
     ~Model();
+    void clear() noexcept;
     static Model* fromSerial(const std::string& src, bool is_output = false);
     std::string toSerial() const;
     std::string run();

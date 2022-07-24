@@ -76,6 +76,7 @@ private:
                 const double w) alloc_except {
         //When the view is tall, we determine which rows to paint before painting
         static std::vector<bool> pixels; //GUI is single-threaded, so make this static
+        if(error_region_height < 0) return;
         pixels.resize(error_region_height+V_PADDING);
         std::fill(pixels.begin(), pixels.end(), 0);
 
@@ -225,6 +226,8 @@ void View::setFromSerial(const std::string& src, bool is_output){
     handleResize();
     updateHighlightingFromCursorLocation();
     update();
+
+    emit textChanged();
 }
 
 std::string View::toSerial() const alloc_except {
@@ -879,6 +882,8 @@ void View::drawLinebox(double yT, double yB) {
 }
 
 void View::fillInScrollbarCorner(){
+    if(!v_scroll->isVisible()) return; //EVENTUALLY: specialise the scrollbars
+
     int x = h_scroll->width();
     int y = v_scroll->height();
     int w = v_scroll->width();
@@ -1128,8 +1133,88 @@ LineEdit::LineEdit() : View() {
     h_scroll->setDisabled(true);
     model->is_output = true;
 
+    setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
+
     zoom = 1;
+
+    connect(this, SIGNAL(textChanged()), this, SLOT(fitToContentsVertically()));
+    v_scroll->setVisible(false);
+    h_scroll->setVisible(false);
 }
+
+void LineEdit::paintEvent(QPaintEvent* event){
+    v_scroll->setVisible(false);
+    h_scroll->setVisible(false);
+
+    View::paintEvent(event);
+    QFrame::paintEvent(event);
+}
+
+void LineEdit::wheelEvent(QWheelEvent* e){
+    QWidget::wheelEvent(e);
+}
+
+void Hope::Typeset::LineEdit::fitToContentsVertically() noexcept {
+    QWidget::setFixedHeight(yScreen(model->getHeight()) + MARGIN_BOT);
+    v_scroll->setVisible(false);
+    h_scroll->setVisible(false);
+    v_scroll->setValue(0);
+}
+
+Label::Label() : View() {
+    setLineNumbersVisible(false);
+    setReadOnly(true);
+    v_scroll->setVisible(false);
+    h_scroll->setVisible(false);
+    model->is_output = true;
+
+    setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
+
+    zoomOut();
+    zoomOut();
+}
+
+void Label::clear() noexcept {
+    model->clear();
+
+    //EVENTUALLY: Label shouldn't have a cursor
+    controller.setBothToFrontOf(model->firstText());
+}
+
+void Label::appendSerial(const std::string& src, SemanticType type) {
+    Text* t = model->lastText();
+    size_t index = t->numChars();
+    appendSerial(src);
+    t->tags.push_back(SemanticTag(index, type));
+    model->lastText()->tagBack(SEM_DEFAULT);
+}
+
+void Label::fitToContents() noexcept {
+    QWidget::resize(
+        xScreen(model->getWidth()) + MARGIN_RIGHT,
+        yScreen(model->getHeight()) + MARGIN_BOT
+    );
+
+    v_scroll->setVisible(false);
+    h_scroll->setVisible(false);
+}
+
+bool Label::empty() const noexcept {
+    return model->empty();
+}
+
+void Label::paintEvent(QPaintEvent* event){
+    v_scroll->setVisible(false);
+    h_scroll->setVisible(false);
+
+    auto bg = getColour(COLOUR_BACKGROUND);
+    setColour(COLOUR_BACKGROUND, palette().color(QPalette::ToolTipBase));
+    View::paintEvent(event);
+    setColour(COLOUR_BACKGROUND, bg);
+    QFrame::paintEvent(event);
+}
+
+Label* Editor::tooltip = nullptr;
 
 Editor::Editor(){
     recommender->hide();
@@ -1137,6 +1222,8 @@ Editor::Editor(){
     connect(recommender, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(takeRecommendation(QListWidgetItem*)));
     recommender->setMinimumHeight(0);
     recommender->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::MinimumExpanding);
+
+    if(tooltip == nullptr) tooltip = new Label();
 }
 
 void Editor::runThread(){
@@ -1164,6 +1251,20 @@ void Editor::reenable() noexcept{
     allow_write = true;
 }
 
+bool Editor::event(QEvent* e){
+    if (e->type() == QEvent::ToolTip){
+        if(!tooltip->empty() && !tooltip->isVisible()) {
+            tooltip->setParent(this);
+            tooltip->move(static_cast<QHelpEvent*>(e)->pos());
+            tooltip->show();
+        }
+
+        return true;
+    }
+
+    return QWidget::event(e);
+}
+
 void Editor::resolveTooltip(double x, double y) noexcept {
     for(const Code::Error& err : model->errors){
         if(err.selection.containsWithEmptyMargin(x, y)){
@@ -1184,43 +1285,48 @@ void Editor::resolveTooltip(double x, double y) noexcept {
     }
 
     ParseNode pn = model->parseNodeAt(x, y);
-    #ifndef NDEBUG
+    if(pn == hover_node) return;
     hover_node = pn;
-    update();
-    #endif
-    if(pn != NONE){
-        const auto& parse_tree = model->parser.parse_tree;
-        Code::Op op = parse_tree.getOp(pn);
+    if(hover_node == NONE) clearTooltip();
+    else setTooltipForParseNode(pn);
+}
 
-        if(op == Code::OP_IDENTIFIER){
-            setToolTipDuration(std::numeric_limits<int>::max());
+void Editor::setTooltipForParseNode(ParseNode pn) noexcept {
+    assert(pn != NONE);
+
+    const auto& parse_tree = model->parser.parse_tree;
+    switch(parse_tree.getOp(pn)){
+        case Code::OP_IDENTIFIER:{
             const auto& symbol_table = model->symbol_builder.symbol_table;
             size_t sym_id = parse_tree.getFlag(pn);
             const auto& symbol = symbol_table.symbols[sym_id];
 
-            THROTTLE(logger->info("{}resolveTooltip({}, {});", logPrefix(), x, y);)
+            tooltip->clear();
+            tooltip->appendSerial(parse_tree.str(pn) + " ∈ " + model->static_pass.typeString(symbol));
 
-            QString tooltip = "<b>" + QString::fromStdString(parse_tree.str(pn)) + "</b> ∈ "
-                    + QString::fromStdString(model->static_pass.typeString(symbol));
-            if(symbol.comment != NONE)
-                tooltip += "<div style=\"color:green\">" + QString::fromStdString(symbol_table.parse_tree.str(symbol.comment));
-            setToolTip(tooltip);
+            if(symbol.comment != NONE){
+                tooltip->appendSerial("\n");
+                tooltip->appendSerial(symbol_table.parse_tree.str(symbol.comment), SEM_COMMENT);
+            }
+
+            tooltip->fitToContents();
+            setToolTip("SHOW");
+
             return;
         }
+
         #ifndef NDEBUG
-        else
-        {
-            setToolTipDuration(std::numeric_limits<int>::max());
-
-            QString tooltip = "ParseNode: " + QString::number(pn);
-            setToolTip(tooltip);
-
-            return;
-        }
+        default:
+            tooltip->clear();
+            tooltip->appendSerial("ParseNode: " + std::to_string(pn));
+            tooltip->fitToContents();
+            setToolTip("SHOW");
         #endif
     }
 
-    clearTooltip();
+    #ifndef NDEBUG
+    update();
+    #endif
 }
 
 void Editor::populateContextMenuFromModel(QMenu& menu, double x, double y) {
@@ -1234,18 +1340,25 @@ void Editor::populateContextMenuFromModel(QMenu& menu, double x, double y) {
 }
 
 void Editor::setTooltipError(const std::string& str){
-    setToolTipDuration(std::numeric_limits<int>::max());
-    setToolTip("<b>Error</b><div style=\"color:red\">" + QString::fromStdString(str));
+    tooltip->clear();
+    tooltip->appendSerial("Error\n");
+    tooltip->appendSerial(str, SEM_ERROR);
+    tooltip->fitToContents();
+    setToolTip("SHOW");
 }
 
 void Editor::setTooltipWarning(const std::string& str){
-    setToolTipDuration(std::numeric_limits<int>::max());
-    setToolTip("<b>Warning</b><div style=\"color:SandyBrown\">" + QString::fromStdString(str));
+    tooltip->clear();
+    tooltip->appendSerial("Error\n");
+    tooltip->appendSerial(str, SEM_WARNING);
+    tooltip->fitToContents();
+    setToolTip("SHOW");
 }
 
 void Editor::clearTooltip(){
     setToolTipDuration(1);
-    setToolTip(" ");
+    tooltip->clear();
+    tooltip->hide();
 }
 
 void Editor::rename(){
