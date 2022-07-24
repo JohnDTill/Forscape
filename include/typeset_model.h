@@ -87,6 +87,7 @@ public:
     void search(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const;
     bool empty() const noexcept;
     size_t serialChars() const noexcept;
+    Line* nearestLine(double y) const noexcept;
 
     static constexpr double LINE_VERTICAL_PADDING = 5;
 
@@ -99,7 +100,6 @@ private:
     Line* nextLineAsserted(const Line* l) const noexcept;
     Line* prevLineAsserted(const Line* l) const noexcept;
     #ifndef HOPE_TYPESET_HEADLESS
-    Line* nearestLine(double y) const noexcept;
     Line* nearestAbove(double y) const noexcept;
     Construct* constructAt(double x, double y) const noexcept;
     ParseNode parseNodeAt(double x, double y) const noexcept;

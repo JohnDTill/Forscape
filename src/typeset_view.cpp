@@ -719,7 +719,7 @@ void View::focusInEvent(QFocusEvent*){
     restartCursorBlink();
 }
 
-void View::focusOutEvent(QFocusEvent* e){
+void View::focusOutEvent(QFocusEvent* e){    
     if(e->reason() == Qt::TabFocusReason){
         setFocus(Qt::TabFocusReason);
         if(allow_write) controller.tab();
@@ -732,7 +732,7 @@ void View::focusOutEvent(QFocusEvent* e){
         ensureCursorVisible();
         updateHighlightingFromCursorLocation();
         update();
-    }else{
+    }else if(!mock_focus){
         stopCursorBlink();
         //EVENTUALLY: why was this here?
         //assert(mouse_hold_state == Hover);
@@ -745,7 +745,7 @@ void View::resizeEvent(QResizeEvent* e){
 }
 
 void View::onBlink() noexcept{
-    show_cursor = !show_cursor && hasFocus();
+    show_cursor = !show_cursor && (hasFocus() || mock_focus);
     update();
     cursor_blink_timer->start(CURSOR_BLINK_INTERVAL);
 }
@@ -984,8 +984,6 @@ void View::handleKey(int key, int modifiers, const std::string& str){
     constexpr int CtrlShift = Qt::ControlModifier | Qt::ShiftModifier;
     constexpr int Alt = Qt::AltModifier;
 
-    bool hide_recommender = true;
-
     logger->info("{}handleKey({}, {}, {});", logPrefix(), key, modifiers, cStr(str));
 
     switch (key | modifiers) {
@@ -1076,7 +1074,8 @@ void View::handleKey(int key, int modifiers, const std::string& str){
             controller.keystroke(str);
             updateXSetpoint();
             restartCursorBlink();
-            hide_recommender = false;
+
+            recommend();
     }
 
     ensureCursorVisible();
@@ -1214,16 +1213,131 @@ void Label::paintEvent(QPaintEvent* event){
     QFrame::paintEvent(event);
 }
 
+Recommender::Recommender() : View() {
+    setLineNumbersVisible(false);
+    setReadOnly(true);
+    h_scroll->setVisible(false);
+    model->is_output = true;
+
+    setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
+    setWindowFlags(Qt::Popup);
+}
+
+void Recommender::clear() noexcept {
+    model->clear();
+    controller.setBothToFrontOf(model->firstText());
+}
+
+void Recommender::moveDown() noexcept {
+    if(controller.atEnd()) controller.moveToStartOfDocument();
+    else controller.moveToNextLine(0);
+
+    controller.selectEndOfLine();
+    ensureCursorVisible();
+    update();
+}
+
+void Recommender::moveUp() noexcept {
+    if(controller.getAnchor().getLine()->id > 0) controller.moveToPrevLine(0);
+    else controller.moveToEndOfDocument();
+
+    controller.moveToStartOfLine();
+    controller.selectEndOfLine();
+    ensureCursorVisible();
+    update();
+}
+
+void Recommender::take() noexcept{
+    editor->takeRecommendation(controller.selectedText());
+    hide();
+}
+
+void Recommender::sizeToFit() {
+    static constexpr double MAX_HEIGHT = 100;
+
+    QWidget::setFixedWidth(MARGIN_LEFT + zoom*model->getWidth() + MARGIN_RIGHT + v_scroll->width());
+    double proposed_height = MARGIN_TOP + zoom*model->getHeight() + MARGIN_BOT;
+    QWidget::setFixedHeight(std::min(MAX_HEIGHT, proposed_height));
+    v_scroll->setFixedHeight(height());
+
+    h_scroll->setVisible(false);
+
+    int display_width = width() - v_scroll->width();
+    v_scroll->move(display_width, 0);
+
+    if(proposed_height > MAX_HEIGHT){
+        //v_scroll->setPageStep(height());
+        //v_scroll->setMaximum(proposed_height - MAX_HEIGHT);
+    }else{
+        //v_scroll->setMaximum(0);
+    }
+}
+
+void Hope::Typeset::Recommender::keyPressEvent(QKeyEvent* e) {
+    switch (e->key()) {
+        case Qt::Key::Key_Down:
+            moveDown();
+            return;
+
+        case Qt::Key::Key_Up:
+            moveUp();
+            return;
+
+        case Qt::Key::Key_Return:
+            take();
+            return;
+
+        default:
+            editor->setFocus();
+            editor->keyPressEvent(e);
+    }
+}
+
+void Recommender::mousePressEvent(QMouseEvent* e){
+    if(e->button() == Qt::MiddleButton){
+        take();
+        return;
+    }
+
+    double click_y = yModel(e->pos().y());
+
+    Line* l = model->nearestLine(click_y);
+    controller.setBothToFrontOf(l->front());
+    controller.selectEndOfLine();
+    ensureCursorVisible();
+    update();
+}
+
+void Recommender::mouseDoubleClickEvent(QMouseEvent* e){
+    take();
+}
+
+void Recommender::focusOutEvent(QFocusEvent* event){
+    hide();
+    editor->mock_focus = false;
+}
+
+void Recommender::wheelEvent(QWheelEvent* e){
+    if(e->angleDelta().y() > 0) moveUp();
+    else moveDown();
+}
+
+void Recommender::paintEvent(QPaintEvent* event){
+    sizeToFit();
+
+    View::paintEvent(event);
+    QFrame::paintEvent(event);
+}
+
+Recommender* Editor::recommender = nullptr;
+
 Label* Editor::tooltip = nullptr;
 
 Editor::Editor(){
-    recommender->hide();
-    connect(recommender, SIGNAL(itemActivated(QListWidgetItem*)), this, SLOT(takeRecommendation(QListWidgetItem*)));
-    connect(recommender, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(takeRecommendation(QListWidgetItem*)));
-    recommender->setMinimumHeight(0);
-    recommender->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::MinimumExpanding);
-
-    if(tooltip == nullptr) tooltip = new Label();
+    if(tooltip == nullptr){
+        tooltip = new Label();
+        recommender = new Recommender();
+    }
 }
 
 void Editor::runThread(){
@@ -1416,10 +1530,6 @@ void Editor::findUsages(){
     console->updateModel();
 }
 
-void Editor::takeRecommendation(QListWidgetItem* item){
-    takeRecommendation(item->text().toStdString());
-}
-
 void Editor::rename(const std::string& str){
     logger->info("{}rename({});", logPrefix(), cStr(str));
 
@@ -1443,22 +1553,31 @@ void Editor::recommend() {
     auto suggestions = model->symbol_builder.symbol_table.getSuggestions(controller.active);
     if(suggestions.empty()){
         recommender->hide();
+        setFocus();
     }else{
         recommender->clear();
-        for(const auto& suggestion : suggestions)
-            recommender->addItem(QString::fromStdString(suggestion.str()));
+        std::string str = suggestions.front().str();
+        for(size_t i = 1; i < suggestions.size(); i++) str += '\n' + suggestions[i].str();
+        recommender->setFromSerial(str, true);
+        recommender->getController().moveToStartOfDocument();
+        recommender->getController().selectEndOfLine();
+
+        recommender->editor = this;
+        recommender->setParent(this);
+        recommender->setWindowFlags(Qt::Popup);
 
         double x = xScreen(controller.xActive());
         double y = yScreen(controller.active.y() + controller.active.text->height());
         recommender->move(x, y);
-        int full_list_height = recommender->sizeHintForRow(0) * recommender->count() + 2*recommender->frameWidth();
-        static constexpr int MAX_HEIGHT = 250;
-        if(full_list_height <= MAX_HEIGHT){
-            recommender->setFixedHeight(full_list_height);
-        }else{
-            recommender->setFixedHeight(MAX_HEIGHT);
-        }
+        QPointF global = mapToGlobal(pos());
+        recommender->move(global.x() + x, global.y() + y);
+
+        recommender->updateModel();
+        recommender->sizeToFit();
+
         recommender->show();
+        mock_focus = true;
+        recommender->setFocus();
     }
 }
 
@@ -1474,8 +1593,7 @@ void Editor::takeRecommendation(const std::string& str){
     updateXSetpoint();
     updateModel();
     recommender->hide();
-    //EVENTUALLY: this isn't working. The recommender will need to be a custom class (it will need to be for typesetting anyway)
-    QTimer::singleShot(0, this, SLOT(setFocus())); //Delay 1 cycle to avoid whatever input activated item
+    setFocus();
 
     ensureCursorVisible();
     updateHighlightingFromCursorLocation();

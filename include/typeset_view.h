@@ -1,8 +1,7 @@
 #ifndef TYPESET_VIEW_H
 #define TYPESET_VIEW_H
 
-//TODO: make the tooltip visibility logic cleaner
-//TODO: fix the recommender, or decide to leave it for now
+//TODO: make the tooltip visibility logic cleaner (maybe use setWindowFlags(Qt::Tooltip);)
 //TODO: figure out the class hierarchy
 
 #include "typeset_controller.h"
@@ -109,6 +108,7 @@ protected:
     friend MarkerLink;
     public: double zoom = ZOOM_DEFAULT;
     bool is_running = false;
+    bool mock_focus = false;
 
     #ifndef NDEBUG
     ParseNode hover_node = NONE;
@@ -118,9 +118,9 @@ protected:
 protected:
     QPainter qpainter;
     void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE;
-    virtual void keyPressEvent(QKeyEvent* e) override final;
-    virtual void mousePressEvent(QMouseEvent* e) override final;
-    virtual void mouseDoubleClickEvent(QMouseEvent* e) override final;
+    virtual void keyPressEvent(QKeyEvent* e) override;
+    virtual void mousePressEvent(QMouseEvent* e) override;
+    virtual void mouseDoubleClickEvent(QMouseEvent* e) override;
     virtual void mouseReleaseEvent(QMouseEvent* e) override final;
     virtual void mouseMoveEvent(QMouseEvent* e) override final;
     virtual void wheelEvent(QWheelEvent* e) override;
@@ -139,6 +139,7 @@ protected:
     void handleResize(int w, int h);
     void scrollUp();
     void scrollDown();
+    virtual void recommend(){}
 
     class VerticalScrollBar;
     VerticalScrollBar* v_scroll;
@@ -219,10 +220,33 @@ public:
 
 private:
     void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE final;
+    virtual void wheelEvent(QWheelEvent*) override {}
 };
 
+class Editor;
+
 class Recommender : public View {
-    //DO THIS
+public:
+    Recommender();
+
+    void clear() noexcept;
+    void moveDown() noexcept;
+    void moveUp() noexcept;
+    void take() noexcept;
+
+    virtual std::string_view logPrefix() const noexcept override { return "recommender->"; }
+
+    Editor* editor = nullptr;
+
+    void sizeToFit();
+
+protected:
+    virtual void keyPressEvent(QKeyEvent* e) override final;
+    virtual void mousePressEvent(QMouseEvent* e) override final;
+    virtual void mouseDoubleClickEvent(QMouseEvent* e) override final;
+    virtual void focusOutEvent(QFocusEvent* event) override final;
+    virtual void wheelEvent(QWheelEvent* e) override;
+    void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE final;
 };
 
 class Editor : public View {
@@ -240,7 +264,6 @@ public:
     //EVENTUALLY: define hierarchy
 protected:
     virtual bool event(QEvent* e) override final;
-
     virtual std::string_view logPrefix() const noexcept override { return "editor->"; }
     virtual void resolveTooltip(double x, double y) noexcept override;
     void setTooltipForParseNode(ParseNode pn) noexcept;
@@ -253,16 +276,17 @@ private slots:
     void rename();
     void goToDef();
     void findUsages();
-    void takeRecommendation(QListWidgetItem* item);
 
 private:
     void rename(const std::string& str);
-    void recommend();
+    virtual void recommend() override final;
     void takeRecommendation(const std::string& str);
 
     ParseNode contextNode = NONE;
-    QListWidget* recommender = new QListWidget(this); //DO THIS: have a working, typeset recommender
-    static Label* tooltip; //DO THIS: have a typeset tooltip
+    static Recommender* recommender; //DO THIS: have a working, typeset recommender
+    static Label* tooltip;
+
+    friend Recommender;
 };
 
 }
