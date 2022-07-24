@@ -1,9 +1,6 @@
 #ifndef TYPESET_VIEW_H
 #define TYPESET_VIEW_H
 
-//TODO: make the tooltip visibility logic cleaner (maybe use setWindowFlags(Qt::Tooltip);)
-//TODO: figure out the class hierarchy
-
 #include "typeset_controller.h"
 #include "typeset_painter.h"
 
@@ -109,10 +106,7 @@ protected:
     public: double zoom = ZOOM_DEFAULT;
     bool is_running = false;
     bool mock_focus = false;
-
-    #ifndef NDEBUG
     ParseNode hover_node = NONE;
-    #endif
 
 //Qt specific code
 protected:
@@ -201,21 +195,11 @@ private slots:
 class Label : public View {
 public:
     Label();
-
     void clear() noexcept;
-
-    void appendSerial(const std::string& src){
-        controller.moveToEndOfDocument();
-        controller.insertSerial(src);
-    }
-
+    void appendSerial(const std::string& src);
     void appendSerial(const std::string& src, SemanticType type);
-
     void fitToContents() noexcept;
-
     bool empty() const noexcept;
-
-    //DO THIS
     virtual std::string_view logPrefix() const noexcept override { return "label->"; }
 
 private:
@@ -263,10 +247,9 @@ public:
 
     //EVENTUALLY: define hierarchy
 protected:
-    virtual bool event(QEvent* e) override final;
+    virtual void focusOutEvent(QFocusEvent* event) override;
     virtual std::string_view logPrefix() const noexcept override { return "editor->"; }
     virtual void resolveTooltip(double x, double y) noexcept override;
-    void setTooltipForParseNode(ParseNode pn) noexcept;
     virtual void populateContextMenuFromModel(QMenu& menu, double x, double y) override;
     void setTooltipError(const std::string& str);
     void setTooltipWarning(const std::string& str);
@@ -276,6 +259,8 @@ private slots:
     void rename();
     void goToDef();
     void findUsages();
+    void showTooltipParseNode();
+    void showTooltip();
 
 private:
     void rename(const std::string& str);
@@ -283,8 +268,10 @@ private:
     void takeRecommendation(const std::string& str);
 
     ParseNode contextNode = NONE;
-    static Recommender* recommender; //DO THIS: have a working, typeset recommender
+    static Recommender* recommender;
     static Label* tooltip;
+    QTimer* tooltip_timer;
+    static constexpr int TOOLTIP_DELAY_MILLISECONDS = 750;
 
     friend Recommender;
 };

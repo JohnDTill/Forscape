@@ -1180,6 +1180,11 @@ void Label::clear() noexcept {
     controller.setBothToFrontOf(model->firstText());
 }
 
+void Label::appendSerial(const std::string& src){
+    controller.moveToEndOfDocument();
+    controller.insertSerial(src);
+}
+
 void Label::appendSerial(const std::string& src, SemanticType type) {
     Text* t = model->lastText();
     size_t index = t->numChars();
@@ -1336,8 +1341,14 @@ Label* Editor::tooltip = nullptr;
 Editor::Editor(){
     if(tooltip == nullptr){
         tooltip = new Label();
+        tooltip->setWindowFlags(Qt::ToolTip);
+        tooltip->setDisabled(true);
         recommender = new Recommender();
     }
+
+    tooltip_timer = new QTimer(this);
+    tooltip_timer->setSingleShot(true);
+    connect(tooltip_timer, SIGNAL(timeout()), this, SLOT(showTooltipParseNode()));
 }
 
 void Editor::runThread(){
@@ -1365,18 +1376,12 @@ void Editor::reenable() noexcept{
     allow_write = true;
 }
 
-bool Editor::event(QEvent* e){
-    if (e->type() == QEvent::ToolTip){
-        if(!tooltip->empty() && !tooltip->isVisible()) {
-            tooltip->setParent(this);
-            tooltip->move(static_cast<QHelpEvent*>(e)->pos());
-            tooltip->show();
-        }
-
-        return true;
+void Editor::focusOutEvent(QFocusEvent* event){
+    View::focusOutEvent(event);
+    if(event->isAccepted()){
+        tooltip_timer->stop();
+        tooltip->hide();
     }
-
-    return QWidget::event(e);
 }
 
 void Editor::resolveTooltip(double x, double y) noexcept {
@@ -1385,6 +1390,7 @@ void Editor::resolveTooltip(double x, double y) noexcept {
             THROTTLE(logger->info("{}resolveTooltip({}, {});", logPrefix(), x, y);)
 
             setTooltipError(err.message());
+            showTooltip();
             return;
         }
     }
@@ -1394,49 +1400,14 @@ void Editor::resolveTooltip(double x, double y) noexcept {
             THROTTLE(logger->info("{}resolveTooltip({}, {});", logPrefix(), x, y);)
 
             setTooltipWarning(err.message());
+            showTooltip();
             return;
         }
     }
 
-    ParseNode pn = model->parseNodeAt(x, y);
-    if(pn == hover_node) return;
-    hover_node = pn;
+    hover_node = model->parseNodeAt(x, y);
     if(hover_node == NONE) clearTooltip();
-    else setTooltipForParseNode(pn);
-}
-
-void Editor::setTooltipForParseNode(ParseNode pn) noexcept {
-    assert(pn != NONE);
-
-    const auto& parse_tree = model->parser.parse_tree;
-    switch(parse_tree.getOp(pn)){
-        case Code::OP_IDENTIFIER:{
-            const auto& symbol_table = model->symbol_builder.symbol_table;
-            size_t sym_id = parse_tree.getFlag(pn);
-            const auto& symbol = symbol_table.symbols[sym_id];
-
-            tooltip->clear();
-            tooltip->appendSerial(parse_tree.str(pn) + " ∈ " + model->static_pass.typeString(symbol));
-
-            if(symbol.comment != NONE){
-                tooltip->appendSerial("\n");
-                tooltip->appendSerial(symbol_table.parse_tree.str(symbol.comment), SEM_COMMENT);
-            }
-
-            tooltip->fitToContents();
-            setToolTip("SHOW");
-
-            return;
-        }
-
-        #ifndef NDEBUG
-        default:
-            tooltip->clear();
-            tooltip->appendSerial("ParseNode: " + std::to_string(pn));
-            tooltip->fitToContents();
-            setToolTip("SHOW");
-        #endif
-    }
+    else tooltip_timer->start(TOOLTIP_DELAY_MILLISECONDS);
 
     #ifndef NDEBUG
     update();
@@ -1458,21 +1429,20 @@ void Editor::setTooltipError(const std::string& str){
     tooltip->appendSerial("Error\n");
     tooltip->appendSerial(str, SEM_ERROR);
     tooltip->fitToContents();
-    setToolTip("SHOW");
 }
 
 void Editor::setTooltipWarning(const std::string& str){
     tooltip->clear();
-    tooltip->appendSerial("Error\n");
+    tooltip->appendSerial("Warning\n");
     tooltip->appendSerial(str, SEM_WARNING);
     tooltip->fitToContents();
-    setToolTip("SHOW");
 }
 
 void Editor::clearTooltip(){
-    setToolTipDuration(1);
     tooltip->clear();
     tooltip->hide();
+    repaint();
+    tooltip_timer->stop();
 }
 
 void Editor::rename(){
@@ -1528,6 +1498,47 @@ void Editor::findUsages(){
     }
 
     console->updateModel();
+}
+
+void Editor::showTooltipParseNode(){
+    assert(hover_node != NONE);
+
+    const auto& parse_tree = model->parser.parse_tree;
+    switch(parse_tree.getOp(hover_node)){
+        case Code::OP_IDENTIFIER:{
+            const auto& symbol_table = model->symbol_builder.symbol_table;
+            size_t sym_id = parse_tree.getFlag(hover_node);
+            const auto& symbol = symbol_table.symbols[sym_id];
+
+            tooltip->clear();
+            tooltip->appendSerial(parse_tree.str(hover_node) + " ∈ " + model->static_pass.typeString(symbol));
+
+            if(symbol.comment != NONE){
+                tooltip->appendSerial("\n");
+                tooltip->appendSerial(symbol_table.parse_tree.str(symbol.comment), SEM_COMMENT);
+            }
+
+            tooltip->fitToContents();
+            break;
+        }
+
+        #ifndef NDEBUG
+        default:
+            tooltip->clear();
+            tooltip->appendSerial("ParseNode: " + std::to_string(hover_node));
+            tooltip->fitToContents();
+        #endif
+    }
+
+    showTooltip();
+}
+
+void Editor::showTooltip(){
+    if(tooltip->isVisible()) return;
+
+    tooltip->setParent(this);
+    tooltip->move(mapFromGlobal(QCursor::pos()));
+    tooltip->show();
 }
 
 void Editor::rename(const std::string& str){
