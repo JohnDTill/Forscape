@@ -76,6 +76,7 @@ private:
                 const double w) alloc_except {
         //When the view is tall, we determine which rows to paint before painting
         static std::vector<bool> pixels; //GUI is single-threaded, so make this static
+        if(error_region_height < 0) return;
         pixels.resize(error_region_height+V_PADDING);
         std::fill(pixels.begin(), pixels.end(), 0);
 
@@ -197,12 +198,6 @@ View::View() noexcept
     else show_cursor = false;
     setMouseTracking(true);
 
-    recommender->hide();
-    connect(recommender, SIGNAL(itemActivated(QListWidgetItem*)), this, SLOT(takeRecommendation(QListWidgetItem*)));
-    connect(recommender, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(takeRecommendation(QListWidgetItem*)));
-    recommender->setMinimumHeight(0);
-    recommender->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::MinimumExpanding);
-
     v_scroll = new VerticalScrollBar(Qt::Vertical, this, *this);
     h_scroll = new QScrollBar(Qt::Horizontal, this);
     connect(v_scroll, SIGNAL(valueChanged(int)), this, SLOT(update()));
@@ -231,6 +226,8 @@ void View::setFromSerial(const std::string& src, bool is_output){
     handleResize();
     updateHighlightingFromCursorLocation();
     update();
+
+    emit textChanged();
 }
 
 std::string View::toSerial() const alloc_except {
@@ -250,19 +247,6 @@ void View::setModel(Model* m, bool owned) noexcept {
     updateXSetpoint();
     update();
     handleResize();
-}
-
-void View::runThread(View* console){
-    if(!model->errors.empty()){
-        Model* result = Code::Error::writeErrors(model->errors, this);
-        result->calculateSizes();
-        result->updateLayout();
-        console->setModel(result);
-    }else{
-        is_running = true;
-        allow_write = false;
-        model->runThread();
-    }
 }
 
 void View::setLineNumbersVisible(bool show) noexcept {
@@ -392,11 +376,11 @@ void View::resolveRightClick(double x, double y, int xScreen, int yScreen){
 
     if(!clicked_on_selection) resolveClick(x, y);
 
-    #define append(name, str, cmd, enabled, visible) \
+    #define append(str, cmd, enabled, visible) \
         if(visible){ \
-        QAction* name = menu.addAction(str); \
-        connect(name, SIGNAL(triggered()), this, SLOT(cmd())); \
-        name->setEnabled(enabled); \
+        QAction* action = menu.addAction(str); \
+        connect(action, SIGNAL(triggered()), this, SLOT(cmd())); \
+        action->setEnabled(enabled); \
         }
 
     if(Construct* con = model->constructAt(x, y)){
@@ -417,24 +401,16 @@ void View::resolveRightClick(double x, double y, int xScreen, int yScreen){
         }
     }
 
-    contextNode = model->parseNodeAt(x, y);
-    if(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER){
-        append(renameAction, "Rename", rename, true, true)
-        append(gotoDefAction, "Go to definition", goToDef, true, true)
-        append(findUsagesAction, "Find usages", findUsages, true, console)
-        menu.addSeparator();
-    }
+    populateContextMenuFromModel(menu, x, y);
 
-    append(undoAction, "Undo", undo, model->undoAvailable(), allow_write)
-    append(redoAction, "Redo", redo, model->redoAvailable(), allow_write)
+    append("Undo", undo, model->undoAvailable(), allow_write)
+    append("Redo", redo, model->redoAvailable(), allow_write)
     menu.addSeparator();
-    append(cutAction, "Cut", cut, clicked_on_selection, allow_write)
-    append(copyAction, "Copy", copy, clicked_on_selection, true)
-    append(pasteAction, "Paste", paste, true, allow_write)
+    append("Cut", cut, clicked_on_selection, allow_write)
+    append("Copy", copy, clicked_on_selection, true)
+    append("Paste", paste, true, allow_write)
     menu.addSeparator();
-    append(selectAllAction, "Select All", selectAll, true, true)
-
-    #undef append
+    append("Select All", selectAll, true, true)
 
     menu.exec(QPoint(xScreen, yScreen));
 }
@@ -504,65 +480,8 @@ void View::resolveLineDrag(double y) noexcept{
     updateXSetpoint();
 }
 
-void View::resolveTooltip(double x, double y) noexcept{
-    if(model->is_output) return; //EVENTUALLY: find a better way to have different behaviours
-
-    for(const Code::Error& err : model->errors){
-        if(err.selection.containsWithEmptyMargin(x, y)){
-            THROTTLE(logger->info("{}resolveTooltip({}, {});", logPrefix(), x, y);)
-
-            setTooltipError(err.message());
-            return;
-        }
-    }
-
-    for(const Code::Error& err : model->warnings){
-        if(err.selection.containsWithEmptyMargin(x, y)){
-            THROTTLE(logger->info("{}resolveTooltip({}, {});", logPrefix(), x, y);)
-
-            setTooltipWarning(err.message());
-            return;
-        }
-    }
-
-    ParseNode pn = model->parseNodeAt(x, y);
-    #ifndef NDEBUG
-    hover_node = pn;
-    update();
-    #endif
-    if(pn != NONE){
-        const auto& parse_tree = model->parser.parse_tree;
-        Code::Op op = parse_tree.getOp(pn);
-
-        if(op == Code::OP_IDENTIFIER){
-            setToolTipDuration(std::numeric_limits<int>::max());
-            const auto& symbol_table = model->symbol_builder.symbol_table;
-            size_t sym_id = parse_tree.getFlag(pn);
-            const auto& symbol = symbol_table.symbols[sym_id];
-
-            THROTTLE(logger->info("{}resolveTooltip({}, {});", logPrefix(), x, y);)
-
-            QString tooltip = "<b>" + QString::fromStdString(parse_tree.str(pn)) + "</b> ∈ "
-                    + QString::fromStdString(model->static_pass.typeString(symbol));
-            if(symbol.comment != NONE)
-                tooltip += "<div style=\"color:green\">" + QString::fromStdString(symbol_table.parse_tree.str(symbol.comment));
-            setToolTip(tooltip);
-            return;
-        }
-        #ifndef NDEBUG
-        else
-        {
-            setToolTipDuration(std::numeric_limits<int>::max());
-
-            QString tooltip = "ParseNode: " + QString::number(pn);
-            setToolTip(tooltip);
-
-            return;
-        }
-        #endif
-    }
-
-    clearTooltip();
+void View::resolveTooltip(double, double) noexcept {
+    //DO NOTHING
 }
 
 void View::resolveSelectionDrag(double x, double y){
@@ -737,16 +656,6 @@ void View::goToLine(size_t line_num){
     update();
 }
 
-bool View::isRunning() const noexcept{
-    return is_running;
-}
-
-void View::reenable() noexcept{
-    assert(model->interpreter.status == Code::Interpreter::FINISHED);
-    is_running = false;
-    allow_write = true;
-}
-
 void View::updateBackgroundColour() noexcept {
     QPalette pal = QPalette();
     pal.setColor(QPalette::Window, getColour(COLOUR_BACKGROUND));
@@ -770,29 +679,6 @@ double View::getLineboxWidth() const noexcept {
     return show_line_nums*LINEBOX_WIDTH;
 }
 
-void View::recommend() {
-    auto suggestions = model->symbol_builder.symbol_table.getSuggestions(controller.active);
-    if(suggestions.empty()){
-        recommender->hide();
-    }else{
-        recommender->clear();
-        for(const auto& suggestion : suggestions)
-            recommender->addItem(QString::fromStdString(suggestion.str()));
-
-        double x = xScreen(controller.xActive());
-        double y = yScreen(controller.active.y() + controller.active.text->height());
-        recommender->move(x, y);
-        int full_list_height = recommender->sizeHintForRow(0) * recommender->count() + 2*recommender->frameWidth();
-        static constexpr int MAX_HEIGHT = 250;
-        if(full_list_height <= MAX_HEIGHT){
-            recommender->setFixedHeight(full_list_height);
-        }else{
-            recommender->setFixedHeight(MAX_HEIGHT);
-        }
-        recommender->show();
-    }
-}
-
 void View::keyPressEvent(QKeyEvent* e){
     handleKey(e->key(), e->modifiers(), e->text().toStdString());
 }
@@ -808,18 +694,14 @@ void View::mousePressEvent(QMouseEvent* e){
 
     auto global_pos = e->globalPosition();
     dispatchClick(click_x, click_y, global_pos.x(), global_pos.y(), right_click, shift_held);
-
-    recommender->hide();
 }
 
 void View::mouseDoubleClickEvent(QMouseEvent* e){
     dispatchDoubleClick(xModel(e->x()), yModel(e->y()));
-    recommender->hide();
 }
 
 void View::mouseReleaseEvent(QMouseEvent* e){
     dispatchRelease(xModel(e->x()), yModel(e->y()));
-    recommender->hide();
 }
 
 void View::mouseMoveEvent(QMouseEvent* e){
@@ -831,14 +713,13 @@ void View::wheelEvent(QWheelEvent* e){
     bool up = e->angleDelta().y() > 0;
 
     dispatchMousewheel(ctrl_held, up);
-    recommender->hide();
 }
 
 void View::focusInEvent(QFocusEvent*){
     restartCursorBlink();
 }
 
-void View::focusOutEvent(QFocusEvent* e){
+void View::focusOutEvent(QFocusEvent* e){    
     if(e->reason() == Qt::TabFocusReason){
         setFocus(Qt::TabFocusReason);
         if(allow_write) controller.tab();
@@ -851,13 +732,11 @@ void View::focusOutEvent(QFocusEvent* e){
         ensureCursorVisible();
         updateHighlightingFromCursorLocation();
         update();
-    }else{
+    }else if(!mock_focus){
         stopCursorBlink();
         //EVENTUALLY: why was this here?
         //assert(mouse_hold_state == Hover);
     }
-
-    if(focusWidget() != recommender) recommender->hide();
 }
 
 void View::resizeEvent(QResizeEvent* e){
@@ -866,7 +745,7 @@ void View::resizeEvent(QResizeEvent* e){
 }
 
 void View::onBlink() noexcept{
-    show_cursor = !show_cursor && hasFocus();
+    show_cursor = !show_cursor && (hasFocus() || mock_focus);
     update();
     cursor_blink_timer->start(CURSOR_BLINK_INTERVAL);
 }
@@ -1003,6 +882,8 @@ void View::drawLinebox(double yT, double yB) {
 }
 
 void View::fillInScrollbarCorner(){
+    if(!v_scroll->isVisible()) return; //EVENTUALLY: specialise the scrollbars
+
     int x = h_scroll->width();
     int y = v_scroll->height();
     int w = v_scroll->width();
@@ -1064,28 +945,12 @@ void View::scrollDown(){
     v_scroll->setValue( v_scroll->value() + v_scroll->pageStep()/10 );
 }
 
-void View::setTooltipError(const std::string& str){
-    setToolTipDuration(std::numeric_limits<int>::max());
-    setToolTip("<b>Error</b><div style=\"color:red\">" + QString::fromStdString(str));
-}
-
-void View::setTooltipWarning(const std::string& str){
-    setToolTipDuration(std::numeric_limits<int>::max());
-    setToolTip("<b>Warning</b><div style=\"color:SandyBrown\">" + QString::fromStdString(str));
-}
-
-void View::clearTooltip(){
-    setToolTipDuration(1);
-    setToolTip(" ");
-}
-
 void View::undo(){
     logger->info("{}undo();", logPrefix());
 
     model->undo(controller);
     ensureCursorVisible();
     updateHighlightingFromCursorLocation();
-    recommender->hide();
     update();
 
     v_scroll->update();
@@ -1100,7 +965,6 @@ void View::redo(){
     model->redo(controller);
     ensureCursorVisible();
     updateHighlightingFromCursorLocation();
-    recommender->hide();
     update();
     v_scroll->update();
     qApp->processEvents();
@@ -1114,73 +978,11 @@ void View::selectAll() noexcept{
     controller.selectAll();
 }
 
-void View::rename(){
-    bool ok;
-    QString text = QInputDialog::getText(
-                this,
-                tr("Rename"),
-                tr("New name:"),
-                QLineEdit::Normal,
-                "",
-                &ok
-                );
-
-    if(!ok) return;
-
-    std::string name = text.toStdString();
-    rename(name);
-}
-
-void View::goToDef(){
-    logger->info("{}goToDef();", logPrefix());
-
-    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
-    auto& symbol_table = model->symbol_builder.symbol_table;
-    controller = symbol_table.getSel(model->parseTree().getSymId(contextNode));
-    restartCursorBlink();
-    ensureCursorVisible();
-    update();
-}
-
-void View::findUsages(){
-    logger->info("{}findUsages();", logPrefix());
-
-    assert(console);
-
-    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
-    auto& symbol_table = model->symbol_builder.symbol_table;
-    std::vector<Typeset::Selection> occurences;
-    symbol_table.getSymbolOccurences(model->parseTree().getSymId(contextNode), occurences);
-
-    Model* m = new Model();
-    m->is_output = true;
-    console->setModel(m);
-    size_t last_handled = std::numeric_limits<size_t>::max();
-    for(const auto& entry : occurences){
-        Line* target_line = entry.getStartLine();
-        if(target_line->id != last_handled){
-            last_handled = target_line->id;
-            m->lastLine()->appendConstruct(new Typeset::MarkerLink(target_line, this));
-            console->controller.moveToEndOfDocument();
-            std::string line_snippet = target_line->toString();
-            console->controller.insertSerial("  " + line_snippet + "\n");
-        }
-    }
-
-    console->updateModel();
-}
-
-void View::takeRecommendation(QListWidgetItem* item){
-    takeRecommendation(item->text().toStdString());
-}
-
 void View::handleKey(int key, int modifiers, const std::string& str){
     constexpr int Ctrl = Qt::ControlModifier;
     constexpr int Shift = Qt::ShiftModifier;
     constexpr int CtrlShift = Qt::ControlModifier | Qt::ShiftModifier;
     constexpr int Alt = Qt::AltModifier;
-
-    bool hide_recommender = true;
 
     logger->info("{}handleKey({}, {}, {});", logPrefix(), key, modifiers, cStr(str));
 
@@ -1191,15 +993,7 @@ void View::handleKey(int key, int modifiers, const std::string& str){
         case Qt::Key_Left: controller.moveToPrevChar(); updateXSetpoint(); restartCursorBlink(); update(); break;
         case Qt::Key_Right|Ctrl: controller.moveToNextWord(); updateXSetpoint(); restartCursorBlink(); update(); break;
         case Qt::Key_Left|Ctrl: controller.moveToPrevWord(); updateXSetpoint(); restartCursorBlink(); update(); break;
-        case Qt::Key_Down:
-            if(recommender->isVisible()){
-                recommender->setCurrentRow(0);
-                recommender->setFocus();
-                hide_recommender = false;
-            }else{
-                controller.moveToNextLine(x_setpoint); restartCursorBlink(); update();
-            }
-            break;
+        case Qt::Key_Down: controller.moveToNextLine(x_setpoint); restartCursorBlink(); update(); break;
         case Qt::Key_Up: controller.moveToPrevLine(x_setpoint); restartCursorBlink(); update(); break;
         case Qt::Key_Home: controller.moveToStartOfLine(); updateXSetpoint(); restartCursorBlink(); update(); break;
         case Qt::Key_End: controller.moveToEndOfLine(); updateXSetpoint(); restartCursorBlink(); update(); break;
@@ -1280,14 +1074,10 @@ void View::handleKey(int key, int modifiers, const std::string& str){
             controller.keystroke(str);
             updateXSetpoint();
             restartCursorBlink();
-            if(!model->is_output) recommend();
-            hide_recommender = false;
+
+            recommend();
     }
 
-    if(hide_recommender && recommender->isVisible()){
-        recommender->hide();
-        setFocus();
-    }
     ensureCursorVisible();
     updateHighlightingFromCursorLocation();
     update();
@@ -1300,49 +1090,6 @@ void View::handleKey(int key, int modifiers, const std::string& str){
 void View::paste(const std::string& str){
     logger->info("{}paste({});", logPrefix(), cStr(str));
     model->mutate(controller.getInsertSerial(str), controller);
-
-    ensureCursorVisible();
-    updateHighlightingFromCursorLocation();
-    update();
-    v_scroll->update();
-    qApp->processEvents();
-
-    emit textChanged();
-}
-
-void View::rename(const std::string& str){
-    logger->info("{}rename({});", logPrefix(), cStr(str));
-
-    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
-    auto& symbol_table = model->symbol_builder.symbol_table;
-    std::vector<Typeset::Selection> occurences;
-    symbol_table.getSymbolOccurences(model->parseTree().getSymId(contextNode), occurences);
-
-    replaceAll(occurences, str);
-
-    ensureCursorVisible();
-    updateHighlightingFromCursorLocation();
-    update();
-    v_scroll->update();
-    qApp->processEvents();
-
-    emit textChanged();
-}
-
-void View::takeRecommendation(const std::string& str){
-    logger->info("{}takeRecommendation({});", logPrefix(), cStr(str));
-
-    controller.selectPrevWord();
-    if(str != controller.selectedText())
-        controller.insertSerial(str);
-    else
-        controller.consolidateToAnchor();
-    model->performSemanticFormatting();
-    updateXSetpoint();
-    updateModel();
-    recommender->hide();
-    //EVENTUALLY: this isn't working. The recommender will need to be a custom class (it will need to be for typesetting anyway)
-    QTimer::singleShot(0, this, SLOT(setFocus())); //Delay 1 cycle to avoid whatever input activated item
 
     ensureCursorVisible();
     updateHighlightingFromCursorLocation();
@@ -1376,10 +1123,6 @@ QImage View::toPng() const{
     return controller.selection().toPng();
 }
 
-std::string_view Hope::Typeset::View::logPrefix() const noexcept{
-    return model->is_output ? "console->" : "editor->";
-}
-
 LineEdit::LineEdit() : View() {
     allow_new_line = false;
     setLineNumbersVisible(false);
@@ -1389,7 +1132,487 @@ LineEdit::LineEdit() : View() {
     h_scroll->setDisabled(true);
     model->is_output = true;
 
+    setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
+
     zoom = 1;
+
+    connect(this, SIGNAL(textChanged()), this, SLOT(fitToContentsVertically()));
+    v_scroll->setVisible(false);
+    h_scroll->setVisible(false);
+}
+
+void LineEdit::paintEvent(QPaintEvent* event){
+    v_scroll->setVisible(false);
+    h_scroll->setVisible(false);
+
+    View::paintEvent(event);
+    QFrame::paintEvent(event);
+}
+
+void LineEdit::wheelEvent(QWheelEvent* e){
+    QWidget::wheelEvent(e);
+}
+
+void Hope::Typeset::LineEdit::fitToContentsVertically() noexcept {
+    QWidget::setFixedHeight(yScreen(model->getHeight()) + MARGIN_BOT);
+    v_scroll->setVisible(false);
+    h_scroll->setVisible(false);
+    v_scroll->setValue(0);
+}
+
+Label::Label() : View() {
+    setLineNumbersVisible(false);
+    setReadOnly(true);
+    v_scroll->setVisible(false);
+    h_scroll->setVisible(false);
+    model->is_output = true;
+
+    setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
+
+    zoomOut();
+    zoomOut();
+}
+
+void Label::clear() noexcept {
+    model->clear();
+
+    //EVENTUALLY: Label shouldn't have a cursor
+    controller.setBothToFrontOf(model->firstText());
+}
+
+void Label::appendSerial(const std::string& src){
+    controller.moveToEndOfDocument();
+    controller.insertSerial(src);
+}
+
+void Label::appendSerial(const std::string& src, SemanticType type) {
+    Text* t = model->lastText();
+    size_t index = t->numChars();
+    appendSerial(src);
+    t->tags.push_back(SemanticTag(index, type));
+    model->lastText()->tagBack(SEM_DEFAULT);
+}
+
+void Label::fitToContents() noexcept {
+    QWidget::resize(
+        xScreen(model->getWidth()) + MARGIN_RIGHT,
+        yScreen(model->getHeight()) + MARGIN_BOT
+    );
+
+    v_scroll->setVisible(false);
+    h_scroll->setVisible(false);
+}
+
+bool Label::empty() const noexcept {
+    return model->empty();
+}
+
+void Label::paintEvent(QPaintEvent* event){
+    v_scroll->setVisible(false);
+    h_scroll->setVisible(false);
+
+    auto bg = getColour(COLOUR_BACKGROUND);
+    setColour(COLOUR_BACKGROUND, palette().color(QPalette::ToolTipBase));
+    View::paintEvent(event);
+    setColour(COLOUR_BACKGROUND, bg);
+    QFrame::paintEvent(event);
+}
+
+Recommender::Recommender() : View() {
+    setLineNumbersVisible(false);
+    setReadOnly(true);
+    h_scroll->setVisible(false);
+    model->is_output = true;
+
+    setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
+    setWindowFlags(Qt::Popup);
+}
+
+void Recommender::clear() noexcept {
+    model->clear();
+    controller.setBothToFrontOf(model->firstText());
+}
+
+void Recommender::moveDown() noexcept {
+    if(controller.atEnd()) controller.moveToStartOfDocument();
+    else controller.moveToNextLine(0);
+
+    controller.selectEndOfLine();
+    ensureCursorVisible();
+    update();
+}
+
+void Recommender::moveUp() noexcept {
+    if(controller.getAnchor().getLine()->id > 0) controller.moveToPrevLine(0);
+    else controller.moveToEndOfDocument();
+
+    controller.moveToStartOfLine();
+    controller.selectEndOfLine();
+    ensureCursorVisible();
+    update();
+}
+
+void Recommender::take() noexcept{
+    editor->takeRecommendation(controller.selectedText());
+    hide();
+}
+
+void Recommender::sizeToFit() {
+    static constexpr double MAX_HEIGHT = 100;
+
+    QWidget::setFixedWidth(MARGIN_LEFT + zoom*model->getWidth() + MARGIN_RIGHT + v_scroll->width());
+    double proposed_height = MARGIN_TOP + zoom*model->getHeight() + MARGIN_BOT;
+    QWidget::setFixedHeight(std::min(MAX_HEIGHT, proposed_height));
+    v_scroll->setFixedHeight(height());
+
+    h_scroll->setVisible(false);
+
+    int display_width = width() - v_scroll->width();
+    v_scroll->move(display_width, 0);
+
+    if(proposed_height > MAX_HEIGHT){
+        //v_scroll->setPageStep(height());
+        //v_scroll->setMaximum(proposed_height - MAX_HEIGHT);
+    }else{
+        //v_scroll->setMaximum(0);
+    }
+}
+
+void Hope::Typeset::Recommender::keyPressEvent(QKeyEvent* e) {
+    switch (e->key()) {
+        case Qt::Key::Key_Down:
+            moveDown();
+            return;
+
+        case Qt::Key::Key_Up:
+            moveUp();
+            return;
+
+        case Qt::Key::Key_Return:
+            take();
+            return;
+
+        default:
+            editor->setFocus();
+            editor->keyPressEvent(e);
+    }
+}
+
+void Recommender::mousePressEvent(QMouseEvent* e){
+    if(e->button() == Qt::MiddleButton){
+        take();
+        return;
+    }
+
+    double click_y = yModel(e->pos().y());
+
+    Line* l = model->nearestLine(click_y);
+    controller.setBothToFrontOf(l->front());
+    controller.selectEndOfLine();
+    ensureCursorVisible();
+    update();
+}
+
+void Recommender::mouseDoubleClickEvent(QMouseEvent* e){
+    take();
+}
+
+void Recommender::focusOutEvent(QFocusEvent* event){
+    hide();
+    editor->mock_focus = false;
+}
+
+void Recommender::wheelEvent(QWheelEvent* e){
+    if(e->angleDelta().y() > 0) moveUp();
+    else moveDown();
+}
+
+void Recommender::paintEvent(QPaintEvent* event){
+    sizeToFit();
+
+    View::paintEvent(event);
+    QFrame::paintEvent(event);
+}
+
+Recommender* Editor::recommender = nullptr;
+
+Label* Editor::tooltip = nullptr;
+
+Editor::Editor(){
+    if(tooltip == nullptr){
+        tooltip = new Label();
+        tooltip->setWindowFlags(Qt::ToolTip);
+        tooltip->setDisabled(true);
+        recommender = new Recommender();
+    }
+
+    tooltip_timer = new QTimer(this);
+    tooltip_timer->setSingleShot(true);
+    connect(tooltip_timer, SIGNAL(timeout()), this, SLOT(showTooltipParseNode()));
+}
+
+void Editor::runThread(){
+    console->setModel(Typeset::Model::fromSerial("", true));
+
+    if(!model->errors.empty()){
+        Model* result = Code::Error::writeErrors(model->errors, this);
+        result->calculateSizes();
+        result->updateLayout();
+        console->setModel(result);
+    }else{
+        is_running = true;
+        allow_write = false;
+        model->runThread();
+    }
+}
+
+bool Editor::isRunning() const noexcept{
+    return is_running;
+}
+
+void Editor::reenable() noexcept{
+    assert(model->interpreter.status == Code::Interpreter::FINISHED);
+    is_running = false;
+    allow_write = true;
+}
+
+void Editor::focusOutEvent(QFocusEvent* event){
+    View::focusOutEvent(event);
+    if(event->isAccepted()){
+        tooltip_timer->stop();
+        tooltip->hide();
+    }
+}
+
+void Editor::resolveTooltip(double x, double y) noexcept {
+    for(const Code::Error& err : model->errors){
+        if(err.selection.containsWithEmptyMargin(x, y)){
+            THROTTLE(logger->info("{}resolveTooltip({}, {});", logPrefix(), x, y);)
+
+            setTooltipError(err.message());
+            showTooltip();
+            return;
+        }
+    }
+
+    for(const Code::Error& err : model->warnings){
+        if(err.selection.containsWithEmptyMargin(x, y)){
+            THROTTLE(logger->info("{}resolveTooltip({}, {});", logPrefix(), x, y);)
+
+            setTooltipWarning(err.message());
+            showTooltip();
+            return;
+        }
+    }
+
+    hover_node = model->parseNodeAt(x, y);
+    if(hover_node == NONE) clearTooltip();
+    else tooltip_timer->start(TOOLTIP_DELAY_MILLISECONDS);
+
+    #ifndef NDEBUG
+    update();
+    #endif
+}
+
+void Editor::populateContextMenuFromModel(QMenu& menu, double x, double y) {
+    contextNode = model->parseNodeAt(x, y);
+    if(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER){
+        append("Rename", rename, true, true)
+        append("Go to definition", goToDef, true, true)
+        append("Find usages", findUsages, true, true)
+        menu.addSeparator();
+    }
+}
+
+void Editor::setTooltipError(const std::string& str){
+    tooltip->clear();
+    tooltip->appendSerial("Error\n");
+    tooltip->appendSerial(str, SEM_ERROR);
+    tooltip->fitToContents();
+}
+
+void Editor::setTooltipWarning(const std::string& str){
+    tooltip->clear();
+    tooltip->appendSerial("Warning\n");
+    tooltip->appendSerial(str, SEM_WARNING);
+    tooltip->fitToContents();
+}
+
+void Editor::clearTooltip(){
+    tooltip->clear();
+    tooltip->hide();
+    repaint();
+    tooltip_timer->stop();
+}
+
+void Editor::rename(){
+    bool ok;
+    QString text = QInputDialog::getText(
+                this,
+                tr("Rename"),
+                tr("New name:"),
+                QLineEdit::Normal,
+                "",
+                &ok
+                );
+
+    if(!ok) return;
+
+    std::string name = text.toStdString();
+    rename(name);
+}
+
+void Editor::goToDef(){
+    logger->info("{}goToDef();", logPrefix());
+
+    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
+    auto& symbol_table = model->symbol_builder.symbol_table;
+    controller = symbol_table.getSel(model->parseTree().getSymId(contextNode));
+    restartCursorBlink();
+    ensureCursorVisible();
+    update();
+}
+
+void Editor::findUsages(){
+    logger->info("{}findUsages();", logPrefix());
+
+    assert(console);
+
+    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
+    auto& symbol_table = model->symbol_builder.symbol_table;
+    std::vector<Typeset::Selection> occurences;
+    symbol_table.getSymbolOccurences(model->parseTree().getSymId(contextNode), occurences);
+
+    Model* m = new Model();
+    m->is_output = true;
+    console->setModel(m);
+    size_t last_handled = std::numeric_limits<size_t>::max();
+    for(const auto& entry : occurences){
+        Line* target_line = entry.getStartLine();
+        if(target_line->id != last_handled){
+            last_handled = target_line->id;
+            m->lastLine()->appendConstruct(new Typeset::MarkerLink(target_line, this));
+            std::string line_snippet = target_line->toString();
+            console->appendSerial("  " + line_snippet + "\n");
+        }
+    }
+
+    console->updateModel();
+}
+
+void Editor::showTooltipParseNode(){
+    assert(hover_node != NONE);
+
+    const auto& parse_tree = model->parser.parse_tree;
+    switch(parse_tree.getOp(hover_node)){
+        case Code::OP_IDENTIFIER:{
+            const auto& symbol_table = model->symbol_builder.symbol_table;
+            size_t sym_id = parse_tree.getFlag(hover_node);
+            const auto& symbol = symbol_table.symbols[sym_id];
+
+            tooltip->clear();
+            tooltip->appendSerial(parse_tree.str(hover_node) + " ∈ " + model->static_pass.typeString(symbol));
+
+            if(symbol.comment != NONE){
+                tooltip->appendSerial("\n");
+                tooltip->appendSerial(symbol_table.parse_tree.str(symbol.comment), SEM_COMMENT);
+            }
+
+            tooltip->fitToContents();
+            break;
+        }
+
+        #ifndef NDEBUG
+        default:
+            tooltip->clear();
+            tooltip->appendSerial("ParseNode: " + std::to_string(hover_node));
+            tooltip->fitToContents();
+        #endif
+    }
+
+    showTooltip();
+}
+
+void Editor::showTooltip(){
+    if(tooltip->isVisible()) return;
+
+    tooltip->setParent(this);
+    tooltip->move(mapFromGlobal(QCursor::pos()));
+    tooltip->show();
+}
+
+void Editor::rename(const std::string& str){
+    logger->info("{}rename({});", logPrefix(), cStr(str));
+
+    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
+    auto& symbol_table = model->symbol_builder.symbol_table;
+    std::vector<Typeset::Selection> occurences;
+    symbol_table.getSymbolOccurences(model->parseTree().getSymId(contextNode), occurences);
+
+    replaceAll(occurences, str);
+
+    ensureCursorVisible();
+    updateHighlightingFromCursorLocation();
+    update();
+    v_scroll->update();
+    qApp->processEvents();
+
+    emit textChanged();
+}
+
+void Editor::recommend() {
+    auto suggestions = model->symbol_builder.symbol_table.getSuggestions(controller.active);
+    if(suggestions.empty()){
+        recommender->hide();
+        setFocus();
+    }else{
+        recommender->clear();
+        std::string str = suggestions.front().str();
+        for(size_t i = 1; i < suggestions.size(); i++) str += '\n' + suggestions[i].str();
+        recommender->setFromSerial(str, true);
+        recommender->getController().moveToStartOfDocument();
+        recommender->getController().selectEndOfLine();
+
+        recommender->editor = this;
+        recommender->setParent(this);
+        recommender->setWindowFlags(Qt::Popup);
+
+        double x = xScreen(controller.xActive());
+        double y = yScreen(controller.active.y() + controller.active.text->height());
+        recommender->move(x, y);
+        QPointF global = mapToGlobal(pos());
+        recommender->move(global.x() + x, global.y() + y);
+
+        recommender->updateModel();
+        recommender->sizeToFit();
+
+        recommender->show();
+        mock_focus = true;
+        recommender->setFocus();
+    }
+}
+
+void Editor::takeRecommendation(const std::string& str){
+    logger->info("{}takeRecommendation({});", logPrefix(), cStr(str));
+
+    controller.selectPrevWord();
+    if(str != controller.selectedText())
+        controller.insertSerial(str);
+    else
+        controller.consolidateToAnchor();
+    model->performSemanticFormatting();
+    updateXSetpoint();
+    updateModel();
+    recommender->hide();
+    setFocus();
+
+    ensureCursorVisible();
+    updateHighlightingFromCursorLocation();
+    update();
+    v_scroll->update();
+    qApp->processEvents();
+
+    emit textChanged();
 }
 
 }

@@ -86,7 +86,7 @@ void runBenchmark(){
         m->updateLayout();
     report("Update layout", ITER_LAYOUT);
 
-    Typeset::View view;
+    Typeset::Console view;
     //view.show();
 
     view.resize(QSize(1920*2, 1080*2));

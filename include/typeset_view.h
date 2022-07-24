@@ -15,7 +15,7 @@ namespace Typeset {
 class MarkerLink;
 class Model;
 
-class View : public QWidget {
+class View : public QFrame {
     Q_OBJECT
 
 public:
@@ -26,7 +26,6 @@ public:
     std::string toSerial() const alloc_except;
     Model* getModel() const noexcept;
     void setModel(Model* m, bool owned = true) noexcept;
-    void runThread(View* output);
     void setLineNumbersVisible(bool show) noexcept;
     Controller& getController() noexcept;
     void setReadOnly(bool read_only) noexcept;
@@ -48,9 +47,6 @@ public:
     void goToLine(size_t line_num);
 
     std::vector<Typeset::Selection> highlighted_words;
-    View* console = nullptr;
-    bool isRunning() const noexcept;
-    void reenable() noexcept;
     void updateBackgroundColour() noexcept;
     void updateAfterHighlightChange() noexcept;
 
@@ -67,7 +63,8 @@ protected:
     void resolveWordDrag(double x, double y) noexcept;
     void resolveTripleClick(double y) noexcept;
     void resolveLineDrag(double y) noexcept;
-    void resolveTooltip(double x, double y) noexcept;
+    virtual void resolveTooltip(double, double) noexcept;
+    virtual void populateContextMenuFromModel(QMenu&, double, double) {}
     void resolveSelectionDrag(double x, double y);
     bool isInLineBox(double x) const noexcept;
     void drawModel(double xL, double yT, double xR, double yB);
@@ -81,7 +78,6 @@ protected:
     double xOrigin() const noexcept;
     double yOrigin() const noexcept;
     double getLineboxWidth() const noexcept;
-    void recommend();
 
     static constexpr double ZOOM_DEFAULT = 1.2;
     static constexpr double ZOOM_MAX = 2.5*ZOOM_DEFAULT; static_assert(ZOOM_DEFAULT <= ZOOM_MAX);
@@ -97,8 +93,6 @@ protected:
     static constexpr double MARGIN_BOT = 10;
     static constexpr double CURSOR_MARGIN = 10;
 
-    QListWidget* recommender = new QListWidget(this);
-
     Model* model;
     Controller controller;
     double x_setpoint = 0;
@@ -111,23 +105,19 @@ protected:
     friend MarkerLink;
     public: double zoom = ZOOM_DEFAULT;
     bool is_running = false;
-
-    #ifndef NDEBUG
+    bool mock_focus = false;
     ParseNode hover_node = NONE;
-    #endif
-
-    ParseNode contextNode = NONE;
 
 //Qt specific code
 protected:
     QPainter qpainter;
     void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE;
-    virtual void keyPressEvent(QKeyEvent* e) override final;
-    virtual void mousePressEvent(QMouseEvent* e) override final;
-    virtual void mouseDoubleClickEvent(QMouseEvent* e) override final;
+    virtual void keyPressEvent(QKeyEvent* e) override;
+    virtual void mousePressEvent(QMouseEvent* e) override;
+    virtual void mouseDoubleClickEvent(QMouseEvent* e) override;
     virtual void mouseReleaseEvent(QMouseEvent* e) override final;
     virtual void mouseMoveEvent(QMouseEvent* e) override final;
-    virtual void wheelEvent(QWheelEvent* e) override final;
+    virtual void wheelEvent(QWheelEvent* e) override;
     virtual void focusInEvent(QFocusEvent* event) override;
     virtual void focusOutEvent(QFocusEvent* event) override;
     virtual void resizeEvent(QResizeEvent* e) override;
@@ -135,6 +125,7 @@ protected:
     void onBlink() noexcept;
 
 protected:
+    virtual std::string_view logPrefix() const noexcept = 0;
     void setCursorAppearance(double x, double y);
     void drawLinebox(double yT, double yB);
     void fillInScrollbarCorner();
@@ -142,9 +133,7 @@ protected:
     void handleResize(int w, int h);
     void scrollUp();
     void scrollDown();
-    void setTooltipError(const std::string& str);
-    void setTooltipWarning(const std::string& str);
-    void clearTooltip();
+    virtual void recommend(){}
 
     class VerticalScrollBar;
     VerticalScrollBar* v_scroll;
@@ -162,25 +151,12 @@ public slots:
     void del();
     void selectAll() noexcept;
 
-private slots:
-    void rename();
-    void goToDef();
-    void findUsages();
-    void takeRecommendation(QListWidgetItem* item);
-
 private:
     void handleKey(int key, int modifiers, const std::string& str);
     void paste(const std::string& str);
-    void rename(const std::string& str);
-    void takeRecommendation(const std::string& str);
-    std::string_view logPrefix() const noexcept;
 
 public:
     QImage toPng() const;
-};
-
-class Editor : public View {
-    //EVENTUALLY: define hierarchy
 };
 
 class Console : public View {
@@ -190,12 +166,114 @@ public:
         setLineNumbersVisible(false);
         setReadOnly(true);
     }
+
+    void appendSerial(const std::string& src){
+        controller.moveToEndOfDocument();
+        controller.insertSerial(src);
+    }
+
+    virtual std::string_view logPrefix() const noexcept override { return "console->"; }
 };
 
 class LineEdit : public View {
+    Q_OBJECT
+
     //EVENTUALLY: define hierarchy
 public:
     LineEdit();
+
+    virtual std::string_view logPrefix() const noexcept override { return "line_edit->"; }
+
+protected:
+    void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE final;
+    virtual void wheelEvent(QWheelEvent* e) override final;
+
+private slots:
+    void fitToContentsVertically() noexcept;
+};
+
+class Label : public View {
+public:
+    Label();
+    void clear() noexcept;
+    void appendSerial(const std::string& src);
+    void appendSerial(const std::string& src, SemanticType type);
+    void fitToContents() noexcept;
+    bool empty() const noexcept;
+    virtual std::string_view logPrefix() const noexcept override { return "label->"; }
+
+private:
+    void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE final;
+    virtual void wheelEvent(QWheelEvent*) override {}
+};
+
+class Editor;
+
+class Recommender : public View {
+public:
+    Recommender();
+
+    void clear() noexcept;
+    void moveDown() noexcept;
+    void moveUp() noexcept;
+    void take() noexcept;
+
+    virtual std::string_view logPrefix() const noexcept override { return "recommender->"; }
+
+    Editor* editor = nullptr;
+
+    void sizeToFit();
+
+protected:
+    virtual void keyPressEvent(QKeyEvent* e) override final;
+    virtual void mousePressEvent(QMouseEvent* e) override final;
+    virtual void mouseDoubleClickEvent(QMouseEvent* e) override final;
+    virtual void focusOutEvent(QFocusEvent* event) override final;
+    virtual void wheelEvent(QWheelEvent* e) override;
+    void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE final;
+};
+
+class Editor : public View {
+    Q_OBJECT
+
+public:
+    Console* console = nullptr;
+
+public:
+    Editor();
+    void runThread();
+    bool isRunning() const noexcept;
+    void reenable() noexcept;
+
+    //EVENTUALLY: define hierarchy
+protected:
+    virtual void focusOutEvent(QFocusEvent* event) override;
+    virtual std::string_view logPrefix() const noexcept override { return "editor->"; }
+    virtual void resolveTooltip(double x, double y) noexcept override;
+    virtual void populateContextMenuFromModel(QMenu& menu, double x, double y) override;
+    void setTooltipError(const std::string& str);
+    void setTooltipWarning(const std::string& str);
+    void clearTooltip();
+
+private slots:
+    void rename();
+    void goToDef();
+    void findUsages();
+    void showTooltipParseNode();
+    void showTooltip();
+
+private:
+    void rename(const std::string& str);
+    virtual void recommend() override final;
+    void takeRecommendation(const std::string& str);
+
+    ParseNode contextNode = NONE;
+    static Recommender* recommender;
+    static Label* tooltip;
+    QTimer* tooltip_timer;
+    static constexpr int TOOLTIP_DELAY_MILLISECONDS = 750;
+
+    friend Recommender;
 };
 
 }

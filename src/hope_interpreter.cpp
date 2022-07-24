@@ -1192,7 +1192,7 @@ Value Interpreter::definiteIntegral(ParseNode pn) {
     static constexpr size_t N = 50;
     const double dt = (tf - t0) / N;
 
-    stack.push(t0 + dt/2, parse_tree.str(parse_tree.arg<0>(pn)));
+    stack.push(t0 + dt/2   DEBUG_STACK_ARG(parse_tree.str(parse_tree.arg<0>(pn))));
 
     ParseNode kernel = parse_tree.arg<3>(pn);
     Value sample = interpretExpr(kernel);

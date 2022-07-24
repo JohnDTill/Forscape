@@ -35,6 +35,17 @@ Model::~Model(){
     for(Line* l : lines) delete l;
 }
 
+void Model::clear() noexcept{
+    clearRedo();
+    for(Command* cmd : undo_stack) delete cmd;
+    undo_stack.clear();
+    for(Line* l : lines) delete l;
+    lines.clear();
+
+    lines.push_back( new Line(this) );
+    lines[0]->id = 0;
+}
+
 #define TypesetSetupNullary(name) \
     text->getParent()->appendConstruct(new name); \
     text = text->nextTextInPhrase(); \
