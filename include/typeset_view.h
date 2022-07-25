@@ -165,6 +165,8 @@ public:
     Console() : View() {
         setLineNumbersVisible(false);
         setReadOnly(true);
+
+        setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
     }
 
     void appendSerial(const std::string& src){
@@ -173,6 +175,9 @@ public:
     }
 
     virtual std::string_view logPrefix() const noexcept override { return "console->"; }
+
+protected:
+    void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE final;
 };
 
 class LineEdit : public View {

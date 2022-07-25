@@ -1123,6 +1123,11 @@ QImage View::toPng() const{
     return controller.selection().toPng();
 }
 
+void Console::paintEvent(QPaintEvent* event){
+    View::paintEvent(event);
+    QFrame::paintEvent(event);
+}
+
 LineEdit::LineEdit() : View() {
     allow_new_line = false;
     setLineNumbersVisible(false);
