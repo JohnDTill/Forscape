@@ -55,6 +55,7 @@ bool ScopeSegment::isEndOfScope() const noexcept{
 
 void SymbolTable::addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed, bool is_const) alloc_except {
     size_t comment = parse_tree.getFlag(pn);
+    if(comment == 0) comment = NONE; //EVENTUALLY: this should be initialised to NONE
     parse_tree.setSymId(pn, symbols.size());
     symbols.push_back(Symbol(pn, lexical_depth, closure_depth, shadowed, is_const));
     symbols.back().comment = comment;
