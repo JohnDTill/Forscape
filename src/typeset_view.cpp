@@ -1102,6 +1102,8 @@ void View::paste(const std::string& str){
 }
 
 void View::paintEvent(QPaintEvent* event){
+    QWidget::paintEvent(event);
+
     qpainter.begin(this);
     qpainter.setRenderHints(QPainter::Antialiasing|QPainter::TextAntialiasing);
 
@@ -1114,7 +1116,6 @@ void View::paintEvent(QPaintEvent* event){
     drawModel(xL, yT, xR, yB);
     drawLinebox(yT, yB);
     fillInScrollbarCorner();
-    QWidget::paintEvent(event);
 
     qpainter.end();
 }
@@ -1324,6 +1325,11 @@ void Hope::Typeset::Recommender::keyPressEvent(QKeyEvent* e) {
 }
 
 void Recommender::mousePressEvent(QMouseEvent* e){
+    if(e->pos().x() < 0 || e->pos().y() < 0 || e->pos().x() > width() || e->pos().y() > height()){
+        QFrame::mousePressEvent(e);
+        return;
+    }
+
     if(e->button() == Qt::MiddleButton){
         take();
         return;
@@ -1339,7 +1345,10 @@ void Recommender::mousePressEvent(QMouseEvent* e){
 }
 
 void Recommender::mouseDoubleClickEvent(QMouseEvent* e){
-    take();
+    if(e->pos().x() < 0 || e->pos().y() < 0 || e->pos().x() > width() || e->pos().y() > height())
+        QFrame::mouseDoubleClickEvent(e);
+    else
+        take();
 }
 
 void Recommender::focusOutEvent(QFocusEvent* event){
@@ -1355,8 +1364,8 @@ void Recommender::wheelEvent(QWheelEvent* e){
 void Recommender::paintEvent(QPaintEvent* event){
     sizeToFit();
 
-    View::paintEvent(event);
     QFrame::paintEvent(event);
+    View::paintEvent(event);
 }
 
 Recommender* Editor::recommender = nullptr;
