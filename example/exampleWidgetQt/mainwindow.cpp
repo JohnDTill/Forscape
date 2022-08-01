@@ -794,6 +794,9 @@ void MainWindow::onColourChanged(){
     action_toolbar->setPalette(p);
     math_toolbar->setPalette(p);
     //preferences->setPalette(p); //EVENTUALLY: get themes to work with popup windows
+
+    editor->updateBackgroundColour();
+    console->updateBackgroundColour();
 }
 
 void MainWindow::on_actionGo_to_line_triggered(){

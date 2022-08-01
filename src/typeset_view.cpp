@@ -657,6 +657,7 @@ void View::goToLine(size_t line_num){
 }
 
 void View::updateBackgroundColour() noexcept {
+    if(dynamic_cast<LineEdit*>(this)) return; //EVENTUALLY: redesign themes to avoid this dumb hack
     QPalette pal = QPalette();
     pal.setColor(QPalette::Window, getColour(COLOUR_BACKGROUND));
     setPalette(pal);
@@ -1144,14 +1145,33 @@ LineEdit::LineEdit() : View() {
     connect(this, SIGNAL(textChanged()), this, SLOT(fitToContentsVertically()));
     v_scroll->setVisible(false);
     h_scroll->setVisible(false);
+
+    //EVENTUALLY: redesign the theme to avoid this dumb hack
+    std::array<QColor, NUM_COLOUR_ROLES> backup = getColours();
+    setPreset(PRESET_DEFAULT);
+
+    QPalette pal = QPalette();
+    pal.setColor(QPalette::Window, getColour(COLOUR_BACKGROUND));
+    setPalette(pal);
+    setColours(backup);
 }
 
 void LineEdit::paintEvent(QPaintEvent* event){
+    //EVENTUALLY: redesign the theme to avoid this dumb hack
+    std::array<QColor, NUM_COLOUR_ROLES> backup = getColours();
+    setPreset(PRESET_DEFAULT);
+
+    QPalette pal = QPalette();
+    pal.setColor(QPalette::Window, getColour(COLOUR_BACKGROUND));
+    setPalette(pal);
+
     v_scroll->setVisible(false);
     h_scroll->setVisible(false);
 
     View::paintEvent(event);
     QFrame::paintEvent(event);
+
+    setColours(backup);
 }
 
 void LineEdit::wheelEvent(QWheelEvent* e){
@@ -1348,6 +1368,7 @@ Editor::Editor(){
         tooltip = new Label();
         tooltip->setWindowFlags(Qt::ToolTip);
         tooltip->setDisabled(true);
+        tooltip->setFocusPolicy(Qt::NoFocus);
         recommender = new Recommender();
     }
 
