@@ -127,10 +127,6 @@ void Preferences::removeCustomDropdownIfPresent(){
 }
 
 void Preferences::updateWindows() const {
-    //EVENTUALLY: a bit hacky, but auto drawing the background from QPalette is much faster than manual
-    for(Hope::Typeset::View* view : Hope::Typeset::View::all_views)
-        view->updateBackgroundColour();
-
     for(auto window : QGuiApplication::topLevelWindows())
         window->requestUpdate();
 }

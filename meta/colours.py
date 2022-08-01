@@ -37,6 +37,9 @@ def main():
         "void setPreset(size_t preset) noexcept;\n"
         "std::string_view getColourName(size_t role) noexcept;\n"
         "std::string_view getPresetName(size_t preset) noexcept;\n\n"
+        "//EVENTUALLY: remove these\n"
+        "const std::array<QColor, NUM_COLOUR_ROLES>& getColours() noexcept;\n"
+        "void setColours(const std::array<QColor, NUM_COLOUR_ROLES>& colours) noexcept;\n\n"
     )
 
     header_writer.finalize()
@@ -91,6 +94,8 @@ def main():
             "    assert(preset < NUM_COLOUR_PRESETS);\n"
             "    return preset_names[preset];\n"
             "}\n\n"
+            "const std::array<QColor, NUM_COLOUR_ROLES>& getColours() noexcept { return colours; } \n\n"
+            "void setColours(const std::array<QColor, NUM_COLOUR_ROLES>& colours) noexcept { Typeset::colours = colours; } \n\n"
         )
 
         codegen_file.write("\n}\n\n}\n\n#endif\n")

@@ -783,6 +783,7 @@ void MainWindow::onColourChanged(){
     p.setColor(QPalette::Link, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINK));
     p.setColor(QPalette::LinkVisited, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINK));
     setPalette(p);
+    ui->menubar->setPalette(QGuiApplication::palette()); //Reset the menubar palette
 
     //Set colours which should not affect filebar
     p.setColor(QPalette::ButtonText, Hope::Typeset::getColour(Hope::Typeset::COLOUR_TEXT));
@@ -794,6 +795,13 @@ void MainWindow::onColourChanged(){
     action_toolbar->setPalette(p);
     math_toolbar->setPalette(p);
     //preferences->setPalette(p); //EVENTUALLY: get themes to work with popup windows
+
+    editor->updateBackgroundColour();
+    console->updateBackgroundColour();
+
+    //EVENTUALLY: a bit hacky, but auto drawing the background from QPalette is much faster than manual
+    for(Hope::Typeset::View* view : Hope::Typeset::View::all_views)
+        view->updateBackgroundColour();
 }
 
 void MainWindow::on_actionGo_to_line_triggered(){

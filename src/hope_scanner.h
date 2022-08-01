@@ -29,7 +29,7 @@ private:
     void createToken(HopeTokenType type) alloc_except;
     void scanNumber() alloc_except;
     void scanIdentifier() alloc_except;
-    void unrecognizedSymbol() alloc_except;
+    void unrecognizedSymbol(uint32_t code) alloc_except;
     void scanConstruct(HopeTokenType type) alloc_except;
     void close() alloc_except;
     void error(ErrorCode code) alloc_except;

@@ -2,6 +2,7 @@
 
 #include <typeset_themes.h>
 #include <typeset_view.h>
+#include <hope_unicode.h>
 
 #ifndef NDEBUG
 #include <iostream>
@@ -133,7 +134,7 @@ void Painter::drawText(double x, double y, std::string_view text, bool forward){
         y += CAPHEIGHT[depth];
         y -= ASCENT[depth];
         double h = CHARACTER_HEIGHTS[depth];
-        double w = CHARACTER_WIDTHS[depth]*q_str.size();
+        double w = CHARACTER_WIDTHS[depth]*countGraphemes(text);
         #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         painter.drawText(x, y, w, h, Qt::AlignRight|Qt::AlignBaseline, q_str);
         #else //Qt6 truncates large inputs

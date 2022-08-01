@@ -657,9 +657,11 @@ void View::goToLine(size_t line_num){
 }
 
 void View::updateBackgroundColour() noexcept {
+    if(dynamic_cast<LineEdit*>(this)) return; //EVENTUALLY: redesign themes to avoid this dumb hack
     QPalette pal = QPalette();
     pal.setColor(QPalette::Window, getColour(COLOUR_BACKGROUND));
     setPalette(pal);
+    repaint();
 }
 
 void View::updateAfterHighlightChange() noexcept{
@@ -1101,6 +1103,8 @@ void View::paste(const std::string& str){
 }
 
 void View::paintEvent(QPaintEvent* event){
+    QWidget::paintEvent(event);
+
     qpainter.begin(this);
     qpainter.setRenderHints(QPainter::Antialiasing|QPainter::TextAntialiasing);
 
@@ -1113,7 +1117,6 @@ void View::paintEvent(QPaintEvent* event){
     drawModel(xL, yT, xR, yB);
     drawLinebox(yT, yB);
     fillInScrollbarCorner();
-    QWidget::paintEvent(event);
 
     qpainter.end();
 }
@@ -1144,14 +1147,33 @@ LineEdit::LineEdit() : View() {
     connect(this, SIGNAL(textChanged()), this, SLOT(fitToContentsVertically()));
     v_scroll->setVisible(false);
     h_scroll->setVisible(false);
+
+    //EVENTUALLY: redesign the theme to avoid this dumb hack
+    std::array<QColor, NUM_COLOUR_ROLES> backup = getColours();
+    setPreset(PRESET_DEFAULT);
+
+    QPalette pal = QPalette();
+    pal.setColor(QPalette::Window, getColour(COLOUR_BACKGROUND));
+    setPalette(pal);
+    setColours(backup);
 }
 
 void LineEdit::paintEvent(QPaintEvent* event){
+    //EVENTUALLY: redesign the theme to avoid this dumb hack
+    std::array<QColor, NUM_COLOUR_ROLES> backup = getColours();
+    setPreset(PRESET_DEFAULT);
+
+    QPalette pal = QPalette();
+    pal.setColor(QPalette::Window, getColour(COLOUR_BACKGROUND));
+    setPalette(pal);
+
     v_scroll->setVisible(false);
     h_scroll->setVisible(false);
 
     View::paintEvent(event);
     QFrame::paintEvent(event);
+
+    setColours(backup);
 }
 
 void LineEdit::wheelEvent(QWheelEvent* e){
@@ -1304,6 +1326,11 @@ void Hope::Typeset::Recommender::keyPressEvent(QKeyEvent* e) {
 }
 
 void Recommender::mousePressEvent(QMouseEvent* e){
+    if(e->pos().x() < 0 || e->pos().y() < 0 || e->pos().x() > width() || e->pos().y() > height()){
+        QFrame::mousePressEvent(e);
+        return;
+    }
+
     if(e->button() == Qt::MiddleButton){
         take();
         return;
@@ -1319,7 +1346,10 @@ void Recommender::mousePressEvent(QMouseEvent* e){
 }
 
 void Recommender::mouseDoubleClickEvent(QMouseEvent* e){
-    take();
+    if(e->pos().x() < 0 || e->pos().y() < 0 || e->pos().x() > width() || e->pos().y() > height())
+        QFrame::mouseDoubleClickEvent(e);
+    else
+        take();
 }
 
 void Recommender::focusOutEvent(QFocusEvent* event){
@@ -1335,8 +1365,8 @@ void Recommender::wheelEvent(QWheelEvent* e){
 void Recommender::paintEvent(QPaintEvent* event){
     sizeToFit();
 
-    View::paintEvent(event);
     QFrame::paintEvent(event);
+    View::paintEvent(event);
 }
 
 Recommender* Editor::recommender = nullptr;
@@ -1348,6 +1378,7 @@ Editor::Editor(){
         tooltip = new Label();
         tooltip->setWindowFlags(Qt::ToolTip);
         tooltip->setDisabled(true);
+        tooltip->setFocusPolicy(Qt::NoFocus);
         recommender = new Recommender();
     }
 
@@ -1511,6 +1542,7 @@ void Editor::showTooltipParseNode(){
     const auto& parse_tree = model->parser.parse_tree;
     switch(parse_tree.getOp(hover_node)){
         case Code::OP_IDENTIFIER:{
+            if(!model->errors.empty()) return; //EVENTUALLY: this is a bit strict. would rather have feedback
             const auto& symbol_table = model->symbol_builder.symbol_table;
             size_t sym_id = parse_tree.getFlag(hover_node);
             const auto& symbol = symbol_table.symbols[sym_id];
