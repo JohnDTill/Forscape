@@ -783,6 +783,7 @@ void MainWindow::onColourChanged(){
     p.setColor(QPalette::Link, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINK));
     p.setColor(QPalette::LinkVisited, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINK));
     setPalette(p);
+    ui->menubar->setPalette(QGuiApplication::palette()); //Reset the menubar palette
 
     //Set colours which should not affect filebar
     p.setColor(QPalette::ButtonText, Hope::Typeset::getColour(Hope::Typeset::COLOUR_TEXT));
