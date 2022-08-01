@@ -427,6 +427,7 @@ void Text::paint(Painter& painter, bool forward) const {
     size_t start = 0;
     double x = this->x;
     double char_width = CHARACTER_WIDTHS[scriptDepth()];
+    painter.setType(getTypeLeftOf(0));
     for(const SemanticTag& tag : tags){
         std::string_view substr(&str[start], tag.index-start);
         painter.drawText(x, y, substr, forward);

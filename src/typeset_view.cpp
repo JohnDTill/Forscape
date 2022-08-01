@@ -661,6 +661,7 @@ void View::updateBackgroundColour() noexcept {
     QPalette pal = QPalette();
     pal.setColor(QPalette::Window, getColour(COLOUR_BACKGROUND));
     setPalette(pal);
+    repaint();
 }
 
 void View::updateAfterHighlightChange() noexcept{

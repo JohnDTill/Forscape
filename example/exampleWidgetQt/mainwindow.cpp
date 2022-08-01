@@ -798,6 +798,10 @@ void MainWindow::onColourChanged(){
 
     editor->updateBackgroundColour();
     console->updateBackgroundColour();
+
+    //EVENTUALLY: a bit hacky, but auto drawing the background from QPalette is much faster than manual
+    for(Hope::Typeset::View* view : Hope::Typeset::View::all_views)
+        view->updateBackgroundColour();
 }
 
 void MainWindow::on_actionGo_to_line_triggered(){
