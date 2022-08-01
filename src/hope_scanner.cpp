@@ -1,6 +1,7 @@
 #include "hope_scanner.h"
 
 #include <construct_codes.h>
+#include <hope_unicode.h>
 #include <typeset_controller.h>
 #include <typeset_model.h>
 #include <typeset_line.h>
@@ -51,7 +52,7 @@ void Scanner::scanToken() alloc_except {
         case '\0': endOfFile(); break;
 
         default:
-            unrecognizedSymbol();
+            unrecognizedSymbol(code);
     }
 }
 
@@ -104,7 +105,12 @@ void Scanner::scanIdentifier() alloc_except {
     }
 }
 
-void Scanner::unrecognizedSymbol() alloc_except {
+void Scanner::unrecognizedSymbol(uint32_t code) alloc_except {
+    if(isZeroWidth(code)){
+        controller->anchor.decrementCodepoint();
+        controller->format(SEM_DEFAULT);
+    }
+
     error(UNRECOGNIZED_SYMBOL);
 }
 

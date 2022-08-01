@@ -1532,6 +1532,7 @@ void Editor::showTooltipParseNode(){
     const auto& parse_tree = model->parser.parse_tree;
     switch(parse_tree.getOp(hover_node)){
         case Code::OP_IDENTIFIER:{
+            if(!model->errors.empty()) return; //EVENTUALLY: this is a bit strict. would rather have feedback
             const auto& symbol_table = model->symbol_builder.symbol_table;
             size_t sym_id = parse_tree.getFlag(hover_node);
             const auto& symbol = symbol_table.symbols[sym_id];
