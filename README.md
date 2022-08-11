@@ -5,9 +5,13 @@
 
 ### Focus on the problem, not the implementation details
 
-**Forscape** solves engineering problems with an unprecedented level of abstraction so you get reliable results quickly. This high-level approach starts with intuitive syntax using math rendering with semantic formatting. Matrices, fractions, symbols– write code using the same notation you use to think through problems on the whiteboard.
+**Forscape** aims to solve engineering problems with low-cost abstraction, safety checks, and an intuitive user experience. The editor supports math rendering so that objects such as matrices, fractions, and symbols can be programmed in parity with scientific papers and notes.
 
-![alt text](root_finding.png?raw=true "Forscape")
+![alt text](EditorInteraction.gif?raw=true "Editor interaction")
+
+Forscape has particular emphasis on matrices. Standard matrix operations such as multiplication, norm, cross product, transpose, etcetera are supported with mathematical syntax. The syntax highlighting will bold matrix identifiers. Where possible, dimensions are checked at compile time with violations highlighted in real time while typing. Hovering over an identifier will show the compile-time dimensions in the tooltip.
+
+![alt text](root_finding.png?raw=true "Forscape is designed around matrices")
 
 ## Installation
 
@@ -54,7 +58,7 @@ make
 
 ## License
 
-This project aims to be financially maintainable while ultimately resulting in an entirely open source codebase. The core is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. Additional modules will be sold commercially for a six-year period starting at release, after which they will be added to the open source core.
+This project aims to be financially maintainable while ultimately resulting in an entirely open source codebase. The core is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. Additional modules will be sold commercially for a fixed period starting at release, after which they will be added to the open source core.
 
 ## Contributing
 
