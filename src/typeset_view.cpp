@@ -1326,13 +1326,13 @@ void Hope::Typeset::Recommender::keyPressEvent(QKeyEvent* e) {
 }
 
 void Recommender::mousePressEvent(QMouseEvent* e){
-    if(e->pos().x() < 0 || e->pos().y() < 0 || e->pos().x() > width() || e->pos().y() > height()){
-        QFrame::mousePressEvent(e);
+    if(e->button() == Qt::MiddleButton){
+        take();
         return;
     }
 
-    if(e->button() == Qt::MiddleButton){
-        take();
+    if(e->pos().x() < 0 || e->pos().y() < 0 || e->pos().x() > width() || e->pos().y() > height()){
+        QFrame::mousePressEvent(e);
         return;
     }
 
