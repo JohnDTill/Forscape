@@ -67,6 +67,7 @@ private:
     void assignStmt(ParseNode pn);
     void whileStmt(ParseNode pn);
     void forStmt(ParseNode pn);
+    void rangedForStmt(ParseNode pn);
     void ifStmt(ParseNode pn);
     void ifElseStmt(ParseNode pn);
     void blockStmt(ParseNode pn);

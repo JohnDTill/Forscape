@@ -80,6 +80,7 @@ private:
         ParseNode pn) alloc_except;
     void resolveConditional2(ParseNode pn) alloc_except;
     void resolveFor(ParseNode pn) alloc_except;
+    void resolveRangedFor(ParseNode pn) alloc_except;
     void resolveBody(
         #ifdef HOPE_USE_SCOPE_NAME
         const std::string& name,

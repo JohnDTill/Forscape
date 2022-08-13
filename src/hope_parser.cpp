@@ -150,7 +150,9 @@ ParseNode Parser::forStatement() alloc_except {
     ParseNode initializer = peek(SEMICOLON) ?
                             makeTerminalNode(OP_BLOCK) :
                             statement();
-    consume(SEMICOLON);
+
+    if(match(COLON)) return rangedFor(left, l_cond, initializer);
+    else consume(SEMICOLON);
     ParseNode condition = peek(SEMICOLON) ?
                           makeTerminalNode(OP_TRUE) :
                           disjunction();
@@ -168,6 +170,25 @@ ParseNode Parser::forStatement() alloc_except {
     Typeset::Selection c(left, right);
 
     return parse_tree.addNode<4>(OP_FOR, c, {initializer, condition, update, body});
+}
+
+ParseNode Parser::rangedFor(Typeset::Marker stmt_left, Typeset::Marker paren_left, ParseNode initialiser) alloc_except {
+    if(parse_tree.getOp(initialiser) != OP_EXPR_STMT) return error(BAD_RANGED_FOR_VAR, parse_tree.getSelection(initialiser));
+    initialiser = parse_tree.child(initialiser);
+    if(parse_tree.getOp(initialiser) != OP_IDENTIFIER) return error(BAD_RANGED_FOR_VAR, parse_tree.getSelection(initialiser));
+
+    ParseNode collection = expression();
+    Typeset::Marker paren_right = rMark();
+    if(!match(RIGHTPAREN)) return error(EXPECT_RPAREN);
+
+    registerGrouping(paren_left, paren_right);
+    loops++;
+    ParseNode body = blockStatement();
+    loops--;
+    Typeset::Marker stmt_right = rMark();
+    Typeset::Selection c(stmt_left, stmt_right);
+
+    return parse_tree.addNode<3>(OP_RANGED_FOR, c, {initialiser, collection, body});
 }
 
 ParseNode Parser::printStatement() alloc_except {
@@ -302,6 +323,7 @@ ParseNode Parser::mathStatement() alloc_except {
             return n;
 
         case ARGCLOSE:
+        case COLON:
         case SEMICOLON:
         case RIGHTBRACE:
         case RIGHTPAREN:

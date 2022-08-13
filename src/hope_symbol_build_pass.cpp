@@ -166,6 +166,7 @@ void SymbolTableBuilder::resolveStmt(ParseNode pn) alloc_except {
         case OP_IF: resolveConditional1(SCOPE_NAME("-if-")  pn); break;
         case OP_IF_ELSE: resolveConditional2(pn); break;
         case OP_FOR: resolveFor(pn); break;
+        case OP_RANGED_FOR: resolveRangedFor(pn); break;
         case OP_RETURN:
         case OP_RETURN_EMPTY:
             if(closure_depth == 0) errors.push_back(Error(parse_tree.getSelection(pn), RETURN_OUTSIDE_FUNCTION));
@@ -525,6 +526,14 @@ void SymbolTableBuilder::resolveFor(ParseNode pn) alloc_except {
     resolveExpr(parse_tree.arg<1>(pn));
     resolveStmt(parse_tree.arg<2>(pn));
     resolveStmt(parse_tree.arg<3>(pn));
+    decreaseLexicalDepth(parse_tree.getRight(pn));
+}
+
+void SymbolTableBuilder::resolveRangedFor(ParseNode pn) alloc_except {
+    increaseLexicalDepth(SCOPE_NAME("-foreach-")  parse_tree.getLeft(parse_tree.arg<1>(pn)));
+    defineLocalScope(parse_tree.arg<0>(pn));
+    resolveExpr(parse_tree.arg<1>(pn));
+    resolveStmt(parse_tree.arg<2>(pn));
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
