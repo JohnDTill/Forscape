@@ -532,7 +532,8 @@ bool Text::containsXInBounds(double x_test, size_t start, size_t stop) const noe
 size_t Text::tagParseNode(ParseNode pn, size_t token_start, size_t token_end) alloc_except {
     assert(token_end > token_start);
     assert(token_end <= numChars());
-    assert(parse_nodes.empty() || token_start >= parse_nodes.back().token_end);
+    //EVENTUALLY: why?
+    //assert(parse_nodes.empty() || token_start >= parse_nodes.back().token_end);
 
     size_t index = parse_nodes.size();
     parse_nodes.push_back(ParseNodeTag(pn, token_start, token_end));

@@ -9,9 +9,13 @@
 
 ![alt text](EditorInteraction.gif?raw=true "Editor interaction")
 
-Forscape has particular emphasis on matrices. Standard matrix operations such as multiplication, norm, cross product, transpose, etcetera are supported with mathematical syntax. The syntax highlighting will bold matrix identifiers. Where possible, dimensions are checked at compile time with violations highlighted in real time while typing. Hovering over an identifier will show the compile-time dimensions in the tooltip.
+Forscape has particular emphasis on matrices. Standard matrix operations such as multiplication, norm, cross product, transpose, etcetera are supported with mathematical syntax.
 
 ![alt text](root_finding.png?raw=true "Forscape is designed around matrices")
+
+The editor code-model interaction has various features for matrices. The syntax highlighting will bold matrix identifiers. Where possible, dimensions are checked at compile time with violations highlighted in real time while typing. Hovering over an identifier will show the compile-time dimensions in the tooltip.
+
+![alt text](EditorMatrixFeatures.png?raw=true "The editor code-model interaction has various matrix features")
 
 ## Installation
 
