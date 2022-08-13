@@ -76,6 +76,7 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_IF_ELSE: ifElseStmt(pn); break;
         case OP_WHILE: whileStmt(pn); break;
         case OP_FOR: forStmt(pn); break;
+        case OP_RANGED_FOR: rangedForStmt(pn); break;
         case OP_BLOCK: blockStmt(pn); break;
         case OP_ALGORITHM: algorithmStmt(pn, false); break;
         case OP_DEFINE_PROTO: algorithmStmt(pn, true); break;
@@ -132,6 +133,33 @@ void Interpreter::forStmt(ParseNode pn){
         interpretStmt( parse_tree.arg<3>(pn) );
         if(status < RETURN){
             stack.trim(stack_size);
+            interpretStmt(parse_tree.arg<2>(pn));
+        }
+    }
+
+    if(status < RETURN) stack.trim(stack_size);
+}
+
+void Interpreter::rangedForStmt(ParseNode pn) {
+    Value iterable_val = interpretExpr(parse_tree.arg<1>(pn));
+    size_t stack_size = stack.size();
+
+    if(iterable_val.index() == double_index){
+        stack.push(iterable_val, parse_tree.str(parse_tree.arg<0>(pn)));
+        interpretStmt(parse_tree.arg<2>(pn));
+    }else{
+        assert(iterable_val.index() == MatrixXd_index);
+        const Eigen::MatrixXd& mat = std::get<Eigen::MatrixXd>(iterable_val);
+        if(mat.rows() > 1 && mat.cols() > 1){
+            error(DIMENSION_MISMATCH, parse_tree.arg<1>(pn));
+            return;
+        }
+
+        stack.push(0.0, parse_tree.str(parse_tree.arg<0>(pn)));
+
+        for(Eigen::Index i = 0; i < mat.size() && status <= CONTINUE; i++){
+            status = NORMAL;
+            std::get<double>(stack.back()) = mat(i);
             interpretStmt(parse_tree.arg<2>(pn));
         }
     }

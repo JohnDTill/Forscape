@@ -73,3 +73,5 @@ EXPECT_NATURAL_NUMBER,,Expect natural number
 CALC_OVERFLOW,,Calculation overflows
 BINOM_K_EXCEED_N,,Binomial coefficient options must exceed choices
 LIMIT_NOT_SUPPORTED,,Limits are not supported yet
+BAD_RANGED_FOR_VAR,,Ranged-for iterator must be a variable name
+TYPE_NOT_ITERABLE,,Type is not iterable

@@ -184,7 +184,7 @@ std::string ParseTree::str(ParseNode pn) const alloc_except {
 }
 
 template<typename T> ParseNode ParseTree::addNode(Op type, const Selection& sel, const T& children) alloc_except {
-    assert(notInTree(sel));
+    //assert(notInTree(sel)); //EVENTUALLY: I don't think this belongs
     assert(notInTree(children));
 
     ParseNode pn = data.size();

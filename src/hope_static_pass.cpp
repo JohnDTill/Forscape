@@ -229,6 +229,26 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
             return pn;
         }
 
+        case OP_RANGED_FOR:{
+            ParseNode iterable = resolveExprTop(parse_tree.arg<1>(pn));
+            parse_tree.setArg<1>(pn, iterable);
+
+            //EVENTUALLY: extract a function for isIterable(type)
+            switch (parse_tree.getType(iterable)) {
+                case NUMERIC: break;
+                default: return error(pn, iterable, TYPE_NOT_ITERABLE);
+            }
+
+            size_t sym_id = parse_tree.getFlag(parse_tree.arg<0>(pn));
+            Symbol& sym = symbol_table.symbols[sym_id];
+            sym.type = parse_tree.getType(iterable);
+            sym.rows = 1;
+            sym.cols = 1;
+
+            parse_tree.setArg<2>(pn, resolveStmt(parse_tree.arg<2>(pn)));
+            return pn;
+        }
+
         case OP_EXPR_STMT:{
             ParseNode expr = resolveExprTop(parse_tree.child(pn));
             parse_tree.setArg<0>(pn, expr);
