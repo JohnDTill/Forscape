@@ -1379,6 +1379,7 @@ Editor::Editor(){
         tooltip->setWindowFlags(Qt::ToolTip);
         tooltip->setDisabled(true);
         tooltip->setFocusPolicy(Qt::NoFocus);
+        tooltip->setAttribute(Qt::WA_TransparentForMouseEvents);
         recommender = new Recommender();
     }
 
@@ -1416,8 +1417,12 @@ void Editor::focusOutEvent(QFocusEvent* event){
     View::focusOutEvent(event);
     if(event->isAccepted()){
         tooltip_timer->stop();
-        tooltip->hide();
+        clearTooltip();
     }
+}
+
+void Editor::leaveEvent(QEvent* event){
+    clearTooltip();
 }
 
 void Editor::resolveTooltip(double x, double y) noexcept {
@@ -1573,8 +1578,7 @@ void Editor::showTooltipParseNode(){
 void Editor::showTooltip(){
     if(tooltip->isVisible()) return;
 
-    tooltip->setParent(this);
-    tooltip->move(mapFromGlobal(QCursor::pos()));
+    tooltip->move(QCursor::pos());
     tooltip->show();
 }
 
