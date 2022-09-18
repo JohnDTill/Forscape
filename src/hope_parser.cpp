@@ -84,6 +84,7 @@ ParseNode Parser::checkedStatement() alloc_except {
 
 ParseNode Parser::statement() alloc_except {
     skipNewlines();
+    comment = (index >= 2 && tokens[index-2].type == COMMENT) ? index-2 : NONE;
 
     switch (currentType()) {
         case IF: return ifStatement();
@@ -255,6 +256,7 @@ ParseNode Parser::algStatement() alloc_except {
     advance();
 
     ParseNode id = isolatedIdentifier();
+    if(comment != NONE) parse_tree.setFlag(id, parse_tree.addTerminal(OP_COMMENT, tokens[comment].sel));
 
     if(!peek(LEFTPAREN) && !peek(LEFTBRACE))
         return parse_tree.addUnary(OP_PROTOTYPE_ALG, id);
@@ -384,7 +386,8 @@ ParseNode Parser::assignment(ParseNode lhs) alloc_except {
     advance();
     ParseNode pn = parse_tree.addNode<2>(OP_ASSIGN, {lhs, expression()});
     finishPatch(pn);
-    parse_tree.setFlag(lhs, match(COMMENT) ? parse_tree.addTerminal(OP_COMMENT, selectionPrev()) : NONE);
+    if(match(COMMENT)) parse_tree.setFlag(lhs, parse_tree.addTerminal(OP_COMMENT, selectionPrev()));
+    else if(comment != NONE) parse_tree.setFlag(lhs, parse_tree.addTerminal(OP_COMMENT, tokens[comment].sel));
     return pn;
 }
 
@@ -402,7 +405,9 @@ ParseNode Parser::equality(ParseNode lhs) alloc_except {
     } while(peek(EQUALS));
 
     ParseNode pn = parse_tree.finishNary(OP_EQUAL);
-    parse_tree.setFlag(lhs, match(COMMENT) ? parse_tree.addTerminal(OP_COMMENT, selectionPrev()) : NONE);
+    if(match(COMMENT)) parse_tree.setFlag(lhs, parse_tree.addTerminal(OP_COMMENT, selectionPrev()));
+    else if(comment != NONE) parse_tree.setFlag(lhs, parse_tree.addTerminal(OP_COMMENT, tokens[comment].sel));
+
     return pn;
 }
 
@@ -782,12 +787,29 @@ ParseNode Parser::paramList() alloc_except {
         return parse_tree.addTerminal(OP_LIST, sel);
     }
 
+    match(NEWLINE);
+
     parse_tree.prepareNary();
-    do{
+    ParseNode p = param();
+    parse_tree.addNaryChild(p);
+    while(match(COMMA) && noErrors()){
+        if(peek(COMMENT)){
+            ParseNode comment = parse_tree.addTerminal(OP_COMMENT, selection());
+            parse_tree.setFlag(p, comment);
+            advance();
+            consume(NEWLINE);
+        }
         match(NEWLINE);
-        parse_tree.addNaryChild(param());
+        p = param();
+        parse_tree.addNaryChild(p);
         match(NEWLINE);
-    } while(match(COMMA) && noErrors());
+    }
+    if(peek(COMMENT)){
+        ParseNode comment = parse_tree.addTerminal(OP_COMMENT, selection());
+        parse_tree.setFlag(p, comment);
+        advance();
+        consume(NEWLINE);
+    }
     Typeset::Selection sel(left, rMark());
     consume(RIGHTPAREN);
     if(noErrors()){

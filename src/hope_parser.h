@@ -133,6 +133,7 @@ private:
     bool parsing_dims = false;
     size_t loops = 0;
     size_t error_node;
+    ParseNode comment = NONE;
 };
 
 }
