@@ -24,7 +24,7 @@ private:
     double v_width;
     double c_width;
     double ellipse_width;
-    static constexpr double ELEMENT_HPADDING = 8;
+    static constexpr double ELEMENT_HPADDING = 16;
     static constexpr double COMMA_OFFSET = 2;
     static constexpr double ELEMENT_VPADDING = 2;
     size_t nRows() const noexcept { return numArgs()/2; }
