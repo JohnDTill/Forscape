@@ -1,0 +1,11 @@
+//Multiply two numbers
+alg mul(
+    x, //The left-hand side
+    y  //The right-hand side
+){
+    //The answer we have calculated
+    ans ← x * y
+    return ans
+}
+
+mul(2, 2)

@@ -253,6 +253,7 @@ public:
     //EVENTUALLY: define hierarchy
 protected:
     virtual void focusOutEvent(QFocusEvent* event) override;
+    virtual void leaveEvent(QEvent* event) override;
     virtual std::string_view logPrefix() const noexcept override { return "editor->"; }
     virtual void resolveTooltip(double x, double y) noexcept override;
     virtual void populateContextMenuFromModel(QMenu& menu, double x, double y) override;
