@@ -324,6 +324,10 @@ void Painter::setSelectionMode(){
     color_can_change = false;
 }
 
+void Painter::exitSelectionMode(){
+    color_can_change = true;
+}
+
 void Painter::drawSymbol(char ch, double x, double y, double w, double h){
     x += x_offset;
 
@@ -351,6 +355,20 @@ void Painter::drawSymbol(std::string_view str, double x, double y, double w, dou
     painter.scale(scale_x, scale_y);
     painter.drawText(x, y, qstr);
     painter.setTransform(transform);
+}
+
+void Painter::drawComma(double x, double y, bool selected) {
+    painter.setPen(selected ? getColour(COLOUR_SELECTEDTEXT) : getColour(COLOUR_KEYWORD));
+
+    x += x_offset - CHARACTER_WIDTHS[depth]*0.32;
+    y += CAPHEIGHT[depth];
+    const QFont font = painter.font();
+    QFont new_font = font;
+    new_font.setPointSizeF(font.pointSizeF()*0.6);
+    new_font.setBold(true);
+    painter.setFont(new_font);
+    painter.drawText(x, y, ",");
+    painter.setFont(font);
 }
 
 #ifdef HOPE_TYPESET_LAYOUT_DEBUG

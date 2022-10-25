@@ -97,6 +97,7 @@ ParseNode Parser::statement() alloc_except {
         case BREAK: return loops ? terminalAndAdvance(OP_BREAK) : error(BAD_BREAK);
         case CONTINUE: return loops ? terminalAndAdvance(OP_CONTINUE) : error(BAD_CONTINUE);
         case PLOT: return plotStatement();
+        case UNKNOWN: return unknownsStatement();
         default: return mathStatement();
     }
 }
@@ -305,6 +306,28 @@ ParseNode Parser::plotStatement() alloc_except {
     return parse_tree.addNode<5>(OP_PLOT, sel, {title, x_label, x, y_label, y});
 }
 
+ParseNode Parser::unknownsStatement() alloc_except {
+    const Typeset::Marker left = lMark();
+    advance();
+    consume(COLON);
+    parse_tree.prepareNary();
+    parse_tree.addNaryChild(isolatedIdentifier());
+    while(match(COMMA)){
+        parse_tree.addNaryChild(isolatedIdentifier());
+    }
+
+    if(!noErrors()) return error_node;
+
+    ParseNode unknown_list = parse_tree.finishNary(OP_UNKNOWN_LIST, Typeset::Selection(left, rMarkPrev()));
+
+    if(match(MEMBER)){
+        parse_tree.setFlag(unknown_list, expression());
+        parse_tree.setRight(unknown_list, rMarkPrev());
+    }
+
+    return unknown_list;
+}
+
 ParseNode Parser::mathStatement() alloc_except {
     ParseNode n = expression();
 
@@ -407,7 +430,6 @@ ParseNode Parser::equality(ParseNode lhs) alloc_except {
     ParseNode pn = parse_tree.finishNary(OP_EQUAL);
     if(match(COMMENT)) parse_tree.setFlag(lhs, parse_tree.addTerminal(OP_COMMENT, selectionPrev()));
     else if(comment != NONE) parse_tree.setFlag(lhs, parse_tree.addTerminal(OP_COMMENT, tokens[comment].sel));
-
     return pn;
 }
 
@@ -439,6 +461,10 @@ ParseNode Parser::comparison() alloc_except {
     switch (currentType()) {
         case EQUALS: advance(); return parse_tree.addNode<2>(OP_EQUAL, {n, addition()});
         case NOTEQUAL: advance(); return parse_tree.addNode<2>(OP_NOT_EQUAL, {n, addition()});
+        case MEMBER: advance(); return parse_tree.addNode<2>(OP_IN, {n, addition()});
+        case NOTIN: advance(); return parse_tree.addNode<2>(OP_NOT_MEMBER, {n, addition()});
+        case SUBSET: advance(); return parse_tree.addNode<2>(OP_SUBSET, {n, addition()});
+        case SUBSETEQ: advance(); return parse_tree.addNode<2>(OP_SUBSET_EQ, {n, addition()});
         case LESS: return less(n, 0);
         case LESSEQUAL: return less(n, 1);
         case GREATER: return greater(n, 0);
@@ -505,6 +531,8 @@ ParseNode Parser::addition() alloc_except {
         switch (currentType()) {
             case PLUS: advance(); n = parse_tree.addNode<2>(OP_ADDITION, {n, multiplication()}); break;
             case MINUS: advance(); n = parse_tree.addNode<2>(OP_SUBTRACTION, {n, multiplication()}); break;
+            case CUP: advance(); n = parse_tree.addNode<2>(OP_UNION, {n, multiplication()}); break;
+            case CAP: advance(); n = parse_tree.addNode<2>(OP_INTERSECTION, {n, multiplication()}); break;
             default: return n;
         }
     }
@@ -524,6 +552,7 @@ ParseNode Parser::multiplication() alloc_except {
             case PERCENT: advance(); n = parse_tree.addNode<2>(OP_MODULUS, {n, leftUnary()}); break;
             case OUTERPRODUCT: advance(); n = parse_tree.addNode<2>(OP_OUTER_PRODUCT, {n, leftUnary()}); break;
             case ODOT: advance(); n = parse_tree.addNode<2>(OP_ODOT, {n, leftUnary()}); break;
+            case OCIRC: advance(); n = parse_tree.addNode<2>(OP_COMPOSITION, {n, leftUnary()}); break;
             default: return n;
         }
     }
@@ -540,6 +569,20 @@ ParseNode Parser::leftUnary() alloc_except {
             Typeset::Marker m = lMark();
             advance();
             return parse_tree.addLeftUnary(OP_LOGICAL_NOT, m, implicitMult());
+        }
+        case POUND:{
+            Typeset::Marker m = lMark();
+            advance();
+            return parse_tree.addLeftUnary(OP_CARDINALITY, m, implicitMult());
+        }
+        case NABLA:{
+            Typeset::Marker m = lMark();
+            advance();
+            switch (currentType()) {
+                case DOTPRODUCT: advance(); return parse_tree.addLeftUnary(OP_DIVERGENCE, m, implicitMult());
+                case TIMES: advance(); return parse_tree.addLeftUnary(OP_CURL, m, implicitMult());
+                default: return parse_tree.addLeftUnary(OP_GRADIENT, m, implicitMult());
+            }
         }
         default: return implicitMult();
     }
@@ -607,13 +650,19 @@ ParseNode Parser::call_or_mult(ParseNode n) alloc_except {
     parse_tree.addNaryChild(n);
     parse_tree.addNaryChild(parenthetical);
 
-    while(!match(RIGHTPAREN)){
+    while(!match(RIGHTPAREN) && noErrors()){
         consume(COMMA);
-        if(!noErrors()) return error_node;
         parse_tree.addNaryChild(disjunction());
     }
 
-    if(!noErrors()) return error_node;
+    if(!noErrors()){
+        //DO THIS:
+        //  Check if the user is typing here
+        //  If so, display a tooltip with the function parameters
+        //  This depends on doing the work to resolve the called function, despite errors
+
+        return error_node;
+    }
 
     const Typeset::Marker& right = rMarkPrev();
     registerGrouping(left, right);
@@ -656,6 +705,15 @@ ParseNode Parser::primary() alloc_except {
         case INTEGER: return integer();
         case IDENTIFIER: return identifier();
         case STRING: return string();
+        case DOUBLESTRUCK_R: return setWithSigns<OP_REALS, OP_POSITIVE_REALS, OP_NEGATIVE_REALS>();
+        case DOUBLESTRUCK_Q: return setWithSigns<OP_RATIONALS, OP_POSITIVE_RATIONALS, OP_NEGATIVE_RATIONALS>();
+        case DOUBLESTRUCK_Z: return generalSet(OP_INTEGERS);
+        case DOUBLESTRUCK_N: return generalSet(OP_NATURALS);
+        case DOUBLESTRUCK_C: return generalSet(OP_COMPLEX_NUMS);
+        case DOUBLESTRUCK_B: return generalSet(OP_BOOLEANS);
+        case DOUBLESTRUCK_P: return generalSet(OP_PRIMES);
+        case DOUBLESTRUCK_H: advance(); return parse_tree.addTerminal(OP_QUATERNIONS, selectionPrev());
+        case SPECIALORTHOGONAL: return oneArgRequireParen(OP_SPECIAL_ORTHOGONAL);
 
         //Value literal
         case INFTY: return terminalAndAdvance(OP_INFTY);
@@ -663,14 +721,24 @@ ParseNode Parser::primary() alloc_except {
         case TRUELITERAL: return terminalAndAdvance(OP_TRUE);
         case FALSELITERAL: return terminalAndAdvance(OP_FALSE);
         case GRAVITY: return terminalAndAdvance(OP_GRAVITY);
+        case UNDEFINED: return terminalAndAdvance(OP_UNDEFINED);
+
+        //EVENTUALLY: how do units work?
+        //case DEGREE: return terminalAndAdvance(OP_DEGREES);
+        case POUNDSTERLING: return terminalAndAdvance(OP_CURRENCY_POUNDS);
+        case EURO: return terminalAndAdvance(OP_CURRENCY_EUROS);
+        case DOLLAR: return terminalAndAdvance(OP_CURRENCY_DOLLARS);
 
         //Grouping
         case LEFTPAREN: return parenGrouping();
+        case LEFTBRACE: return braceGrouping();
         case LEFTCEIL: return grouping(OP_CEIL, RIGHTCEIL);
         case LEFTFLOOR: return grouping(OP_FLOOR, RIGHTFLOOR);
         case BAR: return grouping(OP_ABS, BAR);
         case DOUBLEBAR: return norm();
         case LEFTANGLE: return innerProduct();
+        case LEFTBRACKET: return set();
+        case LEFTDOUBLEBRACE: return integerRange();
 
         //Constructs
         case TOKEN_FRACTION: return fraction();
@@ -680,6 +748,7 @@ ParseNode Parser::primary() alloc_except {
         case TOKEN_SQRT: return squareRoot();
         case TOKEN_NRT: return nRoot();
         case TOKEN_LIMIT: return limit();
+        case TOKEN_INTEGRAL0: return indefiniteIntegral();
         case TOKEN_INTEGRAL2: return definiteIntegral();
 
         case TOKEN_BIGSUM0:
@@ -694,8 +763,10 @@ ParseNode Parser::primary() alloc_except {
         case TOKEN_BIGPROD2: return big(OP_PRODUCT);
 
         case TOKEN_ACCENTHAT: return oneArgConstruct(OP_ACCENT_HAT);
+        case TOKEN_ACCENTBAR: return oneArgConstruct(OP_ACCENT_BAR);
 
         //Keyword funcs
+        case SGN: return oneArg(OP_SIGN_FUNCTION);
         case LENGTH: return oneArg(OP_LENGTH);
         case ROWS: return oneArg(OP_ROWS);
         case COLS: return oneArg(OP_COLS);
@@ -742,6 +813,37 @@ ParseNode Parser::string() noexcept{
     return pn;
 }
 
+ParseNode Parser::braceGrouping() noexcept {
+    Typeset::Marker left = lMark();
+    advance();
+    ParseNode nested = disjunction();
+    if(peek(RIGHTBRACE)){
+        Typeset::Marker right = rMark();
+        Typeset::Selection sel(left, right);
+        registerGrouping(sel);
+        advance();
+        return parse_tree.addUnary(OP_GROUP_BRACKET, sel, nested);
+    }
+
+    consume(COMMA);
+    if(!noErrors()) return error_node;
+
+    ParseNode end = expression();
+
+    Typeset::Marker right = rMark();
+
+    Op op = OP_INTERVAL_CLOSE_CLOSE;
+    if(match(RIGHTPAREN)) op = OP_INTERVAL_CLOSE_OPEN;
+    else consume(RIGHTBRACE);
+
+    if(!noErrors()) return error_node;
+
+    Typeset::Selection sel(left, right);
+    registerGrouping(sel);
+
+    return parse_tree.addNode<2>(op, sel, {nested, end});
+}
+
 ParseNode Parser::parenGrouping() alloc_except {
     Typeset::Marker left = lMark();
     advance();
@@ -765,6 +867,13 @@ ParseNode Parser::parenGrouping() alloc_except {
         match(NEWLINE);
         parse_tree.addNaryChild(disjunction());
         match(NEWLINE);
+
+        if(match(RIGHTBRACE)){
+            Typeset::Selection sel(left, rMarkPrev());
+            registerGrouping(sel);
+            ParseNode list = parse_tree.finishNary(OP_INTERVAL_OPEN_CLOSE, sel);
+            return parse_tree.getNumArgs(list) == 2 ? list : error(UNRECOGNIZED_SYMBOL, tokens[index-1].sel);
+        }
     } while(!peek(RIGHTPAREN) && noErrors());
     Typeset::Selection sel(left, rMark());
     if(noErrors()){
@@ -851,6 +960,122 @@ ParseNode Parser::grouping(size_t type, HopeTokenType close) alloc_except {
     return parse_tree.addUnary(type, sel, nested);
 }
 
+ParseNode Parser::set() noexcept {
+    Typeset::Marker left = lMark();
+    advance();
+    if(match(RIGHTBRACKET)){
+        Typeset::Selection sel(left, rMarkPrev());
+        registerGrouping(sel);
+        return parse_tree.addTerminal(OP_EMPTY_SET, sel);
+    }
+
+    ParseNode first_element = comparison();
+
+    if(match(BAR) || match(COLON)){
+        //Set builder notation
+        ParseNode predicate = disjunction();
+        consume(RIGHTBRACKET);
+
+        Typeset::Selection sel(left, rMarkPrev());
+        if(noErrors()){
+            registerGrouping(sel);
+            return parse_tree.addNode<2>(OP_SET_BUILDER, sel, {first_element, predicate});
+        }else{
+            return error_node;
+        }
+    }else{
+        //Enumerated set
+        parse_tree.prepareNary();
+        parse_tree.addNaryChild(first_element);
+
+        while(!match(RIGHTBRACKET)){
+            consume(COMMA);
+            if(!noErrors()) return error_node;
+            parse_tree.addNaryChild(expression());
+        }
+
+        Typeset::Selection sel(left, rMarkPrev());
+        if(noErrors()){
+            registerGrouping(sel);
+            return parse_tree.finishNary(OP_SET_ENUMERATED, sel);
+        }else{
+            return error_node;
+        }
+    }
+}
+
+template<Op basic, Op positive, Op negative>
+ParseNode Parser::setWithSigns() noexcept {
+    advance();
+    if(!match(TOKEN_SUPERSCRIPT)) return parse_tree.addTerminal(basic, selectionPrev());
+
+    Typeset::Marker left = lMarkPrev();
+
+    switch (currentType()) {
+        case PLUS:
+            advance();
+            consume(ARGCLOSE);
+            return parse_tree.addTerminal(positive, Typeset::Selection(left, rMarkPrev()));
+
+        case MINUS:
+            if(!lookahead(ARGCLOSE)) break;
+            index += 2;
+            return parse_tree.addTerminal(negative, Typeset::Selection(left, rMarkPrev()));
+
+        default: break;
+    }
+
+    ParseNode pn;
+
+    parsing_dims = true;
+    ParseNode dim1 = expression();
+    if(match(ARGCLOSE)){
+        pn = parse_tree.addUnary(basic, Typeset::Selection(left, rMarkPrev()), dim1);
+    }else{
+        ParseNode dim2 = expression();
+        consume(ARGCLOSE);
+        pn = parse_tree.addNode<2>(basic, Typeset::Selection(left, rMarkPrev()), {dim1, dim2});
+    }
+    parsing_dims = false;
+
+    return pn;
+}
+
+ParseNode Parser::generalSet(Op op) noexcept {
+    advance();
+    if(!match(TOKEN_SUPERSCRIPT)) return parse_tree.addTerminal(op, selectionPrev());
+
+    Typeset::Marker left = lMarkPrev();
+
+    ParseNode pn;
+
+    parsing_dims = true;
+    ParseNode dim1 = expression();
+    if(match(ARGCLOSE)){
+        pn = parse_tree.addUnary(op, Typeset::Selection(left, rMarkPrev()), dim1);
+    }else{
+        ParseNode dim2 = expression();
+        consume(ARGCLOSE);
+        pn = parse_tree.addNode<2>(op, Typeset::Selection(left, rMarkPrev()), {dim1, dim2});
+    }
+    parsing_dims = false;
+
+    return pn;
+}
+
+Hope::ParseNode Hope::Code::Parser::integerRange() noexcept {
+    Typeset::Marker left = lMark();
+    advance();
+    ParseNode start = expression();
+    consume(COMMA);
+    ParseNode end = expression();
+    consume(RIGHTDOUBLEBRACE);
+    Typeset::Selection sel(left, rMarkPrev());
+    registerGrouping(sel);
+
+    return parse_tree.addNode<2>(OP_INTERVAL_INTEGER, sel, {start, end});
+}
+
 ParseNode Parser::norm() alloc_except {
     Typeset::Marker left = lMark();
     advance();
@@ -918,6 +1143,7 @@ ParseNode Parser::integer() alloc_except {
         case PERIOD:{
             advance();
             if(!peek(INTEGER)) return error(TRAILING_DOT, Typeset::Selection(left, rMarkPrev()));
+            model->registerCommaSeparatedNumber(sel);
             const Typeset::Selection sel(left, rMark());
             sel.formatNumber();
             ParseNode decimal = terminalAndAdvance(OP_INTEGER_LITERAL);
@@ -935,6 +1161,7 @@ ParseNode Parser::integer() alloc_except {
             parse_tree.setRows(n, 1);
             parse_tree.setCols(n, 1);
             parse_tree.setValue(n, val);
+            model->registerCommaSeparatedNumber(sel);
             sel.formatNumber();
             return n;
     }
@@ -1163,6 +1390,11 @@ ParseNode Parser::superscript(ParseNode lhs) alloc_except{
             n = parse_tree.addUnary(OP_BIJECTIVE_MAPPING, c, lhs);
             break;
         }
+        case COMPLEMENT:{
+            advance();
+            n = parse_tree.addUnary(OP_COMPLEMENT, c, lhs);
+            break;
+        }
         default: n = parse_tree.addNode<2>(OP_POWER, c, {lhs, expression()});
     }
 
@@ -1176,8 +1408,22 @@ ParseNode Parser::subscript(ParseNode lhs, const Typeset::Marker& right) alloc_e
     Typeset::Selection selection(left, right);
     advance();
 
-    parse_tree.prepareNary(); parse_tree.addNaryChild(lhs);
-    do{ parse_tree.addNaryChild(subExpr()); } while(match(COMMA));
+    ParseNode first = subExpr<true>();
+    if(parse_tree.getOp(first) == OP_EQUAL){
+        parse_tree.prepareNary();
+        parse_tree.addNaryChild(lhs);
+        parse_tree.addNaryChild(first);
+        while(match(COMMA)) { parse_tree.addNaryChild(comparison()); }
+
+        consume(ARGCLOSE);
+
+        return parse_tree.finishNary(OP_EVAL, selection);
+    }
+
+    parse_tree.prepareNary();
+    parse_tree.addNaryChild(lhs);
+    parse_tree.addNaryChild(first);
+    while(match(COMMA)) { parse_tree.addNaryChild(subExpr()); }
 
     consume(ARGCLOSE);
 
@@ -1219,10 +1465,23 @@ ParseNode Parser::dualscript(ParseNode lhs) alloc_except{
     }
 }
 
+template<bool first_arg>
 ParseNode Parser::subExpr() alloc_except{
-    ParseNode first = peek(COLON) ?
-                      parse_tree.addTerminal(OP_SLICE_ALL, selection()) :
-                      expression();
+    ParseNode first;
+
+    if(first_arg && match(BAR)){
+        Typeset::Marker left = lMarkPrev();
+        ParseNode child = comparison();
+        if(!match(BAR))
+            return parse_tree.getOp(child) == OP_EQUAL ? child : error(EXPECT_RPAREN);
+        Typeset::Selection sel(left, rMarkPrev());
+        registerGrouping(sel);
+        first = parse_tree.addUnary(OP_ABS, sel, child);
+    }else{
+        first = peek(COLON) ?
+              parse_tree.addTerminal(OP_SLICE_ALL, selection()) :
+              expression();
+    }
 
     if(!match(COLON))
         return first; //Simple subscript
@@ -1252,7 +1511,7 @@ ParseNode Parser::matrix() alloc_except{
     ParseNode m = parse_tree.finishNary(OP_MATRIX, c);
     parse_tree.setFlag(m, c.getMatrixRows());
     #ifndef HOPE_TYPESET_HEADLESS
-    c.mapConstructToParseNode(m);
+    if(noErrors()) c.mapConstructToParseNode(m);
     #endif
 
     return m;
@@ -1303,6 +1562,17 @@ ParseNode Parser::limit() alloc_except {
     const Typeset::Selection sel(left, rMarkPrev());
 
     return parse_tree.addNode<3>(OP_LIMIT, sel, {id, lim, expr});
+}
+
+ParseNode Parser::indefiniteIntegral() noexcept {
+    const Typeset::Marker& left = lMark();
+    advance();
+    ParseNode kernel = expression();
+    consume(DOUBLESTRUCK_D);
+    ParseNode var = isolatedIdentifier();
+    const Typeset::Selection sel(left, rMarkPrev());
+
+    return parse_tree.addNode<2>(OP_INTEGRAL, sel, {var, kernel});
 }
 
 ParseNode Parser::definiteIntegral() alloc_except {
@@ -1383,6 +1653,19 @@ ParseNode Parser::log() alloc_except{
 
         default: return parse_tree.addLeftUnary(OP_LOGARITHM, left, arg());
     }
+}
+
+ParseNode Parser::oneArgRequireParen(Op type) noexcept {
+    Typeset::Marker start = lMark();
+    advance();
+    Typeset::Marker group_start = lMark();
+    consume(LEFTPAREN);
+    ParseNode child = expression();
+    consume(RIGHTPAREN);
+
+    registerGrouping(group_start, rMarkPrev());
+
+    return parse_tree.addUnary(type, Typeset::Selection(start, rMarkPrev()), child);
 }
 
 ParseNode Parser::oneArg(Op type) alloc_except{

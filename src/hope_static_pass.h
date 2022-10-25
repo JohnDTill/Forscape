@@ -139,6 +139,7 @@ private:
         ParseNode resolveInverse(ParseNode pn);
         ParseNode resolveLambda(ParseNode pn);
         ParseNode resolveMatrix(ParseNode pn);
+        ParseNode resolveTranspose(ParseNode pn, size_t rows_expected = 0, size_t cols_expected = 0);
         ParseNode resolveMult(ParseNode pn, size_t rows_expected = 0, size_t cols_expected = 0);
         ParseNode resolveOnesMatrix(ParseNode pn);
         ParseNode resolvePower(ParseNode pn);

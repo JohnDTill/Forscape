@@ -124,7 +124,7 @@ bool Selection::operator!=(const Selection& other) const noexcept{
 bool Selection::startsWith(const Selection& other) const noexcept{
     if(other.isTextSelection()){
         auto prefix = other.strView();
-        if(isTextSelection()){            
+        if(isTextSelection()){
             return strView().substr(0, prefix.size()) == prefix;
         }else{
             return left.strRight().substr(0, prefix.size()) == prefix;
@@ -516,7 +516,7 @@ bool Selection::containsPhrase(double x, double y) const noexcept{
 }
 
 bool Selection::containsLine(double x, double y) const noexcept{
-    if((y < lL->y) | (y > lR->yBottom())) return false;
+    if((y < lL->y) || (y > lR->yBottom())) return false;
 
     Line* l = lL->nearestLine(y);
 
@@ -539,28 +539,60 @@ void Selection::paint(Painter& painter) const{
     }
 }
 
-void Selection::paintSelectionText(Painter& painter, bool forward) const{
+void Selection::paintSelectionText(Painter& painter, bool forward, double xLeft, double xRight) const{
     if(iL!=iR){
         double y = tR->y;
         double h = tR->height();
 
         if(forward){
-            double x = tR->xGlobal(iL);
-            double w = tR->xGlobal(iR) - x;
+            double x = std::max(tR->xGlobal(iL), xLeft);
+            double w = std::min(tR->xGlobal(iR), xRight) - x;
             painter.drawSelection(x, y, w, h);
         }else{
-            int x = tR->xGlobal(iL);
-            int xEnd = tR->xGlobal(iR);
+            int x = std::max(tR->xGlobal(iL), xLeft);
+            int xEnd = std::min(tR->xGlobal(iR), xRight);
             painter.drawSelection(x, y, xEnd-x, h);
         }
 
-        tR->paintMid(painter, iL, iR, forward);
+        const size_t lborder_char = tL->charIndexLeft(xLeft);
+        Typeset::Marker m(tR, tR->charIndexLeft(xRight));
+        if(!m.atTextEnd()) m.incrementGrapheme();
+        const size_t rborder_char = m.index;
+
+        tR->paintMid(painter, std::max(iL, lborder_char), std::min(iR, rborder_char), forward);
     }
 }
 
-void Selection::paintSelectionPhrase(Painter& painter, bool forward) const{
+void Selection::paintSelectionPhrase(Painter& painter, bool forward, double xLeft, double xRight) const{
     double y = phrase()->y;
     double h = phrase()->height();
+
+    Text* text_left = phrase()->textLeftOf(xLeft);
+    Text* text_right = phrase()->textLeftOf(xRight);
+    size_t index_left;
+    size_t index_right;
+
+    if(text_left->id < tL->id){
+        text_left = tL;
+        index_left = iL;
+    }else if(text_left->id == tL->id){
+        index_left = std::max(iL, tL->charIndexLeft(xLeft));
+    }else{
+        index_left = tL->charIndexLeft(xLeft);
+    }
+
+    if(text_right->id > tR->id){
+        text_right = tR;
+        index_right = iR;
+    }else{
+        Typeset::Marker m(text_right, text_right->charIndexLeft(xRight));
+        if(!m.atTextEnd()) m.incrementGrapheme();
+        if(text_right->id == tR->id){
+            index_right = std::min(iR, m.index);
+        }else{
+            index_right = m.index;
+        }
+    }
 
     if(forward){
         double x = tL->xGlobal(iL);
@@ -571,10 +603,11 @@ void Selection::paintSelectionPhrase(Painter& painter, bool forward) const{
         int xEnd = tR->xGlobal(iR);
         painter.drawSelection(x, y, xEnd-x, h);
     }
-    phrase()->paintMid(painter, tL, iL, tR, iR, forward);
+
+    phrase()->paintMid(painter, text_left, index_left, text_right, index_right, forward);
 }
 
-void Selection::paintSelectionLines(Painter& painter, bool forward, double yT, double yB) const {
+void Selection::paintSelectionLines(Painter& painter, bool forward, double xLeft, double yT, double xRight, double yB) const {
     double y = lL->y;
     double h = lL->height();
 
@@ -587,7 +620,7 @@ void Selection::paintSelectionLines(Painter& painter, bool forward, double yT, d
         int xEnd = lL->x + lL->width + NEWLINE_EXTRA;
         painter.drawSelection(x, y, xEnd-x, h);
     }
-    lL->paintAfter(painter, tL, iL, forward);
+    lL->paintAfter(painter, tL, iL, forward); //DO THIS: add horizontal guards
 
     Line* l = lL->nextAsserted();
     Line* candidate = l->nearestAbove(yT);
@@ -595,7 +628,7 @@ void Selection::paintSelectionLines(Painter& painter, bool forward, double yT, d
     for(; l != lR; l = l->nextAsserted()){
         if(l->y > yB) return;
         painter.drawSelection(l->x, l->y, l->width + NEWLINE_EXTRA, l->height());
-        l->paint(painter, forward);
+        l->paint(painter, xLeft, xRight, forward);
     }
 
     if(iR == 0 && tR == lR->front()) return;
@@ -605,15 +638,17 @@ void Selection::paintSelectionLines(Painter& painter, bool forward, double yT, d
     double w = tR->xGlobal(iR) - x;
     h = lR->height();
     painter.drawSelection(x, y, w, h);
-    lR->paintUntil(painter, tR, iR, forward);
+    lR->paintUntil(painter, tR, iR, forward); //DO THIS: add horizontal guards
 }
 
-void Selection::paintSelection(Painter& painter, bool forward, double yT, double yB) const {
+void Selection::paintSelection(Painter& painter, bool forward, double xLeft, double yT, double xRight, double yB) const {
     painter.setSelectionMode();
 
-    if(isTextSelection()) paintSelectionText(painter, forward);
-    else if(isPhraseSelection()) paintSelectionPhrase(painter, forward);
-    else paintSelectionLines(painter, forward, yT, yB);
+    if(isTextSelection()) paintSelectionText(painter, forward, xLeft, xRight);
+    else if(isPhraseSelection()) paintSelectionPhrase(painter, forward, xLeft, xRight);
+    else paintSelectionLines(painter, forward, xLeft, yT, xRight, yB);
+
+    painter.exitSelectionMode();
 }
 
 void Selection::paintError(Painter& painter) const{
@@ -662,10 +697,9 @@ void Selection::paintErrorLines(Painter& painter) const{
         l->paint(painter);
     }
 
-    double x_right = xR;
-    x = x_right;
+    x = lR->x;
     y = lR->y;
-    w = x_right - x;
+    w = xR - x;
     h = lR->height();
 
     if(!(right.atFirstTextInPhrase() && right.atTextStart())){

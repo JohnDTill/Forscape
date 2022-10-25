@@ -766,17 +766,8 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
             parse_tree.transposeDims(pn, child);
             return pn;
         }
-        case OP_TRANSPOSE:{
-            ParseNode lhs = parse_tree.child(pn);
-            if(parse_tree.getOp(lhs) == OP_SINGLE_CHAR_MULT_PROXY) return patchSingleCharMult(pn, lhs);
-
-            parse_tree.setType(pn, NUMERIC);
-            ParseNode child = resolveExpr(parse_tree.child(pn), cols_expected, rows_expected);
-            if(parse_tree.getType(child) != NUMERIC) return error(pn, child);
-            parse_tree.transposeDims(pn, child);
-            if(parse_tree.definitelyScalar(child)) return child;
-            return pn;
-        }
+        case OP_TRANSPOSE: return resolveTranspose(pn, rows_expected, cols_expected);
+        case OP_MAYBE_TRANSPOSE: parse_tree.setType(pn, NUMERIC); return pn;
         case OP_UNARY_MINUS: return resolveUnaryMinus(pn);
         case OP_SUMMATION:
         case OP_PRODUCT:{
@@ -1341,6 +1332,18 @@ ParseNode StaticPass::resolveMatrix(ParseNode pn){
     return pn;
 }
 
+ParseNode StaticPass::resolveTranspose(ParseNode pn, size_t rows_expected, size_t cols_expected) {
+    ParseNode lhs = parse_tree.child(pn);
+    if(parse_tree.getOp(lhs) == OP_SINGLE_CHAR_MULT_PROXY) return patchSingleCharMult(pn, lhs);
+
+    parse_tree.setType(pn, NUMERIC);
+    ParseNode child = resolveExpr(lhs, cols_expected, rows_expected);
+    if(parse_tree.getType(child) != NUMERIC) return error(pn, child);
+    parse_tree.transposeDims(pn, child);
+    if(parse_tree.definitelyScalar(child)) return child;
+    return pn;
+}
+
 ParseNode StaticPass::resolveMult(ParseNode pn, size_t rows_expected, size_t cols_expected){
     //EVENTUALLY: the expectations are all wrong. This is dang tricky since matrix-matrix
     //            multiplication uses the same notation as matrix scale-by-scalar
@@ -1452,7 +1455,20 @@ ParseNode StaticPass::resolvePower(ParseNode pn){
                 }
             }
             //Can only simplify x^0 to 1 assuming no NaN in LHS
+
+            break;
         }
+
+        case OP_SPEED_OF_LIGHT:
+            warnings.push_back(Error(parse_tree.getSelection(rhs), COMPLEMENT_C));
+            return error(pn, rhs, UNRECOGNIZED_SYMBOL);
+            //return ast.setComplement(base);
+
+        case OP_MAYBE_TRANSPOSE:
+            warnings.push_back(Error(parse_tree.getSelection(rhs), TRANSPOSE_T));
+            parse_tree.setOp(pn, OP_TRANSPOSE);
+            parse_tree.reduceNumArgs(pn, 1);
+            return resolveTranspose(pn);
     }
 
     return pn;

@@ -79,8 +79,10 @@ public:
     void drawDot(double x, double y);
     void drawLineNumber(double y, size_t num, bool active);
     void setSelectionMode();
+    void exitSelectionMode();
     void drawSymbol(char ch, double x, double y, double w, double h);
     void drawSymbol(std::string_view str, double x, double y, double w, double h);
+    void drawComma(double x, double y, bool selected);
 
     #ifdef HOPE_TYPESET_LAYOUT_DEBUG
     void drawDebugPhrase(double x, double y, double w, double u, double v);

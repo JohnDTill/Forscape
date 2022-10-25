@@ -1,15 +1,14 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(Forscape VERSION 0.0.1 LANGUAGES CXX)
+project(Forscape VERSION 0.0.2 LANGUAGES CXX)
 set(EXE_NAME "Forscape")
 
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/conan-dependencies ${CMAKE_MODULE_PATH})
 include(${CMAKE_BINARY_DIR}/conan-dependencies/conanbuildinfo.cmake)
-conan_basic_setup()
+conan_basic_setup(NO_OUTPUT_DIRS KEEP_RPATHS)
 include_directories(${CONAN_INCLUDE_DIRS})
 
 find_package(Eigen3 REQUIRED)
-#find_package(gmp REQUIRED)
 find_package(phmap REQUIRED)
 find_package(readerwriterqueue REQUIRED)
 find_package(spdlog REQUIRED)
@@ -251,18 +250,18 @@ add_compile_definitions($<$<CONFIG:Release>:EIGEN_NO_DEBUG>)
 if(MSVC)
     target_compile_options(Forscape PRIVATE
         /Ob3 /W3 #/WX #EVENTUALLY: address warnings
-        $<$<CONFIG:Release>:/Oi /Oy>
+        $<$<CONFIG:Release>:/Oi /Oy /GL>
         $<$<CONFIG:Debug>:/bigobj> #Often needed to make Eigen unsupported compile
     )
     target_link_options(Forscape PRIVATE
-        $<$<CONFIG:Release>:/OPT:REF>
+        $<$<CONFIG:Release>:/OPT:REF /LTCG>
     )
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(Forscape PRIVATE
         $<$<CONFIG:Debug>:-O1> #Need optimisation for MinGW to compile w/ Eigen unsupported
         -Wall -Wextra -pedantic #-Werror #EVENTUALLY: address warnings
         $<$<CONFIG:Release>: -Ofast -fmodulo-sched -fmodulo-sched-allow-regmoves -fgcse-sm -fgcse-las -fdelete-null-pointer-checks
-        -fomit-frame-pointer -funroll-loops> #-fwhole-program #EVENTUALLY: couldn't get whole program optimisation working
+        -fomit-frame-pointer -funroll-loops -fvisibility=hidden -fwhole-program -flto>
     )
     target_link_options(Forscape PRIVATE
         -Wa,-mbig-obj

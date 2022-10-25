@@ -74,6 +74,7 @@ public:
     virtual void paintUntil(Painter& painter, Text* t_end, size_t index, bool forward = true) const;
     virtual void paintAfter(Painter& painter, Text* t_start, size_t index, bool forward = true) const;
     virtual void paintMid(Painter& painter, Text* tL, size_t iL, Text* tR, size_t iR, bool forward = true) const;
+    virtual void paint(Painter& painter, double xL, double xR, bool forward = true) const;
     bool contains(double x_test, double y_test) const noexcept;
     bool containsY(double y_test) const noexcept;
     Text* textNearest(double x, double y) const;

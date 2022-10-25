@@ -7,15 +7,19 @@ Backslash9\\9y9999
 Bar9|9y9999
 Because9∵9y9999
 Beth9ℶ9y9999
+Case9case99y999
 Cap9∩9y9999
 Caret9^9y9999
+Class9class99y999
 Colon9:9y9999
 Comma9,9y9999
 Comment9//9999y9
+Complement9∁9y9999
 Conjunction9∧9y9999
 ContourIntegral9∮9y99y99
 Cup9∪9y9999
 Dagger9†9y9999
+Default9default99y999
 DefEquals9≔9y9999
 Degree9°9y9999
 Disjunction9∨9y9999
@@ -43,6 +47,7 @@ Doublestruck_Z9ℤ9y9999
 Else9else99y999
 EmptySet9∅9y9999
 EndOfFile9\099999
+Enum9enum99y999
 Equals9=9y9999
 Equivalent9≡9y9999
 Scanner_Error9ERR99999
@@ -90,7 +95,9 @@ NotLess9≮9y9999
 NotNi9∌9y9999
 NotSubset9⊄9y9999
 NotSubsetEq9⊈9y9999
+Ocirc9∘9y9999
 ODot9⨀9y9999
+Operator9operator99y999
 OuterProduct9⊗9y9999
 Partial9∂9y9999
 Percent9%9y9999
@@ -103,8 +110,10 @@ Pound9#9y9999
 PoundSterling9£9y9999
 Prec9≺9y9999
 Print9print99y999
+Private9private99y999
 Assert9assert99y999
 Proportional9∝9y9999
+Public9public99y999
 Qed9■9y9999
 Return9return99y999
 RightAngle9⟩9y9999close
@@ -118,7 +127,10 @@ RightDoubleBrace9⟧9y9999close
 RightFloor9⌋9y9999close
 RightParen9)9y9999close
 Semicolon9;9y9999
+Sgn9sgn99y9y99
+StaticAssert9static_assert99y999
 String999999
+Struct9struct99y999
 SubscriptIdentifier9sub-99999
 SubscriptLeftParen9₍9y9999
 SubscriptMinus9₋9y9999
@@ -137,6 +149,7 @@ SuperscriptRightParen9⁾9y9999
 SuperscriptVee9ⱽ9y9999
 SuperscriptWedge9ᶺ9y9999
 SuspensionPoint9…9y9999
+Switch9switch99y999
 Therefore9∴9y9999
 Thermod9⧧9y9999
 Tick9\'9y9999
@@ -146,6 +159,9 @@ Transpose9⊤9y9999
 TripleGreater9⋙9y9999
 TripleLess9⋘9y9999
 TrueLiteral9true99y999
+Typedef9typedef99y999
+Undefined9undefined99y999
+Unknown9unknown99y999
 Plot9plot99y999
 Where9where99y999
 While9while99y999
@@ -185,3 +201,4 @@ CompErrFunc9erfc99y9y99
 Gravity9g99y9y99
 Rows9rows99y9y99
 Cols9cols99y9y99
+SpecialOrthogonal9SO99y9y99

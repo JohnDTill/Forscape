@@ -26,6 +26,7 @@ private slots:
     void on_symbolsDefaultsButton_clicked();
     void on_symbolsAddButton_clicked();
     void on_integralCheckBox_toggled(bool checked);
+    void on_numberCommaCheckBox_toggled(bool checked);
 
 signals:
     void colourChanged();

@@ -360,6 +360,21 @@ void Phrase::paintMid(Painter& painter, Text* tL, size_t iL, Text* tR, size_t iR
     tR->paintUntil(painter, iR, forward);
 }
 
+void Phrase::paint(Painter& painter, double xL, double xR, bool forward) const {
+    Text* tL = textLeftOf(xL);
+    Text* tR = textLeftOf(xR);
+
+    Typeset::Marker r_mark(tR, tR->charIndexLeft(xR));
+    if(!r_mark.atTextEnd()) r_mark.incrementGrapheme();
+
+    if(tL == tR){
+        painter.setScriptLevel(script_level);
+        tL->paintMid(painter, tL->charIndexLeft(xL), r_mark.index, forward);
+    }else{
+        paintMid(painter, tL, tL->charIndexLeft(xL), tR, r_mark.index, forward);
+    }
+}
+
 bool Phrase::contains(double x_test, double y_test) const noexcept{
     return (x_test >= x) & (x_test <= x+width) & containsY(y_test);
 }

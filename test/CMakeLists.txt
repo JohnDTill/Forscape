@@ -6,11 +6,13 @@ project(HopeTests LANGUAGES CXX)
 
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/conan-dependencies ${CMAKE_MODULE_PATH})
 include(${CMAKE_BINARY_DIR}/conan-dependencies/conanbuildinfo.cmake)
-conan_basic_setup(TARGETS NO_OUTPUT_DIRS KEEP_RPATHS)
+conan_basic_setup(NO_OUTPUT_DIRS KEEP_RPATHS)
 include_directories(${CONAN_INCLUDE_DIRS})
 
+add_compile_definitions(EIGEN_NO_AUTOMATIC_RESIZING)
+add_compile_definitions(alloc_except=noexcept)
+
 find_package(Eigen3 REQUIRED)
-#find_package(gmp REQUIRED)
 find_package(phmap REQUIRED)
 find_package(readerwriterqueue REQUIRED)
 find_package(spdlog REQUIRED)
@@ -219,11 +221,11 @@ add_compile_definitions($<$<CONFIG:Release>:EIGEN_NO_DEBUG>)
 if(MSVC)
     target_compile_options(HopeTests PRIVATE
         /Ob3 /W3 #/WX #EVENTUALLY: address warnings
-        $<$<CONFIG:Release>:/Oi /Oy> #/GL
+        $<$<CONFIG:Release>:/Oi /Oy /GL>
         $<$<CONFIG:Debug>:/bigobj> #Often needed to make Eigen unsupported compile
     )
     target_link_options(HopeTests PRIVATE
-        $<$<CONFIG:Release>:/OPT:REF> #/LTCG
+        $<$<CONFIG:Release>:/OPT:REF /LTCG>
     )
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     if (WIN32)
@@ -233,7 +235,7 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(HopeTests PRIVATE
         -Wall -Wextra -pedantic #-Werror #EVENTUALLY: address warnings
         $<$<CONFIG:Release>: -Ofast -fmodulo-sched -fmodulo-sched-allow-regmoves -fgcse-sm -fgcse-las -fdelete-null-pointer-checks
-        -fomit-frame-pointer -funroll-loops> #-fwhole-program #EVENTUALLY: couldn't get whole program optimisation working
+        -fomit-frame-pointer -funroll-loops -fvisibility=hidden -fwhole-program -flto>
     )
     target_link_options(HopeTests PRIVATE
         -Wa,-mbig-obj
