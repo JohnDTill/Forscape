@@ -190,6 +190,22 @@ inline size_t countGraphemes(StringType str) noexcept {
     return num_graphemes;
 }
 
+template<typename StringType>
+inline size_t charIndexOfGrapheme(StringType str, size_t grapheme_index, size_t index = 0) noexcept {
+    size_t num_graphemes = 0;
+    while(index < str.size() && num_graphemes < grapheme_index){
+        if(isAscii(str[index])){
+            index++;
+            num_graphemes++;
+        }else{
+            num_graphemes += !isZeroWidth(codepointInt(str, index));
+            index += codepointSize(str[index]);
+        }
+    }
+
+    return index;
+}
+
 }
 
 #endif // HOPE_UNICODE_H

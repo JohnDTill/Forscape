@@ -806,7 +806,7 @@ void View::setCursorAppearance(double x, double y) {
 }
 
 void View::drawModel(double xL, double yT, double xR, double yB) {
-    Painter painter(qpainter);
+    Painter painter(qpainter, xL, yT, xR, yB);
     painter.setZoom(zoom);
     painter.setOffset(xOrigin(), yOrigin());
 
@@ -859,7 +859,7 @@ void View::drawLinebox(double yT, double yB) {
     qpainter.setPen(getColour(COLOUR_LINEBOXBORDER));
     qpainter.drawRect(-1, -1, 1+LINEBOX_WIDTH*zoom, height()+2);
 
-    Painter painter(qpainter);
+    Painter painter(qpainter, 0, yT, std::numeric_limits<double>::max(), yB);
     painter.setZoom(zoom);
     painter.setOffset(LINEBOX_WIDTH - LINE_NUM_OFFSET, yOrigin());
 

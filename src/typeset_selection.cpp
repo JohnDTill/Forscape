@@ -269,7 +269,7 @@ QImage Selection::toPng() const{
     image.fill(Qt::white);
 
     QPainter qpainter(&image);
-    Painter painter(qpainter);
+    Painter painter(qpainter, 0, 0, std::numeric_limits<double>::max(), std::numeric_limits<double>::max());
     painter.setZoom(UPSCALE);
     painter.setOffset(-dims[0], -dims[1]);
 
@@ -287,7 +287,7 @@ void Selection::toSvg(QSvgGenerator& generator) const{
 
     QPainter qpainter(&generator);
     qpainter.setRenderHint(QPainter::Antialiasing);
-    Painter painter(qpainter);
+    Painter painter(qpainter, 0, 0, std::numeric_limits<double>::max(), std::numeric_limits<double>::max());
     painter.setZoom(UPSCALE);
     painter.setOffset(-dims[0], -dims[1]);
 
@@ -539,31 +539,24 @@ void Selection::paint(Painter& painter) const{
     }
 }
 
-void Selection::paintSelectionText(Painter& painter, bool forward, double xLeft, double xRight) const{
+void Selection::paintSelectionText(Painter& painter, double xLeft, double xRight) const{
     if(iL!=iR){
         double y = tR->y;
         double h = tR->height();
-
-        if(forward){
-            double x = std::max(tR->xGlobal(iL), xLeft);
-            double w = std::min(tR->xGlobal(iR), xRight) - x;
-            painter.drawSelection(x, y, w, h);
-        }else{
-            int x = std::max(tR->xGlobal(iL), xLeft);
-            int xEnd = std::min(tR->xGlobal(iR), xRight);
-            painter.drawSelection(x, y, xEnd-x, h);
-        }
+        double x = std::max(tR->xGlobal(iL), xLeft);
+        double w = std::min(tR->xGlobal(iR), xRight) - x;
+        painter.drawSelection(x, y, w, h);
 
         const size_t lborder_char = tL->charIndexLeft(xLeft);
         Typeset::Marker m(tR, tR->charIndexLeft(xRight));
         if(!m.atTextEnd()) m.incrementGrapheme();
         const size_t rborder_char = m.index;
 
-        tR->paintMid(painter, std::max(iL, lborder_char), std::min(iR, rborder_char), forward);
+        tR->paintMid(painter, std::max(iL, lborder_char), std::min(iR, rborder_char));
     }
 }
 
-void Selection::paintSelectionPhrase(Painter& painter, bool forward, double xLeft, double xRight) const{
+void Selection::paintSelectionPhrase(Painter& painter, double xLeft, double xRight) const{
     double y = phrase()->y;
     double h = phrase()->height();
 
@@ -594,33 +587,21 @@ void Selection::paintSelectionPhrase(Painter& painter, bool forward, double xLef
         }
     }
 
-    if(forward){
-        double x = tL->xGlobal(iL);
-        double w = tR->xGlobal(iR) - x;
-        painter.drawSelection(x, y, w, h);
-    }else{
-        int x = tL->xGlobal(iL);
-        int xEnd = tR->xGlobal(iR);
-        painter.drawSelection(x, y, xEnd-x, h);
-    }
+    double x = tL->xGlobal(iL);
+    double w = tR->xGlobal(iR) - x;
+    painter.drawSelection(x, y, w, h);
 
-    phrase()->paintMid(painter, text_left, index_left, text_right, index_right, forward);
+    phrase()->paintMid(painter, text_left, index_left, text_right, index_right);
 }
 
-void Selection::paintSelectionLines(Painter& painter, bool forward, double xLeft, double yT, double xRight, double yB) const {
+void Selection::paintSelectionLines(Painter& painter, double xLeft, double yT, double xRight, double yB) const {
     double y = lL->y;
     double h = lL->height();
 
-    if(forward){
-        double x = tL->x + tL->xLocal(iL);
-        double w = lL->width - tL->xPhrase(iL) + NEWLINE_EXTRA;
-        painter.drawSelection(x, y, w, h);
-    }else{
-        int x = tL->x + tL->xLocal(iL);
-        int xEnd = lL->x + lL->width + NEWLINE_EXTRA;
-        painter.drawSelection(x, y, xEnd-x, h);
-    }
-    lL->paintAfter(painter, tL, iL, forward); //DO THIS: add horizontal guards
+    double x = tL->x + tL->xLocal(iL);
+    double w = lL->width - tL->xPhrase(iL) + NEWLINE_EXTRA;
+    painter.drawSelection(x, y, w, h);
+    lL->paintAfter(painter, tL, iL);
 
     Line* l = lL->nextAsserted();
     Line* candidate = l->nearestAbove(yT);
@@ -628,25 +609,25 @@ void Selection::paintSelectionLines(Painter& painter, bool forward, double xLeft
     for(; l != lR; l = l->nextAsserted()){
         if(l->y > yB) return;
         painter.drawSelection(l->x, l->y, l->width + NEWLINE_EXTRA, l->height());
-        l->paint(painter, xLeft, xRight, forward);
+        l->paint(painter, xLeft, xRight);
     }
 
     if(iR == 0 && tR == lR->front()) return;
 
-    double x = lR->x;
+    x = lR->x;
     y = lR->y;
-    double w = tR->xGlobal(iR) - x;
+    w = tR->xGlobal(iR) - x;
     h = lR->height();
     painter.drawSelection(x, y, w, h);
-    lR->paintUntil(painter, tR, iR, forward); //DO THIS: add horizontal guards
+    lR->paintUntil(painter, tR, iR);
 }
 
-void Selection::paintSelection(Painter& painter, bool forward, double xLeft, double yT, double xRight, double yB) const {
+void Selection::paintSelection(Painter& painter, double xLeft, double yT, double xRight, double yB) const {
     painter.setSelectionMode();
 
-    if(isTextSelection()) paintSelectionText(painter, forward, xLeft, xRight);
-    else if(isPhraseSelection()) paintSelectionPhrase(painter, forward, xLeft, xRight);
-    else paintSelectionLines(painter, forward, xLeft, yT, xRight, yB);
+    if(isTextSelection()) paintSelectionText(painter, xLeft, xRight);
+    else if(isPhraseSelection()) paintSelectionPhrase(painter, xLeft, xRight);
+    else paintSelectionLines(painter, xLeft, yT, xRight, yB);
 
     painter.exitSelectionMode();
 }
