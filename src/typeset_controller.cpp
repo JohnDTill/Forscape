@@ -255,8 +255,8 @@ bool Controller::contains(double x, double y) const{
     return selection().contains(x, y);
 }
 
-void Controller::paintSelection(Painter& painter, double yT, double yB) const{
-    selection().paintSelection(painter, isForward(), yT, yB);
+void Controller::paintSelection(Painter& painter, double xL, double yT, double xR, double yB) const{
+    selection().paintSelection(painter, xL, yT, xR, yB);
 }
 
 void Controller::paintCursor(Painter& painter) const {
@@ -269,7 +269,7 @@ void Controller::paintCursor(Painter& painter) const {
     painter.drawNarrowCursor(x, y, h);
 }
 
-void Controller::paintInsertCursor(Painter& painter, double yT, double yB) const{
+void Controller::paintInsertCursor(Painter& painter, double xL, double yT, double xR, double yB) const{
     Controller controller(*this);
     controller.consolidateToActive();
     controller.selectNextChar();
@@ -279,7 +279,7 @@ void Controller::paintInsertCursor(Painter& painter, double yT, double yB) const
     setColour(COLOUR_SELECTION, text_cursor_color);
 
     if(controller.hasSelection()){
-        controller.paintSelection(painter, yT, yB);
+        controller.paintSelection(painter, xL, yT, xR, yB);
     }else{
         double x = active.text->xRight();
         double y = active.text->y;

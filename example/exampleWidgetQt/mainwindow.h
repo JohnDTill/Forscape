@@ -44,7 +44,6 @@ private:
     QTimer interpreter_poll_timer;
     static constexpr std::chrono::milliseconds INTERPETER_POLL_PERIOD = std::chrono::milliseconds(15);
     bool editor_had_focus;
-    bool unsaved_changes = false;
     void loadGeometry();
     void resizeHackToFixScrollbars();
     bool isSavedDeepComparison() const;

@@ -55,14 +55,13 @@ const QFont& getFont(SemanticType type, uint8_t depth) noexcept;
 class Painter {
 public:
     static void init();
-    Painter(WrappedPainter& painter);
+    Painter(WrappedPainter& painter, double xL, double yT, double xR, double yB);
     void setZoom(double zoom);
     void setType(SemanticType type);
     void setTypeIfAppropriate(SemanticType type);
     void setScriptLevel(uint8_t depth);
     void setOffset(double x, double y);
-    void drawText(double x, double y, std::string_view text, bool forward = true);
-    void drawText(double x, double y, char ch);
+    void drawText(double x, double y, std::string_view text);
     void drawHighlightedGrouping(double x, double y, double w, std::string_view text);
     void drawSymbol(double x, double y, std::string_view text);
     void drawLine(double x, double y, double w, double h);
@@ -79,8 +78,10 @@ public:
     void drawDot(double x, double y);
     void drawLineNumber(double y, size_t num, bool active);
     void setSelectionMode();
+    void exitSelectionMode();
     void drawSymbol(char ch, double x, double y, double w, double h);
     void drawSymbol(std::string_view str, double x, double y, double w, double h);
+    void drawComma(double x, double y, bool selected);
 
     #ifdef HOPE_TYPESET_LAYOUT_DEBUG
     void drawDebugPhrase(double x, double y, double w, double u, double v);
@@ -93,6 +94,12 @@ private:
     SemanticType type = SEM_DEFAULT;
     double x_offset = 0;
     bool color_can_change = true;
+
+    const double xL;
+    const double yT;
+    const double xR;
+    const double yB;
+    size_t max_graphemes[3];
 };
 
 }

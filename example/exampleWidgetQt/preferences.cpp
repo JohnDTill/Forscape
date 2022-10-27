@@ -14,6 +14,7 @@
 
 #define COLOUR_SETTING "COLOUR_PRESET"
 #define INTEGRAL_LAYOUT_SETTING "VERT_INTS"
+#define DISLAY_COMMA_SETTING "NUM_COMMAS"
 
 Preferences::Preferences(QSettings& settings, QWidget* parent) :
     QWidget(parent), ui(new Ui::Preferences), settings(settings){
@@ -23,6 +24,12 @@ Preferences::Preferences(QSettings& settings, QWidget* parent) :
         bool vertical_integrals = settings.value(INTEGRAL_LAYOUT_SETTING).toBool();
         ui->integralCheckBox->setChecked(vertical_integrals);
         Hope::Typeset::integral_bounds_vertical = vertical_integrals;
+    }
+
+    if(settings.contains(DISLAY_COMMA_SETTING)){
+        bool display_commas = settings.value(DISLAY_COMMA_SETTING).toBool();
+        ui->numberCommaCheckBox->setChecked(display_commas);
+        Hope::Typeset::display_commas_in_numbers = display_commas;
     }
 
     for(int i = 0; i < Hope::Typeset::NUM_COLOUR_PRESETS; i++){
@@ -76,6 +83,7 @@ Preferences::Preferences(QSettings& settings, QWidget* parent) :
 
 Preferences::~Preferences(){
     settings.setValue(INTEGRAL_LAYOUT_SETTING, Hope::Typeset::integral_bounds_vertical);
+    settings.setValue(DISLAY_COMMA_SETTING, Hope::Typeset::display_commas_in_numbers);
 
     settings.setValue(COLOUR_SETTING, ui->colour_dropdown->currentText());
     for(size_t i = 0; i < Hope::Typeset::NUM_COLOUR_ROLES; i++){
@@ -135,7 +143,6 @@ void Preferences::on_keywordDefaultsButton_clicked(){
     keyword_editor->resetDefaults();
 }
 
-
 void Preferences::on_keywordAddButton_clicked(){
     keyword_editor->addSlot();
     QCoreApplication::processEvents();
@@ -158,5 +165,13 @@ void Preferences::on_integralCheckBox_toggled(bool checked){
 
     for(Hope::Typeset::View* view : Hope::Typeset::View::all_views)
         view->updateModel();
+}
+
+
+void Preferences::on_numberCommaCheckBox_toggled(bool checked){
+    Hope::Typeset::display_commas_in_numbers = checked;
+
+    for(Hope::Typeset::View* view : Hope::Typeset::View::all_views)
+        view->update();
 }
 

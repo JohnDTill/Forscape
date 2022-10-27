@@ -3,6 +3,7 @@
 #include <hope_logging.h>
 #include <typeset_command_pair.h>
 #include <typeset_construct.h>
+#include <typeset_integral_preference.h>
 #include <typeset_line.h>
 #include <typeset_markerlink.h>
 #include <typeset_model.h>
@@ -721,7 +722,7 @@ void View::focusInEvent(QFocusEvent*){
     restartCursorBlink();
 }
 
-void View::focusOutEvent(QFocusEvent* e){    
+void View::focusOutEvent(QFocusEvent* e){
     if(e->reason() == Qt::TabFocusReason){
         setFocus(Qt::TabFocusReason);
         if(allow_write) controller.tab();
@@ -805,7 +806,7 @@ void View::setCursorAppearance(double x, double y) {
 }
 
 void View::drawModel(double xL, double yT, double xR, double yB) {
-    Painter painter(qpainter);
+    Painter painter(qpainter, xL, yT, xR, yB);
     painter.setZoom(zoom);
     painter.setOffset(xOrigin(), yOrigin());
 
@@ -842,9 +843,10 @@ void View::drawModel(double xL, double yT, double xR, double yB) {
 
     model->paint(painter, xL, yT, xR, yB);
     model->paintGroupings(painter, cursor);
-    controller.paintSelection(painter, yT, yB);
+    controller.paintSelection(painter, xL, yT, xR, yB);
+    if(display_commas_in_numbers) model->paintNumberCommas(painter, xL, yT, xR, yB, controller.selection());
     if(show_cursor){
-        if(insert_mode) controller.paintInsertCursor(painter, yT, yB);
+        if(insert_mode) controller.paintInsertCursor(painter, xL, yT, xR, yB);
         else controller.paintCursor(painter);
     }
 }
@@ -857,7 +859,7 @@ void View::drawLinebox(double yT, double yB) {
     qpainter.setPen(getColour(COLOUR_LINEBOXBORDER));
     qpainter.drawRect(-1, -1, 1+LINEBOX_WIDTH*zoom, height()+2);
 
-    Painter painter(qpainter);
+    Painter painter(qpainter, 0, yT, std::numeric_limits<double>::max(), yB);
     painter.setZoom(zoom);
     painter.setOffset(LINEBOX_WIDTH - LINE_NUM_OFFSET, yOrigin());
 
@@ -1422,6 +1424,7 @@ void Editor::focusOutEvent(QFocusEvent* event){
 }
 
 void Editor::leaveEvent(QEvent* event){
+    View::leaveEvent(event);
     clearTooltip();
 }
 
@@ -1447,7 +1450,11 @@ void Editor::resolveTooltip(double x, double y) noexcept {
     }
 
     hover_node = model->parseNodeAt(x, y);
+    #ifndef NDEBUG
     if(hover_node == NONE) clearTooltip();
+    #else
+    if(hover_node == NONE || model->parseTree().getOp(hover_node) != Code::OP_IDENTIFIER) clearTooltip();
+    #endif
     else tooltip_timer->start(TOOLTIP_DELAY_MILLISECONDS);
 
     #ifndef NDEBUG

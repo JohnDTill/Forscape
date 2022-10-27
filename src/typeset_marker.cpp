@@ -234,8 +234,12 @@ double Marker::x() const{
     return text->xGlobal(index);
 }
 
-double Marker::y() const noexcept{
+double Marker::y() const noexcept {
     return text->y;
+}
+
+double Marker::yBot() const noexcept {
+    return text->yBot();
 }
 
 void Marker::setToPointOf(Text* t, double setpoint) {

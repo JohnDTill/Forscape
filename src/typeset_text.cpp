@@ -423,37 +423,37 @@ size_t Text::charIndexLeft(double x_in) const noexcept {
     return index;
 }
 
-void Text::paint(Painter& painter, bool forward) const {
+void Text::paint(Painter& painter) const {
     size_t start = 0;
     double x = this->x;
     double char_width = CHARACTER_WIDTHS[scriptDepth()];
     painter.setType(getTypeLeftOf(0));
     for(const SemanticTag& tag : tags){
         std::string_view substr(&str[start], tag.index-start);
-        painter.drawText(x, y, substr, forward);
+        painter.drawText(x, y, substr);
         x += char_width * countGraphemes(substr);
         start = tag.index;
         painter.setType(tag.type);
     }
-    painter.drawText(x, y, std::string_view(&str[start], numChars()-start), forward);
+    painter.drawText(x, y, std::string_view(&str[start], numChars()-start));
 }
 
-void Text::paintUntil(Painter& painter, size_t stop, bool forward) const {
+void Text::paintUntil(Painter& painter, size_t stop) const {
     size_t start = 0;
     double x = this->x;
     double char_width = CHARACTER_WIDTHS[scriptDepth()];
     for(const SemanticTag& tag : tags){
         if(tag.index >= stop) break;
         std::string_view substr(&str[start], tag.index-start);
-        painter.drawText(x, y, substr, forward);
+        painter.drawText(x, y, substr);
         x += char_width * countGraphemes(substr);
         start = tag.index;
         painter.setType(tag.type);
     }
-    painter.drawText(x, y, std::string_view(&str[start], stop-start), forward);
+    painter.drawText(x, y, std::string_view(&str[start], stop-start));
 }
 
-void Text::paintAfter(Painter& painter, size_t start, bool forward) const {
+void Text::paintAfter(Painter& painter, size_t start) const {
     double x = this->x + xLocal(start);
     painter.setType(getTypeLeftOf(start));
     double char_width = CHARACTER_WIDTHS[scriptDepth()];
@@ -461,17 +461,17 @@ void Text::paintAfter(Painter& painter, size_t start, bool forward) const {
     for(const SemanticTag& tag : tags){
         if(tag.index > start){
             std::string_view substr(&str[start], tag.index-start);
-            painter.drawText(x, y, substr, forward);
+            painter.drawText(x, y, substr);
             x += char_width * countGraphemes(substr);
             start = tag.index;
             painter.setType(tag.type);
         }
     }
 
-    painter.drawText(x, y, std::string_view(&str[start], numChars()-start), forward);
+    painter.drawText(x, y, std::string_view(&str[start], numChars()-start));
 }
 
-void Text::paintMid(Painter& painter, size_t start, size_t stop, bool forward) const {
+void Text::paintMid(Painter& painter, size_t start, size_t stop) const {
     painter.setScriptLevel(scriptDepth());
     double x = this->x + xLocal(start);
     painter.setType(getTypeLeftOf(start));
@@ -481,14 +481,14 @@ void Text::paintMid(Painter& painter, size_t start, size_t stop, bool forward) c
         if(tag.index > start){
             if(tag.index >= stop) break;
             std::string_view substr(&str[start], tag.index-start);
-            painter.drawText(x, y, substr, forward);
+            painter.drawText(x, y, substr);
             x += char_width * countGraphemes(substr);
             start = tag.index;
             painter.setType(tag.type);
         }
     }
 
-    painter.drawText(x, y, std::string_view(&str[start], stop-start), forward);
+    painter.drawText(x, y, std::string_view(&str[start], stop-start));
 }
 
 void Text::paintGrouping(Painter& painter, size_t start) const {

@@ -96,8 +96,12 @@ static QColor getColor(SemanticType type) noexcept {
     return Typeset::getColour(sem_colours[type]);
 }
 
-Painter::Painter(WrappedPainter& painter)
-    : painter(painter) {}
+Painter::Painter(WrappedPainter& painter, double xL, double yT, double xR, double yB)
+    : painter(painter), xL(xL), yT(yT), xR(xR), yB(yB) {
+    const double w = xR-xL;
+    for(size_t i = 0; i < 3; i++)
+        max_graphemes[i] = 1 + static_cast<size_t>(w / CHARACTER_WIDTHS[i]);
+}
 
 void Painter::setZoom(double zoom){
     painter.scale(zoom, zoom);
@@ -123,30 +127,25 @@ void Painter::setOffset(double x, double y){
     x_offset = x;
 }
 
-void Painter::drawText(double x, double y, std::string_view text, bool forward){
-    x += x_offset;
-    QString q_str = QString::fromUtf8(text.data(), static_cast<int>(text.size()));
+void Painter::drawText(double x, double y, std::string_view text){
+    if(x >= xR || y >= yB || (y += CAPHEIGHT[depth]) <= yT) return;
 
-    if(forward){
-        y += CAPHEIGHT[depth];
-        painter.drawText(x, y, q_str);
-    }else{
-        y += CAPHEIGHT[depth];
-        y -= ASCENT[depth];
-        double h = CHARACTER_HEIGHTS[depth];
-        double w = CHARACTER_WIDTHS[depth]*countGraphemes(text);
-        #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-        painter.drawText(x, y, w, h, Qt::AlignRight|Qt::AlignBaseline, q_str);
-        #else //Qt6 truncates large inputs
-        painter.translate(x, y);
-        painter.drawText(0, 0, w, h, Qt::AlignRight|Qt::AlignBaseline, q_str);
-        painter.translate(-x, -y);
-        #endif
-    }
+    const size_t grapheme_start = x > xL ? 0 : (xL - x) / CHARACTER_WIDTHS[depth];
+    const size_t char_start = charIndexOfGrapheme(text, grapheme_start);
+
+    x += x_offset + grapheme_start * CHARACTER_WIDTHS[depth];
+
+    const size_t char_end = charIndexOfGrapheme(text, max_graphemes[depth], char_start);
+
+    QString q_str = QString::fromUtf8(text.data() + char_start, static_cast<int>(char_end - char_start));
+
+    painter.drawText(QPointF(x, y), q_str);
 }
 
 void Painter::drawHighlightedGrouping(double x, double y, double w, std::string_view text){
     x += x_offset;
+
+    if(x >= xR || y >= yB || (y + CAPHEIGHT[depth]) <= yT || x + CHARACTER_WIDTHS[depth] < xL) return;
 
     painter.setPen(getColour(COLOUR_GROUPINGBACKGROUND));
     painter.setBrush(getColour(COLOUR_GROUPINGBACKGROUND));
@@ -154,7 +153,7 @@ void Painter::drawHighlightedGrouping(double x, double y, double w, std::string_
 
     painter.setPen(getColour(COLOUR_GROUPINGHIGHLIGHT));
     y += CAPHEIGHT[depth];
-    painter.drawText(x, y, QString::fromUtf8(text.data(), static_cast<int>(text.size())));
+    painter.drawText(QPointF(x, y), QString::fromUtf8(text.data(), static_cast<int>(text.size())));
 
     painter.setPen(getColour(COLOUR_CURSOR));
     painter.setBrush(getColour(COLOUR_CURSOR));
@@ -162,7 +161,10 @@ void Painter::drawHighlightedGrouping(double x, double y, double w, std::string_
 
 void Painter::drawSymbol(double x, double y, std::string_view text){
     x += x_offset;
-    y += BIG_SYM_SCALE*CAPHEIGHT[depth];
+    if(x >= xR ||
+       y >= yB ||
+       (y += BIG_SYM_SCALE*CAPHEIGHT[depth]) <= yT ||
+       x + BIG_SYM_SCALE*CHARACTER_WIDTHS[depth] < xL) return;
     QFont font = getFont(SEM_BIG_SYM, depth);
     font.setPointSizeF(font.pointSizeF()*BIG_SYM_SCALE);
     painter.setFont(font);
@@ -198,7 +200,7 @@ void Painter::drawPath(const std::vector<std::pair<double, double> >& points){
 
 void Painter::drawRect(double x, double y, double w, double h){
     x += x_offset;
-    painter.drawRect(x, y, w, h);
+    painter.drawRect(QRectF(x, y, w, h));
 }
 
 void Painter::drawSelection(double x, double y, double w, double h){
@@ -324,6 +326,10 @@ void Painter::setSelectionMode(){
     color_can_change = false;
 }
 
+void Painter::exitSelectionMode(){
+    color_can_change = true;
+}
+
 void Painter::drawSymbol(char ch, double x, double y, double w, double h){
     x += x_offset;
 
@@ -334,7 +340,7 @@ void Painter::drawSymbol(char ch, double x, double y, double w, double h){
 
     QTransform transform = painter.transform();
     painter.scale(scale_x, scale_y);
-    painter.drawText(x, y, QChar(ch));
+    painter.drawText(QPointF(x, y), QChar(ch));
     painter.setTransform(transform);
 }
 
@@ -349,8 +355,22 @@ void Painter::drawSymbol(std::string_view str, double x, double y, double w, dou
 
     QTransform transform = painter.transform();
     painter.scale(scale_x, scale_y);
-    painter.drawText(x, y, qstr);
+    painter.drawText(QPointF(x, y), qstr);
     painter.setTransform(transform);
+}
+
+void Painter::drawComma(double x, double y, bool selected) {
+    painter.setPen(selected ? getColour(COLOUR_SELECTEDTEXT) : getColour(COLOUR_KEYWORD));
+
+    x += x_offset - CHARACTER_WIDTHS[depth]*0.32;
+    y += CAPHEIGHT[depth];
+    const QFont font = painter.font();
+    QFont new_font = font;
+    new_font.setPointSizeF(font.pointSizeF()*0.6);
+    new_font.setBold(true);
+    painter.setFont(new_font);
+    painter.drawText(x, y, ",");
+    painter.setFont(font);
 }
 
 #ifdef HOPE_TYPESET_LAYOUT_DEBUG

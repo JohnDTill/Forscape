@@ -36,6 +36,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 #ifndef NDEBUG
 #include "qgraphvizcall.h"
@@ -462,7 +463,6 @@ bool MainWindow::saveAs(QString path){
     setWindowTitle(file.fileName() + WINDOW_TITLE_SUFFIX);
     settings.setValue(ACTIVE_FILE, path);
     this->path = path;
-    unsaved_changes = false;
     out.flush();
     write_time = std::filesystem::last_write_time(path.toStdString());
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
@@ -503,7 +503,6 @@ void MainWindow::open(QString path){
     setWindowTitle(QFile(path).fileName() + WINDOW_TITLE_SUFFIX);
     settings.setValue(ACTIVE_FILE, path);
     this->path = path;
-    unsaved_changes = false;
     write_time = std::filesystem::last_write_time(path.toStdString());
 
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
@@ -699,13 +698,10 @@ void MainWindow::on_actionUnicode_triggered(){
 void MainWindow::onTextChanged(){
     //EVENTUALLY: doing a deep comparison is terrible. Need a more efficient way to determine if the document is saved
     bool changed_from_save = !isSavedDeepComparison();
-
-    if(changed_from_save && !unsaved_changes)
-        setWindowTitle(windowTitle().insert(0, '*'));
-    else if(unsaved_changes && !changed_from_save)
-        setWindowTitle(windowTitle().remove(0, 1));
-
-    unsaved_changes = changed_from_save;
+    setWindowTitle(
+        (changed_from_save ? "*" : "") +
+        (path.isEmpty() ? NEW_SCRIPT_TITLE : QFile(path).fileName()) +
+        WINDOW_TITLE_SUFFIX);
 }
 
 void MainWindow::closeEvent(QCloseEvent* event){

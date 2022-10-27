@@ -305,59 +305,74 @@ void Phrase::updateLayout() noexcept{
     }
 }
 
-void Phrase::paint(Painter& painter, bool forward) const{
+void Phrase::paint(Painter& painter) const{
     #ifdef HOPE_TYPESET_LAYOUT_DEBUG
     painter.drawDebugPhrase(x, y, width, above_center, under_center);
     #endif
 
     painter.setScriptLevel(script_level);
-    texts.front()->paint(painter, forward);
+    texts.front()->paint(painter);
     for(size_t i = 0; i < constructs.size(); i++){
         constructs[i]->paint(painter);
         painter.setScriptLevel(script_level);
-        texts[i+1]->paint(painter, forward);
+        texts[i+1]->paint(painter);
     }
 }
 
-void Phrase::paintUntil(Painter& painter, Text* t_end, size_t index, bool forward) const{
+void Phrase::paintUntil(Painter& painter, Text* t_end, size_t index) const{
     assert(t_end->id < texts.size() && text(t_end->id) == t_end);
 
     for(size_t i = 0; i < t_end->id; i++){
         painter.setScriptLevel(script_level);
-        texts[i]->paint(painter, forward);
+        texts[i]->paint(painter);
         constructs[i]->paint(painter);
     }
 
     painter.setScriptLevel(script_level);
-    t_end->paintUntil(painter, index, forward);
+    t_end->paintUntil(painter, index);
 }
 
-void Phrase::paintAfter(Painter& painter, Text* t_start, size_t index, bool forward) const{
+void Phrase::paintAfter(Painter& painter, Text* t_start, size_t index) const{
     assert(t_start->id < texts.size() && text(t_start->id) == t_start);
 
     painter.setScriptLevel(script_level);
-    t_start->paintAfter(painter, index, forward);
+    t_start->paintAfter(painter, index);
 
     for(size_t i = t_start->id; i < constructs.size(); i++){
         constructs[i]->paint(painter);
         painter.setScriptLevel(script_level);
-        texts[i+1]->paint(painter, forward);
+        texts[i+1]->paint(painter);
     }
 }
 
-void Phrase::paintMid(Painter& painter, Text* tL, size_t iL, Text* tR, size_t iR, bool forward) const{
+void Phrase::paintMid(Painter& painter, Text* tL, size_t iL, Text* tR, size_t iR) const{
     painter.setScriptLevel(script_level);
-    tL->paintAfter(painter, iL, forward);
+    tL->paintAfter(painter, iL);
     constructs[tL->id]->paint(painter);
 
     for(size_t i = tL->id+1; i < tR->id; i++){
         painter.setScriptLevel(script_level);
-        texts[i]->paint(painter, forward);
+        texts[i]->paint(painter);
         constructs[i]->paint(painter);
     }
 
     painter.setScriptLevel(script_level);
-    tR->paintUntil(painter, iR, forward);
+    tR->paintUntil(painter, iR);
+}
+
+void Phrase::paint(Painter& painter, double xL, double xR) const {
+    Text* tL = textLeftOf(xL);
+    Text* tR = textLeftOf(xR);
+
+    Typeset::Marker r_mark(tR, tR->charIndexLeft(xR));
+    if(!r_mark.atTextEnd()) r_mark.incrementGrapheme();
+
+    if(tL == tR){
+        painter.setScriptLevel(script_level);
+        tL->paintMid(painter, tL->charIndexLeft(xL), r_mark.index);
+    }else{
+        paintMid(painter, tL, tL->charIndexLeft(xL), tR, r_mark.index);
+    }
 }
 
 bool Phrase::contains(double x_test, double y_test) const noexcept{

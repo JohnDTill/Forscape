@@ -25,7 +25,7 @@ class Text;
 class View;
 class Editor;
 
-class Model {   
+class Model {
 public:
     Code::Scanner scanner = Code::Scanner(this);
     Code::Parser parser = Code::Parser(scanner, this);
@@ -59,9 +59,9 @@ public:
     #ifndef HOPE_TYPESET_HEADLESS
     void calculateSizes();
     void updateLayout();
-    void paint(Painter& painter) const;
     void paint(Painter& painter, double xL, double yT, double xR, double yB) const;
     void paintGroupings(Painter& painter, const Typeset::Marker& loc) const;
+    void paintNumberCommas(Painter& painter, double xL, double yT, double xR, double yB, const Selection& sel) const;
     #ifndef NDEBUG
     void populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept;
     #endif
@@ -88,6 +88,7 @@ public:
     bool empty() const noexcept;
     size_t serialChars() const noexcept;
     Line* nearestLine(double y) const noexcept;
+    void registerCommaSeparatedNumber(const Typeset::Selection& sel) alloc_except;
 
     static constexpr double LINE_VERTICAL_PADDING = 5;
 
@@ -127,6 +128,8 @@ private:
     void rename(const std::vector<Selection>& targets, const std::string& name, Controller& c);
 
     Code::ParseTree& parseTree() noexcept;
+
+    std::vector<Typeset::Selection> comma_separated_numbers;
 };
 
 }

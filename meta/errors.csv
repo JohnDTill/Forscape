@@ -48,7 +48,8 @@ USE_BEFORE_DEFINE,y,Algorithm is used before it is defined
 EMPTY_BIG_SYMBOL,,Big symbol must have 2 arguments
 BIG_SYMBOL_ARG,,Big symbol argument must be an integer
 BIG_SYMBOL_RANGE,,Big symbol range must increase
-EMPTY_CASES,,None of the cases evaluated to true
+EMPTY_CASES,,Incomplete case coverage
+OVERLAPPING_CASES,,Cases are not mutually exclusive
 ASSERT_FAIL,y,Assertion failed
 SCALAR_MATRIX,,1×1 matrix is ambiguous
 UNUSED_ELEM_AGN_INDEX,,Undeclared variable\n(an element assignment index must be used in rhs to prevent ambiguity)
@@ -75,3 +76,5 @@ BINOM_K_EXCEED_N,,Binomial coefficient options must exceed choices
 LIMIT_NOT_SUPPORTED,,Limits are not supported yet
 BAD_RANGED_FOR_VAR,,Ranged-for iterator must be a variable name
 TYPE_NOT_ITERABLE,,Type is not iterable
+COMPLEMENT_C,,The letter ‘c’ is not advised for set complements. Use the complement symbol ‘∁’ to avoid ambiguity.
+TRANSPOSE_T,,The letter ‘T’ is not advised for matrix transpose. Use the transpose symbol ‘⊤’ to avoid ambiguity.

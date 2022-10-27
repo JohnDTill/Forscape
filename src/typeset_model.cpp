@@ -249,6 +249,10 @@ size_t Model::serialChars() const noexcept {
     return serial_chars;
 }
 
+void Model::registerCommaSeparatedNumber(const Selection& sel) noexcept {
+    comma_separated_numbers.push_back(sel);
+}
+
 void Model::writeString(std::string& out) const noexcept {
     size_t curr = 0;
     lines.front()->writeString(out, curr);
@@ -433,23 +437,13 @@ void Model::updateLayout(){
     }
 }
 
-void Model::paint(Painter& painter) const{
-    for(Line* l : lines){
-        l->paint(painter);
-
-        #ifdef HOPE_TYPESET_LAYOUT_DEBUG
-        painter.drawHorizontalConstructionLine(l->y - LINE_VERTICAL_PADDING/2);
-        #endif
-    }
-}
-
-void Model::paint(Painter& painter, double, double yT, double, double yB) const{
+void Model::paint(Painter& painter, double xL, double yT, double xR, double yB) const{
     Line* start = nearestAbove(yT);
     Line* end = nearestLine(yB);
 
     for(size_t i = start->id; i <= end->id; i++){
         Line* l = lines[i];
-        l->paint(painter);
+        l->paint(painter, xL, xR);
 
         #ifdef HOPE_TYPESET_LAYOUT_DEBUG
         painter.drawHorizontalConstructionLine(l->y - LINE_VERTICAL_PADDING/2);
@@ -486,7 +480,26 @@ void Model::paintGroupings(Painter& painter, const Marker& loc) const{
     }else{
         painter.drawNarrowCursor(lastLine()->x + lastLine()->width, lastText()->y, 12);
     }
-    #endif
+#endif
+}
+
+void Model::paintNumberCommas(Painter& painter, double xL, double yT, double xR, double yB, const Selection& sel) const {
+    for(const Selection& comma_sel : comma_separated_numbers){
+        Marker m = comma_sel.right;
+        const size_t num_chars = m.index - comma_sel.left.index;
+        const double y = m.y();
+        if(y >= yB || m.yBot() <= yT) continue;
+        const uint8_t script_depth = m.text->scriptDepth();
+        const double dx = 3*CHARACTER_WIDTHS[script_depth];
+        double x = m.x();
+        painter.setScriptLevel(script_depth);
+        const double left_x = std::max(x - dx*((num_chars-1)/3), xL);
+
+        while(x > left_x){
+            x -= dx;
+            if(x < xR) painter.drawComma(x, y, sel.contains(x, y));
+        }
+    }
 }
 
 ParseNode Model::parseNodeAt(double x, double y) const noexcept {
@@ -541,6 +554,9 @@ void Model::clearFormatting() noexcept{
         #endif
 
         if(Construct* c = t->nextConstructInPhrase()){
+            #ifndef HOPE_TYPESET_HEADLESS
+            c->pn = NONE;
+            #endif
             Text* candidate = c->frontText();
             t = candidate ? candidate : t->nextTextAsserted();
         }else if(t->isNested()){
@@ -554,6 +570,7 @@ void Model::clearFormatting() noexcept{
 
     errors.clear();
     warnings.clear();
+    comma_separated_numbers.clear();
 }
 
 void Model::performSemanticFormatting(){

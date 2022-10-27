@@ -63,6 +63,7 @@ struct Marker{
     #ifndef HOPE_TYPESET_HEADLESS
     double x() const;
     double y() const noexcept;
+    double yBot() const noexcept;
     void setToPointOf(Text* t, double setpoint);
     void setToLeftOf(Text* t, double setpoint);
     #endif

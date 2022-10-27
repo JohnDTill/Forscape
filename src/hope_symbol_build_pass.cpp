@@ -24,6 +24,27 @@ HOPE_STATIC_MAP<std::string_view, Op> SymbolTableBuilder::predef {
     {"ℏ", OP_REDUCED_PLANCK_CONSTANT},
     {"σ", OP_STEFAN_BOLTZMANN_CONSTANT},
     {"I", OP_IDENTITY_AUTOSIZE},
+    {"i", OP_IMAGINARY},
+    {"g", OP_GRAVITY},
+    {"Γ", OP_GAMMA_FUNCTION},
+
+    //EVENTUALLY: how do units work? conversions?
+    //{"m", OP_METERS},
+    //{"s", OP_SECONDS},
+    //{"kg", OP_KILOGRAMS},
+    //{"N", OP_NEWTONS},
+    //{"Pa", OP_PASCALS},
+    //{"Hz", OP_HERTZ},
+    //{"l", OP_LITERS},
+    //{"rad", OP_RADIANS},
+    //{"deg", OP_DEGREES},
+
+    //{"ft", OP_FEET},
+    //{"in", OP_INCHES},
+    //{"lb", OP_POUND_MASS},
+    //{"lbf", OP_POUND_FORCE},
+
+    {"T", OP_MAYBE_TRANSPOSE},
 };
 
 SymbolTableBuilder::SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model) noexcept
@@ -172,6 +193,7 @@ void SymbolTableBuilder::resolveStmt(ParseNode pn) alloc_except {
             if(closure_depth == 0) errors.push_back(Error(parse_tree.getSelection(pn), RETURN_OUTSIDE_FUNCTION));
             resolveDefault(pn);
             break;
+        case OP_UNKNOWN_LIST: resolveUnknownDeclaration(pn); break;
         default: resolveDefault(pn);
     }
 }
@@ -182,6 +204,7 @@ void SymbolTableBuilder::resolveExpr(ParseNode pn) alloc_except {
         case OP_LAMBDA: resolveLambda(pn); break;
         case OP_SUBSCRIPT_ACCESS: resolveSubscript(pn); break;
         case OP_LIMIT: resolveLimit(pn); break;
+        case OP_INTEGRAL: resolveIndefiniteIntegral(pn); break;
         case OP_DEFINITE_INTEGRAL: resolveDefiniteIntegral(pn); break;
 
         case OP_SUMMATION:
@@ -729,6 +752,16 @@ void SymbolTableBuilder::resolveLimit(ParseNode pn) noexcept {
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
+void SymbolTableBuilder::resolveIndefiniteIntegral(ParseNode pn) noexcept {
+    increaseLexicalDepth(SCOPE_NAME("-indef_int-")  parse_tree.getLeft(pn));
+
+    ParseNode id = parse_tree.arg<0>(pn);
+    if(!declared(id)) defineLocalScope(id, true, false);
+    resolveExpr(parse_tree.arg<1>(pn));
+
+    decreaseLexicalDepth(parse_tree.getRight(pn));
+}
+
 void SymbolTableBuilder::resolveDefiniteIntegral(ParseNode pn) noexcept {
     resolveExpr(parse_tree.arg<1>(pn));
     resolveExpr(parse_tree.arg<2>(pn));
@@ -738,6 +771,27 @@ void SymbolTableBuilder::resolveDefiniteIntegral(ParseNode pn) noexcept {
     resolveExpr(parse_tree.arg<3>(pn));
 
     decreaseLexicalDepth(parse_tree.getRight(pn));
+}
+
+void SymbolTableBuilder::resolveSetBuilder(ParseNode pn) noexcept {
+    increaseLexicalDepth(SCOPE_NAME("-set_builder-")  parse_tree.getLeft(pn));
+
+    ParseNode var = parse_tree.arg<0>(pn);
+    if(parse_tree.getOp(var) == OP_IN) var = parse_tree.lhs(var);
+
+    if(parse_tree.getOp(var) != OP_IDENTIFIER){
+        errors.push_back(Error(parse_tree.getSelection(var), ErrorCode::NON_LVALUE));
+    }else{
+        defineLocalScope(parse_tree.arg<0>(pn), true, false);
+        resolveExpr(parse_tree.arg<1>(pn));
+    }
+
+    decreaseLexicalDepth(parse_tree.getRight(pn));
+}
+
+void SymbolTableBuilder::resolveUnknownDeclaration(ParseNode pn) noexcept {
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
+        defineLocalScope(parse_tree.arg(pn, i));
 }
 
 bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable, bool warn_on_shadow) alloc_except {

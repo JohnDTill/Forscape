@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="colours">
       <attribute name="title">
@@ -73,6 +73,13 @@
             <widget class="QCheckBox" name="integralCheckBox">
              <property name="text">
               <string>Integrals aligned vertically</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="numberCommaCheckBox">
+             <property name="text">
+              <string>Display commas in numbers</string>
              </property>
             </widget>
            </item>
