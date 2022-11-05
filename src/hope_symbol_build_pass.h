@@ -99,6 +99,8 @@ private:
     void resolveDefiniteIntegral(ParseNode pn) alloc_except;
     void resolveSetBuilder(ParseNode pn) alloc_except;
     void resolveUnknownDeclaration(ParseNode pn) alloc_except;
+    void resolveImport(ParseNode pn) alloc_except;
+    void resolveFromImport(ParseNode pn) alloc_except;
     bool defineLocalScope(ParseNode pn, bool immutable = true, bool warn_on_shadow = true) alloc_except;
     bool declared(ParseNode pn) const noexcept;
     size_t symIndex(ParseNode pn) const noexcept;

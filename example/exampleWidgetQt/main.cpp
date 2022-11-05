@@ -9,8 +9,6 @@ int main(int argc, char* argv[]){
     QCoreApplication::setOrganizationName("AutoMath");
     QCoreApplication::setOrganizationDomain("https://github.com/JohnDTill/Forscape");
 
-    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-
     QApplication a(argc, argv);
     Hope::initLogging();
     Hope::logger->info("/* APP_SESSION_START */");

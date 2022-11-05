@@ -87,17 +87,19 @@ ParseNode Parser::statement() alloc_except {
     comment = (index >= 2 && tokens[index-2].type == COMMENT) ? index-2 : NONE;
 
     switch (currentType()) {
-        case IF: return ifStatement();
-        case WHILE: return whileStatement();
-        case FOR: return forStatement();
-        case PRINT: return printStatement();
-        case ASSERT: return assertStatement();
         case ALGORITHM: return algStatement();
-        case RETURN: return returnStatement();
+        case ASSERT: return assertStatement();
         case BREAK: return loops ? terminalAndAdvance(OP_BREAK) : error(BAD_BREAK);
         case CONTINUE: return loops ? terminalAndAdvance(OP_CONTINUE) : error(BAD_CONTINUE);
+        case FOR: return forStatement();
+        case FROM: return fromStatement();
+        case IF: return ifStatement();
+        case IMPORT: return importStatement();
         case PLOT: return plotStatement();
+        case PRINT: return printStatement();
+        case RETURN: return returnStatement();
         case UNKNOWN: return unknownsStatement();
+        case WHILE: return whileStatement();
         default: return mathStatement();
     }
 }
@@ -306,6 +308,44 @@ ParseNode Parser::plotStatement() alloc_except {
     return parse_tree.addNode<5>(OP_PLOT, sel, {title, x_label, x, y_label, y});
 }
 
+ParseNode Parser::importStatement() noexcept {
+    const Typeset::Marker& left = lMark();
+
+    advance();
+    consume(IDENTIFIER);
+    ParseNode file = parse_tree.addTerminal(OP_FILE_REF, selectionPrev());
+    ParseNode alias = match(AS) ? isolatedIdentifier() : NONE;
+
+    if(noErrors()){
+        ParseNode pn = parse_tree.addUnary(OP_IMPORT, Typeset::Selection(left, rMarkPrev()), file);
+        parse_tree.setFlag(pn, alias);
+        return pn;
+    }else{
+        return error_node;
+    }
+}
+
+ParseNode Parser::fromStatement() noexcept {
+    const Typeset::Marker& left = lMark();
+
+    advance();
+    consume(IDENTIFIER);
+    ParseNode file = parse_tree.addTerminal(OP_FILE_REF, selectionPrev());
+    consume(IMPORT);
+
+    parse_tree.prepareNary();
+    parse_tree.addNaryChild(file);
+
+    do {
+        ParseNode component = isolatedIdentifier();
+        ParseNode alias = match(AS) ? isolatedIdentifier() : NONE;
+        parse_tree.setFlag(component, alias);
+        parse_tree.addNaryChild(component);
+    } while(match(COMMA));
+
+    return parse_tree.finishNary(OP_FROM_IMPORT, Typeset::Selection(left, rMarkPrev()));
+}
+
 ParseNode Parser::unknownsStatement() alloc_except {
     const Typeset::Marker left = lMark();
     advance();
@@ -332,7 +372,9 @@ ParseNode Parser::mathStatement() alloc_except {
     ParseNode n = expression();
 
     switch (currentType()) {
+        case DEFEQUALS:
         case EQUALS:
+        case EQUIVALENT:
             n = (parse_tree.getOp(n) == OP_CALL && parse_tree.getNumArgs(n) >= 2) ?
                         namedLambdaStmt(n) :
                         equality(n);
@@ -656,7 +698,7 @@ ParseNode Parser::call_or_mult(ParseNode n) alloc_except {
     }
 
     if(!noErrors()){
-        //EVENTUALLY:
+        //DO THIS:
         //  Check if the user is typing here
         //  If so, display a tooltip with the function parameters
         //  This depends on doing the work to resolve the called function, despite errors

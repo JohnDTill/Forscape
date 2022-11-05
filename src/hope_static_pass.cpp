@@ -316,6 +316,10 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
             return pn;
         }
 
+        case OP_FROM_IMPORT:
+        case OP_IMPORT:
+            return pn; //EVENTUALLY: this can be discarded by now
+
         default:
             assert(false);
             return pn;

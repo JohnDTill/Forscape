@@ -24,7 +24,7 @@ HOPE_STATIC_MAP<std::string_view, Op> SymbolTableBuilder::predef {
     {"ℏ", OP_REDUCED_PLANCK_CONSTANT},
     {"σ", OP_STEFAN_BOLTZMANN_CONSTANT},
     {"I", OP_IDENTITY_AUTOSIZE},
-    {"i", OP_IMAGINARY},
+    //{"i", OP_IMAGINARY},
     {"g", OP_GRAVITY},
     {"Γ", OP_GAMMA_FUNCTION},
 
@@ -115,8 +115,9 @@ void SymbolTableBuilder::resolveSymbols() alloc_except {
         }
 
     //Every usage in the symbol table is in the doc map
-    for(const Usage& usage : symbol_table.usages)
-        assert(selection_in_map.find(parse_tree.getSelection(usage.pn)) != selection_in_map.end());
+    //for(const Usage& usage : symbol_table.usages)
+    //    assert(selection_in_map.find(parse_tree.getSelection(usage.pn)) != selection_in_map.end());
+    //DO THIS: can this work?
     #endif
     #endif
 }
@@ -178,15 +179,16 @@ size_t SymbolTableBuilder::symbolIndexFromSelection(const Typeset::Selection& se
 
 void SymbolTableBuilder::resolveStmt(ParseNode pn) alloc_except {
     switch (parse_tree.getOp(pn)) {
-        case OP_EQUAL: resolveEquality(pn); break;
+        case OP_ALGORITHM: resolveAlgorithm(pn); break;
         case OP_ASSIGN: resolveAssignment(pn); break;
         case OP_BLOCK: resolveBlock(pn); break;
-        case OP_ALGORITHM: resolveAlgorithm(pn); break;
-        case OP_PROTOTYPE_ALG: resolvePrototype(pn); break;
-        case OP_WHILE: resolveConditional1(SCOPE_NAME("-while-")  pn); break;
+        case OP_EQUAL: resolveEquality(pn); break;
+        case OP_FOR: resolveFor(pn); break;
+        case OP_FROM_IMPORT: resolveFromImport(pn); break;
         case OP_IF: resolveConditional1(SCOPE_NAME("-if-")  pn); break;
         case OP_IF_ELSE: resolveConditional2(pn); break;
-        case OP_FOR: resolveFor(pn); break;
+        case OP_IMPORT: resolveImport(pn); break;
+        case OP_PROTOTYPE_ALG: resolvePrototype(pn); break;
         case OP_RANGED_FOR: resolveRangedFor(pn); break;
         case OP_RETURN:
         case OP_RETURN_EMPTY:
@@ -194,6 +196,8 @@ void SymbolTableBuilder::resolveStmt(ParseNode pn) alloc_except {
             resolveDefault(pn);
             break;
         case OP_UNKNOWN_LIST: resolveUnknownDeclaration(pn); break;
+        case OP_WHILE: resolveConditional1(SCOPE_NAME("-while-")  pn); break;
+
         default: resolveDefault(pn);
     }
 }
@@ -792,6 +796,30 @@ void SymbolTableBuilder::resolveSetBuilder(ParseNode pn) noexcept {
 void SymbolTableBuilder::resolveUnknownDeclaration(ParseNode pn) noexcept {
     for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
         defineLocalScope(parse_tree.arg(pn, i));
+}
+
+void SymbolTableBuilder::resolveImport(ParseNode pn) noexcept {
+    ParseNode alias = parse_tree.getFlag(pn);
+    if(alias == NONE){
+        ParseNode file = parse_tree.child(pn);
+        parse_tree.setOp(file, OP_IDENTIFIER);
+        defineLocalScope(file);
+    }else{
+        defineLocalScope(alias);
+    }
+}
+
+void SymbolTableBuilder::resolveFromImport(ParseNode pn) noexcept {
+    for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++){
+        ParseNode child = parse_tree.arg(pn, i);
+        ParseNode alias = parse_tree.getFlag(child);
+        if(alias == NONE){
+            defineLocalScope(child);
+        }else{
+            parse_tree.setOp(child, OP_UNDEFINED);
+            defineLocalScope(alias);
+        }
+    }
 }
 
 bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable, bool warn_on_shadow) alloc_except {
