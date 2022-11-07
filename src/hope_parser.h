@@ -43,6 +43,7 @@ private:
     ParseNode plotStatement() alloc_except;
     ParseNode importStatement() alloc_except;
     ParseNode fromStatement() alloc_except;
+    ParseNode namespaceStatement() alloc_except;
     ParseNode unknownsStatement() alloc_except;
     ParseNode mathStatement() alloc_except;
     ParseNode namedLambdaStmt(ParseNode call) alloc_except;

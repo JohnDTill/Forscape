@@ -28,6 +28,19 @@ private:
     static HOPE_STATIC_MAP<std::string_view, Op> predef;
     size_t active_scope_id;
     HOPE_UNORDERED_MAP<Typeset::Selection, SymbolId> map;
+    struct StoredScopeKey {
+        ParseNode symbol_root;
+        Typeset::Selection sel;
+        StoredScopeKey(ParseNode symbol_root, const Typeset::Selection& sel) noexcept : symbol_root(symbol_root), sel(sel) {}
+        bool operator==(const StoredScopeKey& other) const noexcept {
+            return symbol_root == other.symbol_root && sel == other.sel; }
+    };
+    struct HashStoredScopeKey {
+        std::size_t operator()(const StoredScopeKey& s) const {
+            return s.symbol_root ^ std::hash<Typeset::Selection>()(s.sel);
+        }
+    };
+    HOPE_UNORDERED_MAP<StoredScopeKey, size_t, HashStoredScopeKey> stored_scopes;
     static constexpr size_t GLOBAL_DEPTH = 0;
     size_t lexical_depth = GLOBAL_DEPTH;
     size_t closure_depth = 0;
@@ -60,6 +73,7 @@ private:
         #endif
         const Typeset::Marker& begin, ParseNode pn) alloc_except;
     void decreaseClosureDepth(const Typeset::Marker& end) alloc_except;
+    void addStoredScope(ParseNode pn);
     void makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable) alloc_except;
     void appendEntry(ParseNode pn, size_t& old_entry, bool immutable, bool warn_on_shadow = true) alloc_except;
     void resolveStmt(ParseNode pn) alloc_except;
@@ -101,6 +115,8 @@ private:
     void resolveUnknownDeclaration(ParseNode pn) alloc_except;
     void resolveImport(ParseNode pn) alloc_except;
     void resolveFromImport(ParseNode pn) alloc_except;
+    void resolveNamespace(ParseNode pn) alloc_except;
+    void resolveScopeAccess(ParseNode pn) alloc_except;
     bool defineLocalScope(ParseNode pn, bool immutable = true, bool warn_on_shadow = true) alloc_except;
     bool declared(ParseNode pn) const noexcept;
     size_t symIndex(ParseNode pn) const noexcept;

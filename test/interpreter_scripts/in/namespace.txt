@@ -1,0 +1,10 @@
+namespace NAMESPACE {
+    test = "TEST"
+    //assert( NAMESPACE.test = "TEST" ) //DO THIS
+}
+
+test = "OUTER"
+assert(test = "OUTER")
+//assert( NAMESPACE.test = "TEST" ) //DO THIS
+
+print("namespace.txt PASS")

@@ -95,6 +95,7 @@ ParseNode Parser::statement() alloc_except {
         case FROM: return fromStatement();
         case IF: return ifStatement();
         case IMPORT: return importStatement();
+        case NAMESPACE: return namespaceStatement();
         case PLOT: return plotStatement();
         case PRINT: return printStatement();
         case RETURN: return returnStatement();
@@ -344,6 +345,17 @@ ParseNode Parser::fromStatement() noexcept {
     } while(match(COMMA));
 
     return parse_tree.finishNary(OP_FROM_IMPORT, Typeset::Selection(left, rMarkPrev()));
+}
+
+ParseNode Parser::namespaceStatement() noexcept {
+    const Typeset::Marker& left = lMark();
+
+    advance();
+    consume(IDENTIFIER);
+    ParseNode name = parse_tree.addTerminal(OP_IDENTIFIER, selectionPrev());
+    ParseNode body = blockStatement();
+
+    return parse_tree.addNode<2>(OP_NAMESPACE, Typeset::Selection(left, rMarkPrev()), {name, body});
 }
 
 ParseNode Parser::unknownsStatement() alloc_except {
@@ -737,6 +749,7 @@ ParseNode Parser::rightUnary(ParseNode n) alloc_except {
             case TOKEN_SUPERSCRIPT: n = superscript(n); break;
             case TOKEN_SUBSCRIPT: n = subscript(n, rMark()); break;
             case TOKEN_DUALSCRIPT: n = dualscript(n); break;
+            case PERIOD: advance(); n = parse_tree.addNode<2>(OP_SCOPE_ACCESS, {n, primary()}); break;
             default: return n;
         }
     }

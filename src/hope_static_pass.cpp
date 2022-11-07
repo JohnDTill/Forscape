@@ -320,6 +320,11 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
         case OP_IMPORT:
             return pn; //EVENTUALLY: this can be discarded by now
 
+        case OP_NAMESPACE:
+            //return resolveStmt(parse_tree.arg<1>(pn)); //TODO: this should be resolveBlock
+            parse_tree.setArg<1>(pn, resolveStmt(parse_tree.arg<1>(pn)));
+            return pn; //TODO: not all symbols go to the stack!
+
         default:
             assert(false);
             return pn;
@@ -927,6 +932,8 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
                 return resolveMult(pn);
             }
         }
+
+        case OP_SCOPE_ACCESS: return resolveExpr(parse_tree.rhs(pn));
 
         default:
             assert(false);

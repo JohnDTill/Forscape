@@ -126,6 +126,7 @@ void SymbolTableBuilder::reset() noexcept {
     symbol_table.reset(parse_tree.getLeft(parse_tree.root));
     //assert(map.empty()); //Not necessarily empty due to errors
     map.clear();
+    stored_scopes.clear();
     assert(refs.empty());
     assert(ref_frames.empty());
     lexical_depth = GLOBAL_DEPTH;
@@ -188,6 +189,7 @@ void SymbolTableBuilder::resolveStmt(ParseNode pn) alloc_except {
         case OP_IF: resolveConditional1(SCOPE_NAME("-if-")  pn); break;
         case OP_IF_ELSE: resolveConditional2(pn); break;
         case OP_IMPORT: resolveImport(pn); break;
+        case OP_NAMESPACE: resolveNamespace(pn); break;
         case OP_PROTOTYPE_ALG: resolvePrototype(pn); break;
         case OP_RANGED_FOR: resolveRangedFor(pn); break;
         case OP_RETURN:
@@ -219,6 +221,10 @@ void SymbolTableBuilder::resolveExpr(ParseNode pn) alloc_except {
         case OP_DERIVATIVE:
         case OP_PARTIAL:
             resolveDerivative(pn);
+            break;
+
+        case OP_SCOPE_ACCESS:
+            resolveScopeAccess(pn);
             break;
 
         default: resolveDefault(pn);
@@ -798,7 +804,7 @@ void SymbolTableBuilder::resolveUnknownDeclaration(ParseNode pn) noexcept {
         defineLocalScope(parse_tree.arg(pn, i));
 }
 
-void SymbolTableBuilder::resolveImport(ParseNode pn) noexcept {
+void SymbolTableBuilder::resolveImport(ParseNode pn) alloc_except {
     ParseNode alias = parse_tree.getFlag(pn);
     if(alias == NONE){
         ParseNode file = parse_tree.child(pn);
@@ -809,7 +815,7 @@ void SymbolTableBuilder::resolveImport(ParseNode pn) noexcept {
     }
 }
 
-void SymbolTableBuilder::resolveFromImport(ParseNode pn) noexcept {
+void SymbolTableBuilder::resolveFromImport(ParseNode pn) alloc_except {
     for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++){
         ParseNode child = parse_tree.arg(pn, i);
         ParseNode alias = parse_tree.getFlag(child);
@@ -819,6 +825,32 @@ void SymbolTableBuilder::resolveFromImport(ParseNode pn) noexcept {
             parse_tree.setOp(child, OP_UNDEFINED);
             defineLocalScope(alias);
         }
+    }
+}
+
+void SymbolTableBuilder::resolveNamespace(ParseNode pn) alloc_except {
+    ParseNode name = parse_tree.arg<0>(pn);
+    ParseNode body = parse_tree.arg<1>(pn);
+    defineLocalScope(name);
+    increaseLexicalDepth(SCOPE_NAME(parse_tree.str(name))  parse_tree.getLeft(body));
+    resolveBlock(body);
+    decreaseLexicalDepth(parse_tree.getRight(body));
+    addStoredScope(name);
+}
+
+void SymbolTableBuilder::resolveScopeAccess(ParseNode pn) noexcept {
+    ParseNode id = parse_tree.arg<0>(pn);
+    resolveReference(id);
+    if(!errors.empty()) return;
+    size_t sym_id = parse_tree.getSymId(id);
+    ParseNode scope_node = symbol_table.symbols[sym_id].flag;
+    ParseNode field = parse_tree.arg<1>(pn);
+    const Typeset::Selection& sel = parse_tree.getSelection(field);
+    auto lookup = stored_scopes.find(StoredScopeKey(scope_node, parse_tree.getSelection(field)));
+    if(lookup != stored_scopes.end()){
+        resolveReference(field, lookup->second);
+    }else{
+        errors.push_back(Error(sel, BAD_READ));
     }
 }
 
@@ -966,6 +998,18 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end) alloc_
     ParseNode list = parse_tree.finishNary(OP_LIST, sel);
     parse_tree.setRefList(fn, list);
     refs.resize(cutoff);
+}
+
+void SymbolTableBuilder::addStoredScope(ParseNode pn) {
+    for(size_t curr = symbol_table.head(active_scope_id-1); curr < active_scope_id; curr = symbol_table.scopes[curr].next){
+        ScopeSegment& scope = symbol_table.scopes[curr];
+        for(size_t sym_id = scope.sym_begin; sym_id < scope.sym_end; sym_id++){
+            Symbol& sym = symbol_table.symbols[sym_id];
+            assert(sym.declaration_lexical_depth == lexical_depth+1);
+            auto result = stored_scopes.insert({StoredScopeKey(pn, sym.sel(parse_tree)), sym_id});
+            assert(result.second);
+        }
+    }
 }
 
 void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable) alloc_except {
