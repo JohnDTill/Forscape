@@ -322,6 +322,7 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
 
         case OP_NAMESPACE:
             //return resolveStmt(parse_tree.arg<1>(pn)); //TODO: this should be resolveBlock
+            symbol_table.symbols[parse_tree.getSymId(parse_tree.arg<0>(pn))].type = NAMESPACE;
             parse_tree.setArg<1>(pn, resolveStmt(parse_tree.arg<1>(pn)));
             return pn; //TODO: not all symbols go to the stack!
 
@@ -1726,7 +1727,7 @@ bool StaticPass::dimsDisagree(size_t a, size_t b) noexcept{
 }
 
 constexpr bool StaticPass::isAbstractFunctionGroup(size_t type) noexcept {
-    return type < FAILURE;
+    return type < NAMESPACE;
 }
 
 Type StaticPass::declare(const DeclareSignature& fn){
@@ -1925,6 +1926,7 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
 }
 
 static constexpr std::string_view type_strs[] = {
+    "Namespace",
     "Failure",
     "Recursive-Cycle",
     "Void",
@@ -1938,7 +1940,7 @@ std::string StaticPass::typeString(Type t) const{
     if(isAbstractFunctionGroup(t)){
         return abstractFunctionSetString(t);
     }else{
-        return std::string(type_strs[t - FAILURE]);
+        return std::string(type_strs[t - NAMESPACE]);
     }
 }
 

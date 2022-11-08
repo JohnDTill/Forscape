@@ -44,6 +44,7 @@ public:
     static constexpr Type VOID_TYPE = UNINITIALISED-4;
     static constexpr Type RECURSIVE_CYCLE = UNINITIALISED-5;
     static constexpr Type FAILURE = UNINITIALISED-6;
+    static constexpr Type NAMESPACE = UNINITIALISED-7;
     static constexpr bool isAbstractFunctionGroup(size_t type) noexcept;
     bool retry_at_recursion = false;
     bool first_attempt = true;

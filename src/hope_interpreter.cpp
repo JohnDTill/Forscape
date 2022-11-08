@@ -97,9 +97,7 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_NAMESPACE:{
             stack.push(static_cast<void*>(nullptr)
                 DEBUG_STACK_ARG("namespace-" + parse_tree.str(parse_tree.lhs(pn))));
-            const size_t stack_size = stack.size();
             blockStmt(parse_tree.rhs(pn));
-            stack.trim(stack_size);
             break; //DO THIS: this shouldn't be in the interpreter
         }
         default: error(UNRECOGNIZED_STMT, pn);

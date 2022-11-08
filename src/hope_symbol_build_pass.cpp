@@ -832,10 +832,18 @@ void SymbolTableBuilder::resolveNamespace(ParseNode pn) alloc_except {
     ParseNode name = parse_tree.arg<0>(pn);
     ParseNode body = parse_tree.arg<1>(pn);
     defineLocalScope(name);
+    const size_t start_scope = symbol_table.scopes.size();
     increaseLexicalDepth(SCOPE_NAME(parse_tree.str(name))  parse_tree.getLeft(body));
     resolveBlock(body);
+    const size_t end_scope = symbol_table.scopes.size();
     decreaseLexicalDepth(parse_tree.getRight(body));
     addStoredScope(name);
+
+    symbol_table.scopes[start_scope].prev = start_scope-1;
+    symbol_table.scopes[start_scope-1].next = start_scope;
+
+    symbol_table.scopes[end_scope].prev = end_scope-1;
+    symbol_table.scopes[end_scope-1].next = end_scope;
 }
 
 void SymbolTableBuilder::resolveScopeAccess(ParseNode pn) noexcept {
@@ -927,6 +935,7 @@ void SymbolTableBuilder::decreaseLexicalDepth(const Typeset::Marker& end) alloc_
         ScopeSegment& scope = symbol_table.scopes[curr];
         for(size_t sym_id = scope.sym_begin; sym_id < scope.sym_end; sym_id++){
             Symbol& sym = symbol_table.symbols[sym_id];
+            if(sym.declaration_lexical_depth > lexical_depth) continue;
             assert(sym.declaration_lexical_depth == lexical_depth);
 
             if(sym.shadowed_var == NONE)
@@ -1005,7 +1014,7 @@ void SymbolTableBuilder::addStoredScope(ParseNode pn) {
         ScopeSegment& scope = symbol_table.scopes[curr];
         for(size_t sym_id = scope.sym_begin; sym_id < scope.sym_end; sym_id++){
             Symbol& sym = symbol_table.symbols[sym_id];
-            assert(sym.declaration_lexical_depth == lexical_depth+1);
+            if(sym.declaration_lexical_depth != lexical_depth+1) continue;
             auto result = stored_scopes.insert({StoredScopeKey(pn, sym.sel(parse_tree)), sym_id});
             assert(result.second);
         }
