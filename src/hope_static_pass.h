@@ -123,7 +123,7 @@ private:
 
     private:
         ParseNode resolveStmt(ParseNode pn) noexcept;
-        ParseNode resolveLValue(ParseNode pn) noexcept;
+        ParseNode resolveLValue(ParseNode pn, bool write = false) noexcept;
         Type fillDefaultsAndInstantiate(ParseNode call_node, CallSignature sig);
         ParseNode resolveExprTop(size_t pn, size_t rows_expected = 0, size_t cols_expected = 0);
         ParseNode resolveExpr(size_t pn, size_t rows_expected = 0, size_t cols_expected = 0) noexcept;
@@ -150,7 +150,7 @@ private:
         ParseNode resolveZeroMatrix(ParseNode pn);
         ParseNode resolveLimit(ParseNode pn);
         ParseNode resolveDefiniteIntegral(ParseNode pn);
-        ParseNode resolveScopeAccess(ParseNode pn);
+        ParseNode resolveScopeAccess(ParseNode pn, bool write = false);
         ParseNode copyChildProperties(ParseNode pn) noexcept;
         ParseNode enforceScalar(ParseNode pn);
         ParseNode enforceZero(ParseNode pn);

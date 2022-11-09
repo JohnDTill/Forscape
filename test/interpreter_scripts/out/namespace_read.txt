@@ -1,1 +1,1 @@
-namespace.txt PASS
+namespace_read.txt PASS

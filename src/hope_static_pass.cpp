@@ -154,8 +154,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
         case OP_EQUAL:{
             ParseNode rhs = resolveExprTop(parse_tree.rhs(pn));
             parse_tree.setArg<1>(pn, rhs);
-            ParseNode lhs = resolveLValue(parse_tree.lhs(pn));
-            size_t sym_id = parse_tree.getFlag(lhs);
+            size_t sym_id = parse_tree.getFlag(parse_tree.lhs(pn));
             Symbol& sym = symbol_table.symbols[sym_id];
             sym.type = parse_tree.getType(rhs);
             sym.rows = parse_tree.getRows(rhs);
@@ -163,7 +162,10 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             return pn;
         }
         case OP_REASSIGN:{
-            ParseNode lhs = parse_tree.lhs(pn);
+            ParseNode lhs = resolveLValue(parse_tree.lhs(pn), true);
+            if(!errors.empty()) return lhs;
+
+            parse_tree.setArg<0>(pn, lhs);
             if(parse_tree.getOp(lhs) == OP_SUBSCRIPT_ACCESS){
                 ParseNode rhs = resolveExprTop(parse_tree.rhs(pn));
                 parse_tree.setArg<1>(pn, rhs);
@@ -178,7 +180,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                 parse_tree.setType(pn, OP_REASSIGN_SUBSCRIPT);
                 return pn;
             }else{
-                size_t sym_id = parse_tree.getSymId(parse_tree.lhs(pn));
+                size_t sym_id = parse_tree.getSymId(lhs);
                 Symbol& sym = symbol_table.symbols[sym_id];
 
                 ParseNode rhs = resolveExprTop(parse_tree.rhs(pn), sym.rows, sym.cols);
@@ -395,14 +397,16 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
     }
 }
 
-ParseNode StaticPass::resolveLValue(ParseNode pn) noexcept {
+ParseNode StaticPass::resolveLValue(ParseNode pn, bool write) noexcept {
     if(!errors.empty()) return pn;
 
     assert(pn != NONE);
 
     switch (parse_tree.getOp(pn)) {
-        case OP_IDENTIFIER: return pn;
-        case OP_SCOPE_ACCESS: return resolveScopeAccess(pn);
+        case OP_SUBSCRIPT_ACCESS:
+        case OP_IDENTIFIER:
+            return pn;
+        case OP_SCOPE_ACCESS: return resolveScopeAccess(pn, write);
         default: assert(false); return NONE;
     }
 }
@@ -1716,7 +1720,7 @@ ParseNode StaticPass::resolveDefiniteIntegral(ParseNode pn) {
     return pn;
 }
 
-ParseNode StaticPass::resolveScopeAccess(ParseNode pn) {
+ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
     ParseNode lhs_lvalue = resolveLValue(parse_tree.lhs(pn));
     size_t sym_id = parse_tree.getSymId(lhs_lvalue);
     ParseNode scope_node = symbol_table.symbols[sym_id].flag;
@@ -1730,7 +1734,16 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn) {
 
         Symbol& sym = symbol_table.symbols[sym_id];
         parse_tree.setSymId(field, sym_id);
-        sym.is_used = true;
+
+        if(write){
+            if(sym.is_const){
+                return error(pn, field, REASSIGN_CONSTANT);
+            }else{
+                sym.is_reassigned = true;
+            }
+        }else{
+            sym.is_used = true;
+        }
 
         sym.is_closure_nested |= sym.declaration_closure_depth && (closureDepth() != sym.declaration_closure_depth);
         parse_tree.setType(field, sym.type);

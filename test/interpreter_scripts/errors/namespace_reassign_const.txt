@@ -1,0 +1,9 @@
+namespace outer {
+    namespace inner {
+        y = 0
+    }
+}
+
+assert(outer.inner.y = 0)
+outer.inner.y ← 2
+assert(outer.inner.y = 2)

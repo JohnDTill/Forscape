@@ -1,0 +1,15 @@
+namespace outer {
+    x ← 0
+    namespace inner {
+        y ← 0
+    }
+}
+
+assert(outer.x = 0)
+assert(outer.inner.y = 0)
+outer.x ← 1
+outer.inner.y ← 2
+assert(outer.x = 1)
+assert(outer.inner.y = 2)
+
+print("namespace_write.txt PASS")

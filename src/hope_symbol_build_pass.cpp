@@ -185,6 +185,11 @@ void SymbolTableBuilder::resolveAssignment(ParseNode pn) alloc_except {
     ParseNode rhs = parse_tree.rhs(pn);
 
     switch(parse_tree.getOp( lhs )){
+        case OP_SCOPE_ACCESS:
+            resolveScopeAccess(lhs);
+            parse_tree.setOp(pn, OP_REASSIGN);
+            break;
+
         case OP_IDENTIFIER:
             resolveExpr(rhs);
             resolveAssignmentId(pn);
