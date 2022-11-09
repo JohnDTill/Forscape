@@ -1,0 +1,19 @@
+namespace outer {
+    test = "outer"
+    assert( outer.test = "outer" )
+    
+    namespace inner {
+        test = "inner"
+        assert( test = "inner" )
+        assert( inner.test = "inner" )
+        assert( outer.inner.test = "inner" )
+        assert( outer.test = "outer" )
+    }
+}
+
+test = "global"
+assert( test = "global" )
+assert( outer.test = "outer" )
+assert( outer.inner.test = "inner" )
+
+print("namespace.txt PASS")

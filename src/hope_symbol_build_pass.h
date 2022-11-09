@@ -28,19 +28,6 @@ private:
     static HOPE_STATIC_MAP<std::string_view, Op> predef;
     size_t active_scope_id;
     HOPE_UNORDERED_MAP<Typeset::Selection, SymbolId> map;
-    struct StoredScopeKey {
-        ParseNode symbol_root;
-        Typeset::Selection sel;
-        StoredScopeKey(ParseNode symbol_root, const Typeset::Selection& sel) noexcept : symbol_root(symbol_root), sel(sel) {}
-        bool operator==(const StoredScopeKey& other) const noexcept {
-            return symbol_root == other.symbol_root && sel == other.sel; }
-    };
-    struct HashStoredScopeKey {
-        std::size_t operator()(const StoredScopeKey& s) const {
-            return s.symbol_root ^ std::hash<Typeset::Selection>()(s.sel);
-        }
-    };
-    HOPE_UNORDERED_MAP<StoredScopeKey, size_t, HashStoredScopeKey> stored_scopes;
     static constexpr size_t GLOBAL_DEPTH = 0;
     size_t lexical_depth = GLOBAL_DEPTH;
     size_t closure_depth = 0;

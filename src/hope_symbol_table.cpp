@@ -128,6 +128,7 @@ void SymbolTable::reset(const Typeset::Marker& doc_start) noexcept{
     scopes.clear();
     symbols.clear();
     usages.clear();
+    stored_scopes.clear();
 
     #if !defined(NDEBUG) && !defined(HOPE_TYPESET_HEADLESS)
     scope_names = "Global";
@@ -177,6 +178,17 @@ void SymbolTable::verifyIdentifier(ParseNode pn) const noexcept {
     assert(sym_id < symbols.size());
     const Symbol& sym = symbols[sym_id];
     assert(parse_tree.getSelection(pn) == sym.sel(parse_tree));
+}
+
+void SymbolTable::resolveReference(ParseNode pn, size_t sym_id, size_t closure_depth) noexcept {
+    assert(parse_tree.getOp(pn) == OP_IDENTIFIER);
+    Symbol& sym = symbols[sym_id];
+    parse_tree.setSymId(pn, sym_id);
+    sym.is_used = true;
+
+    sym.is_closure_nested |= sym.declaration_closure_depth && (closure_depth != sym.declaration_closure_depth);
+
+    usages.push_back(Usage(sym_id, pn, READ));
 }
 #endif
 

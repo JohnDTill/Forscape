@@ -351,8 +351,7 @@ ParseNode Parser::namespaceStatement() noexcept {
     const Typeset::Marker& left = lMark();
 
     advance();
-    consume(IDENTIFIER);
-    ParseNode name = parse_tree.addTerminal(OP_IDENTIFIER, selectionPrev());
+    ParseNode name = isolatedIdentifier();
     ParseNode body = blockStatement();
 
     return parse_tree.addNode<2>(OP_NAMESPACE, Typeset::Selection(left, rMarkPrev()), {name, body});

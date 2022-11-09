@@ -50,6 +50,68 @@ void StaticPass::resolve(){
         }
     }
 
+    for(size_t i = 0; i < symbol_table.symbols.size(); i++)
+        if(!symbol_table.symbols[i].is_used)
+            warnings.push_back(Error(symbol_table.getSel(i), UNUSED_VAR));
+
+    for(const Usage& usage : symbol_table.usages){
+        const Symbol& sym = symbol_table.symbols[usage.var_id];
+
+        assert(parse_tree.getOp(usage.pn) != OP_IDENTIFIER ||
+            symbol_table.getSel(parse_tree.getSymId(usage.pn)) == sym.sel(parse_tree));
+
+        SemanticType fmt = SEM_ID;
+        if(sym.is_ewise_index){
+            fmt = SEM_ID_EWISE_INDEX;
+        }else if(sym.is_closure_nested | sym.is_captured_by_value){
+            fmt = SEM_LINK;
+        }else if(!sym.is_const){
+            fmt = SEM_ID_FUN_IMPURE;
+        }
+
+        parse_tree.getSelection(usage.pn).format(fmt);
+    }
+
+    #ifndef NDEBUG
+    if(!errors.empty()) return;
+    assert(parse_tree.inFinalState());
+
+    #ifndef HOPE_TYPESET_HEADLESS
+    static std::unordered_set<ParseNode> doc_map_nodes;
+    doc_map_nodes.clear();
+
+    struct hash {
+        size_t operator() (const Typeset::Selection& a) const noexcept {
+            return reinterpret_cast<size_t>(a.left.text) ^ (a.left.index);
+        }
+    };
+
+    struct cmp {
+        bool operator() (const Typeset::Selection& a, const Typeset::Selection& b) const noexcept {
+            return a.left == b.left && a.right == b.right;
+        }
+    };
+
+    static std::unordered_set<Typeset::Selection, hash, cmp> selection_in_map;
+    selection_in_map.clear();
+
+    //model->populateDocMapParseNodes(doc_map_nodes);
+
+    //DO THIS: check this later?
+    //Every identifier in the doc map goes to a valid symbol
+    //for(ParseNode pn : doc_map_nodes)
+    //    if(parse_tree.getOp(pn) == OP_IDENTIFIER){
+    //        symbol_table.verifyIdentifier(pn);
+    //        selection_in_map.insert(parse_tree.getSelection(pn));
+    //    }
+
+    //Every usage in the symbol table is in the doc map
+    //for(const Usage& usage : symbol_table.usages)
+    //    assert(selection_in_map.find(parse_tree.getSelection(usage.pn)) != selection_in_map.end());
+    //DO THIS: can this work?
+    #endif
+    #endif
+
     for(const Usage& usage : symbol_table.usages){
         const Symbol& sym = symbol_table.symbols[usage.var_id];
 
@@ -82,7 +144,7 @@ void StaticPass::reset() noexcept{
         sym.type = UNINITIALISED;
 }
 
-ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
+ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
     if(!errors.empty()) return pn;
 
     assert(pn != NONE);
@@ -92,7 +154,8 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
         case OP_EQUAL:{
             ParseNode rhs = resolveExprTop(parse_tree.rhs(pn));
             parse_tree.setArg<1>(pn, rhs);
-            size_t sym_id = parse_tree.getFlag(parse_tree.lhs(pn));
+            ParseNode lhs = resolveLValue(parse_tree.lhs(pn));
+            size_t sym_id = parse_tree.getFlag(lhs);
             Symbol& sym = symbol_table.symbols[sym_id];
             sym.type = parse_tree.getType(rhs);
             sym.rows = parse_tree.getRows(rhs);
@@ -329,6 +392,18 @@ ParseNode StaticPass::resolveStmt(size_t pn) noexcept{
         default:
             assert(false);
             return pn;
+    }
+}
+
+ParseNode StaticPass::resolveLValue(ParseNode pn) noexcept {
+    if(!errors.empty()) return pn;
+
+    assert(pn != NONE);
+
+    switch (parse_tree.getOp(pn)) {
+        case OP_IDENTIFIER: return pn;
+        case OP_SCOPE_ACCESS: return resolveScopeAccess(pn);
+        default: assert(false); return NONE;
     }
 }
 
@@ -934,7 +1009,7 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
             }
         }
 
-        case OP_SCOPE_ACCESS: return resolveExpr(parse_tree.rhs(pn));
+        case OP_SCOPE_ACCESS: return resolveScopeAccess(pn);
 
         default:
             assert(false);
@@ -1639,6 +1714,32 @@ ParseNode StaticPass::resolveDefiniteIntegral(ParseNode pn) {
     parse_tree.copyDims(pn, e);
 
     return pn;
+}
+
+ParseNode StaticPass::resolveScopeAccess(ParseNode pn) {
+    ParseNode lhs_lvalue = resolveLValue(parse_tree.lhs(pn));
+    size_t sym_id = parse_tree.getSymId(lhs_lvalue);
+    ParseNode scope_node = symbol_table.symbols[sym_id].flag;
+    ParseNode field = parse_tree.arg<1>(pn);
+    assert(parse_tree.getOp(field) == OP_IDENTIFIER);
+    auto lookup = symbol_table.stored_scopes.find(SymbolTable::StoredScopeKey(scope_node, parse_tree.getSelection(field)));
+    if(lookup != symbol_table.stored_scopes.end()){
+        size_t sym_id = lookup->second;
+        size_t usage_index = parse_tree.getFlag(field);
+        symbol_table.usages[usage_index].var_id = sym_id; //Patch the empty usage inserted earlier
+
+        Symbol& sym = symbol_table.symbols[sym_id];
+        parse_tree.setSymId(field, sym_id);
+        sym.is_used = true;
+
+        sym.is_closure_nested |= sym.declaration_closure_depth && (closureDepth() != sym.declaration_closure_depth);
+        parse_tree.setType(field, sym.type);
+        parse_tree.setRows(field, sym.rows);
+        parse_tree.setCols(field, sym.cols);
+        return field;
+    }else{
+        return error(pn, pn, BAD_READ);
+    }
 }
 
 ParseNode StaticPass::copyChildProperties(ParseNode pn) noexcept{
