@@ -237,19 +237,21 @@ void SymbolTableBuilder::resolveAssignmentId(ParseNode pn) alloc_except {
 
 void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs, ParseNode rhs) alloc_except {
     ParseNode id = parse_tree.arg<0>(lhs);
-
     Typeset::Selection c = parse_tree.getSelection(id);
-    if(parse_tree.getOp(id) != OP_IDENTIFIER){
+
+    if(parse_tree.getOp(id) == OP_SCOPE_ACCESS){
+        resolveScopeAccess(id);
+    }else if(parse_tree.getOp(id) != OP_IDENTIFIER){
         errors.push_back(Error(c, NON_LVALUE));
         return;
-    }
-
-    size_t symbol_index = symbolIndexFromSelection(c);
-    if(symbol_index != NONE){
-        symbol_table.symbols[symbol_index].is_reassigned = true;
-        resolveReference(id, symbol_index);
     }else{
-        errors.push_back(Error(c, BAD_READ));
+        size_t symbol_index = symbolIndexFromSelection(c);
+        if(symbol_index != NONE){
+            symbol_table.symbols[symbol_index].is_reassigned = true;
+            resolveReference(id, symbol_index);
+        }else{
+            errors.push_back(Error(c, BAD_READ));
+        }
     }
 
     bool only_trivial_slice = true;
