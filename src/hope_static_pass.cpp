@@ -1723,10 +1723,9 @@ ParseNode StaticPass::resolveDefiniteIntegral(ParseNode pn) {
 ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
     ParseNode lhs_lvalue = resolveLValue(parse_tree.lhs(pn));
     size_t sym_id = parse_tree.getSymId(lhs_lvalue);
-    ParseNode scope_node = symbol_table.symbols[sym_id].flag;
     ParseNode field = parse_tree.arg<1>(pn);
     assert(parse_tree.getOp(field) == OP_IDENTIFIER);
-    auto lookup = symbol_table.stored_scopes.find(SymbolTable::StoredScopeKey(scope_node, parse_tree.getSelection(field)));
+    auto lookup = symbol_table.stored_scopes.find(SymbolTable::StoredScopeKey(sym_id, parse_tree.getSelection(field)));
     if(lookup != symbol_table.stored_scopes.end()){
         size_t sym_id = lookup->second;
         size_t usage_index = parse_tree.getFlag(field);

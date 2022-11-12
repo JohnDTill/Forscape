@@ -103,6 +103,8 @@ private:
     void resolveImport(ParseNode pn) alloc_except;
     void resolveFromImport(ParseNode pn) alloc_except;
     void resolveNamespace(ParseNode pn) alloc_except;
+    void loadScope(ParseNode pn, size_t sym_id) alloc_except;
+    void unloadScope(ParseNode body, size_t sym_id) alloc_except;
     void resolveScopeAccess(ParseNode pn) alloc_except;
     bool defineLocalScope(ParseNode pn, bool immutable = true, bool warn_on_shadow = true) alloc_except;
     ParseNode defineOrAccessLocalScope(ParseNode pn, bool immutable = true, bool warn_on_shadow = true) alloc_except;

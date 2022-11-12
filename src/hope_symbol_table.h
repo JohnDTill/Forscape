@@ -32,6 +32,7 @@ struct Symbol {
     size_t cols = UNKNOWN_SIZE;
     size_t shadowed_var  DEBUG_INIT_UNITIALISED;
     size_t comment  DEBUG_INIT_UNITIALISED;
+    size_t scope_tail = NONE;
     bool is_const;
     bool is_used = false;
     bool is_reassigned = false; //Used to determine if parameters are constant
@@ -68,10 +69,11 @@ struct ScopeSegment{
     Typeset::Marker start;
     ParseNode fn  DEBUG_INIT_UNITIALISED;
     ScopeId parent  DEBUG_INIT_UNITIALISED;
-    ScopeId prev  DEBUG_INIT_UNITIALISED;
+    ScopeId prev_lexical_segment  DEBUG_INIT_UNITIALISED;
     SymbolId sym_begin  DEBUG_INIT_UNITIALISED;
     size_t usage_begin  DEBUG_INIT_UNITIALISED;
-    ScopeId next = NONE;
+    ScopeId next_lexical_segment = NONE;
+    ScopeId prev_namespace_segment  DEBUG_INIT_UNITIALISED;
     SymbolId sym_end = NONE;
     size_t usage_end = NONE;
 

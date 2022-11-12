@@ -21,5 +21,7 @@ namespace outer {
 }
 
 assert( outer.another = 2 )
+assert( outer.test = "outer" )
+assert( outer.inner.test = "inner" )
 
 print("namespace_read.txt PASS")

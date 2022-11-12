@@ -5,7 +5,7 @@ namespace outer {
 }
 
 namespace outer {
-    namespace inner { //TODO: fix resolution
+    namespace inner {
         y = 1
     }
 }

@@ -768,20 +768,118 @@ void SymbolTableBuilder::resolveFromImport(ParseNode pn) alloc_except {
 void SymbolTableBuilder::resolveNamespace(ParseNode pn) alloc_except {
     ParseNode name = parse_tree.arg<0>(pn);
     ParseNode body = parse_tree.arg<1>(pn);
-    ParseNode namespace_pn = defineOrAccessLocalScope(name);
-    if(symbol_table.usages.back().type == READ) parse_tree.setFlag(pn, 1);
-    const size_t start_scope = symbol_table.scopes.size();
+
+    if(!errors.empty()) return; //EVENTUALLY: more resiliency here
+
+    const auto lookup = map.find(parse_tree.getSelection(name));
+    if(lookup != map.end()){
+        const size_t sym_id = lookup->second;
+        const Symbol& candidate = symbol_table.symbols[sym_id];
+        if(candidate.declaration_lexical_depth == lexical_depth){
+            //This namespace already exists - load the previous variables
+            parse_tree.setSymId(name, sym_id);
+            parse_tree.setFlag(pn, 1);
+            symbol_table.usages.push_back(Usage(sym_id, name, READ));
+
+            loadScope(pn, sym_id);
+            resolveBlock(body);
+            unloadScope(body, sym_id);
+            return;
+        }
+    }
+
+    //First definition of this namespace
+    const size_t sym_id = symbol_table.symbols.size();
+    defineLocalScope(name);
+    if(!errors.empty()) return; //EVENTUALLY: more resiliency here
+    symbol_table.symbols[sym_id].scope_tail = NONE;
     increaseLexicalDepth(SCOPE_NAME(parse_tree.str(name))  parse_tree.getLeft(body));
     resolveBlock(body);
-    const size_t end_scope = symbol_table.scopes.size();
+    unloadScope(body, sym_id);
+}
+
+void SymbolTableBuilder::loadScope(ParseNode pn, size_t sym_id) noexcept {
+    const Symbol& scope = symbol_table.symbols[sym_id];
+
+    increaseLexicalDepth(SCOPE_NAME(scope.sel(parse_tree).str())  parse_tree.getLeft(pn));
+
+    //Load the variables from the previous uses of the scope
+    ScopeId scope_index = scope.scope_tail;
+    while(scope_index != NONE){
+        ScopeSegment& scope_segment = symbol_table.scopes[scope_index];
+
+        //Put all the segment variables in the map
+        for(size_t sym_id = scope_segment.sym_begin; sym_id < scope_segment.sym_end; sym_id++){
+            Symbol& sym = symbol_table.symbols[sym_id];
+            const Typeset::Selection& sel = sym.sel(parse_tree);
+            auto result = map.insert({sel, sym_id});
+            if(!result.second){
+                sym.shadowed_var = result.first->second;
+                result.first->second = sym_id;
+            }
+        }
+
+        scope_index = scope_segment.prev_namespace_segment;
+    }
+
+    //Note: with this solution, re-entering a scope has O(n) cost with a relatively large constant,
+    //      where n is the number of symbols in the scope. Resolving a symbol is O(1). Probably best
+    //      to prioritise symbol resolution over scope entry.
+    //
+    //      Might need an optimisation for repeatedly exiting and re-entering the same scope, like with
+    //      C++ class implementation files. Otherwise the trade-off seems good.
+}
+
+void SymbolTableBuilder::unloadScope(ParseNode body, size_t scope_sym_id) noexcept {
+    Symbol& scope = symbol_table.symbols[scope_sym_id];
+    ScopeId scope_index = scope.scope_tail;
+    while(scope_index != NONE){
+        ScopeSegment& scope_segment = symbol_table.scopes[scope_index];
+
+        //Remove all the previously defined scope variables from the lexical map
+        for(size_t sym_id = scope_segment.sym_begin; sym_id < scope_segment.sym_end; sym_id++){
+            Symbol& sym = symbol_table.symbols[sym_id];
+            const Typeset::Selection& sel = sym.sel(parse_tree);
+            assert(map.contains(sel));
+            if(sym.shadowed_var == NONE) map.erase(sel);
+            else map[sel] = sym.shadowed_var;
+        }
+
+        scope_index = scope_segment.prev_namespace_segment;
+    }
+
+    scope_index = symbol_table.scopes.size()-1;
     decreaseLexicalDepth(parse_tree.getRight(body));
-    addStoredScope(namespace_pn);
+    while(scope_index != NONE){
+        ScopeSegment& scope_segment = symbol_table.scopes[scope_index];
 
-    symbol_table.scopes[start_scope].prev = start_scope-1;
-    symbol_table.scopes[start_scope-1].next = start_scope;
+        //Add all new scope variables to scope map
+        for(size_t sym_id = scope_segment.sym_begin; sym_id < scope_segment.sym_end; sym_id++){
+            Symbol& sym = symbol_table.symbols[sym_id];
+            if(sym.declaration_lexical_depth != lexical_depth+1) continue;
+            auto result = symbol_table.stored_scopes.insert({SymbolTable::StoredScopeKey(scope_sym_id, sym.sel(parse_tree)), sym_id});
+            assert(result.second); //Failure to add the symbol is a bug
+        }
 
-    symbol_table.scopes[end_scope].prev = end_scope-1;
-    symbol_table.scopes[end_scope-1].next = end_scope;
+        //Update the scope linked list
+        ScopeId prev_namespace_segment = scope_segment.prev_lexical_segment;
+        if(prev_namespace_segment == NONE){
+            symbol_table.scopes[scope_index].prev_namespace_segment = scope.scope_tail;
+            scope.scope_tail = symbol_table.scopes.size()-2;
+            break;
+        }else{
+            symbol_table.scopes[scope_index].prev_namespace_segment = prev_namespace_segment;
+            scope_index = prev_namespace_segment;
+        }
+    }
+
+    //The namespace scope runs together with the lexical scope for purposes of calculating the stack size
+    //DO THIS: it's a kludge that we accomodate later stack size calculations here
+    symbol_table.scopes[scope.scope_tail+1].prev_lexical_segment = scope.scope_tail;
+    symbol_table.scopes[scope.scope_tail].next_lexical_segment = scope.scope_tail+1;
+
+    symbol_table.scopes[scope_index].prev_lexical_segment = scope_index-1;
+    symbol_table.scopes[scope_index-1].next_lexical_segment = scope_index;
 }
 
 void SymbolTableBuilder::resolveScopeAccess(ParseNode pn) noexcept {
@@ -887,7 +985,7 @@ void SymbolTableBuilder::increaseLexicalDepth(
 void SymbolTableBuilder::decreaseLexicalDepth(const Typeset::Marker& end) alloc_except {
     closeScope(end);
 
-    for(size_t curr = symbol_table.head(active_scope_id-1); curr < active_scope_id; curr = symbol_table.scopes[curr].next){
+    for(size_t curr = symbol_table.head(active_scope_id-1); curr < active_scope_id; curr = symbol_table.scopes[curr].next_lexical_segment){
         ScopeSegment& scope = symbol_table.scopes[curr];
         for(size_t sym_id = scope.sym_begin; sym_id < scope.sym_end; sym_id++){
             Symbol& sym = symbol_table.symbols[sym_id];
@@ -923,7 +1021,7 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end) alloc_
     closure_depth--;
 
     //Find variables which are captured by reference in this closure, also modified by inner closures
-    for(size_t seg_index = symbol_table.scopes.size()-2; seg_index != NONE; seg_index = symbol_table.scopes[seg_index].prev){
+    for(size_t seg_index = symbol_table.scopes.size()-2; seg_index != NONE; seg_index = symbol_table.scopes[seg_index].prev_lexical_segment){
         ScopeSegment& closed_seg = symbol_table.scopes[seg_index];
         for(size_t i = closed_seg.usage_begin; i < closed_seg.usage_end; i++){
             const Usage& usage = symbol_table.usages[i];
@@ -968,7 +1066,7 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end) alloc_
 void SymbolTableBuilder::addStoredScope(ParseNode pn) {
     if(!errors.empty()) return;
 
-    for(size_t curr = symbol_table.head(active_scope_id-1); curr < active_scope_id; curr = symbol_table.scopes[curr].next){
+    for(size_t curr = symbol_table.head(active_scope_id-1); curr < active_scope_id; curr = symbol_table.scopes[curr].next_lexical_segment){
         ScopeSegment& scope = symbol_table.scopes[curr];
         for(size_t sym_id = scope.sym_begin; sym_id < scope.sym_end; sym_id++){
             Symbol& sym = symbol_table.symbols[sym_id];
