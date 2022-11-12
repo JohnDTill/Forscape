@@ -16,4 +16,10 @@ assert( test = "global" )
 assert( outer.test = "outer" )
 assert( outer.inner.test = "inner" )
 
+namespace outer {
+    another = 2
+}
+
+assert( outer.another = 2 )
+
 print("namespace_read.txt PASS")

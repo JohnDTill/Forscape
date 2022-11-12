@@ -12,4 +12,14 @@ outer.inner.y ← 2
 assert(outer.x = 1)
 assert(outer.inner.y = 2)
 
+//TODO
+//namespace outer {
+//    x ← 3
+//    namespace inner {
+//        y ← 4
+//    }
+//}
+//assert(outer.x = 3)
+//assert(outer.inner.y = 4)
+
 print("namespace_write.txt PASS")

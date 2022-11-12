@@ -95,6 +95,7 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_PLOT: plotStmt(pn); break;
         case OP_DO_NOTHING: break;
         case OP_NAMESPACE:{
+            if(parse_tree.getFlag(pn) != 1)
             stack.push(static_cast<void*>(nullptr)
                 DEBUG_STACK_ARG("namespace-" + parse_tree.str(parse_tree.lhs(pn))));
             blockStmt(parse_tree.rhs(pn));

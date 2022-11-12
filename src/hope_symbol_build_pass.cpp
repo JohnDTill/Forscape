@@ -768,13 +768,14 @@ void SymbolTableBuilder::resolveFromImport(ParseNode pn) alloc_except {
 void SymbolTableBuilder::resolveNamespace(ParseNode pn) alloc_except {
     ParseNode name = parse_tree.arg<0>(pn);
     ParseNode body = parse_tree.arg<1>(pn);
-    defineLocalScope(name);
+    ParseNode namespace_pn = defineOrAccessLocalScope(name);
+    if(symbol_table.usages.back().type == READ) parse_tree.setFlag(pn, 1);
     const size_t start_scope = symbol_table.scopes.size();
     increaseLexicalDepth(SCOPE_NAME(parse_tree.str(name))  parse_tree.getLeft(body));
     resolveBlock(body);
     const size_t end_scope = symbol_table.scopes.size();
     decreaseLexicalDepth(parse_tree.getRight(body));
-    addStoredScope(name);
+    addStoredScope(namespace_pn);
 
     symbol_table.scopes[start_scope].prev = start_scope-1;
     symbol_table.scopes[start_scope-1].next = start_scope;
@@ -827,6 +828,25 @@ bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable, bool war
     }
 
     return true;
+}
+
+//TODO: this should be sym id?
+ParseNode SymbolTableBuilder::defineOrAccessLocalScope(ParseNode pn, bool immutable, bool warn_on_shadow) noexcept {
+    const auto lookup = map.find(parse_tree.getSelection(pn));
+    if(lookup != map.end()){
+        const size_t sym_id = lookup->second;
+        const Symbol& candidate = symbol_table.symbols[sym_id];
+        if(candidate.declaration_lexical_depth == lexical_depth){
+            parse_tree.setSymId(pn, sym_id);
+            symbol_table.usages.push_back(Usage(sym_id, pn, READ));
+
+            return candidate.flag;
+        }
+    }
+
+    defineLocalScope(pn, immutable, warn_on_shadow);
+
+    return pn;
 }
 
 bool SymbolTableBuilder::declared(ParseNode pn) const noexcept{
@@ -946,13 +966,16 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end) alloc_
 }
 
 void SymbolTableBuilder::addStoredScope(ParseNode pn) {
+    if(!errors.empty()) return;
+
     for(size_t curr = symbol_table.head(active_scope_id-1); curr < active_scope_id; curr = symbol_table.scopes[curr].next){
         ScopeSegment& scope = symbol_table.scopes[curr];
         for(size_t sym_id = scope.sym_begin; sym_id < scope.sym_end; sym_id++){
             Symbol& sym = symbol_table.symbols[sym_id];
             if(sym.declaration_lexical_depth != lexical_depth+1) continue;
             auto result = symbol_table.stored_scopes.insert({SymbolTable::StoredScopeKey(pn, sym.sel(parse_tree)), sym_id});
-            assert(result.second);
+            if(!result.second) errors.push_back(Error(sym.sel(parse_tree), REASSIGN_CONSTANT));
+            //TODO: this doesn't allow referencing any previous namespace variables
         }
     }
 }

@@ -105,6 +105,7 @@ private:
     void resolveNamespace(ParseNode pn) alloc_except;
     void resolveScopeAccess(ParseNode pn) alloc_except;
     bool defineLocalScope(ParseNode pn, bool immutable = true, bool warn_on_shadow = true) alloc_except;
+    ParseNode defineOrAccessLocalScope(ParseNode pn, bool immutable = true, bool warn_on_shadow = true) alloc_except;
     bool declared(ParseNode pn) const noexcept;
     size_t symIndex(ParseNode pn) const noexcept;
 
