@@ -2,6 +2,7 @@
 
 #include <code_parsenode_ops.h>
 #include <hope_common.h>
+#include "typeset_filesystem.h"
 #include "typeset_model.h"
 
 #ifdef HOPE_TYPESET_HEADLESS
@@ -313,13 +314,14 @@ ParseNode Parser::importStatement() noexcept {
     const Typeset::Marker& left = lMark();
 
     advance();
-    consume(IDENTIFIER);
-    ParseNode file = parse_tree.addTerminal(OP_FILE_REF, selectionPrev());
+    ParseNode file = filename();
     ParseNode alias = match(AS) ? isolatedIdentifier() : NONE;
 
     if(noErrors()){
         ParseNode pn = parse_tree.addUnary(OP_IMPORT, Typeset::Selection(left, rMarkPrev()), file);
         parse_tree.setFlag(pn, alias);
+        import(file);
+
         return pn;
     }else{
         return error_node;
@@ -1130,6 +1132,24 @@ Hope::ParseNode Hope::Code::Parser::integerRange() noexcept {
     return parse_tree.addNode<2>(OP_INTERVAL_INTEGER, sel, {start, end});
 }
 
+void Parser::import(ParseNode pn){
+    const Typeset::Selection& sel = parse_tree.getSelection(pn);
+    if(!sel.isTextSelection()){
+        error(FILE_NOT_FOUND, sel);
+        return;
+    }
+
+    std::string_view file_name = sel.strView();
+
+    Typeset::Model* loaded_model = Typeset::Filesystem::open(file_name);
+    if(loaded_model == nullptr){
+        error(FILE_NOT_FOUND, sel);
+        return;
+    }
+
+    delete loaded_model;
+}
+
 ParseNode Parser::norm() alloc_except {
     Typeset::Marker left = lMark();
     advance();
@@ -1345,6 +1365,32 @@ ParseNode Parser::lambda(ParseNode params) alloc_except{
     Typeset::Selection sel(left, rMarkPrev());
 
     return parse_tree.addNode<4>(OP_LAMBDA, sel, {capture_list, referenced_upvalues, params, e});
+}
+
+ParseNode Parser::filename() noexcept {
+    const Typeset::Marker& left = lMark();
+
+    consume(IDENTIFIER);
+
+    for(;;){
+        switch (currentType()) {
+            case PERIOD:
+            case MINUS:
+            case BACKSLASH:
+            case FORWARDSLASH:
+            case IDENTIFIER:
+                if(lMark() != rMarkPrev()) return error(UNRECOGNIZED_EXPR, selection());
+                advance();
+                break;
+
+            default:
+                Typeset::Selection sel(left, rMarkPrev());
+                sel.format(SEM_STRING);
+
+                ParseNode file = parse_tree.addTerminal(OP_FILE_REF, sel);
+                return file;
+        }
+    }
 }
 
 ParseNode Parser::fraction() alloc_except{

@@ -82,6 +82,7 @@ private:
     ParseNode isolatedIdentifier() alloc_except;
     ParseNode param() alloc_except;
     ParseNode lambda(ParseNode params) alloc_except;
+    ParseNode filename() alloc_except;
     ParseNode fraction() alloc_except;
     ParseNode fractionDeriv(const Typeset::Selection& c, Op type, HopeTokenType tt) alloc_except;
     ParseNode fractionDefault(const Typeset::Selection& c) alloc_except;
@@ -135,6 +136,9 @@ private:
     void finishPatch(ParseNode pn) noexcept;
     #endif
 
+    void import(ParseNode pn);
+
+    //DO THIS: the parser should not assume there is a single Typeset::Model
     std::vector<std::pair<size_t, size_t>> token_map_stack;
     std::vector<size_t> token_stack_frames;
     const std::vector<Token>& tokens;
