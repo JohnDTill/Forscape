@@ -1371,6 +1371,7 @@ ParseNode Parser::filename() noexcept {
     const Typeset::Marker& left = lMark();
 
     consume(IDENTIFIER);
+    if(!noErrors()) return error_node;
 
     for(;;){
         switch (currentType()) {
@@ -1388,6 +1389,7 @@ ParseNode Parser::filename() noexcept {
                 sel.format(SEM_STRING);
 
                 ParseNode file = parse_tree.addTerminal(OP_FILE_REF, sel);
+                if(noErrors()) registerParseNodeRegion(file, index-1);
                 return file;
         }
     }

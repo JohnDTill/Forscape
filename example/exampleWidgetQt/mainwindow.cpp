@@ -83,12 +83,18 @@ MainWindow::MainWindow(QWidget* parent)
     project_browser->setHeaderHidden(true);
     project_browser->setIndentation(10);
     project_browser->setMinimumWidth(120);
+    connect(project_browser, SIGNAL(itemActivated(QTreeWidgetItem*, int)), this, SLOT(onFileClicked(QTreeWidgetItem*, int)));
+    project_browser->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(project_browser, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onFileRightClicked(const QPoint&)));
     QTreeWidgetItem* root = new QTreeWidgetItem(project_browser);
     root->setText(0, "DO THIS");
     root->setIcon(0, QFileIconProvider().icon(QFileIconProvider::Folder));
     QTreeWidgetItem* leaf = new QTreeWidgetItem(root);
     leaf->setText(0, "Wire up project browser");
     leaf->setIcon(0, QFileIconProvider().icon(QFileIconProvider::File));
+    QTreeWidgetItem* anchor_leaf = new QTreeWidgetItem(root);
+    anchor_leaf->setText(0, "Anchor leaf");
+    anchor_leaf->setIcon(0, QIcon(":/anchor.svg"));
     horizontal_splitter->addWidget(project_browser);
     connect(horizontal_splitter, SIGNAL(splitterMoved(int, int)), this, SLOT(onSplitterResize(int, int)));
 
@@ -183,6 +189,13 @@ MainWindow::MainWindow(QWidget* parent)
     github_act->setShortcuts(QKeySequence::InsertLineSeparator);
     connect(github_act, &QAction::triggered, this, &MainWindow::github);
     action_toolbar->addAction(github_act);
+
+    QAction* anchor_act = new QAction(tr("ŗ"), this);
+    anchor_act->setToolTip("Anchor project to the active file (sets program entry point)");
+    anchor_act->setFont(glyph_font);
+    anchor_act->setShortcuts(QKeySequence::InsertLineSeparator);
+    connect(anchor_act, &QAction::triggered, this, &MainWindow::anchor);
+    action_toolbar->addAction(anchor_act);
 
     if(settings.contains(ACTION_TOOLBAR_VISIBLE)){
         bool visible = settings.value(ACTION_TOOLBAR_VISIBLE).toBool();
@@ -854,4 +867,32 @@ void MainWindow::onSplitterResize(int pos, int index) {
     program_control_of_hsplitter = true;
     ui->actionShow_project_browser->setChecked(pos != 0);
     program_control_of_hsplitter = false;
+}
+
+void MainWindow::anchor(){
+    //DO THIS: the active file is the program entry point
+
+    //DO THIS: depress the anchor button if the active file is anchored
+}
+
+void MainWindow::onFileClicked(QTreeWidgetItem* item, int column) {
+    std::cout << item->text(0).toStdString() << " clicked" << std::endl;
+    //DO THIS: go to the file
+}
+
+void MainWindow::onFileRightClicked(const QPoint& pos) {
+    QTreeWidgetItem* item = project_browser->currentItem();
+    std::cout << item->text(0).toStdString() << " right clicked" << std::endl;
+
+    QMenu menu(this);
+    if(item->childCount() == 0){//DO THIS: more descriptive check for file vs. folder
+        menu.addAction("Open File")->setStatusTip("DO THIS");
+        menu.addAction("Rename File")->setStatusTip("DO THIS");
+    }else{
+        menu.addAction("Rename Folder")->setStatusTip("DO THIS");
+    }
+    menu.addAction("Show in Explorer")->setStatusTip("DO THIS");
+    //connect(newAct, SIGNAL(triggered()), this, SLOT(something()));
+
+    menu.exec(project_browser->mapToGlobal(pos));
 }

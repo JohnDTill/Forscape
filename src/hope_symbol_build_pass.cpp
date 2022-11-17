@@ -747,6 +747,7 @@ void SymbolTableBuilder::resolveImport(ParseNode pn) alloc_except {
         ParseNode file = parse_tree.child(pn);
         parse_tree.setOp(file, OP_IDENTIFIER);
         defineLocalScope(file);
+        parse_tree.setOp(file, OP_FILE_REF);
     }else{
         defineLocalScope(alias);
     }

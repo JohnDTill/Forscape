@@ -22,7 +22,7 @@ OS2Version: 3
 OS2_WeightWidthSlopeOnly: 0
 OS2_UseTypoMetrics: 0
 CreationTime: 1265257974
-ModificationTime: 1646262148
+ModificationTime: 1668725911
 PfmFamily: 17
 TTFWeight: 400
 TTFWidth: 5
@@ -164,7 +164,7 @@ WinInfo: 0 25 13
 BeginPrivate: 0
 EndPrivate
 AnchorClass2: "Anchor-0" "'mark' Mark Positioning lookup 0 subtable" "Anchor-1" "'mark' Mark Positioning lookup 0 subtable" "Anchor-2" "'mark' Mark Positioning lookup 1 subtable" "Anchor-3" "'mark' Mark Positioning lookup 1 subtable" "Anchor-4" "'mark' Mark Positioning lookup 2 subtable" "Anchor-5" "'mark' Mark Positioning lookup 2 subtable" "Anchor-6" "'mark' Mark Positioning lookup 3 subtable" "Anchor-7" "'mark' Mark Positioning lookup 3 subtable" "Anchor-8" "'mark' Mark Positioning lookup 4 subtable" "Anchor-9" "'mark' Mark Positioning lookup 5 subtable" "Anchor-10" "'mark' Mark Positioning lookup 6 subtable" "Anchor-11" "'mark' Mark Positioning lookup 7 subtable" "Anchor-12" "'mark' Mark Positioning lookup 8 subtable" "Anchor-13" "'mark' Mark Positioning lookup 9 subtable" "Anchor-14" "'mark' Mark Positioning lookup 10 subtable" "Anchor-15" "'mark' Mark Positioning lookup 11 subtable" "Anchor-16" "'mark' Mark Positioning lookup 12 subtable"
-BeginChars: 158 156
+BeginChars: 158 157
 
 StartChar: space
 Encoding: 0 160 0
@@ -6026,6 +6026,68 @@ SplineSet
  1092.59960938 327.599609375 1092.59960938 327.599609375 1083.59960938 318.599609375 c 128,-1,40
  1074.59960938 309.599609375 1074.59960938 309.599609375 1060.20019531 307.799804688 c 2,41,-1
  482.400390625 307.799804688 l 2,26,27
+EndSplineSet
+EndChar
+
+StartChar: rcedilla
+Encoding: 157 343 156
+Width: 1600
+Flags: WO
+LayerCount: 2
+Fore
+SplineSet
+650 1160 m 256,1,2
+ 650 1120 650 1120 669 1084 c 128,-1,3
+ 688 1048 688 1048 724 1029 c 128,-1,4
+ 760 1010 760 1010 800 1010 c 256,5,6
+ 840 1010 840 1010 876 1029 c 128,-1,7
+ 912 1048 912 1048 931 1084 c 128,-1,8
+ 950 1120 950 1120 950 1160 c 256,9,10
+ 950 1200 950 1200 931 1236 c 128,-1,11
+ 912 1272 912 1272 876 1291 c 128,-1,12
+ 840 1310 840 1310 800 1310 c 256,13,14
+ 760 1310 760 1310 724 1291 c 128,-1,15
+ 688 1272 688 1272 669 1236 c 128,-1,0
+ 650 1200 650 1200 650 1160 c 256,1,2
+750 915 m 1,16,17
+ 711 922 711 922 674 942 c 0,18,19
+ 614 974 614 974 582 1034 c 128,-1,20
+ 550 1094 550 1094 550 1160 c 256,21,22
+ 550 1226 550 1226 582 1286 c 128,-1,23
+ 614 1346 614 1346 674 1378 c 128,-1,24
+ 734 1410 734 1410 800 1410 c 256,25,26
+ 866 1410 866 1410 926 1378 c 128,-1,27
+ 986 1346 986 1346 1018 1286 c 128,-1,28
+ 1050 1226 1050 1226 1050 1160 c 256,29,30
+ 1050 1094 1050 1094 1018 1034 c 128,-1,31
+ 986 974 986 974 926 942 c 0,32,33
+ 889 922 889 922 850 915 c 1,34,-1
+ 850 850 l 1,35,-1
+ 1150 850 l 1,36,-1
+ 1150 750 l 1,37,-1
+ 850 750 l 1,38,-1
+ 850 92 l 1,39,40
+ 984 102 984 102 1107 167 c 0,41,42
+ 1180 205 1180 205 1236 261 c 1,43,-1
+ 1132 365 l 1,44,-1
+ 1500 450 l 1,45,-1
+ 1415 82 l 1,46,-1
+ 1306 191 l 1,47,48
+ 1241 125 1241 125 1156 80 c 0,49,50
+ 986 -10 986 -10 800 -10 c 256,51,52
+ 614 -10 614 -10 445 80 c 0,53,54
+ 359 125 359 125 294 191 c 1,55,-1
+ 185 82 l 1,56,-1
+ 100 450 l 1,57,-1
+ 468 365 l 1,58,-1
+ 364 261 l 1,59,60
+ 420 205 420 205 494 167 c 0,61,62
+ 616 102 616 102 750 92 c 1,63,-1
+ 750 750 l 1,64,-1
+ 450 750 l 1,65,-1
+ 450 850 l 1,66,-1
+ 750 850 l 1,67,-1
+ 750 915 l 1,16,17
 EndSplineSet
 EndChar
 EndChars

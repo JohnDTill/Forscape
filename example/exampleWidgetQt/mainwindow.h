@@ -16,6 +16,7 @@ class SearchDialog;
 class QGroupBox;
 class QSplitter;
 class QTreeWidget;
+class QTreeWidgetItem;
 
 namespace Hope{
 namespace Typeset {
@@ -96,6 +97,9 @@ private slots:
     void onColourChanged();
     void on_actionGo_to_line_triggered();
     void onSplitterResize(int pos, int index);
+    void anchor();
+    void onFileClicked(QTreeWidgetItem* item, int column);
+    void onFileRightClicked(const QPoint& pos);
 
 protected:
     virtual void closeEvent(QCloseEvent* event) override;

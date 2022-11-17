@@ -1464,11 +1464,18 @@ void Editor::resolveTooltip(double x, double y) noexcept {
 
 void Editor::populateContextMenuFromModel(QMenu& menu, double x, double y) {
     contextNode = model->parseNodeAt(x, y);
-    if(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER){
-        append("Rename", rename, true, true)
-        append("Go to definition", goToDef, true, true)
-        append("Find usages", findUsages, true, true)
-        menu.addSeparator();
+    if(contextNode == NONE) return;
+
+    switch (model->parseTree().getOp(contextNode)) {
+        case Code::OP_IDENTIFIER:
+            append("Rename", rename, true, true)
+            append("Go to definition", goToDef, true, true)
+            append("Find usages", findUsages, true, true)
+            menu.addSeparator();
+            break;
+        case Code::OP_FILE_REF:
+            append("Go to file", goToFile, true, true);
+            break;
     }
 }
 
@@ -1546,6 +1553,13 @@ void Editor::findUsages(){
     }
 
     console->updateModel();
+}
+
+void Editor::goToFile() {
+    logger->info("{}goToFile();", logPrefix());
+
+    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_FILE_REF);
+    //DO THIS
 }
 
 void Editor::showTooltipParseNode(){
