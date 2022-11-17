@@ -888,6 +888,7 @@ void MainWindow::onFileRightClicked(const QPoint& pos) {
     if(item->childCount() == 0){//DO THIS: more descriptive check for file vs. folder
         menu.addAction("Open File")->setStatusTip("DO THIS");
         menu.addAction("Rename File")->setStatusTip("DO THIS");
+        menu.addAction("Anchor Project")->setStatusTip("DO THIS");
     }else{
         menu.addAction("Rename Folder")->setStatusTip("DO THIS");
     }
