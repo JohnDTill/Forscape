@@ -16,6 +16,7 @@
 #include <QCloseEvent>
 #include <QDesktopServices>
 #include <QFileDialog>
+#include <QFileIconProvider>
 #include <QGroupBox>
 #include <QInputDialog>
 #include <QMessageBox>
@@ -50,6 +51,7 @@
 #define NEW_SCRIPT_TITLE "new script"
 #define MATH_TOOLBAR_VISIBLE "math_tb_visible"
 #define ACTION_TOOLBAR_VISIBLE "action_tb_visible"
+#define PROJECT_BROWSER_VISIBLE "project_tb_visible"
 #define WINDOW_STATE "win_state"
 #define LAST_DIRECTORY "last_dir"
 
@@ -63,6 +65,9 @@ static QTimer* external_change_timer;
 
 static constexpr int CHANGE_CHECK_PERIOD_MS = 100;
 
+static constexpr int FILE_BROWSER_WIDTH = 200;
+static bool program_control_of_hsplitter = false;
+
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow){
@@ -73,14 +78,29 @@ MainWindow::MainWindow(QWidget* parent)
     connect(external_change_timer, &QTimer::timeout, this, &MainWindow::checkForChanges);
     external_change_timer->start(CHANGE_CHECK_PERIOD_MS);
 
-    QSplitter* splitter = new QSplitter(Qt::Vertical, this);
-    setCentralWidget(splitter);
+    horizontal_splitter = new QSplitter(Qt::Horizontal, this);
+    project_browser = new QTreeWidget(horizontal_splitter);
+    project_browser->setHeaderHidden(true);
+    project_browser->setIndentation(10);
+    project_browser->setMinimumWidth(120);
+    QTreeWidgetItem* root = new QTreeWidgetItem(project_browser);
+    root->setText(0, "DO THIS");
+    root->setIcon(0, QFileIconProvider().icon(QFileIconProvider::Folder));
+    QTreeWidgetItem* leaf = new QTreeWidgetItem(root);
+    leaf->setText(0, "Wire up project browser");
+    leaf->setIcon(0, QFileIconProvider().icon(QFileIconProvider::File));
+    horizontal_splitter->addWidget(project_browser);
+    connect(horizontal_splitter, SIGNAL(splitterMoved(int, int)), this, SLOT(onSplitterResize(int, int)));
+
+    QSplitter* vertical_splitter = new QSplitter(Qt::Vertical, horizontal_splitter);
+    horizontal_splitter->addWidget(vertical_splitter);
+    setCentralWidget(horizontal_splitter);
 
     editor = new Typeset::Editor();
     setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
     if(settings.contains(ACTIVE_FILE))
         open(settings.value(ACTIVE_FILE).toString());
-    splitter->addWidget(editor);
+    vertical_splitter->addWidget(editor);
 
     group_box = new QGroupBox(this);
     group_box->setTitle("Console");
@@ -88,9 +108,9 @@ MainWindow::MainWindow(QWidget* parent)
     QVBoxLayout* vbox = new QVBoxLayout();
     group_box->setLayout(vbox);
     group_box->resize(width(), height()*0.7);
-    splitter->addWidget(group_box);
-    splitter->setStretchFactor(0, 2);
-    splitter->setStretchFactor(1, 1);
+    vertical_splitter->addWidget(group_box);
+    vertical_splitter->setStretchFactor(0, 2);
+    vertical_splitter->setStretchFactor(1, 1);
 
     console = new Typeset::Console();
     vbox->addWidget(console);
@@ -213,6 +233,16 @@ MainWindow::MainWindow(QWidget* parent)
     search = new SearchDialog(this, editor, console, settings);
 
     loadGeometry();
+
+    horizontal_splitter->setStretchFactor(0, 0);
+    horizontal_splitter->setStretchFactor(1, 1);
+
+    if(settings.contains(PROJECT_BROWSER_VISIBLE) && !settings.value(PROJECT_BROWSER_VISIBLE).toBool()){
+        ui->actionShow_project_browser->setChecked(false);
+        on_actionShow_project_browser_toggled(false);
+    }else{
+        on_actionShow_project_browser_toggled(true);
+    }
 }
 
 MainWindow::~MainWindow(){
@@ -221,6 +251,7 @@ MainWindow::~MainWindow(){
     settings.setValue(LINE_NUMBERS_VISIBLE, editor->lineNumbersShown());
     settings.setValue(MATH_TOOLBAR_VISIBLE, ui->actionShow_typesetting_toolbar->isChecked());
     settings.setValue(ACTION_TOOLBAR_VISIBLE, ui->actionShow_action_toolbar->isChecked());
+    settings.setValue(PROJECT_BROWSER_VISIBLE, ui->actionShow_project_browser->isChecked());
     settings.setValue(WINDOW_STATE, QList({QVariant(saveGeometry()), QVariant(saveState())}));
     search->saveSettings(settings);
     delete preferences;
@@ -734,6 +765,12 @@ void MainWindow::on_actionShow_typesetting_toolbar_toggled(bool show){
     math_toolbar->setVisible(show);
 }
 
+void MainWindow::on_actionShow_project_browser_toggled(bool show){
+    if(program_control_of_hsplitter) return;
+    else if(show) horizontal_splitter->setSizes({FILE_BROWSER_WIDTH, width()-FILE_BROWSER_WIDTH});
+    else horizontal_splitter->setSizes({0, width()});
+}
+
 void MainWindow::checkForChanges(){
     if(path.isEmpty()) return;
 
@@ -811,4 +848,10 @@ void MainWindow::on_actionGo_to_line_triggered(){
 
     if(dialog.exec() == QDialog::Accepted)
         editor->goToLine(spinbox->value() - 1);
+}
+
+void MainWindow::onSplitterResize(int pos, int index) {
+    program_control_of_hsplitter = true;
+    ui->actionShow_project_browser->setChecked(pos != 0);
+    program_control_of_hsplitter = false;
 }
