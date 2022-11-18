@@ -78,7 +78,7 @@ public:
         }
 
         width = MATRIX_LPADDING + MATRIX_RPADDING + 2*BRACKET_HOFFSET + (cols-1)*ELEMENT_HPADDING;
-        for(size_t i = 0; i < W.size(); i++)
+        for(size_t i = 0; i < cols; i++)
             width += W[i];
 
         double height = BRACKET_TOP_OFFSET + BRACKET_BOT_OFFSET + (rows-1)*ELEMENT_VPADDING;

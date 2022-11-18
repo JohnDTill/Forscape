@@ -881,7 +881,8 @@ void MainWindow::onFileClicked(QTreeWidgetItem* item, int column) {
 }
 
 void MainWindow::onFileRightClicked(const QPoint& pos) {
-    QTreeWidgetItem* item = project_browser->currentItem();
+    QTreeWidgetItem* item = project_browser->itemAt(pos);
+    if(item == nullptr) return;
     std::cout << item->text(0).toStdString() << " right clicked" << std::endl;
 
     QMenu menu(this);
@@ -891,6 +892,7 @@ void MainWindow::onFileRightClicked(const QPoint& pos) {
         menu.addAction("Anchor Project")->setStatusTip("DO THIS");
     }else{
         menu.addAction("Rename Folder")->setStatusTip("DO THIS");
+        menu.addAction("Add New File")->setStatusTip("DO THIS");
     }
     menu.addAction("Show in Explorer")->setStatusTip("DO THIS");
     //connect(newAct, SIGNAL(triggered()), this, SLOT(something()));
