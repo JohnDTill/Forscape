@@ -179,6 +179,7 @@ void SymbolTable::verifyIdentifier(ParseNode pn) const noexcept {
     const Symbol& sym = symbols[sym_id];
     assert(parse_tree.getSelection(pn) == sym.sel(parse_tree));
 }
+#endif
 
 void SymbolTable::resolveReference(ParseNode pn, size_t sym_id, size_t closure_depth) noexcept {
     assert(parse_tree.getOp(pn) == OP_IDENTIFIER);
@@ -190,7 +191,6 @@ void SymbolTable::resolveReference(ParseNode pn, size_t sym_id, size_t closure_d
 
     usages.push_back(Usage(sym_id, pn, READ));
 }
-#endif
 
 }
 

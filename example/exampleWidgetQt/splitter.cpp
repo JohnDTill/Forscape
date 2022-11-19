@@ -1,5 +1,7 @@
 #include "splitter.h"
 
+#include <QVariant>
+
 SplitterHandle::SplitterHandle(Qt::Orientation orientation, QSplitter* parent)
     : QSplitterHandle(orientation, parent) {}
 

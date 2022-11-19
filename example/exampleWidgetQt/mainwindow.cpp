@@ -25,6 +25,8 @@
 #include <QStandardPaths>
 #include <QTextStream>
 #include <QToolBar>
+#include <QTreeWidget>
+#include <QVariant>
 #include <QVBoxLayout>
 
 #include "mathtoolbar.h"
