@@ -17,6 +17,7 @@ class QGroupBox;
 class QSplitter;
 class QTreeWidget;
 class QTreeWidgetItem;
+class Splitter;
 
 namespace Hope{
 namespace Typeset {
@@ -43,7 +44,8 @@ private:
     QToolBar* action_toolbar;
     QToolBar* project_toolbar;
     QTreeWidget* project_browser;
-    QSplitter* horizontal_splitter;
+    Splitter* horizontal_splitter;
+    Splitter* vertical_splitter;
     Preferences* preferences;
     Plot* active_plot = nullptr;
     QString path;
@@ -99,6 +101,8 @@ private slots:
     void anchor();
     void onFileClicked(QTreeWidgetItem* item, int column);
     void onFileRightClicked(const QPoint& pos);
+    void setHSplitterDefaultWidth();
+    void setVSplitterDefaultHeight();
 
 protected:
     virtual void closeEvent(QCloseEvent* event) override;

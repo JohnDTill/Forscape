@@ -31,6 +31,7 @@
 #include "plot.h"
 #include "preferences.h"
 #include "searchdialog.h"
+#include "splitter.h"
 #include "symboltreeview.h"
 
 #include <chrono>
@@ -76,7 +77,7 @@ MainWindow::MainWindow(QWidget* parent)
     connect(external_change_timer, &QTimer::timeout, this, &MainWindow::checkForChanges);
     external_change_timer->start(CHANGE_CHECK_PERIOD_MS);
 
-    horizontal_splitter = new QSplitter(Qt::Horizontal, this);
+    horizontal_splitter = new Splitter(Qt::Horizontal, this);
     project_browser = new QTreeWidget(horizontal_splitter);
     project_browser->setHeaderHidden(true);
     project_browser->setIndentation(10);
@@ -95,8 +96,9 @@ MainWindow::MainWindow(QWidget* parent)
     anchor_leaf->setIcon(0, QIcon(":/anchor.svg"));
     horizontal_splitter->addWidget(project_browser);
     connect(horizontal_splitter, SIGNAL(splitterMoved(int, int)), this, SLOT(onSplitterResize(int, int)));
+    connect(horizontal_splitter, SIGNAL(splitterDoubleClicked(int)), this, SLOT(setHSplitterDefaultWidth()));
 
-    QSplitter* vertical_splitter = new QSplitter(Qt::Vertical, horizontal_splitter);
+    vertical_splitter = new Splitter(Qt::Vertical, horizontal_splitter);
     horizontal_splitter->addWidget(vertical_splitter);
     setCentralWidget(horizontal_splitter);
 
@@ -115,8 +117,10 @@ MainWindow::MainWindow(QWidget* parent)
     vertical_splitter->addWidget(group_box);
     vertical_splitter->setStretchFactor(0, 2);
     vertical_splitter->setStretchFactor(1, 1);
+    connect(vertical_splitter, SIGNAL(splitterDoubleClicked(int)), this, SLOT(setVSplitterDefaultHeight()));
 
     console = new Typeset::Console();
+    console->setMinimumHeight(40);
     vbox->addWidget(console);
 
     editor->console = console;
@@ -283,6 +287,8 @@ void MainWindow::loadGeometry(){
 void MainWindow::resizeHackToFixScrollbars(){
     resize(width()+1, height()+1);
     resize(width()-1, height()-1);
+
+    setVSplitterDefaultHeight();
 }
 
 bool MainWindow::isSavedDeepComparison() const {
@@ -762,7 +768,7 @@ void MainWindow::on_actionShow_typesetting_toolbar_toggled(bool show){
 
 void MainWindow::on_actionShow_project_browser_toggled(bool show){
     if(program_control_of_hsplitter) return;
-    else if(show) horizontal_splitter->setSizes({FILE_BROWSER_WIDTH, width()-FILE_BROWSER_WIDTH});
+    else if(show) setHSplitterDefaultWidth();
     else horizontal_splitter->setSizes({0, width()});
 }
 
@@ -876,4 +882,14 @@ void MainWindow::onFileRightClicked(const QPoint& pos) {
     //connect(newAct, SIGNAL(triggered()), this, SLOT(something()));
 
     menu.exec(project_browser->mapToGlobal(pos));
+}
+
+void MainWindow::setHSplitterDefaultWidth() {
+    horizontal_splitter->setSizes({FILE_BROWSER_WIDTH, width()-FILE_BROWSER_WIDTH});
+}
+
+void MainWindow::setVSplitterDefaultHeight() {
+    const int h = vertical_splitter->height();
+    const int console_height = h/3;
+    vertical_splitter->setSizes({h-console_height, console_height});
 }

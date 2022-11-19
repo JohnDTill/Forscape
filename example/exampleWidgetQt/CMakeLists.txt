@@ -120,6 +120,8 @@ set(PROJECT_SOURCES
     searchdialog.cpp
     searchdialog.h
     searchdialog.ui
+    splitter.cpp
+    splitter.h
     symbolsubstitutioneditor.cpp
     symbolsubstitutioneditor.h
     symboltreeview.cpp
