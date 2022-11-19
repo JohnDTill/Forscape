@@ -15,7 +15,6 @@ add_compile_definitions(alloc_except=noexcept)
 find_package(Eigen3 REQUIRED)
 find_package(phmap REQUIRED)
 find_package(readerwriterqueue REQUIRED)
-find_package(spdlog REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -112,7 +111,6 @@ set(SOURCES
     ${INCLUDE}/hope_error.h
     ${SRC}/hope_interpreter.cpp
     ${SRC}/hope_interpreter.h
-    ${INCLUDE}/hope_logging.h
     ${SRC}/hope_message.h
     ${SRC}/hope_parse_tree.cpp
     ${SRC}/hope_parse_tree.h

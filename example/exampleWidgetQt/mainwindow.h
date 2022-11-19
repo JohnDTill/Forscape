@@ -92,7 +92,6 @@ private slots:
     void on_actionShow_typesetting_toolbar_toggled(bool show);
     void on_actionShow_project_browser_toggled(bool show);
     void checkForChanges();
-    void on_actionSee_log_triggered();
     void on_actionPreferences_triggered();
     void onColourChanged();
     void on_actionGo_to_line_triggered();

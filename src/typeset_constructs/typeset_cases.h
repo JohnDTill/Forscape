@@ -3,7 +3,6 @@
 
 #include "typeset_construct.h"
 
-#include <hope_logging.h>
 #include "typeset_command.h"
 #include "typeset_controller.h"
 #include "typeset_model.h"
@@ -12,8 +11,6 @@
 #ifndef NDEBUG
 #include <iostream>
 #endif
-
-#define LOG_PREFIX "clickedCases()->"
 
 namespace Hope {
 
@@ -145,13 +142,11 @@ public:
                 : cases(cases), row(row){
 
                 if(is_insert){
-                    logger->info(LOG_PREFIX "insertRow({});", row);
                     first = new Subphrase;
                     first->setParent(&cases);
                     second = new Subphrase;
                     second->setParent(&cases);
                 }else{
-                    logger->info(LOG_PREFIX "removeRow({});", row);
                     first = cases.arg(2*row);
                     second = cases.arg(2*row+1);
                 }
@@ -207,8 +202,6 @@ inline std::vector<Cases::ContextAction> Cases::actions {
     ContextAction("Delete row", rowCmd<false, false>),
 };
 #endif
-
-#undef LOG_PREFIX
 
 }
 

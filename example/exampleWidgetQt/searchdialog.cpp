@@ -1,7 +1,6 @@
 #include "searchdialog.h"
 #include "ui_searchdialog.h"
 
-#include <hope_logging.h>
 #include <mainwindow.h>
 #include <typeset_markerlink.h>
 #include <typeset_model.h>
@@ -13,8 +12,6 @@
 #ifndef NDEBUG
 #include <iostream>
 #endif
-
-#define LOG_PREFIX "search_dialog->"
 
 #define SEARCH_SETTINGS "search_pref"
 enum Setting {
@@ -65,19 +62,16 @@ void SearchDialog::saveSettings(QSettings& settings) const{
 }
 
 void SearchDialog::on_closeButton_clicked(){
-    logger->info(LOG_PREFIX "on_closeButton_clicked();");
     accept();
 }
 
 
 void SearchDialog::on_findNextButton_clicked(){
-    logger->info(LOG_PREFIX "on_findNextButton_clicked();");
     goToNext();
 }
 
 
 void SearchDialog::on_findPrevButton_clicked(){
-    logger->info(LOG_PREFIX "on_findPrevButton_clicked();");
     goToPrev();
 }
 
@@ -103,8 +97,6 @@ void SearchDialog::closeEvent(QCloseEvent*){
 }
 
 void SearchDialog::populateHits(const std::string& str){
-    logger->info(LOG_PREFIX "populateHits({});", cStr(str));
-
     hits.clear();
     in->getController().deselect();
     if(!str.empty()){
@@ -128,8 +120,6 @@ void SearchDialog::populateHits(const std::string& str){
 }
 
 void SearchDialog::replace(const std::string& str){
-    logger->info(LOG_PREFIX "replace({});", cStr(str));
-
     if(index >= hits.size()) index = 0;
 
     in->getController() = hits[index];
@@ -142,8 +132,6 @@ void SearchDialog::replace(const std::string& str){
 }
 
 void SearchDialog::replaceAll(const std::string& str){
-    logger->info(LOG_PREFIX "replaceAll({});", cStr(str));
-
     in->replaceAll(hits, str);
     populateHits();
 }
@@ -163,8 +151,6 @@ void SearchDialog::on_findEdit_textChanged(const QString&){
 }
 
 void SearchDialog::on_findAllButton_clicked(){
-    logger->info(LOG_PREFIX "on_findAllButton_clicked();");
-
     out->setFromSerial("");
     std::string search_str = searchStr();
 

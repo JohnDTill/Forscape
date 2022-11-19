@@ -7,7 +7,6 @@
 #include "typeset_loadsave.h"
 #include "typeset_mutability.h"
 #include "hope_benchmark.h"
-#include <hope_logging.h>
 #include <typeset_themes.h>
 
 #ifdef TEST_QT
@@ -24,8 +23,6 @@ int main(int argc, char* argv[]){
     (void)argv;
     #endif
 
-    Hope::initLogging();
-    Hope::logger->info("TEST_START");
     #ifndef HOPE_TYPESET_HEADLESS
     Hope::Typeset::setPreset(0);
     #endif
@@ -48,8 +45,6 @@ int main(int argc, char* argv[]){
     #ifdef NDEBUG
     if(passing) runBenchmark();
     #endif
-
-    Hope::logger->info("TEST_END");
 
     return passing == false;
 }

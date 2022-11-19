@@ -1,7 +1,6 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 
-#include <hope_logging.h>
 #include <typeset_model.h>
 #include <typeset_painter.h>
 #include <typeset_view.h>
@@ -23,6 +22,7 @@
 #include <QMimeData>
 #include <QSpinBox>
 #include <QSplitter>
+#include <QStandardPaths>
 #include <QTextStream>
 #include <QToolBar>
 #include <QVBoxLayout>
@@ -54,8 +54,6 @@
 #define PROJECT_BROWSER_VISIBLE "project_tb_visible"
 #define WINDOW_STATE "win_state"
 #define LAST_DIRECTORY "last_dir"
-
-#define LOG_PREFIX "mainwindow->"
 
 using namespace Hope;
 
@@ -311,8 +309,6 @@ bool MainWindow::isSavedDeepComparison() const {
 }
 
 void MainWindow::run(){
-    logger->info(LOG_PREFIX "run();");
-
     if(editor->isRunning()) return;
 
     editor->runThread();
@@ -332,8 +328,6 @@ void MainWindow::run(){
 }
 
 void MainWindow::stop(){
-    logger->info(LOG_PREFIX "stop(); //Note: potential for non-repeatable timing dependent behaviour.");
-
     if(!editor->isRunning()) return;
     editor->getModel()->stop();
 }
@@ -375,7 +369,6 @@ void MainWindow::pollInterpreterThread(){
 
 void MainWindow::parseTree(){
     #ifndef NDEBUG
-    logger->info(LOG_PREFIX "parseTree();");
     QString dot_src = QString::fromStdString(editor->getModel()->parseTreeDot());
     dot_src.replace("\\n", "\\\\n");
     QGraphvizCall::show(dot_src);
@@ -384,7 +377,6 @@ void MainWindow::parseTree(){
 
 void MainWindow::symbolTable(){
     #ifndef NDEBUG
-    logger->info(LOG_PREFIX "symbolTable();");
     Typeset::Model* m = editor->getModel();
     SymbolTreeView* view = new SymbolTreeView(m->symbol_builder.symbol_table, m->static_pass);
     view->show();
@@ -396,7 +388,6 @@ void MainWindow::github(){
 }
 
 void MainWindow::on_actionNew_triggered(){
-    logger->info(LOG_PREFIX "on_actionNew_triggered();");
     if(!editor->isEnabled()) return;
     editor->setFromSerial("");
     setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
@@ -484,8 +475,6 @@ bool MainWindow::savePrompt(){
 }
 
 bool MainWindow::saveAs(QString path){
-    logger->info(LOG_PREFIX "saveAs({});", cStr(path.toStdString()));
-
     if(!editor->isEnabled()) return false;
 
     QFile file(path);
@@ -515,8 +504,6 @@ bool MainWindow::saveAs(QString path){
 }
 
 void MainWindow::open(QString path){
-    logger->info("//" LOG_PREFIX "open({})", cStr(path.toStdString()));
-
     std::ifstream in(path.toStdString());
     if(!in.is_open()){
         QMessageBox messageBox;
@@ -534,7 +521,6 @@ void MainWindow::open(QString path){
             src[i] = '\0';
     src.erase( std::remove(src.begin(), src.end(), '\0'), src.end() );
 
-    logger->info("editor->setFromSerial({});", cStr(src));
     assert(Hope::isValidSerial(src));
     if(!Hope::isValidSerial(src)){
         QMessageBox messageBox;
@@ -726,8 +712,6 @@ void MainWindow::on_actionTeX_triggered(){
 }
 
 void MainWindow::on_actionUnicode_triggered(){
-    logger->info(LOG_PREFIX "on_actionUnicode_triggered();");
-
     std::string str = editor->getController().selectedText();
     if(UnicodeConverter::canConvert(str)){
         std::string uni = UnicodeConverter::convert(str);
@@ -762,8 +746,6 @@ void MainWindow::closeEvent(QCloseEvent* event){
             }
         }
     }
-
-    logger->info("assert(editor->toSerial() == {});", cStr(editor->toSerial()));
 
     preferences->close();
     QMainWindow::closeEvent(event);
@@ -802,10 +784,6 @@ void MainWindow::checkForChanges(){
 
     if(reply == QMessageBox::Yes) open(path);
     else onTextChanged();
-}
-
-void MainWindow::on_actionSee_log_triggered(){
-    openLogFile();
 }
 
 void MainWindow::on_actionPreferences_triggered(){

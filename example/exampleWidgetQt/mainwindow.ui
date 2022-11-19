@@ -63,7 +63,6 @@
     </property>
     <addaction name="actionRun"/>
     <addaction name="actionStop"/>
-    <addaction name="actionSee_log"/>
    </widget>
    <widget class="QMenu" name="menuWindow">
     <property name="title">
