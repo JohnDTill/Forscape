@@ -1,6 +1,7 @@
 enum9label9simple9keyword9imp_mult9imp_end9group
 Aleph9ℵ9y9999
 Algorithm9alg99y999
+Approx9≈9y9999
 ArgClose999999
 As9as99y999
 At9@9y9999
@@ -91,6 +92,7 @@ Namespace9namespace99y999
 Newline9\n99999
 Ni9∋9y9999
 Not9¬9y9999
+NotApprox9≉9y9999
 NotEqual9≠9y9999
 NotExist9∄9y9999
 NotGreater9≯9y9999

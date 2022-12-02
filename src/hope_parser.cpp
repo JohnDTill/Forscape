@@ -516,6 +516,8 @@ ParseNode Parser::comparison() alloc_except {
     switch (currentType()) {
         case EQUALS: advance(); return parse_tree.addNode<2>(OP_EQUAL, {n, addition()});
         case NOTEQUAL: advance(); return parse_tree.addNode<2>(OP_NOT_EQUAL, {n, addition()});
+        case APPROX: advance(); return parse_tree.addNode<2>(OP_APPROX, {n, addition()});
+        case NOTAPPROX: advance(); return parse_tree.addNode<2>(OP_NOT_APPROX, {n, addition()});
         case MEMBER: advance(); return parse_tree.addNode<2>(OP_IN, {n, addition()});
         case NOTIN: advance(); return parse_tree.addNode<2>(OP_NOT_MEMBER, {n, addition()});
         case SUBSET: advance(); return parse_tree.addNode<2>(OP_SUBSET, {n, addition()});

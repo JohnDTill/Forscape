@@ -1339,6 +1339,18 @@ Value Interpreter::binomial(ParseNode pn){
     return res;
 }
 
+static constexpr double APPROX_TOL = 1e-7;
+
+//EVENTUALLY: allow user to overload definition of approximately equal
+bool Interpreter::approx(double a, double b) const noexcept {
+    double diff = a - b;
+    return diff < APPROX_TOL && diff > -APPROX_TOL;
+}
+
+bool Interpreter::approx(const Eigen::MatrixXd& a, const Eigen::MatrixXd& b) const noexcept {
+    return a.isApprox(b, APPROX_TOL);
+}
+
 }
 
 }

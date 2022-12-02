@@ -902,6 +902,10 @@ bool Controller::selectToStringEnd() noexcept{
     }
 }
 
+void Controller::selectToPathEnd() noexcept {
+    while(notAtTextEnd() && isPathChar(charRight())) active.index++;
+}
+
 std::string_view Controller::selectedFlatText() const noexcept{
     return std::string_view(anchor.text->data() + anchor.index, active.index-anchor.index);
 }

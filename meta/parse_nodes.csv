@@ -2,6 +2,8 @@ enum,label,type,a_type,b_type,ast_flag,comments
 FALSE,false,BOOL,,,,
 EQUAL,=,BOOL,ANY=b,-,,
 NOT_EQUAL,≠,BOOL,,,,
+APPROX,≈,BOOL,,,,
+NOT_APPROX,≉,BOOL,,,,
 NOT_IN,∉,BOOL,,,,
 GREATER,>,BOOL,,,,
 LESS,<,BOOL,,,,

@@ -165,6 +165,7 @@ private:
     void selectToIdentifierEnd() noexcept;
     void selectToNumberEnd() noexcept;
     bool selectToStringEnd() noexcept;
+    void selectToPathEnd() noexcept;
     std::string_view selectedFlatText() const noexcept;
     Controller(const Controller& lhs, const Controller& rhs);
     void formatBasicIdentifier() const noexcept;

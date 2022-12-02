@@ -952,6 +952,16 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
             if(parse_tree.getType(lhs) != parse_tree.getType(rhs)) return error(pn, pn);
             return pn;
         }
+        case OP_APPROX:
+        case OP_NOT_APPROX:{
+            parse_tree.setType(pn, BOOLEAN);
+            ParseNode lhs = resolveExpr(parse_tree.lhs(pn));
+            parse_tree.setArg<0>(pn, lhs);
+            ParseNode rhs = resolveExpr(parse_tree.rhs(pn));
+            parse_tree.setArg<1>(pn, rhs);
+            if(parse_tree.getType(lhs) != parse_tree.getType(rhs)) return error(pn, pn);
+            return pn;
+        }
         case OP_DECIMAL_LITERAL:
         case OP_INTEGER_LITERAL:{
             double val = parse_tree.getDouble(pn);

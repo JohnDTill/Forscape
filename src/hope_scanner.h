@@ -37,6 +37,7 @@ private:
     void endOfFile() alloc_except;
     void incrementScope() noexcept;
     void decrementScope() noexcept;
+    void scanFile(std::string_view path) alloc_except;
 
     Typeset::Model* model;
     Typeset::Controller* controller;

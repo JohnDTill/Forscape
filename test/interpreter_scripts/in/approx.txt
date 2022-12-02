@@ -1,0 +1,17 @@
+SMALL_INCREMENT = 10-9
+
+x = 2
+y = x + SMALL_INCREMENT
+z = 2.5
+
+assert(x ≠ y)
+assert(x ≈ y)
+assert(x ≉ z)
+
+A = 123456
+B ← A
+B0,1 ← B0,1 - SMALL_INCREMENT
+C = 12.53456
+assert(A ≠ B)
+assert(A ≈ B)
+assert(A ≉ C)
