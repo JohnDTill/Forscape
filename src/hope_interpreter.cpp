@@ -17,11 +17,7 @@ namespace Hope {
 namespace Code {
 
 Interpreter::Interpreter() noexcept
-    : error_node(NONE){
-    //Eigen::MatrixXd L_prime(L.size()); //No
-    Eigen::VectorXd thing(3); thing << 1, 2, 3;
-    double x = thing(1)*2;
-}
+    : error_node(NONE){}
 
 void Interpreter::run(const ParseTree& parse_tree, SymbolTable symbol_table, const InstantiationLookup& inst_lookup){
     assert(parse_tree.getOp(parse_tree.root) == OP_BLOCK);
@@ -100,6 +96,7 @@ void Interpreter::interpretStmt(ParseNode pn){
                 DEBUG_STACK_ARG("namespace-" + parse_tree.str(parse_tree.lhs(pn))));
             blockStmt(parse_tree.rhs(pn));
             break; //DO THIS: this shouldn't be in the interpreter
+            // It's assumed every symbol has a role in the runtime, and that's a bad assumption for multiple reasons.
         }
         default: error(UNRECOGNIZED_STMT, pn);
     }
