@@ -872,7 +872,8 @@ void MainWindow::onFileRightClicked(const QPoint& pos) {
     std::cout << item->text(0).toStdString() << " right clicked" << std::endl;
 
     QMenu menu(this);
-    if(item->childCount() == 0){//DO THIS: more descriptive check for file vs. folder
+    const bool item_is_file = (item->childCount() == 0);
+    if(item_is_file){
         menu.addAction("Open File")->setStatusTip("DO THIS");
         menu.addAction("Rename File")->setStatusTip("DO THIS");
         menu.addAction("Anchor Project")->setStatusTip("DO THIS");
