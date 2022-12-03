@@ -11,7 +11,6 @@ include_directories(${CONAN_INCLUDE_DIRS})
 find_package(Eigen3 REQUIRED)
 find_package(phmap REQUIRED)
 find_package(readerwriterqueue REQUIRED)
-find_package(spdlog REQUIRED)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -121,6 +120,8 @@ set(PROJECT_SOURCES
     searchdialog.cpp
     searchdialog.h
     searchdialog.ui
+    splitter.cpp
+    splitter.h
     symbolsubstitutioneditor.cpp
     symbolsubstitutioneditor.h
     symboltreeview.cpp
@@ -133,7 +134,6 @@ set(PROJECT_SOURCES
     ${INCLUDE}/hope_error.h
     ${SRC}/hope_interpreter.cpp
     ${SRC}/hope_interpreter.h
-    ${INCLUDE}/hope_logging.h
     ${SRC}/hope_message.h
     ${SRC}/hope_parse_tree.cpp
     ${SRC}/hope_parse_tree.h
@@ -162,6 +162,8 @@ set(PROJECT_SOURCES
     ${SRC}/typeset_construct.h
     ${SRC}/typeset_controller.cpp
     ${INCLUDE}/typeset_controller.h
+    ${SRC}/typeset_filesystem.cpp
+    ${SRC}/typeset_filesystem.h
     ${SRC}/typeset_integral_preference.h
     ${SRC}/typeset_line.cpp
     ${SRC}/typeset_line.h

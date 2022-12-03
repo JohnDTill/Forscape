@@ -44,6 +44,7 @@ public:
     static constexpr Type VOID_TYPE = UNINITIALISED-4;
     static constexpr Type RECURSIVE_CYCLE = UNINITIALISED-5;
     static constexpr Type FAILURE = UNINITIALISED-6;
+    static constexpr Type NAMESPACE = UNINITIALISED-7;
     static constexpr bool isAbstractFunctionGroup(size_t type) noexcept;
     bool retry_at_recursion = false;
     bool first_attempt = true;
@@ -121,7 +122,8 @@ private:
         void resolve();
 
     private:
-        ParseNode resolveStmt(size_t pn) noexcept;
+        ParseNode resolveStmt(ParseNode pn) noexcept;
+        ParseNode resolveLValue(ParseNode pn, bool write = false) noexcept;
         Type fillDefaultsAndInstantiate(ParseNode call_node, CallSignature sig);
         ParseNode resolveExprTop(size_t pn, size_t rows_expected = 0, size_t cols_expected = 0);
         ParseNode resolveExpr(size_t pn, size_t rows_expected = 0, size_t cols_expected = 0) noexcept;
@@ -148,6 +150,7 @@ private:
         ParseNode resolveZeroMatrix(ParseNode pn);
         ParseNode resolveLimit(ParseNode pn);
         ParseNode resolveDefiniteIntegral(ParseNode pn);
+        ParseNode resolveScopeAccess(ParseNode pn, bool write = false);
         ParseNode copyChildProperties(ParseNode pn) noexcept;
         ParseNode enforceScalar(ParseNode pn);
         ParseNode enforceZero(ParseNode pn);
@@ -173,6 +176,8 @@ private:
         std::vector<CachedInfo> old_val_cap;
         std::vector<CachedInfo> old_ref_cap;
         std::vector<CachedInfo> old_args;
+
+        size_t closureDepth() const noexcept { return return_types.size(); }
 };
 
 }

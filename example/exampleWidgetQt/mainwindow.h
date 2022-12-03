@@ -14,6 +14,10 @@ class Plot;
 class Preferences;
 class SearchDialog;
 class QGroupBox;
+class QSplitter;
+class QTreeWidget;
+class QTreeWidgetItem;
+class Splitter;
 
 namespace Hope{
 namespace Typeset {
@@ -38,6 +42,10 @@ private:
     QGroupBox* group_box;
     MathToolbar* math_toolbar;
     QToolBar* action_toolbar;
+    QToolBar* project_toolbar;
+    QTreeWidget* project_browser;
+    Splitter* horizontal_splitter;
+    Splitter* vertical_splitter;
     Preferences* preferences;
     Plot* active_plot = nullptr;
     QString path;
@@ -84,11 +92,17 @@ private slots:
     void onTextChanged();
     void on_actionShow_action_toolbar_toggled(bool show);
     void on_actionShow_typesetting_toolbar_toggled(bool show);
+    void on_actionShow_project_browser_toggled(bool show);
     void checkForChanges();
-    void on_actionSee_log_triggered();
     void on_actionPreferences_triggered();
     void onColourChanged();
     void on_actionGo_to_line_triggered();
+    void onSplitterResize(int pos, int index);
+    void anchor();
+    void onFileClicked(QTreeWidgetItem* item, int column);
+    void onFileRightClicked(const QPoint& pos);
+    void setHSplitterDefaultWidth();
+    void setVSplitterDefaultHeight();
 
 protected:
     virtual void closeEvent(QCloseEvent* event) override;

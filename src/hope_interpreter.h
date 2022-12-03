@@ -120,6 +120,8 @@ private:
     static std::string formatted(double num);
     Value factorial(ParseNode pn);
     Value binomial(ParseNode pn);
+    bool approx(double a, double b) const noexcept;
+    bool approx(const Eigen::MatrixXd& a, const Eigen::MatrixXd& b) const noexcept;
 };
 
 }

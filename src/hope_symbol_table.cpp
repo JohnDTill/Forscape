@@ -43,14 +43,14 @@ ScopeSegment::ScopeSegment(
       #ifdef HOPE_USE_SCOPE_NAME
       name_start(name_start), name_size(name_size),
       #endif
-      start(start), fn(closure), parent(parent), prev(prev), sym_begin(sym_begin), usage_begin(usage_begin) {}
+      start(start), fn(closure), parent(parent), prev_lexical_segment(prev), sym_begin(sym_begin), usage_begin(usage_begin) {}
 
 bool ScopeSegment::isStartOfScope() const noexcept{
-    return prev == NONE;
+    return prev_lexical_segment == NONE;
 }
 
 bool ScopeSegment::isEndOfScope() const noexcept{
-    return next == NONE;
+    return next_lexical_segment == NONE;
 }
 
 void SymbolTable::addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed, bool is_const) alloc_except {
@@ -82,7 +82,7 @@ std::vector<Typeset::Selection> SymbolTable::getSuggestions(const Typeset::Marke
     Typeset::Selection typed(left, loc);
 
     for(size_t i = containingScope(loc); i != NONE; i = scopes[i].parent){
-        for(size_t j = i; j != NONE; j = scopes[j].prev){
+        for(size_t j = i; j != NONE; j = scopes[j].prev_lexical_segment){
             const ScopeSegment& seg = scopes[j];
             for(size_t k = seg.sym_begin; k < seg.sym_end; k++){
                 const Typeset::Selection& candidate = parse_tree.getSelection(symbols[k].flag);
@@ -116,10 +116,10 @@ void SymbolTable::getSymbolOccurences(size_t sym_id, std::vector<Typeset::Select
 }
 
 ScopeId SymbolTable::head(ScopeId index) const noexcept{
-    size_t prev = scopes[index].prev;
+    size_t prev = scopes[index].prev_lexical_segment;
     while(prev != NONE){
         index = prev;
-        prev = scopes[index].prev;
+        prev = scopes[index].prev_lexical_segment;
     }
     return index;
 }
@@ -128,6 +128,7 @@ void SymbolTable::reset(const Typeset::Marker& doc_start) noexcept{
     scopes.clear();
     symbols.clear();
     usages.clear();
+    stored_scopes.clear();
 
     #if !defined(NDEBUG) && !defined(HOPE_TYPESET_HEADLESS)
     scope_names = "Global";
@@ -154,18 +155,18 @@ void SymbolTable::closeScope(const Typeset::Marker& stop) alloc_except {
     ScopeSegment& closed_scope = scopes.back();
     closed_scope.sym_end = symbols.size();
     closed_scope.usage_end = usages.size();
-    closed_scope.next = NONE;
+    closed_scope.next_lexical_segment = NONE;
 
     size_t prev_index = closed_scope.parent;
     ScopeSegment& prev_scope = scopes[prev_index];
-    prev_scope.next = scopes.size();
+    prev_scope.next_lexical_segment = scopes.size();
 
     scopes.push_back(ScopeSegment(SCOPE_NAME(prev_scope.name_start) SCOPE_NAME(prev_scope.name_size) stop, prev_scope.fn, prev_scope.parent, prev_index, symbols.size(), usages.size()));
 }
 
 void SymbolTable::finalize() noexcept {
     ScopeSegment& scope = scopes.back();
-    scope.next = NONE;
+    scope.next_lexical_segment = NONE;
     scope.sym_end = symbols.size();
     scope.usage_end = usages.size();
 }
@@ -179,6 +180,17 @@ void SymbolTable::verifyIdentifier(ParseNode pn) const noexcept {
     assert(parse_tree.getSelection(pn) == sym.sel(parse_tree));
 }
 #endif
+
+void SymbolTable::resolveReference(ParseNode pn, size_t sym_id, size_t closure_depth) noexcept {
+    assert(parse_tree.getOp(pn) == OP_IDENTIFIER);
+    Symbol& sym = symbols[sym_id];
+    parse_tree.setSymId(pn, sym_id);
+    sym.is_used = true;
+
+    sym.is_closure_nested |= sym.declaration_closure_depth && (closure_depth != sym.declaration_closure_depth);
+
+    usages.push_back(Usage(sym_id, pn, READ));
+}
 
 }
 

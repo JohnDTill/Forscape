@@ -1,5 +1,9 @@
 #include "hope_symbol_link_pass.h"
 
+#ifndef NDEBUG
+#include <iostream>
+#endif
+
 namespace Hope {
 
 namespace Code {

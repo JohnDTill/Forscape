@@ -78,3 +78,5 @@ BAD_RANGED_FOR_VAR,,Ranged-for iterator must be a variable name
 TYPE_NOT_ITERABLE,,Type is not iterable
 COMPLEMENT_C,,The letter ‘c’ is not advised for set complements. Use the complement symbol ‘∁’ to avoid ambiguity.
 TRANSPOSE_T,,The letter ‘T’ is not advised for matrix transpose. Use the transpose symbol ‘⊤’ to avoid ambiguity.
+FILE_NOT_FOUND,y,File not found on compiler search path
+EXPECTED_FILEPATH,,Expected filepath

@@ -1,7 +1,9 @@
 enum9label9simple9keyword9imp_mult9imp_end9group
 Aleph9ℵ9y9999
 Algorithm9alg99y999
+Approx9≈9y9999
 ArgClose999999
+As9as99y999
 At9@9y9999
 Backslash9\\9y9999
 Bar9|9y9999
@@ -58,11 +60,13 @@ FalseLiteral9false99y999
 For9for99y999
 ForAll9∀9y9999
 Forwardslash9/99999
+From9from99y999
 Greater9>9y9999
 GreaterEqual9≥9y9999
 Hamiltonian9ℋ9y9999
 Identifier9ID999y99
 If9if99y999
+Import9import99y999
 Member9∈9y9999
 Infty9∞9y9999
 Integer999999
@@ -84,9 +88,11 @@ Minus9-9y9999
 MinusPlus9∓9y9999
 Multiply9*9y9999
 Nabla9∇9y99y99
+Namespace9namespace99y999
 Newline9\n99999
 Ni9∋9y9999
 Not9¬9y9999
+NotApprox9≉9y9999
 NotEqual9≠9y9999
 NotExist9∄9y9999
 NotGreater9≯9y9999

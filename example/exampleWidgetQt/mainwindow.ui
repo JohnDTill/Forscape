@@ -63,7 +63,6 @@
     </property>
     <addaction name="actionRun"/>
     <addaction name="actionStop"/>
-    <addaction name="actionSee_log"/>
    </widget>
    <widget class="QMenu" name="menuWindow">
     <property name="title">
@@ -75,6 +74,7 @@
     <addaction name="actionShow_line_numbers"/>
     <addaction name="actionShow_action_toolbar"/>
     <addaction name="actionShow_typesetting_toolbar"/>
+    <addaction name="actionShow_project_browser"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -286,6 +286,17 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+G</string>
+   </property>
+  </action>
+  <action name="actionShow_project_browser">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show project browser</string>
    </property>
   </action>
  </widget>

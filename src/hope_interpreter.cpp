@@ -94,6 +94,13 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_CONTINUE: status = static_cast<Status>(status | CONTINUE); break;
         case OP_PLOT: plotStmt(pn); break;
         case OP_DO_NOTHING: break;
+        case OP_NAMESPACE:{
+            if(parse_tree.getFlag(pn) != 1)
+            stack.push(static_cast<void*>(nullptr)
+                DEBUG_STACK_ARG("namespace-" + parse_tree.str(parse_tree.lhs(pn))));
+            blockStmt(parse_tree.rhs(pn));
+            break; //DO THIS: this shouldn't be in the interpreter
+        }
         default: error(UNRECOGNIZED_STMT, pn);
     }
 }
@@ -1330,6 +1337,18 @@ Value Interpreter::binomial(ParseNode pn){
         res = res * (n - k + i) / i;
 
     return res;
+}
+
+static constexpr double APPROX_TOL = 1e-7;
+
+//EVENTUALLY: allow user to overload definition of approximately equal
+bool Interpreter::approx(double a, double b) const noexcept {
+    double diff = a - b;
+    return diff < APPROX_TOL && diff > -APPROX_TOL;
+}
+
+bool Interpreter::approx(const Eigen::MatrixXd& a, const Eigen::MatrixXd& b) const noexcept {
+    return a.isApprox(b, APPROX_TOL);
 }
 
 }

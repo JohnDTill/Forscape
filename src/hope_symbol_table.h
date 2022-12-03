@@ -32,6 +32,7 @@ struct Symbol {
     size_t cols = UNKNOWN_SIZE;
     size_t shadowed_var  DEBUG_INIT_UNITIALISED;
     size_t comment  DEBUG_INIT_UNITIALISED;
+    size_t scope_tail = NONE;
     bool is_const;
     bool is_used = false;
     bool is_reassigned = false; //Used to determine if parameters are constant
@@ -68,10 +69,11 @@ struct ScopeSegment{
     Typeset::Marker start;
     ParseNode fn  DEBUG_INIT_UNITIALISED;
     ScopeId parent  DEBUG_INIT_UNITIALISED;
-    ScopeId prev  DEBUG_INIT_UNITIALISED;
+    ScopeId prev_lexical_segment  DEBUG_INIT_UNITIALISED;
     SymbolId sym_begin  DEBUG_INIT_UNITIALISED;
     size_t usage_begin  DEBUG_INIT_UNITIALISED;
-    ScopeId next = NONE;
+    ScopeId next_lexical_segment = NONE;
+    ScopeId prev_namespace_segment  DEBUG_INIT_UNITIALISED;
     SymbolId sym_end = NONE;
     size_t usage_end = NONE;
 
@@ -128,6 +130,22 @@ public:
     #ifndef NDEBUG
     void verifyIdentifier(ParseNode pn) const noexcept;
     #endif
+
+    struct StoredScopeKey {
+        ParseNode symbol_root;
+        Typeset::Selection sel;
+        StoredScopeKey(ParseNode symbol_root, const Typeset::Selection& sel) noexcept : symbol_root(symbol_root), sel(sel) {}
+        bool operator==(const StoredScopeKey& other) const noexcept {
+            return symbol_root == other.symbol_root && sel == other.sel; }
+    };
+    struct HashStoredScopeKey {
+        std::size_t operator()(const StoredScopeKey& s) const {
+            return s.symbol_root ^ std::hash<Typeset::Selection>()(s.sel);
+        }
+    };
+    HOPE_UNORDERED_MAP<StoredScopeKey, size_t, HashStoredScopeKey> stored_scopes;
+
+    void resolveReference(ParseNode pn, size_t sym_id, size_t closure_depth) alloc_except;
 };
 
 }

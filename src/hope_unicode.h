@@ -67,6 +67,10 @@ inline constexpr bool isAlphaNumeric(char ch) noexcept{
             (ch == '_');
 }
 
+inline constexpr bool isPathChar(char ch) noexcept{
+    return ch != ' ';
+}
+
 static uint32_t expand(char ch) noexcept{
     return static_cast<uint32_t>(static_cast<uint8_t>(ch));
 }

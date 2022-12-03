@@ -60,6 +60,7 @@ private:
         #endif
         const Typeset::Marker& begin, ParseNode pn) alloc_except;
     void decreaseClosureDepth(const Typeset::Marker& end) alloc_except;
+    void addStoredScope(ParseNode pn);
     void makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable) alloc_except;
     void appendEntry(ParseNode pn, size_t& old_entry, bool immutable, bool warn_on_shadow = true) alloc_except;
     void resolveStmt(ParseNode pn) alloc_except;
@@ -99,7 +100,14 @@ private:
     void resolveDefiniteIntegral(ParseNode pn) alloc_except;
     void resolveSetBuilder(ParseNode pn) alloc_except;
     void resolveUnknownDeclaration(ParseNode pn) alloc_except;
+    void resolveImport(ParseNode pn) alloc_except;
+    void resolveFromImport(ParseNode pn) alloc_except;
+    void resolveNamespace(ParseNode pn) alloc_except;
+    void loadScope(ParseNode pn, size_t sym_id) alloc_except;
+    void unloadScope(ParseNode body, size_t sym_id) alloc_except;
+    void resolveScopeAccess(ParseNode pn) alloc_except;
     bool defineLocalScope(ParseNode pn, bool immutable = true, bool warn_on_shadow = true) alloc_except;
+    ParseNode defineOrAccessLocalScope(ParseNode pn, bool immutable = true, bool warn_on_shadow = true) alloc_except;
     bool declared(ParseNode pn) const noexcept;
     size_t symIndex(ParseNode pn) const noexcept;
 

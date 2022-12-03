@@ -265,6 +265,7 @@ private slots:
     void rename();
     void goToDef();
     void findUsages();
+    void goToFile();
     void showTooltipParseNode();
     void showTooltip();
 

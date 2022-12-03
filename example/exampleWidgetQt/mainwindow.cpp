@@ -1,7 +1,6 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 
-#include <hope_logging.h>
 #include <typeset_model.h>
 #include <typeset_painter.h>
 #include <typeset_view.h>
@@ -16,20 +15,25 @@
 #include <QCloseEvent>
 #include <QDesktopServices>
 #include <QFileDialog>
+#include <QFileIconProvider>
 #include <QGroupBox>
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QMimeData>
 #include <QSpinBox>
 #include <QSplitter>
+#include <QStandardPaths>
 #include <QTextStream>
 #include <QToolBar>
+#include <QTreeWidget>
+#include <QVariant>
 #include <QVBoxLayout>
 
 #include "mathtoolbar.h"
 #include "plot.h"
 #include "preferences.h"
 #include "searchdialog.h"
+#include "splitter.h"
 #include "symboltreeview.h"
 
 #include <chrono>
@@ -50,10 +54,9 @@
 #define NEW_SCRIPT_TITLE "new script"
 #define MATH_TOOLBAR_VISIBLE "math_tb_visible"
 #define ACTION_TOOLBAR_VISIBLE "action_tb_visible"
+#define PROJECT_BROWSER_VISIBLE "project_tb_visible"
 #define WINDOW_STATE "win_state"
 #define LAST_DIRECTORY "last_dir"
-
-#define LOG_PREFIX "mainwindow->"
 
 using namespace Hope;
 
@@ -62,6 +65,9 @@ static std::filesystem::file_time_type write_time;
 static QTimer* external_change_timer;
 
 static constexpr int CHANGE_CHECK_PERIOD_MS = 100;
+
+static constexpr int FILE_BROWSER_WIDTH = 200;
+static bool program_control_of_hsplitter = false;
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -73,14 +79,36 @@ MainWindow::MainWindow(QWidget* parent)
     connect(external_change_timer, &QTimer::timeout, this, &MainWindow::checkForChanges);
     external_change_timer->start(CHANGE_CHECK_PERIOD_MS);
 
-    QSplitter* splitter = new QSplitter(Qt::Vertical, this);
-    setCentralWidget(splitter);
+    horizontal_splitter = new Splitter(Qt::Horizontal, this);
+    project_browser = new QTreeWidget(horizontal_splitter);
+    project_browser->setHeaderHidden(true);
+    project_browser->setIndentation(10);
+    project_browser->setMinimumWidth(120);
+    connect(project_browser, SIGNAL(itemActivated(QTreeWidgetItem*, int)), this, SLOT(onFileClicked(QTreeWidgetItem*, int)));
+    project_browser->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(project_browser, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onFileRightClicked(const QPoint&)));
+    QTreeWidgetItem* root = new QTreeWidgetItem(project_browser);
+    root->setText(0, "DO THIS");
+    root->setIcon(0, QFileIconProvider().icon(QFileIconProvider::Folder));
+    QTreeWidgetItem* leaf = new QTreeWidgetItem(root);
+    leaf->setText(0, "Wire up project browser");
+    leaf->setIcon(0, QFileIconProvider().icon(QFileIconProvider::File));
+    QTreeWidgetItem* anchor_leaf = new QTreeWidgetItem(root);
+    anchor_leaf->setText(0, "Anchor leaf");
+    anchor_leaf->setIcon(0, QIcon(":/anchor.svg"));
+    horizontal_splitter->addWidget(project_browser);
+    connect(horizontal_splitter, SIGNAL(splitterMoved(int, int)), this, SLOT(onSplitterResize(int, int)));
+    connect(horizontal_splitter, SIGNAL(splitterDoubleClicked(int)), this, SLOT(setHSplitterDefaultWidth()));
+
+    vertical_splitter = new Splitter(Qt::Vertical, horizontal_splitter);
+    horizontal_splitter->addWidget(vertical_splitter);
+    setCentralWidget(horizontal_splitter);
 
     editor = new Typeset::Editor();
     setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
     if(settings.contains(ACTIVE_FILE))
         open(settings.value(ACTIVE_FILE).toString());
-    splitter->addWidget(editor);
+    vertical_splitter->addWidget(editor);
 
     group_box = new QGroupBox(this);
     group_box->setTitle("Console");
@@ -88,11 +116,13 @@ MainWindow::MainWindow(QWidget* parent)
     QVBoxLayout* vbox = new QVBoxLayout();
     group_box->setLayout(vbox);
     group_box->resize(width(), height()*0.7);
-    splitter->addWidget(group_box);
-    splitter->setStretchFactor(0, 2);
-    splitter->setStretchFactor(1, 1);
+    vertical_splitter->addWidget(group_box);
+    vertical_splitter->setStretchFactor(0, 2);
+    vertical_splitter->setStretchFactor(1, 1);
+    connect(vertical_splitter, SIGNAL(splitterDoubleClicked(int)), this, SLOT(setVSplitterDefaultHeight()));
 
     console = new Typeset::Console();
+    console->setMinimumHeight(40);
     vbox->addWidget(console);
 
     editor->console = console;
@@ -164,6 +194,13 @@ MainWindow::MainWindow(QWidget* parent)
     connect(github_act, &QAction::triggered, this, &MainWindow::github);
     action_toolbar->addAction(github_act);
 
+    QAction* anchor_act = new QAction(tr("ŗ"), this);
+    anchor_act->setToolTip("Anchor project to the active file (sets program entry point)");
+    anchor_act->setFont(glyph_font);
+    anchor_act->setShortcuts(QKeySequence::InsertLineSeparator);
+    connect(anchor_act, &QAction::triggered, this, &MainWindow::anchor);
+    action_toolbar->addAction(anchor_act);
+
     if(settings.contains(ACTION_TOOLBAR_VISIBLE)){
         bool visible = settings.value(ACTION_TOOLBAR_VISIBLE).toBool();
         if(!visible){
@@ -213,6 +250,16 @@ MainWindow::MainWindow(QWidget* parent)
     search = new SearchDialog(this, editor, console, settings);
 
     loadGeometry();
+
+    horizontal_splitter->setStretchFactor(0, 0);
+    horizontal_splitter->setStretchFactor(1, 1);
+
+    if(settings.contains(PROJECT_BROWSER_VISIBLE) && !settings.value(PROJECT_BROWSER_VISIBLE).toBool()){
+        ui->actionShow_project_browser->setChecked(false);
+        on_actionShow_project_browser_toggled(false);
+    }else{
+        on_actionShow_project_browser_toggled(true);
+    }
 }
 
 MainWindow::~MainWindow(){
@@ -221,6 +268,7 @@ MainWindow::~MainWindow(){
     settings.setValue(LINE_NUMBERS_VISIBLE, editor->lineNumbersShown());
     settings.setValue(MATH_TOOLBAR_VISIBLE, ui->actionShow_typesetting_toolbar->isChecked());
     settings.setValue(ACTION_TOOLBAR_VISIBLE, ui->actionShow_action_toolbar->isChecked());
+    settings.setValue(PROJECT_BROWSER_VISIBLE, ui->actionShow_project_browser->isChecked());
     settings.setValue(WINDOW_STATE, QList({QVariant(saveGeometry()), QVariant(saveState())}));
     search->saveSettings(settings);
     delete preferences;
@@ -241,6 +289,8 @@ void MainWindow::loadGeometry(){
 void MainWindow::resizeHackToFixScrollbars(){
     resize(width()+1, height()+1);
     resize(width()-1, height()-1);
+
+    setVSplitterDefaultHeight();
 }
 
 bool MainWindow::isSavedDeepComparison() const {
@@ -267,8 +317,6 @@ bool MainWindow::isSavedDeepComparison() const {
 }
 
 void MainWindow::run(){
-    logger->info(LOG_PREFIX "run();");
-
     if(editor->isRunning()) return;
 
     editor->runThread();
@@ -288,8 +336,6 @@ void MainWindow::run(){
 }
 
 void MainWindow::stop(){
-    logger->info(LOG_PREFIX "stop(); //Note: potential for non-repeatable timing dependent behaviour.");
-
     if(!editor->isRunning()) return;
     editor->getModel()->stop();
 }
@@ -331,7 +377,6 @@ void MainWindow::pollInterpreterThread(){
 
 void MainWindow::parseTree(){
     #ifndef NDEBUG
-    logger->info(LOG_PREFIX "parseTree();");
     QString dot_src = QString::fromStdString(editor->getModel()->parseTreeDot());
     dot_src.replace("\\n", "\\\\n");
     QGraphvizCall::show(dot_src);
@@ -340,7 +385,6 @@ void MainWindow::parseTree(){
 
 void MainWindow::symbolTable(){
     #ifndef NDEBUG
-    logger->info(LOG_PREFIX "symbolTable();");
     Typeset::Model* m = editor->getModel();
     SymbolTreeView* view = new SymbolTreeView(m->symbol_builder.symbol_table, m->static_pass);
     view->show();
@@ -352,7 +396,6 @@ void MainWindow::github(){
 }
 
 void MainWindow::on_actionNew_triggered(){
-    logger->info(LOG_PREFIX "on_actionNew_triggered();");
     if(!editor->isEnabled()) return;
     editor->setFromSerial("");
     setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
@@ -440,8 +483,6 @@ bool MainWindow::savePrompt(){
 }
 
 bool MainWindow::saveAs(QString path){
-    logger->info(LOG_PREFIX "saveAs({});", cStr(path.toStdString()));
-
     if(!editor->isEnabled()) return false;
 
     QFile file(path);
@@ -471,8 +512,6 @@ bool MainWindow::saveAs(QString path){
 }
 
 void MainWindow::open(QString path){
-    logger->info("//" LOG_PREFIX "open({})", cStr(path.toStdString()));
-
     std::ifstream in(path.toStdString());
     if(!in.is_open()){
         QMessageBox messageBox;
@@ -490,7 +529,6 @@ void MainWindow::open(QString path){
             src[i] = '\0';
     src.erase( std::remove(src.begin(), src.end(), '\0'), src.end() );
 
-    logger->info("editor->setFromSerial({});", cStr(src));
     assert(Hope::isValidSerial(src));
     if(!Hope::isValidSerial(src)){
         QMessageBox messageBox;
@@ -682,8 +720,6 @@ void MainWindow::on_actionTeX_triggered(){
 }
 
 void MainWindow::on_actionUnicode_triggered(){
-    logger->info(LOG_PREFIX "on_actionUnicode_triggered();");
-
     std::string str = editor->getController().selectedText();
     if(UnicodeConverter::canConvert(str)){
         std::string uni = UnicodeConverter::convert(str);
@@ -719,8 +755,6 @@ void MainWindow::closeEvent(QCloseEvent* event){
         }
     }
 
-    logger->info("assert(editor->toSerial() == {});", cStr(editor->toSerial()));
-
     preferences->close();
     QMainWindow::closeEvent(event);
     emit destroyed();
@@ -732,6 +766,12 @@ void MainWindow::on_actionShow_action_toolbar_toggled(bool show){
 
 void MainWindow::on_actionShow_typesetting_toolbar_toggled(bool show){
     math_toolbar->setVisible(show);
+}
+
+void MainWindow::on_actionShow_project_browser_toggled(bool show){
+    if(program_control_of_hsplitter) return;
+    else if(show) setHSplitterDefaultWidth();
+    else horizontal_splitter->setSizes({0, width()});
 }
 
 void MainWindow::checkForChanges(){
@@ -752,10 +792,6 @@ void MainWindow::checkForChanges(){
 
     if(reply == QMessageBox::Yes) open(path);
     else onTextChanged();
-}
-
-void MainWindow::on_actionSee_log_triggered(){
-    openLogFile();
 }
 
 void MainWindow::on_actionPreferences_triggered(){
@@ -811,4 +847,52 @@ void MainWindow::on_actionGo_to_line_triggered(){
 
     if(dialog.exec() == QDialog::Accepted)
         editor->goToLine(spinbox->value() - 1);
+}
+
+void MainWindow::onSplitterResize(int pos, int index) {
+    program_control_of_hsplitter = true;
+    ui->actionShow_project_browser->setChecked(pos != 0);
+    program_control_of_hsplitter = false;
+}
+
+void MainWindow::anchor(){
+    //DO THIS: the active file is the program entry point
+
+    //DO THIS: depress the anchor button if the active file is anchored
+}
+
+void MainWindow::onFileClicked(QTreeWidgetItem* item, int column) {
+    std::cout << item->text(0).toStdString() << " clicked" << std::endl;
+    //DO THIS: go to the file
+}
+
+void MainWindow::onFileRightClicked(const QPoint& pos) {
+    QTreeWidgetItem* item = project_browser->itemAt(pos);
+    if(item == nullptr) return;
+    std::cout << item->text(0).toStdString() << " right clicked" << std::endl;
+
+    QMenu menu(this);
+    const bool item_is_file = (item->childCount() == 0);
+    if(item_is_file){
+        menu.addAction("Open File")->setStatusTip("DO THIS");
+        menu.addAction("Rename File")->setStatusTip("DO THIS");
+        menu.addAction("Anchor Project")->setStatusTip("DO THIS");
+    }else{
+        menu.addAction("Rename Folder")->setStatusTip("DO THIS");
+        menu.addAction("Add New File")->setStatusTip("DO THIS");
+    }
+    menu.addAction("Show in Explorer")->setStatusTip("DO THIS");
+    //connect(newAct, SIGNAL(triggered()), this, SLOT(something()));
+
+    menu.exec(project_browser->mapToGlobal(pos));
+}
+
+void MainWindow::setHSplitterDefaultWidth() {
+    horizontal_splitter->setSizes({FILE_BROWSER_WIDTH, width()-FILE_BROWSER_WIDTH});
+}
+
+void MainWindow::setVSplitterDefaultHeight() {
+    const int h = vertical_splitter->height();
+    const int console_height = h/3;
+    vertical_splitter->setSizes({h-console_height, console_height});
 }

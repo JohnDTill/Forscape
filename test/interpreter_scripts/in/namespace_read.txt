@@ -1,0 +1,27 @@
+namespace outer {
+    test = "outer"
+    assert( outer.test = "outer" )
+    
+    namespace inner {
+        test = "inner"
+        assert( test = "inner" )
+        assert( inner.test = "inner" )
+        assert( outer.inner.test = "inner" )
+        assert( outer.test = "outer" )
+    }
+}
+
+test = "global"
+assert( test = "global" )
+assert( outer.test = "outer" )
+assert( outer.inner.test = "inner" )
+
+namespace outer {
+    another = 2
+}
+
+assert( outer.another = 2 )
+assert( outer.test = "outer" )
+assert( outer.inner.test = "inner" )
+
+print("namespace_read.txt PASS")

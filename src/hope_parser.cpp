@@ -2,6 +2,7 @@
 
 #include <code_parsenode_ops.h>
 #include <hope_common.h>
+#include "typeset_filesystem.h"
 #include "typeset_model.h"
 
 #ifdef HOPE_TYPESET_HEADLESS
@@ -87,17 +88,20 @@ ParseNode Parser::statement() alloc_except {
     comment = (index >= 2 && tokens[index-2].type == COMMENT) ? index-2 : NONE;
 
     switch (currentType()) {
-        case IF: return ifStatement();
-        case WHILE: return whileStatement();
-        case FOR: return forStatement();
-        case PRINT: return printStatement();
-        case ASSERT: return assertStatement();
         case ALGORITHM: return algStatement();
-        case RETURN: return returnStatement();
+        case ASSERT: return assertStatement();
         case BREAK: return loops ? terminalAndAdvance(OP_BREAK) : error(BAD_BREAK);
         case CONTINUE: return loops ? terminalAndAdvance(OP_CONTINUE) : error(BAD_CONTINUE);
+        case FOR: return forStatement();
+        case FROM: return fromStatement();
+        case IF: return ifStatement();
+        case IMPORT: return importStatement();
+        case NAMESPACE: return namespaceStatement();
         case PLOT: return plotStatement();
+        case PRINT: return printStatement();
+        case RETURN: return returnStatement();
         case UNKNOWN: return unknownsStatement();
+        case WHILE: return whileStatement();
         default: return mathStatement();
     }
 }
@@ -306,6 +310,55 @@ ParseNode Parser::plotStatement() alloc_except {
     return parse_tree.addNode<5>(OP_PLOT, sel, {title, x_label, x, y_label, y});
 }
 
+ParseNode Parser::importStatement() noexcept {
+    const Typeset::Marker& left = lMark();
+
+    advance();
+    ParseNode file = filename();
+    ParseNode alias = match(AS) ? isolatedIdentifier() : NONE;
+
+    if(noErrors()){
+        ParseNode pn = parse_tree.addUnary(OP_IMPORT, Typeset::Selection(left, rMarkPrev()), file);
+        parse_tree.setFlag(pn, alias);
+        import(file);
+
+        return pn;
+    }else{
+        return error_node;
+    }
+}
+
+ParseNode Parser::fromStatement() noexcept {
+    const Typeset::Marker& left = lMark();
+
+    advance();
+    consume(IDENTIFIER);
+    ParseNode file = parse_tree.addTerminal(OP_FILE_REF, selectionPrev());
+    consume(IMPORT);
+
+    parse_tree.prepareNary();
+    parse_tree.addNaryChild(file);
+
+    do {
+        ParseNode component = isolatedIdentifier();
+        ParseNode alias = match(AS) ? isolatedIdentifier() : NONE;
+        parse_tree.setFlag(component, alias);
+        parse_tree.addNaryChild(component);
+    } while(match(COMMA));
+
+    return parse_tree.finishNary(OP_FROM_IMPORT, Typeset::Selection(left, rMarkPrev()));
+}
+
+ParseNode Parser::namespaceStatement() noexcept {
+    const Typeset::Marker& left = lMark();
+
+    advance();
+    ParseNode name = isolatedIdentifier();
+    ParseNode body = blockStatement();
+
+    return parse_tree.addNode<2>(OP_NAMESPACE, Typeset::Selection(left, rMarkPrev()), {name, body});
+}
+
 ParseNode Parser::unknownsStatement() alloc_except {
     const Typeset::Marker left = lMark();
     advance();
@@ -332,7 +385,9 @@ ParseNode Parser::mathStatement() alloc_except {
     ParseNode n = expression();
 
     switch (currentType()) {
+        case DEFEQUALS:
         case EQUALS:
+        case EQUIVALENT:
             n = (parse_tree.getOp(n) == OP_CALL && parse_tree.getNumArgs(n) >= 2) ?
                         namedLambdaStmt(n) :
                         equality(n);
@@ -461,6 +516,8 @@ ParseNode Parser::comparison() alloc_except {
     switch (currentType()) {
         case EQUALS: advance(); return parse_tree.addNode<2>(OP_EQUAL, {n, addition()});
         case NOTEQUAL: advance(); return parse_tree.addNode<2>(OP_NOT_EQUAL, {n, addition()});
+        case APPROX: advance(); return parse_tree.addNode<2>(OP_APPROX, {n, addition()});
+        case NOTAPPROX: advance(); return parse_tree.addNode<2>(OP_NOT_APPROX, {n, addition()});
         case MEMBER: advance(); return parse_tree.addNode<2>(OP_IN, {n, addition()});
         case NOTIN: advance(); return parse_tree.addNode<2>(OP_NOT_MEMBER, {n, addition()});
         case SUBSET: advance(); return parse_tree.addNode<2>(OP_SUBSET, {n, addition()});
@@ -656,7 +713,7 @@ ParseNode Parser::call_or_mult(ParseNode n) alloc_except {
     }
 
     if(!noErrors()){
-        //EVENTUALLY:
+        //DO THIS:
         //  Check if the user is typing here
         //  If so, display a tooltip with the function parameters
         //  This depends on doing the work to resolve the called function, despite errors
@@ -695,6 +752,7 @@ ParseNode Parser::rightUnary(ParseNode n) alloc_except {
             case TOKEN_SUPERSCRIPT: n = superscript(n); break;
             case TOKEN_SUBSCRIPT: n = subscript(n, rMark()); break;
             case TOKEN_DUALSCRIPT: n = dualscript(n); break;
+            case PERIOD: advance(); n = parse_tree.addNode<2>(OP_SCOPE_ACCESS, {n, primary()}); break;
             default: return n;
         }
     }
@@ -1076,6 +1134,24 @@ Hope::ParseNode Hope::Code::Parser::integerRange() noexcept {
     return parse_tree.addNode<2>(OP_INTERVAL_INTEGER, sel, {start, end});
 }
 
+void Parser::import(ParseNode pn){
+    const Typeset::Selection& sel = parse_tree.getSelection(pn);
+    if(!sel.isTextSelection()){
+        error(FILE_NOT_FOUND, sel);
+        return;
+    }
+
+    std::string_view file_name = sel.strView();
+
+    Typeset::Model* loaded_model = Typeset::Filesystem::open(file_name);
+    if(loaded_model == nullptr){
+        error(FILE_NOT_FOUND, sel);
+        return;
+    }
+
+    delete loaded_model;
+}
+
 ParseNode Parser::norm() alloc_except {
     Typeset::Marker left = lMark();
     advance();
@@ -1291,6 +1367,34 @@ ParseNode Parser::lambda(ParseNode params) alloc_except{
     Typeset::Selection sel(left, rMarkPrev());
 
     return parse_tree.addNode<4>(OP_LAMBDA, sel, {capture_list, referenced_upvalues, params, e});
+}
+
+ParseNode Parser::filename() noexcept {
+    const Typeset::Marker& left = lMark();
+
+    consume(IDENTIFIER);
+    if(!noErrors()) return error_node;
+
+    for(;;){
+        switch (currentType()) {
+            case PERIOD:
+            case MINUS:
+            case BACKSLASH:
+            case FORWARDSLASH:
+            case IDENTIFIER:
+                if(lMark() != rMarkPrev()) return error(UNRECOGNIZED_EXPR, selection());
+                advance();
+                break;
+
+            default:
+                Typeset::Selection sel(left, rMarkPrev());
+                sel.format(SEM_STRING);
+
+                ParseNode file = parse_tree.addTerminal(OP_FILE_REF, sel);
+                if(noErrors()) registerParseNodeRegion(file, index-1);
+                return file;
+        }
+    }
 }
 
 ParseNode Parser::fraction() alloc_except{

@@ -1,0 +1,11 @@
+namespace outer {
+    namespace inner {
+        y = 0
+    }
+}
+
+namespace outer {
+    namespace inner {
+        y = 1
+    }
+}
