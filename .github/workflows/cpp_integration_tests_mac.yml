@@ -8,12 +8,6 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Select Python 3.10
-        # otherwise turtlebrowser/get-conan@v1.1 fails on macos-12
-        # DO THIS: delete when resolved
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
       - id: install_conan
         uses: turtlebrowser/get-conan@main
       - id: run_conan
