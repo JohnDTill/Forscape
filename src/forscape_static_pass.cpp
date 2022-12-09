@@ -390,6 +390,16 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             parse_tree.setArg<1>(pn, resolveStmt(parse_tree.arg<1>(pn)));
             return pn; //TODO: not all symbols go to the stack!
 
+        case OP_CLASS:{
+            ParseNode members = parse_tree.arg<2>(pn);
+            for(size_t i = 0; i < parse_tree.getNumArgs(members); i++){
+                ParseNode member = parse_tree.arg(members, i);
+                parse_tree.setArg(members, i, resolveStmt(member));
+            }
+
+            return pn;
+        }
+
         default:
             assert(false);
             return pn;

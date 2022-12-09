@@ -91,6 +91,7 @@ ParseNode Parser::statement() alloc_except {
         case ALGORITHM: return algStatement();
         case ASSERT: return assertStatement();
         case BREAK: return loops ? terminalAndAdvance(OP_BREAK) : error(BAD_BREAK);
+        case CLASS: return classStatement();
         case CONTINUE: return loops ? terminalAndAdvance(OP_CONTINUE) : error(BAD_CONTINUE);
         case FOR: return forStatement();
         case FROM: return fromStatement();
@@ -379,6 +380,52 @@ ParseNode Parser::unknownsStatement() alloc_except {
     }
 
     return unknown_list;
+}
+
+ParseNode Parser::classStatement() noexcept {
+    const Typeset::Marker& left = lMark();
+
+    advance();
+    ParseNode name = isolatedIdentifier();
+    ParseNode parents = NONE;
+
+    if(match(COLON)){
+        parse_tree.prepareNary();
+
+        do {
+            bool is_private = false;
+            if(match(PRIVATE)) is_private = true;
+            else match(PUBLIC);
+
+            ParseNode parent = isolatedIdentifier();
+            parse_tree.setFlag(parent, is_private);
+
+            parse_tree.addNaryChild(parent);
+        } while(match(COMMA));
+
+        parents = parse_tree.finishNary(OP_LIST);
+    }
+
+    skipNewline();
+    Typeset::Marker bracket_left = lMark();
+    consume(LEFTBRACKET);
+    skipNewlines();
+
+    parse_tree.prepareNary();
+    while(noErrors() && !match(RIGHTBRACKET)){
+        bool is_static = match(STATIC);
+        ParseNode member = isolatedIdentifier();
+        parse_tree.setFlag(member, is_static);
+        match(COMMA);
+        skipNewline();
+    }
+    if(!noErrors()) return error_node;
+
+    Typeset::Selection sel(bracket_left, rMarkPrev());
+    registerGrouping(sel);
+    ParseNode member_list = parse_tree.finishNary(OP_LIST, sel);
+
+    return parse_tree.addNode<3>(OP_CLASS, Typeset::Selection(left, rMarkPrev()), {name, parents, member_list});
 }
 
 ParseNode Parser::mathStatement() alloc_except {

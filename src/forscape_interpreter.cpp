@@ -66,30 +66,21 @@ void Interpreter::interpretStmt(ParseNode pn){
     if(directive == STOP) status = RUNTIME_ERROR;
 
     switch (parse_tree.getOp(pn)) {
-        case OP_EQUAL: assignStmt(pn); break;
-        case OP_ASSIGN: assignStmt(pn); break;
-        case OP_REASSIGN: reassign(parse_tree.lhs(pn), parse_tree.rhs(pn)); break;
-        case OP_ELEMENTWISE_ASSIGNMENT: elementWiseAssignment(pn); break;
-        case OP_PRINT: printStmt(pn); break;
+        case OP_ALGORITHM: algorithmStmt(pn, false); break;
         case OP_ASSERT: assertStmt(pn); break;
+        case OP_ASSIGN: assignStmt(pn); break;
+        case OP_BLOCK: blockStmt(pn); break;
+        case OP_BREAK: status = static_cast<Status>(status | BREAK); break;
+        case OP_CLASS: break; //EVENTUALLY: implement OOP
+        case OP_CONTINUE: status = static_cast<Status>(status | CONTINUE); break;
+        case OP_DEFINE_PROTO: algorithmStmt(pn, true); break;
+        case OP_DO_NOTHING: break;
+        case OP_ELEMENTWISE_ASSIGNMENT: elementWiseAssignment(pn); break;
+        case OP_EQUAL: assignStmt(pn); break;
+        case OP_EXPR_STMT: callStmt(parse_tree.child(pn)); break;
+        case OP_FOR: forStmt(pn); break;
         case OP_IF: ifStmt(pn); break;
         case OP_IF_ELSE: ifElseStmt(pn); break;
-        case OP_WHILE: whileStmt(pn); break;
-        case OP_FOR: forStmt(pn); break;
-        case OP_RANGED_FOR: rangedForStmt(pn); break;
-        case OP_BLOCK: blockStmt(pn); break;
-        case OP_ALGORITHM: algorithmStmt(pn, false); break;
-        case OP_DEFINE_PROTO: algorithmStmt(pn, true); break;
-        case OP_PROTOTYPE_ALG:
-            stack.push(static_cast<void*>(nullptr)
-                DEBUG_STACK_ARG(parse_tree.str(parse_tree.child(pn))));
-            break;
-        case OP_EXPR_STMT: callStmt(parse_tree.child(pn)); break;
-        case OP_RETURN: returnStmt(pn); break;
-        case OP_BREAK: status = static_cast<Status>(status | BREAK); break;
-        case OP_CONTINUE: status = static_cast<Status>(status | CONTINUE); break;
-        case OP_PLOT: plotStmt(pn); break;
-        case OP_DO_NOTHING: break;
         case OP_NAMESPACE:{
             if(parse_tree.getFlag(pn) != 1)
             stack.push(static_cast<void*>(nullptr)
@@ -98,6 +89,16 @@ void Interpreter::interpretStmt(ParseNode pn){
             break; //EVENTUALLY: this shouldn't be in the interpreter
             // It's assumed every symbol has a role in the runtime, and that's a bad assumption for multiple reasons.
         }
+        case OP_PLOT: plotStmt(pn); break;
+        case OP_PRINT: printStmt(pn); break;
+        case OP_PROTOTYPE_ALG:
+            stack.push(static_cast<void*>(nullptr)
+                DEBUG_STACK_ARG(parse_tree.str(parse_tree.child(pn))));
+            break;
+        case OP_RANGED_FOR: rangedForStmt(pn); break;
+        case OP_REASSIGN: reassign(parse_tree.lhs(pn), parse_tree.rhs(pn)); break;
+        case OP_RETURN: returnStmt(pn); break;
+        case OP_WHILE: whileStmt(pn); break;
         default: error(UNRECOGNIZED_STMT, pn);
     }
 }

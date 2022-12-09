@@ -92,6 +92,7 @@ private:
     void resolveLambda(ParseNode pn) alloc_except;
     void resolveAlgorithm(ParseNode pn) alloc_except;
     void resolvePrototype(ParseNode pn) alloc_except;
+    void resolveClass(ParseNode pn) alloc_except;
     void resolveSubscript(ParseNode pn) alloc_except;
     void resolveBig(ParseNode pn) alloc_except;
     void resolveDerivative(ParseNode pn) alloc_except;

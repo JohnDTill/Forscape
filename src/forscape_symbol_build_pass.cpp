@@ -121,6 +121,7 @@ void SymbolTableBuilder::resolveStmt(ParseNode pn) alloc_except {
         case OP_ALGORITHM: resolveAlgorithm(pn); break;
         case OP_ASSIGN: resolveAssignment(pn); break;
         case OP_BLOCK: resolveBlock(pn); break;
+        case OP_CLASS: resolveClass(pn); break;
         case OP_EQUAL: resolveEquality(pn); break;
         case OP_FOR: resolveFor(pn); break;
         case OP_FROM_IMPORT: resolveFromImport(pn); break;
@@ -633,6 +634,45 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn) alloc_except {
 void SymbolTableBuilder::resolvePrototype(ParseNode pn) alloc_except {
     if(defineLocalScope(parse_tree.child(pn)))
         lastDefinedSymbol().is_prototype = true;
+}
+
+void SymbolTableBuilder::resolveClass(ParseNode pn) alloc_except {
+    ParseNode name = parse_tree.arg<0>(pn);
+    ParseNode parents = parse_tree.arg<1>(pn);
+    if(parents != NONE){
+        for(size_t i = 0; i < parse_tree.getNumArgs(parents); i++){
+            ParseNode parent = parse_tree.arg(parents, i);
+            resolveReference(parent);
+        }
+    }
+    ParseNode members = parse_tree.arg<2>(pn);
+
+    const Typeset::Selection sel = parse_tree.getSelection(name);
+    auto lookup = map.find(sel);
+    if(lookup == map.end()){
+        makeEntry(sel, name, true);
+    }else{
+        size_t index = lookup->second;
+        Symbol& sym = symbol_table.symbols[index];
+        if(sym.declaration_lexical_depth == lexical_depth){
+            if(sym.is_prototype){
+                resolveReference(name, index);
+                parse_tree.setOp(pn, OP_DEFINE_PROTO); //EVENTUALLY: can you prototype classes?
+            }else{
+                errors.push_back(Error(sel, TYPE_ERROR));
+            }
+        }else{
+            appendEntry(name, lookup->second, true);
+        }
+
+        sym.is_prototype = false;
+    }
+
+    increaseLexicalDepth(SCOPE_NAME(sel.str())  parse_tree.getLeft(members));
+
+    //EVENTUALLY: do symbol resolution with classes and allow instances
+
+    decreaseLexicalDepth(parse_tree.getRight(members));
 }
 
 void SymbolTableBuilder::resolveSubscript(ParseNode pn) alloc_except {
