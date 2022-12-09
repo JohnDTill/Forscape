@@ -17,19 +17,11 @@ QSplitterHandle* Splitter::createHandle() {
     int index = 0;
     for(QSplitterHandle* h = handle(index); h != nullptr; h = handle(++index));
     SplitterHandle* handle = new SplitterHandle(orientation(), this);
-    handle->setProperty("index", index);
+    handle->setToolTipDuration(index);
 
     return handle;
-
-    //return new SplitterHandle(orientation(), this);
 }
 
 void Splitter::emitDoubleClicked(QSplitterHandle* sender) const {
-    emit splitterDoubleClicked(sender->property("index").toInt());
-
-    //DO THIS: why doesn't this work?
-    //int index = 0;
-    //for(QSplitterHandle* h = handle(index); h != nullptr; h = handle(++index))
-    //    if(h == sender) emit splitterDoubleClicked(index);
-    //assert(false);
+    emit splitterDoubleClicked(sender->toolTipDuration());
 }

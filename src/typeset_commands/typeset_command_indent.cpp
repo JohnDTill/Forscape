@@ -4,7 +4,7 @@
 #include <typeset_line.h>
 #include <cassert>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 

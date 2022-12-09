@@ -8,10 +8,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - id: Qt
-        uses: jurplel/install-qt-action@v2
-        with:
-          modules: qtsvg
-      - uses: actions/checkout@v2
+        uses: jurplel/install-qt-action@v3
+      - uses: actions/checkout@v3
       - id: install_conan
         uses: turtlebrowser/get-conan@main
       - id: run_conan
@@ -21,4 +19,4 @@ jobs:
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build_test && make
       - id: run
-        run: cd ${GITHUB_WORKSPACE}/build_test && ./HopeTests -platform offscreen
+        run: cd ${GITHUB_WORKSPACE}/build_test && ./ForscapeTests -platform offscreen

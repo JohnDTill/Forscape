@@ -3,7 +3,7 @@
 
 #include <typeset_command.h>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 

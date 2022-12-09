@@ -4,12 +4,12 @@
 #include <typeset_model.h>
 #include <typeset_painter.h>
 #include <typeset_view.h>
-#include <hope_scanner.h>
-#include <hope_serial.h>
-#include <hope_serial_unicode.h>
-#include <hope_parser.h>
-#include <hope_symbol_build_pass.h>
-#include <hope_message.h>
+#include <forscape_scanner.h>
+#include <forscape_serial.h>
+#include <forscape_serial_unicode.h>
+#include <forscape_parser.h>
+#include <forscape_symbol_build_pass.h>
+#include <forscape_message.h>
 #include <QBuffer>
 #include <QClipboard>
 #include <QCloseEvent>
@@ -58,7 +58,7 @@
 #define WINDOW_STATE "win_state"
 #define LAST_DIRECTORY "last_dir"
 
-using namespace Hope;
+using namespace Forscape;
 
 static std::filesystem::file_time_type write_time;
 
@@ -88,7 +88,7 @@ MainWindow::MainWindow(QWidget* parent)
     project_browser->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(project_browser, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onFileRightClicked(const QPoint&)));
     QTreeWidgetItem* root = new QTreeWidgetItem(project_browser);
-    root->setText(0, "DO THIS");
+    root->setText(0, "NOT IMPLEMENTED");
     root->setIcon(0, QFileIconProvider().icon(QFileIconProvider::Folder));
     QTreeWidgetItem* leaf = new QTreeWidgetItem(root);
     leaf->setText(0, "Wire up project browser");
@@ -343,13 +343,13 @@ void MainWindow::stop(){
 void MainWindow::pollInterpreterThread(){
     auto& interpreter = editor->getModel()->interpreter;
 
-    if(interpreter.status == Hope::Code::Interpreter::FINISHED){
+    if(interpreter.status == Forscape::Code::Interpreter::FINISHED){
         checkOutput();
 
         auto output = console->getModel();
         switch(interpreter.error_code){
-            case Hope::Code::NO_ERROR_FOUND: break;
-            case Hope::Code::USER_STOP:
+            case Forscape::Code::NO_ERROR_FOUND: break;
+            case Forscape::Code::USER_STOP:
                 checkOutput();
                 console->getModel()->appendSerialToOutput("\nScript terminated by user");
                 console->updateModel();
@@ -442,17 +442,17 @@ void MainWindow::checkOutput(){
     InterpreterOutput* msg;
     while(message_queue.try_dequeue(msg))
         switch(msg->getType()){
-            case Hope::InterpreterOutput::Print:
+            case Forscape::InterpreterOutput::Print:
                 print_buffer += static_cast<PrintMessage*>(msg)->msg;
                 delete msg;
                 break;
-            case Hope::InterpreterOutput::CreatePlot:{
+            case Forscape::InterpreterOutput::CreatePlot:{
                 const PlotCreate& plt = *static_cast<PlotCreate*>(msg);
                 addPlot(plt.title, plt.x_label, plt.y_label);
                 delete msg;
                 break;
             }
-            case Hope::InterpreterOutput::AddDiscreteSeries:{
+            case Forscape::InterpreterOutput::AddDiscreteSeries:{
                 const auto& data = static_cast<PlotDiscreteSeries*>(msg)->data;
                 addSeries(data);
                 delete msg;
@@ -529,8 +529,8 @@ void MainWindow::open(QString path){
             src[i] = '\0';
     src.erase( std::remove(src.begin(), src.end(), '\0'), src.end() );
 
-    assert(Hope::isValidSerial(src));
-    if(!Hope::isValidSerial(src)){
+    assert(Forscape::isValidSerial(src));
+    if(!Forscape::isValidSerial(src)){
         QMessageBox messageBox;
         messageBox.critical(nullptr, "Error", "\"" + path + "\" is corrupted.");
         messageBox.setFixedSize(500,200);
@@ -802,27 +802,27 @@ void MainWindow::on_actionPreferences_triggered(){
 
 void MainWindow::onColourChanged(){
     QPalette p = QGuiApplication::palette();
-    p.setColor(QPalette::Text, Hope::Typeset::getColour(Hope::Typeset::COLOUR_TEXT));
-    p.setColor(QPalette::WindowText, Hope::Typeset::getColour(Hope::Typeset::COLOUR_TEXT));
-    p.setColor(QPalette::PlaceholderText, Hope::Typeset::getColour(Hope::Typeset::COLOUR_TEXT));
-    p.setColor(QPalette::Dark, Hope::Typeset::getColour(Hope::Typeset::COLOUR_TEXT));
-    p.setColor(QPalette::Highlight, Hope::Typeset::getColour(Hope::Typeset::COLOUR_SELECTION));
-    p.setColor(QPalette::HighlightedText, Hope::Typeset::getColour(Hope::Typeset::COLOUR_SELECTEDTEXT));
-    p.setColor(QPalette::Window, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINEBOXFILL));
-    p.setColor(QPalette::Button, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINEBOXFILL));
-    p.setColor(QPalette::Base, Hope::Typeset::getColour(Hope::Typeset::COLOUR_BACKGROUND));
-    p.setColor(QPalette::Light, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LIGHT));
-    p.setColor(QPalette::Link, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINK));
-    p.setColor(QPalette::LinkVisited, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINK));
+    p.setColor(QPalette::Text, Forscape::Typeset::getColour(Forscape::Typeset::COLOUR_TEXT));
+    p.setColor(QPalette::WindowText, Forscape::Typeset::getColour(Forscape::Typeset::COLOUR_TEXT));
+    p.setColor(QPalette::PlaceholderText, Forscape::Typeset::getColour(Forscape::Typeset::COLOUR_TEXT));
+    p.setColor(QPalette::Dark, Forscape::Typeset::getColour(Forscape::Typeset::COLOUR_TEXT));
+    p.setColor(QPalette::Highlight, Forscape::Typeset::getColour(Forscape::Typeset::COLOUR_SELECTION));
+    p.setColor(QPalette::HighlightedText, Forscape::Typeset::getColour(Forscape::Typeset::COLOUR_SELECTEDTEXT));
+    p.setColor(QPalette::Window, Forscape::Typeset::getColour(Forscape::Typeset::COLOUR_LINEBOXFILL));
+    p.setColor(QPalette::Button, Forscape::Typeset::getColour(Forscape::Typeset::COLOUR_LINEBOXFILL));
+    p.setColor(QPalette::Base, Forscape::Typeset::getColour(Forscape::Typeset::COLOUR_BACKGROUND));
+    p.setColor(QPalette::Light, Forscape::Typeset::getColour(Forscape::Typeset::COLOUR_LIGHT));
+    p.setColor(QPalette::Link, Forscape::Typeset::getColour(Forscape::Typeset::COLOUR_LINK));
+    p.setColor(QPalette::LinkVisited, Forscape::Typeset::getColour(Forscape::Typeset::COLOUR_LINK));
     setPalette(p);
     ui->menubar->setPalette(QGuiApplication::palette()); //Reset the menubar palette
 
     //Set colours which should not affect filebar
-    p.setColor(QPalette::ButtonText, Hope::Typeset::getColour(Hope::Typeset::COLOUR_TEXT));
-    //p.setColor(QPalette::Mid, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINEBOXFILL));
-    //p.setColor(QPalette::Midlight, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINEBOXFILL));
-    //p.setColor(QPalette::Shadow, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINEBOXFILL));
-    //p.setColor(QPalette::AlternateBase, Hope::Typeset::getColour(Hope::Typeset::COLOUR_LINEBOXFILL));
+    p.setColor(QPalette::ButtonText, Forscape::Typeset::getColour(Forscape::Typeset::COLOUR_TEXT));
+    //p.setColor(QPalette::Mid, Forscape::Typeset::getColour(Forscape::Typeset::COLOUR_LINEBOXFILL));
+    //p.setColor(QPalette::Midlight, Forscape::Typeset::getColour(Forscape::Typeset::COLOUR_LINEBOXFILL));
+    //p.setColor(QPalette::Shadow, Forscape::Typeset::getColour(Forscape::Typeset::COLOUR_LINEBOXFILL));
+    //p.setColor(QPalette::AlternateBase, Forscape::Typeset::getColour(Forscape::Typeset::COLOUR_LINEBOXFILL));
     group_box->setPalette(p);
     action_toolbar->setPalette(p);
     math_toolbar->setPalette(p);
@@ -832,7 +832,7 @@ void MainWindow::onColourChanged(){
     console->updateBackgroundColour();
 
     //EVENTUALLY: a bit hacky, but auto drawing the background from QPalette is much faster than manual
-    for(Hope::Typeset::View* view : Hope::Typeset::View::all_views)
+    for(Forscape::Typeset::View* view : Forscape::Typeset::View::all_views)
         view->updateBackgroundColour();
 }
 
@@ -856,14 +856,14 @@ void MainWindow::onSplitterResize(int pos, int index) {
 }
 
 void MainWindow::anchor(){
-    //DO THIS: the active file is the program entry point
+    //EVENTUALLY: the active file is the program entry point
 
-    //DO THIS: depress the anchor button if the active file is anchored
+    //EVENTUALLY: depress the anchor button if the active file is anchored
 }
 
 void MainWindow::onFileClicked(QTreeWidgetItem* item, int column) {
     std::cout << item->text(0).toStdString() << " clicked" << std::endl;
-    //DO THIS: go to the file
+    //EVENTUALLY: go to the file
 }
 
 void MainWindow::onFileRightClicked(const QPoint& pos) {
@@ -874,14 +874,14 @@ void MainWindow::onFileRightClicked(const QPoint& pos) {
     QMenu menu(this);
     const bool item_is_file = (item->childCount() == 0);
     if(item_is_file){
-        menu.addAction("Open File")->setStatusTip("DO THIS");
-        menu.addAction("Rename File")->setStatusTip("DO THIS");
-        menu.addAction("Anchor Project")->setStatusTip("DO THIS");
+        menu.addAction("Open File")->setStatusTip("EVENTUALLY");
+        menu.addAction("Rename File")->setStatusTip("EVENTUALLY");
+        menu.addAction("Anchor Project")->setStatusTip("EVENTUALLY");
     }else{
-        menu.addAction("Rename Folder")->setStatusTip("DO THIS");
-        menu.addAction("Add New File")->setStatusTip("DO THIS");
+        menu.addAction("Rename Folder")->setStatusTip("EVENTUALLY");
+        menu.addAction("Add New File")->setStatusTip("EVENTUALLY");
     }
-    menu.addAction("Show in Explorer")->setStatusTip("DO THIS");
+    menu.addAction("Show in Explorer")->setStatusTip("EVENTUALLY");
     //connect(newAct, SIGNAL(triggered()), this, SLOT(something()));
 
     menu.exec(project_browser->mapToGlobal(pos));

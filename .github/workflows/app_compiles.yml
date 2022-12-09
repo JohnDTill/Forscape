@@ -8,10 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: Qt
-        uses: jurplel/install-qt-action@v2
-        with:
-          modules: qtsvg
-      - uses: actions/checkout@v2
+        uses: jurplel/install-qt-action@v3
+      - uses: actions/checkout@v3
       - id: install_conan
         uses: turtlebrowser/get-conan@main
       - id: patch_conan

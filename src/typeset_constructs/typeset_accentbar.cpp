@@ -2,7 +2,7 @@
 
 #include "typeset_subphrase.h"
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -12,7 +12,7 @@ AccentBar::AccentBar(){
 
 char AccentBar::constructCode() const noexcept { return ACCENTBAR; }
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 void AccentBar::updateSizeFromChildSizes() noexcept {
     width = child()->width;
     under_center = child()->under_center;

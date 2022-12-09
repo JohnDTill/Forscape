@@ -8,7 +8,7 @@
 #include <iostream>
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -26,7 +26,7 @@ public:
 
     virtual char constructCode() const noexcept override { return SQRT; }
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     static constexpr double vgap = 1;
     static constexpr double SLOPE = 5;
     static constexpr double vfudge = 2;

@@ -10,13 +10,13 @@ namespace Ui {
 class SearchDialog;
 }
 
-namespace Hope {
+namespace Forscape {
 namespace Typeset {
     class View;
 }
 }
 
-using namespace Hope;
+using namespace Forscape;
 
 class SearchDialog : public QDialog{
     Q_OBJECT
@@ -57,7 +57,7 @@ private:
     Typeset::View* in;
     Typeset::View* out;
     Typeset::Selection sel;
-    std::vector<Hope::Typeset::Selection>& hits;
+    std::vector<Forscape::Typeset::Selection>& hits;
     size_t index = std::numeric_limits<size_t>::max();
 };
 

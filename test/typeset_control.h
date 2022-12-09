@@ -13,13 +13,13 @@ static size_t bytesInCodepoint(char ch) noexcept{
     return 4;
 }
 
-using namespace Hope;
+using namespace Forscape;
 
 inline bool testTypesetController(){
     bool passing = true;
 
     std::string input = readFile("serial_valid.txt");
-    Hope::Typeset::Model* model = Hope::Typeset::Model::fromSerial(input);
+    Forscape::Typeset::Model* model = Forscape::Typeset::Model::fromSerial(input);
     Typeset::Controller controller(model);
 
     controller.selectAll();

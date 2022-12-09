@@ -11,7 +11,7 @@ int main(int argc, char* argv[]){
     QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
     QApplication a(argc, argv);
-    Hope::Typeset::setPreset(Hope::Typeset::PRESET_DEFAULT);
+    Forscape::Typeset::setPreset(Forscape::Typeset::PRESET_DEFAULT);
     MainWindow w;
     w.show();
     auto code = a.exec();

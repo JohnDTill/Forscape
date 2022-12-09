@@ -1,7 +1,7 @@
 #ifndef TYPESET_INTEGRAL_PREFERENCE_H
 #define TYPESET_INTEGRAL_PREFERENCE_H
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 

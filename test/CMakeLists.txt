@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 
 option(TEST_QT OFF)
 
-project(HopeTests LANGUAGES CXX)
+project(ForscapeTests LANGUAGES CXX)
 
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/conan-dependencies ${CMAKE_MODULE_PATH})
 include(${CMAKE_BINARY_DIR}/conan-dependencies/conanbuildinfo.cmake)
@@ -22,13 +22,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(TEST .)
 set(BASE ..)
 set(META ${BASE}/meta)
-set(INCLUDE ${BASE}/include)
 set(SRC ${BASE}/src)
 set(CONSTRUCT ${SRC}/typeset_constructs)
 set(GEN ${SRC}/generated)
 set(COMMAND ${SRC}/typeset_commands)
 set(EXAMPLE ${BASE}/example/exampleWidgetQt)
-include_directories(${INCLUDE})
 include_directories(${SRC})
 include_directories(${CONSTRUCT})
 include_directories(${GEN})
@@ -38,7 +36,7 @@ configure_file(${TEST}/serial_valid.txt ${CMAKE_BINARY_DIR} COPYONLY)
 configure_file(${TEST}/serial_malformed.txt ${CMAKE_BINARY_DIR} COPYONLY)
 configure_file(${TEST}/serial_exhaustive.txt ${CMAKE_BINARY_DIR} COPYONLY)
 
-add_compile_definitions(TYPESET_MEMORY_DEBUG HOPE_SEMANTIC_DEBUGGING)
+add_compile_definitions(TYPESET_MEMORY_DEBUG FORSCAPE_SEMANTIC_DEBUGGING)
 add_compile_definitions(EIGEN_NO_AUTOMATIC_RESIZING)
 add_compile_definitions(BASE_TEST_DIR="../test/interpreter_scripts")
 add_compile_definitions(alloc_except=noexcept)
@@ -50,7 +48,7 @@ set(GEN_FILES
     ${GEN}/code_parsenode_ops.h
     ${GEN}/code_tokentype.h
     ${GEN}/construct_codes.h
-    ${GEN}/hope_interpreter_gen.cpp
+    ${GEN}/forscape_interpreter_gen.cpp
     ${GEN}/semantic_tags.h
     ${GEN}/typeset_closesymbol.h
     ${GEN}/typeset_keywords.cpp
@@ -97,7 +95,7 @@ set(SOURCES
     ${TEST}/code_interpreter_illformed.h
     ${TEST}/code_parser.h
     ${TEST}/code_scanner.h
-    ${TEST}/hope_benchmark.h
+    ${TEST}/forscape_benchmark.h
     ${TEST}/report.h
     ${TEST}/serial.h
     ${TEST}/typeset.h
@@ -106,39 +104,39 @@ set(SOURCES
     ${TEST}/typeset_mutability.h
     ${GEN_FILES}
     ${CONSTRUCT_FILES}
-    ${SRC}/hope_common.h
-    ${SRC}/hope_error.cpp
-    ${INCLUDE}/hope_error.h
-    ${SRC}/hope_interpreter.cpp
-    ${SRC}/hope_interpreter.h
-    ${SRC}/hope_message.h
-    ${SRC}/hope_parse_tree.cpp
-    ${SRC}/hope_parse_tree.h
-    ${SRC}/hope_parser.cpp
-    ${SRC}/hope_parser.h
-    ${SRC}/hope_scanner.cpp
-    ${SRC}/hope_scanner.h
-    ${INCLUDE}/hope_serial.h
-    ${INCLUDE}/hope_serial_unicode.h
-    ${SRC}/hope_stack.cpp
-    ${SRC}/hope_stack.h
-    ${SRC}/hope_static_pass.cpp
-    ${SRC}/hope_static_pass.h
-    ${SRC}/hope_symbol_build_pass.cpp
-    ${SRC}/hope_symbol_build_pass.h
-    ${SRC}/hope_symbol_link_pass.cpp
-    ${SRC}/hope_symbol_link_pass.h
-    ${SRC}/hope_symbol_table.cpp
-    ${SRC}/hope_symbol_table.h
-    ${SRC}/hope_token.h
-    ${SRC}/hope_unicode.h
-    ${SRC}/hope_value.cpp
-    ${SRC}/hope_value.h
-    ${INCLUDE}/typeset_command.h
+    ${SRC}/forscape_common.h
+    ${SRC}/forscape_error.cpp
+    ${SRC}/forscape_error.h
+    ${SRC}/forscape_interpreter.cpp
+    ${SRC}/forscape_interpreter.h
+    ${SRC}/forscape_message.h
+    ${SRC}/forscape_parse_tree.cpp
+    ${SRC}/forscape_parse_tree.h
+    ${SRC}/forscape_parser.cpp
+    ${SRC}/forscape_parser.h
+    ${SRC}/forscape_scanner.cpp
+    ${SRC}/forscape_scanner.h
+    ${SRC}/forscape_serial.h
+    ${SRC}/forscape_serial_unicode.h
+    ${SRC}/forscape_stack.cpp
+    ${SRC}/forscape_stack.h
+    ${SRC}/forscape_static_pass.cpp
+    ${SRC}/forscape_static_pass.h
+    ${SRC}/forscape_symbol_build_pass.cpp
+    ${SRC}/forscape_symbol_build_pass.h
+    ${SRC}/forscape_symbol_link_pass.cpp
+    ${SRC}/forscape_symbol_link_pass.h
+    ${SRC}/forscape_symbol_table.cpp
+    ${SRC}/forscape_symbol_table.h
+    ${SRC}/forscape_token.h
+    ${SRC}/forscape_unicode.h
+    ${SRC}/forscape_value.cpp
+    ${SRC}/forscape_value.h
+    ${SRC}/typeset_command.h
     ${SRC}/typeset_construct.cpp
     ${SRC}/typeset_construct.h
     ${SRC}/typeset_controller.cpp
-    ${INCLUDE}/typeset_controller.h
+    ${SRC}/typeset_controller.h
     ${SRC}/typeset_filesystem.cpp
     ${SRC}/typeset_filesystem.h
     ${SRC}/typeset_integral_preference.h
@@ -147,7 +145,7 @@ set(SOURCES
     ${SRC}/typeset_marker.cpp
     ${SRC}/typeset_marker.h
     ${SRC}/typeset_model.cpp
-    ${INCLUDE}/typeset_model.h
+    ${SRC}/typeset_model.h
     ${SRC}/typeset_phrase.cpp
     ${SRC}/typeset_phrase.h
     ${SRC}/typeset_selection.cpp
@@ -188,15 +186,15 @@ if (${TEST_QT})
         ${SRC}/typeset_painter.h
         ${SRC}/typeset_painter_qt.cpp
         ${SRC}/typeset_view.cpp
-        ${INCLUDE}/typeset_view.h
+        ${SRC}/typeset_view.h
         ${EXAMPLE}/symboltreeview.cpp
         ${EXAMPLE}/symboltreeview.h
     )
 else()
-    add_compile_definitions(HOPE_TYPESET_HEADLESS)
+    add_compile_definitions(FORSCAPE_TYPESET_HEADLESS)
 endif ()
 
-add_executable(HopeTests ${SOURCES})
+add_executable(ForscapeTests ${SOURCES})
 
 FIND_PACKAGE ( Threads REQUIRED )
 
@@ -214,30 +212,30 @@ else()
     )
 endif ()
 
-add_test(NAME IntegrationTest COMMAND HopeTests.exe)
+add_test(NAME IntegrationTest COMMAND ForscapeTests.exe)
 
 add_compile_definitions($<$<CONFIG:Release>:EIGEN_NO_DEBUG>)
 
 if(MSVC)
-    target_compile_options(HopeTests PRIVATE
+    target_compile_options(ForscapeTests PRIVATE
         /Ob3 /W3 #/WX #EVENTUALLY: address warnings
         $<$<CONFIG:Release>:/Oi /Oy /GL>
         $<$<CONFIG:Debug>:/bigobj> #Often needed to make Eigen unsupported compile
     )
-    target_link_options(HopeTests PRIVATE
+    target_link_options(ForscapeTests PRIVATE
         $<$<CONFIG:Release>:/OPT:REF /LTCG>
     )
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     if (WIN32)
         #Need optimisation for MinGW to compile w/ Eigen unsupported
-        target_compile_options(HopeTests PRIVATE $<$<CONFIG:Debug>:-O1>)
+        target_compile_options(ForscapeTests PRIVATE $<$<CONFIG:Debug>:-O1>)
     endif()
-    target_compile_options(HopeTests PRIVATE
+    target_compile_options(ForscapeTests PRIVATE
         -Wall -Wextra -pedantic #-Werror #EVENTUALLY: address warnings
         $<$<CONFIG:Release>: -Ofast -fmodulo-sched -fmodulo-sched-allow-regmoves -fgcse-sm -fgcse-las -fdelete-null-pointer-checks
         -fomit-frame-pointer -funroll-loops -fvisibility=hidden -fwhole-program -flto>
     )
-    target_link_options(HopeTests PRIVATE
+    target_link_options(ForscapeTests PRIVATE
         -Wa,-mbig-obj
     )
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -254,4 +252,4 @@ add_custom_target(
     COMMENT "Performing codegen"
 )
 
-add_dependencies(HopeTests codegen)
+add_dependencies(ForscapeTests codegen)

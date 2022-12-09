@@ -1,6 +1,6 @@
 #include "keywordsubstitutioneditor.h"
 
-#include <hope_common.h>
+#include <forscape_common.h>
 #include <typeset_keywords.h>
 #include <typeset_view.h>
 #include <cassert>
@@ -10,8 +10,8 @@
 #include <QPushButton>
 #include <QRegularExpressionValidator>
 #include <QSettings>
-using Hope::Typeset::Keywords;
-using Hope::debug_cast;
+using Forscape::Typeset::Keywords;
+using Forscape::debug_cast;
 
 class KeywordSubstitutionEditor::ModifiedLineEdit : public QLineEdit {
 public:
@@ -84,7 +84,7 @@ void KeywordSubstitutionEditor::updateKeyword(){
         edit->setText(label->backup);
     }else{
         auto result = form->itemAt(form->indexOf(label) + 1);
-        Keywords::map[keyword] = debug_cast<Hope::Typeset::LineEdit*>(result->widget())->toSerial();
+        Keywords::map[keyword] = debug_cast<Forscape::Typeset::LineEdit*>(result->widget())->toSerial();
         Keywords::map.erase(label->backup.toStdString());
         label->backup = new_keyword;
     }
@@ -92,7 +92,7 @@ void KeywordSubstitutionEditor::updateKeyword(){
 
 void KeywordSubstitutionEditor::updateResult(){
     QWidget* sender = focusWidget();
-    auto result_edit = debug_cast<Hope::Typeset::LineEdit*>(sender);
+    auto result_edit = debug_cast<Forscape::Typeset::LineEdit*>(sender);
     auto upcast_label = form->labelForField(sender);
     KeywordSubstitutionLabel* label = debug_cast<KeywordSubstitutionLabel*>(upcast_label);
     Keywords::map[label->backup.toStdString()] = result_edit->toSerial();
@@ -119,7 +119,7 @@ void KeywordSubstitutionEditor::load(){
 }
 
 void KeywordSubstitutionEditor::addRowForEntry(const std::string& keyword, const std::string& result){
-    auto result_edit = new Hope::Typeset::LineEdit();
+    auto result_edit = new Forscape::Typeset::LineEdit();
     result_edit->setFromSerial(result, true);
     result_edit->setToolTip("Result");
     connect(result_edit, SIGNAL(textChanged()), this, SLOT(updateResult()));

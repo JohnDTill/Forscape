@@ -21,7 +21,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-#add_compile_definitions(HOPE_TYPESET_LAYOUT_DEBUG)
+#add_compile_definitions(FORSCAPE_TYPESET_LAYOUT_DEBUG)
 
 add_compile_definitions(alloc_except=noexcept)
 add_compile_definitions(EIGEN_NO_AUTOMATIC_RESIZING)
@@ -30,12 +30,10 @@ set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/forscape.rc")
 
 set(BASE ../..)
 set(META ${BASE}/meta)
-set(INCLUDE ${BASE}/include)
 set(SRC ${BASE}/src)
 set(CONSTRUCT ${SRC}/typeset_constructs)
 set(GEN ${SRC}/generated)
 set(COMMAND ${SRC}/typeset_commands)
-include_directories(${INCLUDE})
 include_directories(${SRC})
 include_directories(${CONSTRUCT})
 include_directories(${GEN})
@@ -61,7 +59,7 @@ set(GEN_FILES
     ${GEN}/code_parsenode_ops.h
     ${GEN}/code_tokentype.h
     ${GEN}/construct_codes.h
-    ${GEN}/hope_interpreter_gen.cpp
+    ${GEN}/forscape_interpreter_gen.cpp
     ${GEN}/semantic_tags.h
     ${GEN}/typeset_closesymbol.h
     ${GEN}/typeset_keywords.cpp
@@ -129,39 +127,39 @@ set(PROJECT_SOURCES
     ${EMBEDDED_RESOURCES}
     ${GEN_FILES}
     ${CONSTRUCT_FILES}
-    ${SRC}/hope_common.h
-    ${SRC}/hope_error.cpp
-    ${INCLUDE}/hope_error.h
-    ${SRC}/hope_interpreter.cpp
-    ${SRC}/hope_interpreter.h
-    ${SRC}/hope_message.h
-    ${SRC}/hope_parse_tree.cpp
-    ${SRC}/hope_parse_tree.h
-    ${SRC}/hope_parser.cpp
-    ${SRC}/hope_parser.h
-    ${SRC}/hope_scanner.cpp
-    ${SRC}/hope_scanner.h
-    ${INCLUDE}/hope_serial.h
-    ${INCLUDE}/hope_serial_unicode.h
-    ${SRC}/hope_stack.cpp
-    ${SRC}/hope_stack.h
-    ${SRC}/hope_static_pass.cpp
-    ${SRC}/hope_static_pass.h
-    ${SRC}/hope_symbol_build_pass.cpp
-    ${SRC}/hope_symbol_build_pass.h
-    ${SRC}/hope_symbol_link_pass.cpp
-    ${SRC}/hope_symbol_link_pass.h
-    ${SRC}/hope_symbol_table.cpp
-    ${SRC}/hope_symbol_table.h
-    ${SRC}/hope_token.h
-    ${SRC}/hope_unicode.h
-    ${SRC}/hope_value.cpp
-    ${SRC}/hope_value.h
-    ${INCLUDE}/typeset_command.h
+    ${SRC}/forscape_common.h
+    ${SRC}/forscape_error.cpp
+    ${SRC}/forscape_error.h
+    ${SRC}/forscape_interpreter.cpp
+    ${SRC}/forscape_interpreter.h
+    ${SRC}/forscape_message.h
+    ${SRC}/forscape_parse_tree.cpp
+    ${SRC}/forscape_parse_tree.h
+    ${SRC}/forscape_parser.cpp
+    ${SRC}/forscape_parser.h
+    ${SRC}/forscape_scanner.cpp
+    ${SRC}/forscape_scanner.h
+    ${SRC}/forscape_serial.h
+    ${SRC}/forscape_serial_unicode.h
+    ${SRC}/forscape_stack.cpp
+    ${SRC}/forscape_stack.h
+    ${SRC}/forscape_static_pass.cpp
+    ${SRC}/forscape_static_pass.h
+    ${SRC}/forscape_symbol_build_pass.cpp
+    ${SRC}/forscape_symbol_build_pass.h
+    ${SRC}/forscape_symbol_link_pass.cpp
+    ${SRC}/forscape_symbol_link_pass.h
+    ${SRC}/forscape_symbol_table.cpp
+    ${SRC}/forscape_symbol_table.h
+    ${SRC}/forscape_token.h
+    ${SRC}/forscape_unicode.h
+    ${SRC}/forscape_value.cpp
+    ${SRC}/forscape_value.h
+    ${SRC}/typeset_command.h
     ${SRC}/typeset_construct.cpp
     ${SRC}/typeset_construct.h
     ${SRC}/typeset_controller.cpp
-    ${INCLUDE}/typeset_controller.h
+    ${SRC}/typeset_controller.h
     ${SRC}/typeset_filesystem.cpp
     ${SRC}/typeset_filesystem.h
     ${SRC}/typeset_integral_preference.h
@@ -170,7 +168,7 @@ set(PROJECT_SOURCES
     ${SRC}/typeset_marker.cpp
     ${SRC}/typeset_marker.h
     ${SRC}/typeset_model.cpp
-    ${INCLUDE}/typeset_model.h
+    ${SRC}/typeset_model.h
     ${SRC}/typeset_painter.h
     ${SRC}/typeset_painter_qt.cpp
     ${SRC}/typeset_phrase.cpp
@@ -182,7 +180,7 @@ set(PROJECT_SOURCES
     ${SRC}/typeset_text.cpp
     ${SRC}/typeset_text.h
     ${SRC}/typeset_view.cpp
-    ${INCLUDE}/typeset_view.h
+    ${SRC}/typeset_view.h
     ${COMMAND}/typeset_command_indent.cpp
     ${COMMAND}/typeset_command_indent.h
     ${COMMAND}/typeset_command_line.cpp

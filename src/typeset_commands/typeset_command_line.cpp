@@ -8,7 +8,7 @@
 
 #include <iostream>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 

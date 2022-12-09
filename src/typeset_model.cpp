@@ -1,6 +1,6 @@
 #include "typeset_model.h"
 
-#include "hope_serial.h"
+#include "forscape_serial.h"
 #include "typeset_all_constructs.h"
 #include <typeset_command_list.h>
 #include "typeset_line.h"
@@ -11,16 +11,16 @@
 #include <iostream>
 #endif
 
-#include <hope_error.h>
-#include "hope_message.h"
-#include <hope_scanner.h>
-#include <hope_parser.h>
-#include <hope_symbol_build_pass.h>
-#include <hope_symbol_link_pass.h>
-#include <hope_interpreter.h>
+#include <forscape_error.h>
+#include "forscape_message.h"
+#include <forscape_scanner.h>
+#include <forscape_parser.h>
+#include <forscape_symbol_build_pass.h>
+#include <forscape_symbol_link_pass.h>
+#include <forscape_interpreter.h>
 #include <unordered_set>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -91,15 +91,15 @@ std::string Model::run(){
     InterpreterOutput* msg;
     while(interpreter.message_queue.try_dequeue(msg))
         switch(msg->getType()){
-            case Hope::InterpreterOutput::Print:
+            case Forscape::InterpreterOutput::Print:
                 str += static_cast<PrintMessage*>(msg)->msg;
                 delete msg;
                 break;
-            case Hope::InterpreterOutput::CreatePlot:
+            case Forscape::InterpreterOutput::CreatePlot:
                 //EVENTUALLY: maybe do something here?
                 delete msg;
                 break;
-            case Hope::InterpreterOutput::AddDiscreteSeries:{
+            case Forscape::InterpreterOutput::AddDiscreteSeries:{
                 delete msg;
                 break;
             }
@@ -134,7 +134,7 @@ Model::Model(const std::string& src, bool is_output)
 
     performSemanticFormatting();
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     calculateSizes();
     updateLayout();
     #endif
@@ -175,7 +175,7 @@ std::vector<Line*> Model::linesFromSerial(const std::string& src){
             text->setString(&src[start], index-start-1);
 
             switch (src[index++]) {
-                HOPE_TYPESET_PARSER_CASES
+                FORSCAPE_TYPESET_PARSER_CASES
                 default: assert(false);
             }
 
@@ -203,7 +203,7 @@ std::vector<Line*> Model::linesFromSerial(const std::string& src){
 #undef TypesetSetupConstruct
 #undef TypesetSetupMatrix
 
-#ifdef HOPE_SEMANTIC_DEBUGGING
+#ifdef FORSCAPE_SEMANTIC_DEBUGGING
 std::string Model::toSerialWithSemanticTags() const{
     std::string out = lines[0]->toStringWithSemanticTags();
     for(size_t i = 1; i < lines.size(); i++){
@@ -282,7 +282,7 @@ Line* Model::prevLineAsserted(const Line* l) const noexcept{
     return lines[l->id-1];
 }
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 Line* Model::nearestLine(double y) const noexcept{
     auto search = std::lower_bound(
                     lines.rbegin(),
@@ -348,7 +348,7 @@ void Model::appendSerialToOutput(const std::string& src){
         for(size_t i = 0; i < MAX_LINES; i++) lines[i]->id = i;
     }
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     calculateSizes();
     updateLayout();
     #endif
@@ -375,7 +375,7 @@ void Model::undo(Controller& controller){
         redo_stack.push_back(cmd);
         performSemanticFormatting();
 
-        #ifndef HOPE_TYPESET_HEADLESS
+        #ifndef FORSCAPE_TYPESET_HEADLESS
         calculateSizes();
         updateLayout();
         #endif
@@ -391,7 +391,7 @@ void Model::redo(Controller& controller){
         undo_stack.push_back(cmd);
         performSemanticFormatting();
 
-        #ifndef HOPE_TYPESET_HEADLESS
+        #ifndef FORSCAPE_TYPESET_HEADLESS
         calculateSizes();
         updateLayout();
         #endif
@@ -422,7 +422,7 @@ Marker Model::begin() const noexcept{
     return Marker(firstText(), 0);
 }
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 void Model::calculateSizes(){
     for(Line* l : lines) l->updateSize();
 }
@@ -445,7 +445,7 @@ void Model::paint(Painter& painter, double xL, double yT, double xR, double yB) 
         Line* l = lines[i];
         l->paint(painter, xL, xR);
 
-        #ifdef HOPE_TYPESET_LAYOUT_DEBUG
+        #ifdef FORSCAPE_TYPESET_LAYOUT_DEBUG
         painter.drawHorizontalConstructionLine(l->y - LINE_VERTICAL_PADDING/2);
         #endif
     }
@@ -549,12 +549,12 @@ void Model::clearFormatting() noexcept{
     Text* t = firstText();
     for(;;){
         t->tags.clear();
-        #ifndef HOPE_TYPESET_HEADLESS
+        #ifndef FORSCAPE_TYPESET_HEADLESS
         t->parse_nodes.clear();
         #endif
 
         if(Construct* c = t->nextConstructInPhrase()){
-            #ifndef HOPE_TYPESET_HEADLESS
+            #ifndef FORSCAPE_TYPESET_HEADLESS
             c->pn = NONE;
             #endif
             Text* candidate = c->frontText();
@@ -591,7 +591,7 @@ void Model::premutate() noexcept{
 void Model::postmutate(){
     performSemanticFormatting();
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     calculateSizes();
     updateLayout();
     #endif

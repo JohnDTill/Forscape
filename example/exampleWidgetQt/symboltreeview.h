@@ -5,13 +5,13 @@
 
 #include <QTreeWidget>
 
-#include <hope_parse_tree.h>
-#include <hope_static_pass.h>
-#include <hope_symbol_table.h>
+#include <forscape_parse_tree.h>
+#include <forscape_static_pass.h>
+#include <forscape_symbol_table.h>
 
 class SymbolTreeView : public QTreeWidget {
 public:
-    SymbolTreeView(const Hope::Code::SymbolTable& symbol_table, const Hope::Code::StaticPass& ts);
+    SymbolTreeView(const Forscape::Code::SymbolTable& symbol_table, const Forscape::Code::StaticPass& ts);
 };
 
 #endif

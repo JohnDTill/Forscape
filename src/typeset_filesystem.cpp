@@ -1,13 +1,13 @@
 #include "typeset_filesystem.h"
 
-#include <hope_serial.h>
+#include <forscape_serial.h>
 #include <typeset_model.h>
 
 #include <filesystem>
 #include <fstream>
 #include <sstream>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -28,7 +28,8 @@ static Model* tryToOpenFile(const std::string& file_path) {
             src[i] = '\0';
     src.erase( std::remove(src.begin(), src.end(), '\0'), src.end() );
 
-    assert(Hope::isValidSerial(src)); //DO THIS: allow failure
+    //EVENTUALLY: give better feedback on found files with invalid data
+    if(!Forscape::isValidSerial(src)) return nullptr;
 
     return Model::fromSerial(src);
 }

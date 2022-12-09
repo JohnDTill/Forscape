@@ -17,6 +17,6 @@ jobs:
       - id: cmake
         run: cd $Env:GITHUB_WORKSPACE/test && cmake -B../build_test -S.
       - name: Build app for release
-        run: cd $Env:GITHUB_WORKSPACE/build_test && msbuild HopeTests.vcxproj -property:Configuration=Debug
+        run: cd $Env:GITHUB_WORKSPACE/build_test && msbuild ForscapeTests.vcxproj -property:Configuration=Debug
       - id: run
-        run: cd $Env:GITHUB_WORKSPACE/build_test && ./Debug/HopeTests.exe
+        run: cd $Env:GITHUB_WORKSPACE/build_test && ./Debug/ForscapeTests.exe

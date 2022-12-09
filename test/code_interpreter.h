@@ -1,6 +1,6 @@
-#include <hope_interpreter.h>
-#include <hope_parser.h>
-#include <hope_scanner.h>
+#include <forscape_interpreter.h>
+#include <forscape_parser.h>
+#include <forscape_scanner.h>
 #include "report.h"
 #include "typeset.h"
 
@@ -11,11 +11,11 @@ using std::filesystem::directory_iterator;
 #error std::filesystem is borked for MinGW versions before 9.0
 #endif
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 #include "../example/exampleWidgetQt/symboltreeview.h"
 #endif
 
-using namespace Hope;
+using namespace Forscape;
 using namespace Code;
 
 inline bool testExpression(const std::string& in, const std::string& expect){
@@ -24,7 +24,7 @@ inline bool testExpression(const std::string& in, const std::string& expect){
 
     #ifndef NDEBUG
     input->parseTreeDot(); //Make sure dot generation doesn't crash
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     SymbolTreeView view(input->symbol_builder.symbol_table, input->static_pass);
     #endif
     #endif
@@ -52,7 +52,7 @@ inline bool testCase(const std::string& name){
 
     #ifndef NDEBUG
     input->parseTreeDot(); //Make sure dot generation doesn't crash
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     SymbolTreeView view(input->symbol_builder.symbol_table, input->static_pass); //Make sure symbol table view doesn't crash
     #endif
     #endif

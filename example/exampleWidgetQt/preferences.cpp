@@ -1,7 +1,7 @@
 #include "preferences.h"
 #include "ui_preferences.h"
 
-#include "hope_common.h"
+#include "forscape_common.h"
 #include "keywordsubstitutioneditor.h"
 #include <typeset_themes.h>
 #include <typeset_view.h>
@@ -23,34 +23,34 @@ Preferences::Preferences(QSettings& settings, QWidget* parent) :
     if(settings.contains(INTEGRAL_LAYOUT_SETTING)){
         bool vertical_integrals = settings.value(INTEGRAL_LAYOUT_SETTING).toBool();
         ui->integralCheckBox->setChecked(vertical_integrals);
-        Hope::Typeset::integral_bounds_vertical = vertical_integrals;
+        Forscape::Typeset::integral_bounds_vertical = vertical_integrals;
     }
 
     if(settings.contains(DISLAY_COMMA_SETTING)){
         bool display_commas = settings.value(DISLAY_COMMA_SETTING).toBool();
         ui->numberCommaCheckBox->setChecked(display_commas);
-        Hope::Typeset::display_commas_in_numbers = display_commas;
+        Forscape::Typeset::display_commas_in_numbers = display_commas;
     }
 
-    for(int i = 0; i < Hope::Typeset::NUM_COLOUR_PRESETS; i++){
-        std::string_view name = Hope::Typeset::getPresetName(i).data();
+    for(int i = 0; i < Forscape::Typeset::NUM_COLOUR_PRESETS; i++){
+        std::string_view name = Forscape::Typeset::getPresetName(i).data();
         ui->colour_dropdown->addItem(name.data());
     }
 
     if(settings.contains(COLOUR_SETTING)){
         QString colour_preset = settings.value(COLOUR_SETTING).toString();
         if(colour_preset == "Custom") addCustomDropdownIfNotPresent();
-        else for(size_t i = 0; i < Hope::Typeset::NUM_COLOUR_PRESETS; i++)
-            if(colour_preset == Hope::Typeset::getPresetName(i).data()){
-                Hope::Typeset::setPreset(i);
+        else for(size_t i = 0; i < Forscape::Typeset::NUM_COLOUR_PRESETS; i++)
+            if(colour_preset == Forscape::Typeset::getPresetName(i).data()){
+                Forscape::Typeset::setPreset(i);
                 ui->colour_dropdown->setCurrentIndex(static_cast<int>(i));
             }
     }
 
-    for(size_t i = 0; i < Hope::Typeset::NUM_COLOUR_ROLES; i++){
-        std::string_view name = Hope::Typeset::getColourName(i).data();
+    for(size_t i = 0; i < Forscape::Typeset::NUM_COLOUR_ROLES; i++){
+        std::string_view name = Forscape::Typeset::getColourName(i).data();
         if(!settings.contains(name.data())) continue;
-        Hope::Typeset::setColour(i, settings.value(name.data()).value<QColor>());
+        Forscape::Typeset::setColour(i, settings.value(name.data()).value<QColor>());
     }
 
     connect(ui->colour_dropdown, SIGNAL(activated(int)), this, SLOT(onPresetSelect(int)));
@@ -61,16 +61,16 @@ Preferences::Preferences(QSettings& settings, QWidget* parent) :
     ui->colour_table->setColumnCount(1);
     QTableWidgetItem* col_item = new QTableWidgetItem("Colour");
     ui->colour_table->setHorizontalHeaderItem(0, col_item);
-    ui->colour_table->setRowCount(Hope::Typeset::NUM_COLOUR_ROLES);
+    ui->colour_table->setRowCount(Forscape::Typeset::NUM_COLOUR_ROLES);
 
-    for(int i = 0; i < Hope::Typeset::NUM_COLOUR_ROLES; i++){
+    for(int i = 0; i < Forscape::Typeset::NUM_COLOUR_ROLES; i++){
         QTableWidgetItem* item = new QTableWidgetItem();
-        item->setBackground(Hope::Typeset::getColour(i));
+        item->setBackground(Forscape::Typeset::getColour(i));
         item->setFlags(item->flags() & ~Qt::ItemFlag::ItemIsEditable);
         ui->colour_table->setItem(i, 0, item);
 
         QTableWidgetItem* row_item = new QTableWidgetItem();
-        row_item->setText(Hope::Typeset::getColourName(i).data());
+        row_item->setText(Forscape::Typeset::getColourName(i).data());
         ui->colour_table->setVerticalHeaderItem(i, row_item);
     }
 
@@ -82,13 +82,13 @@ Preferences::Preferences(QSettings& settings, QWidget* parent) :
 }
 
 Preferences::~Preferences(){
-    settings.setValue(INTEGRAL_LAYOUT_SETTING, Hope::Typeset::integral_bounds_vertical);
-    settings.setValue(DISLAY_COMMA_SETTING, Hope::Typeset::display_commas_in_numbers);
+    settings.setValue(INTEGRAL_LAYOUT_SETTING, Forscape::Typeset::integral_bounds_vertical);
+    settings.setValue(DISLAY_COMMA_SETTING, Forscape::Typeset::display_commas_in_numbers);
 
     settings.setValue(COLOUR_SETTING, ui->colour_dropdown->currentText());
-    for(size_t i = 0; i < Hope::Typeset::NUM_COLOUR_ROLES; i++){
-        std::string_view name = Hope::Typeset::getColourName(i).data();
-        const QColor& colour = Hope::Typeset::getColour(i);
+    for(size_t i = 0; i < Forscape::Typeset::NUM_COLOUR_ROLES; i++){
+        std::string_view name = Forscape::Typeset::getColourName(i).data();
+        const QColor& colour = Forscape::Typeset::getColour(i);
         settings.setValue(name.data(), colour);
     }
 
@@ -96,13 +96,13 @@ Preferences::~Preferences(){
 }
 
 void Preferences::onPresetSelect(int index){
-    if(index > Hope::Typeset::NUM_COLOUR_PRESETS) return;
+    if(index > Forscape::Typeset::NUM_COLOUR_PRESETS) return;
 
-    Hope::Typeset::setPreset(index);
+    Forscape::Typeset::setPreset(index);
 
-    for(size_t i = 0; i < Hope::Typeset::NUM_COLOUR_ROLES; i++){
+    for(size_t i = 0; i < Forscape::Typeset::NUM_COLOUR_ROLES; i++){
         QTableWidgetItem* item = ui->colour_table->item(static_cast<int>(i), 0);
-        item->setBackground(Hope::Typeset::getColour(i));
+        item->setBackground(Forscape::Typeset::getColour(i));
     }
 
     removeCustomDropdownIfPresent();
@@ -112,11 +112,11 @@ void Preferences::onPresetSelect(int index){
 
 void Preferences::onColourSelect(QTableWidgetItem* item){
     int role = item->row();
-    const QColor& current = Hope::Typeset::getColour(role);
-    QColor colour = QColorDialog::getColor(current, this, Hope::Typeset::getColourName(role).data(), QColorDialog::DontUseNativeDialog);
+    const QColor& current = Forscape::Typeset::getColour(role);
+    QColor colour = QColorDialog::getColor(current, this, Forscape::Typeset::getColourName(role).data(), QColorDialog::DontUseNativeDialog);
     if(!colour.isValid() || colour == current) return;
     item->setBackground(colour);
-    Hope::Typeset::setColour(role, colour);
+    Forscape::Typeset::setColour(role, colour);
     addCustomDropdownIfNotPresent();
     emit colourChanged();
     QCoreApplication::processEvents();
@@ -124,13 +124,13 @@ void Preferences::onColourSelect(QTableWidgetItem* item){
 }
 
 void Preferences::addCustomDropdownIfNotPresent(){
-    if(ui->colour_dropdown->count() != Hope::Typeset::NUM_COLOUR_PRESETS) return;
+    if(ui->colour_dropdown->count() != Forscape::Typeset::NUM_COLOUR_PRESETS) return;
     ui->colour_dropdown->addItem("Custom");
-    ui->colour_dropdown->setCurrentIndex(Hope::Typeset::NUM_COLOUR_PRESETS);
+    ui->colour_dropdown->setCurrentIndex(Forscape::Typeset::NUM_COLOUR_PRESETS);
 }
 
 void Preferences::removeCustomDropdownIfPresent(){
-    if(ui->colour_dropdown->count() == Hope::Typeset::NUM_COLOUR_PRESETS) return;
+    if(ui->colour_dropdown->count() == Forscape::Typeset::NUM_COLOUR_PRESETS) return;
     ui->colour_dropdown->removeItem(ui->colour_dropdown->count()-1);
 }
 
@@ -161,17 +161,17 @@ void Preferences::on_symbolsAddButton_clicked(){
 }
 
 void Preferences::on_integralCheckBox_toggled(bool checked){
-    Hope::Typeset::integral_bounds_vertical = checked;
+    Forscape::Typeset::integral_bounds_vertical = checked;
 
-    for(Hope::Typeset::View* view : Hope::Typeset::View::all_views)
+    for(Forscape::Typeset::View* view : Forscape::Typeset::View::all_views)
         view->updateModel();
 }
 
 
 void Preferences::on_numberCommaCheckBox_toggled(bool checked){
-    Hope::Typeset::display_commas_in_numbers = checked;
+    Forscape::Typeset::display_commas_in_numbers = checked;
 
-    for(Hope::Typeset::View* view : Hope::Typeset::View::all_views)
+    for(Forscape::Typeset::View* view : Forscape::Typeset::View::all_views)
         view->update();
 }
 

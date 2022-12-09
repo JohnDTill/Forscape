@@ -6,7 +6,7 @@
 #include <typeset_phrase.h>
 #include <typeset_text.h>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 

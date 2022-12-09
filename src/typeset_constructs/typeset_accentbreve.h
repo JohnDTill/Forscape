@@ -4,7 +4,7 @@
 #include "typeset_construct.h"
 #include "typeset_subphrase.h"
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -23,7 +23,7 @@ public:
 
     virtual char constructCode() const noexcept override { return ACCENTBREVE; }
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual void updateSizeFromChildSizes() noexcept override {
         width = child()->width;
         should_drop = hasSmallChild();

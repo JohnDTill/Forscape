@@ -1,6 +1,6 @@
 #include "typeset_command_list.h"
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 

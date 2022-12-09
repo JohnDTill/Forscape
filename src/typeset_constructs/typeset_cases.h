@@ -12,7 +12,7 @@
 #include <iostream>
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -38,7 +38,7 @@ public:
     virtual size_t dims() const noexcept override { return 1; }
     virtual char constructCode() const noexcept override { return CASES; }
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual Text* textUp(const Subphrase* caller, double x) const noexcept override {
         return caller->id >= 2 ? arg(caller->id - 2)->textLeftOf(x) : prev();
     }
@@ -195,7 +195,7 @@ public:
     #endif
 };
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 inline std::vector<Cases::ContextAction> Cases::actions {
     ContextAction("Create row below", rowCmd<true, true>),
     ContextAction("Create row above", rowCmd<true, false>),

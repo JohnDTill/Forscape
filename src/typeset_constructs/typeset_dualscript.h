@@ -4,7 +4,7 @@
 #include "typeset_construct.h"
 #include "typeset_subphrase.h"
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -16,7 +16,7 @@ public:
 
     virtual char constructCode() const noexcept override { return DUALSCRIPT; }
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }
 
     virtual Text* textUp(const Subphrase* caller, double x) const noexcept override {

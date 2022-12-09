@@ -18,7 +18,7 @@ def main():
         name="themes",
         inner_namespace="Typeset",
         includes=["string_view", "QColor"],
-        extra_guards=["HOPE_TYPESET_HEADLESS"],
+        extra_guards=["FORSCAPE_TYPESET_HEADLESS"],
     )
 
     for i in range(1, len(headers)):
@@ -45,11 +45,11 @@ def main():
     header_writer.finalize()
 
     with open("../src/generated/typeset_themes.cpp", "w", encoding="utf-8") as codegen_file:
-        codegen_file.write("#ifndef HOPE_TYPESET_HEADLESS\n\n")
+        codegen_file.write("#ifndef FORSCAPE_TYPESET_HEADLESS\n\n")
         codegen_file.write("#include \"typeset_themes.h\"\n\n")
         codegen_file.write("#include <array>\n\n")
 
-        codegen_file.write("namespace Hope {\n\n")
+        codegen_file.write("namespace Forscape {\n\n")
         codegen_file.write("namespace Typeset {\n\n")
 
         codegen_file.write("static std::array<QColor, NUM_COLOUR_ROLES> colours;\n\n")

@@ -18,14 +18,14 @@ def main():
         inner_namespace="Code",
     )
 
-    header_writer.write("enum HopeTokenType {\n")
+    header_writer.write("enum ForscapeTokenType {\n")
     for token in tokens:
         header_writer.write(f"    {token.enum.upper()},\n")
     for construct in constructs:
         header_writer.write(f"    TOKEN_{construct.name.upper()},\n")
     header_writer.write("};\n\n")
 
-    header_writer.write("#define HOPE_SCANNER_CASES \\\n")
+    header_writer.write("#define FORSCAPE_SCANNER_CASES \\\n")
     header_writer.write("    case '\"': scanString(); break;\\\n")
     for token in [token for token in tokens if token.simple == 'y' and unicode.is_ascii(token.label)]:
         header_writer.write(f"    case '{token.label}':")
@@ -62,7 +62,7 @@ def main():
     header_writer.write("    case '/': forwardSlash(); break;\n")
     header_writer.write("\n")
 
-    header_writer.write("#define HOPE_IMPLICIT_MULT_TOKENS ")
+    header_writer.write("#define FORSCAPE_IMPLICIT_MULT_TOKENS ")
     for token in tokens:
         if token.imp_mult == "y":
             header_writer.write(f"\\\n    case {token.enum.upper()}:")
@@ -71,7 +71,7 @@ def main():
             header_writer.write(f"\\\n    case TOKEN_{construct.name.upper()}:")
     header_writer.write("\n\n")
 
-    header_writer.write("#define HOPE_KEYWORD_MAP ")
+    header_writer.write("#define FORSCAPE_KEYWORD_MAP ")
     for token in tokens:
         if token.keyword == "y":
             header_writer.write(f"\\\n    {{\"{token.label}\", {token.enum.upper()}}},")

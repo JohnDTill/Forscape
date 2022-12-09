@@ -1,7 +1,7 @@
 #ifndef TYPESET_PAINTER_H
 #define TYPESET_PAINTER_H
 
-#include <hope_error.h>
+#include <forscape_error.h>
 #include <semantic_tags.h>
 #include <utility>
 #include <vector>
@@ -11,7 +11,7 @@
 typedef QPainter WrappedPainter;
 typedef QWidget Widget;
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -83,7 +83,7 @@ public:
     void drawSymbol(std::string_view str, double x, double y, double w, double h);
     void drawComma(double x, double y, bool selected);
 
-    #ifdef HOPE_TYPESET_LAYOUT_DEBUG
+    #ifdef FORSCAPE_TYPESET_LAYOUT_DEBUG
     void drawDebugPhrase(double x, double y, double w, double u, double v);
     void drawHorizontalConstructionLine(double y);
     #endif

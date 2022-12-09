@@ -1,24 +1,24 @@
 #include "typeset_text.h"
 
-#include "hope_unicode.h"
+#include "forscape_unicode.h"
 #include "typeset_construct.h"
 #include "typeset_line.h"
 #include "typeset_selection.h"
 #include "typeset_subphrase.h"
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 #include "typeset_painter.h"
 #endif
 
 #include <algorithm>
 #include <cassert>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
 #ifdef TYPESET_MEMORY_DEBUG
-HOPE_UNORDERED_SET<Text*> Text::all;
+FORSCAPE_UNORDERED_SET<Text*> Text::all;
 
 Text::Text() {
     all.insert(this);
@@ -76,14 +76,14 @@ void Text::append(std::string_view appended) noexcept{
 }
 
 void Text::prependSpaces(size_t num_spaces) alloc_except {
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     assert(scriptDepth() == 0);
     #endif
     str.insert(0, num_spaces, ' ');
 }
 
 void Text::removeLeadingSpaces(size_t num_spaces) noexcept {
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     assert(scriptDepth() == 0);
     #endif
     assert(str.substr(0, num_spaces) == std::string(num_spaces, ' '));
@@ -341,7 +341,7 @@ void Text::tagBack(SemanticType type) alloc_except {
     tags.push_back( SemanticTag(numChars(), type) );
 }
 
-#ifdef HOPE_SEMANTIC_DEBUGGING
+#ifdef FORSCAPE_SEMANTIC_DEBUGGING
 std::string Text::toSerialWithSemanticTags() const{
     size_t start = 0;
     std::string out;
@@ -356,7 +356,7 @@ std::string Text::toSerialWithSemanticTags() const{
 }
 #endif
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 double Text::aboveCenter() const noexcept {
     return ABOVE_CENTER[scriptDepth()];
 }

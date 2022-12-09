@@ -1,6 +1,6 @@
 #include <cassert>
 #include <fstream>
-#include <hope_serial.h>
+#include <forscape_serial.h>
 #include <string>
 #include "report.h"
 
@@ -21,14 +21,14 @@ inline bool testSerial(){
 
     std::string line;
     while(std::getline(good_examples, line)){
-        if(!Hope::isValidSerial(line)){
+        if(!Forscape::isValidSerial(line)){
             printf("Valid input rejected: %s\n", line.c_str());
             passing = false;
         }
     }
 
     while(std::getline(bad_examples, line)){
-        if(Hope::isValidSerial(line)){
+        if(Forscape::isValidSerial(line)){
             printf("Invalid input accepted: %s\n", line.c_str());
             passing = false;
         }

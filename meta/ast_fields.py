@@ -14,7 +14,7 @@ def main():
     header_writer = cpp.HeaderWriter(
         name="ast_fields",
         inner_namespace="Code",
-        includes=["hope_value.h"]
+        includes=["forscape_value.h"]
     )
 
     nodes = table_reader.csv_to_list_of_tuples(
@@ -22,14 +22,14 @@ def main():
         tuple_name="Node",
     )
 
-    header_writer.write("#define HOPE_AST_FIELD_CODEGEN_DECLARATIONS \\\n")
+    header_writer.write("#define FORSCAPE_AST_FIELD_CODEGEN_DECLARATIONS \\\n")
     prev = 0
 
     with open("../src/generated/code_ast_fields.cpp", "w", encoding="utf-8") as source_file:
-        source_file.write("#include \"hope_parse_tree.h\"\n\n")
+        source_file.write("#include \"forscape_parse_tree.h\"\n\n")
         source_file.write("#include \"typeset_selection.h\"\n\n")
 
-        source_file.write("namespace Hope {\n\n")
+        source_file.write("namespace Forscape {\n\n")
         source_file.write("namespace Code {\n\n")
 
         for field in fields:

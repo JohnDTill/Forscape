@@ -1,6 +1,6 @@
 #include "plot.h"
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 
 #include <QPainter>
 #include <QPainterPath>
@@ -81,7 +81,7 @@ void Plot::setYLabel(const std::string& str) noexcept{
 void Plot::paintEvent(QPaintEvent* event){
     QPainter painter(this);
 
-    painter.setBrush(Hope::Typeset::getColour(Hope::Typeset::COLOUR_BACKGROUND));
+    painter.setBrush(Forscape::Typeset::getColour(Forscape::Typeset::COLOUR_BACKGROUND));
     painter.drawRect(plotPixelX, plotPixelY, plotPixelWidth(), plotPixelHeight());
 
     painter.translate(MARGIN_LEFT, MARGIN_TOP+plotPixelHeight());
@@ -98,7 +98,7 @@ void Plot::paintEvent(QPaintEvent* event){
     painter.setPen(pen);
 
     //EVENTUALLY: codegen font metrics
-    QFont title_font = Hope::Typeset::getFont(Hope::SEM_DEFAULT, 0);
+    QFont title_font = Forscape::Typeset::getFont(Forscape::SEM_DEFAULT, 0);
     title_font.setPointSize(14);
     painter.setFont(title_font);
     QString qtitle = QString::fromStdString(title);
@@ -108,7 +108,7 @@ void Plot::paintEvent(QPaintEvent* event){
     qreal title_y = MARGIN_TOP - TEXT_MARGIN;
     painter.drawText(title_x, title_y, qtitle);
 
-    QFont number_font = Hope::Typeset::getFont(Hope::SEM_NUMBER, 1);
+    QFont number_font = Forscape::Typeset::getFont(Forscape::SEM_NUMBER, 1);
     number_font.setPointSize(11);
     painter.setFont(number_font);
     metrics = QFontMetricsF(painter.font());
@@ -120,7 +120,7 @@ void Plot::paintEvent(QPaintEvent* event){
     QString sxF = QString::number(sceneRightX());
     painter.drawText(MARGIN_LEFT + plotPixelWidth() - metrics.horizontalAdvance(sxF)/2, x_axis_baseline, sxF);
 
-    QFont label_font = Hope::Typeset::getFont(Hope::SEM_DEFAULT, 0);
+    QFont label_font = Forscape::Typeset::getFont(Forscape::SEM_DEFAULT, 0);
     label_font.setPointSize(12);
     painter.setFont(label_font);
     metrics = QFontMetricsF(painter.font());

@@ -3,7 +3,7 @@
 
 #include "typeset_construct.h"
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -18,7 +18,7 @@ public:
     AccentBar();
     virtual char constructCode() const noexcept override;
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual void updateSizeFromChildSizes() noexcept override;
     virtual void updateChildPositions() noexcept override;
     virtual void paintSpecific(Painter& painter) const override;

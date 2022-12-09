@@ -35,13 +35,13 @@ def main():
     all_ops.remove("ANY")
     all_ops.remove("NOT_a")
 
-    with open("../src/generated/hope_interpreter_gen.cpp", "w", encoding="utf-8") as codegen_file:
-        codegen_file.write("#include \"hope_interpreter.h\"\n\n")
+    with open("../src/generated/forscape_interpreter_gen.cpp", "w", encoding="utf-8") as codegen_file:
+        codegen_file.write("#include \"forscape_interpreter.h\"\n\n")
         codegen_file.write("#include <math.h>\n")
         codegen_file.write("#include <unsupported/Eigen/MatrixFunctions>\n\n")
         codegen_file.write("using namespace Eigen;\n")
         codegen_file.write("using namespace std;\n\n")
-        codegen_file.write("namespace Hope {\n\n")
+        codegen_file.write("namespace Forscape {\n\n")
         codegen_file.write("namespace Code {\n\n")
 
         codegen_file.write("Value Interpreter::interpretExpr(ParseNode pn) {\n"
