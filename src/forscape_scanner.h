@@ -1,12 +1,12 @@
-#ifndef HOPE_SCANNER_H
-#define HOPE_SCANNER_H
+#ifndef FORSCAPE_SCANNER_H
+#define FORSCAPE_SCANNER_H
 
-#include <hope_common.h>
-#include "hope_error.h"
-#include "hope_token.h"
+#include <forscape_common.h>
+#include "forscape_error.h"
+#include "forscape_token.h"
 #include <vector>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
     class Controller;
@@ -26,11 +26,11 @@ private:
     void scanString() alloc_except;
     void forwardSlash() alloc_except;
     void comment() alloc_except;
-    void createToken(HopeTokenType type) alloc_except;
+    void createToken(ForscapeTokenType type) alloc_except;
     void scanNumber() alloc_except;
     void scanIdentifier() alloc_except;
     void unrecognizedSymbol(uint32_t code) alloc_except;
-    void scanConstruct(HopeTokenType type) alloc_except;
+    void scanConstruct(ForscapeTokenType type) alloc_except;
     void close() alloc_except;
     void error(ErrorCode code) alloc_except;
     void newline() alloc_except;
@@ -42,7 +42,7 @@ private:
     Typeset::Model* model;
     Typeset::Controller* controller;
     std::vector<Error>& errors;
-    static HOPE_STATIC_MAP<std::string_view, HopeTokenType> keywords; //EVENTUALLY: look at keyword perfect hashing
+    static FORSCAPE_STATIC_MAP<std::string_view, ForscapeTokenType> keywords; //EVENTUALLY: look at keyword perfect hashing
     size_t scope_depth = 0;
 };
 
@@ -50,4 +50,4 @@ private:
 
 }
 
-#endif // HOPE_SCANNER_H
+#endif // FORSCAPE_SCANNER_H

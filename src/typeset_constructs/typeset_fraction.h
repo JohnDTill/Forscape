@@ -4,7 +4,7 @@
 #include "typeset_construct.h"
 #include "typeset_subphrase.h"
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -20,7 +20,7 @@ public:
     static constexpr double bar_margin = 0;
     static constexpr double vgap = 2.5;
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual Text* textUp(const Subphrase* caller, double x) const noexcept override {
         return caller->id==1 ? first()->textLeftOf(x) : prev();
     }

@@ -7,7 +7,7 @@
 #include <QTableWidget>
 #include <QToolButton>
 
-using namespace Hope;
+using namespace Forscape;
 using namespace Typeset;
 
 static QFont glyph_font;
@@ -47,7 +47,7 @@ void MathToolbar::setupSymbolTable(){
     static constexpr int ENTRY_WIDTH = 24;
 
     //Set properties
-    symbol_table = new QTableWidget((HOPE_NUM_KEYWORDS-1)/symbol_table_cols+1, symbol_table_cols, this);
+    symbol_table = new QTableWidget((FORSCAPE_NUM_KEYWORDS-1)/symbol_table_cols+1, symbol_table_cols, this);
     //QFont table_font = Globals::fonts[0];
     QFont table_font = QFontDatabase().font("JuliaMono", "Regular", ENTRY_WIDTH/VISIBLE_ROWS);
     symbol_table->setFont(table_font);
@@ -63,7 +63,7 @@ void MathToolbar::setupSymbolTable(){
     connect( symbol_table, SIGNAL(itemClicked(QTableWidgetItem*)),
              this, SLOT(symbolTableTriggered(QTableWidgetItem*)) );
 
-    std::pair<QString, QString> keywords[] = HOPE_KEYWORD_LIST;
+    std::pair<QString, QString> keywords[] = FORSCAPE_KEYWORD_LIST;
     for(auto pair : keywords){
         if(col >= symbol_table_cols){
             row++;

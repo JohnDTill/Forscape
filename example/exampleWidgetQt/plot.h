@@ -1,7 +1,7 @@
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 
-#ifndef HOPE_PLOT_H
-#define HOPE_PLOT_H
+#ifndef FORSCAPE_PLOT_H
+#define FORSCAPE_PLOT_H
 
 #include <QWidget>
 class QPainter;
@@ -59,6 +59,6 @@ private:
     virtual void paintEvent(QPaintEvent* event) override;
 };
 
-#endif // HOPE_PLOT_H
+#endif // FORSCAPE_PLOT_H
 
 #endif

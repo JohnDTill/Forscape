@@ -4,9 +4,9 @@
 
 #include <stack>
 
-using Hope::NONE; //But there is
+using Forscape::NONE; //But there is
 
-SymbolTreeView::SymbolTreeView(const Hope::Code::SymbolTable& symbol_table, const Hope::Code::StaticPass& ts){
+SymbolTreeView::SymbolTreeView(const Forscape::Code::SymbolTable& symbol_table, const Forscape::Code::StaticPass& ts){
     setWindowTitle("Symbol Table");
     constexpr size_t N_FIELDS = 4;
     setHeaderLabels({"Name", "Type", "Const", "Description"});
@@ -15,12 +15,12 @@ SymbolTreeView::SymbolTreeView(const Hope::Code::SymbolTable& symbol_table, cons
     QTreeWidgetItem* last_added_item = nullptr;
 
     std::stack<QTreeWidgetItem*> items;
-    for(const Hope::Code::ScopeSegment& scope : symbol_table.scopes){
+    for(const Forscape::Code::ScopeSegment& scope : symbol_table.scopes){
         if(scope.isStartOfScope()){
             if(scope.parent == NONE){
                 items.push(nullptr);
             }else{
-                Hope::Code::ScopeId grandparent = symbol_table.scopes[scope.parent].parent;
+                Forscape::Code::ScopeId grandparent = symbol_table.scopes[scope.parent].parent;
                 QTreeWidgetItem* scope_item = (grandparent == NONE) ?
                             new QTreeWidgetItem(this) :
                             new QTreeWidgetItem(items.top());

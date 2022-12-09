@@ -1,20 +1,20 @@
-#ifndef HOPE_SCOPE_TREE_H
-#define HOPE_SCOPE_TREE_H
+#ifndef FORSCAPE_SCOPE_TREE_H
+#define FORSCAPE_SCOPE_TREE_H
 
-#include <hope_common.h>
+#include <forscape_common.h>
 #include "typeset_selection.h"
 #include "typeset_text.h"
 #include <limits>
 #include <vector>
 
-#if !defined(NDEBUG) && !defined(HOPE_TYPESET_HEADLESS)
+#if !defined(NDEBUG) && !defined(FORSCAPE_TYPESET_HEADLESS)
 #define SCOPE_NAME(x) x,
-#define HOPE_USE_SCOPE_NAME
+#define FORSCAPE_USE_SCOPE_NAME
 #else
 #define SCOPE_NAME(x)
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Code {
 
@@ -62,7 +62,7 @@ struct Usage{
 };
 
 struct ScopeSegment{
-    #ifdef HOPE_USE_SCOPE_NAME
+    #ifdef FORSCAPE_USE_SCOPE_NAME
     size_t name_start;
     size_t name_size;
     #endif
@@ -78,7 +78,7 @@ struct ScopeSegment{
     size_t usage_end = NONE;
 
     ScopeSegment(
-        #if !defined(NDEBUG) && !defined(HOPE_TYPESET_HEADLESS)
+        #if !defined(NDEBUG) && !defined(FORSCAPE_TYPESET_HEADLESS)
         size_t name_start,
         size_t name_size,
         #endif
@@ -101,7 +101,7 @@ public:
     std::vector<Usage> usages;
     ParseTree& parse_tree;
 
-    #ifdef HOPE_USE_SCOPE_NAME
+    #ifdef FORSCAPE_USE_SCOPE_NAME
     std::string scope_names;
     std::string_view getName(const ScopeSegment& scope) const noexcept {
         return std::string_view(scope_names.data()+scope.name_start, scope.name_size);
@@ -120,7 +120,7 @@ public:
     ScopeId head(ScopeId index) const noexcept;
     void reset(const Typeset::Marker& doc_start) noexcept;
     void addScope(
-        #ifdef HOPE_USE_SCOPE_NAME
+        #ifdef FORSCAPE_USE_SCOPE_NAME
         const std::string& name,
         #endif
         const Typeset::Marker& start, ParseNode closure = NONE) alloc_except;
@@ -143,7 +143,7 @@ public:
             return s.symbol_root ^ std::hash<Typeset::Selection>()(s.sel);
         }
     };
-    HOPE_UNORDERED_MAP<StoredScopeKey, size_t, HashStoredScopeKey> stored_scopes;
+    FORSCAPE_UNORDERED_MAP<StoredScopeKey, size_t, HashStoredScopeKey> stored_scopes;
 
     void resolveReference(ParseNode pn, size_t sym_id, size_t closure_depth) alloc_except;
 };
@@ -152,4 +152,4 @@ public:
 
 }
 
-#endif // HOPE_SCOPE_TREE_H
+#endif // FORSCAPE_SCOPE_TREE_H

@@ -1,12 +1,12 @@
 #include "report.h"
 #include "typeset.h"
-#include "hope_scanner.h"
-#include "hope_serial.h"
-#include "hope_parser.h"
-#include "hope_symbol_build_pass.h"
-#include "hope_interpreter.h"
+#include "forscape_scanner.h"
+#include "forscape_serial.h"
+#include "forscape_parser.h"
+#include "forscape_symbol_build_pass.h"
+#include "forscape_interpreter.h"
 
-using namespace Hope;
+using namespace Forscape;
 using namespace Code;
 
 static constexpr size_t ITER_SERIAL_VALIDATION = 50000;
@@ -73,7 +73,7 @@ void runBenchmark(){
     assert(interpreter.error_code == NO_ERROR_FOUND);
     report("Interpreter", ITER_INTERPRETER);
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     m = Typeset::Model::fromSerial(src);
 
     startClock();
@@ -108,7 +108,7 @@ void runBenchmark(){
         m->run();
     report("Print " N_PRINTS, ITER_LOOP);
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     Typeset::Model* temp = m;
     m = Typeset::Model::fromSerial(m->run(), true);
     delete temp;

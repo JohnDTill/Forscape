@@ -1,11 +1,11 @@
-#include "hope_symbol_table.h"
+#include "forscape_symbol_table.h"
 
-#include "hope_parse_tree.h"
+#include "forscape_parse_tree.h"
 #include <algorithm>
 #include <cassert>
 #include <unordered_set>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Code {
 
@@ -35,12 +35,12 @@ Usage::Usage(size_t var_id, ParseNode pn, UsageType type) noexcept
     : var_id(var_id), pn(pn), type(type) {}
 
 ScopeSegment::ScopeSegment(
-        #ifdef HOPE_USE_SCOPE_NAME
+        #ifdef FORSCAPE_USE_SCOPE_NAME
         size_t name_start, size_t name_size,
         #endif
         const Typeset::Marker& start, ParseNode closure, ScopeId parent, ScopeId prev, SymbolId sym_begin, size_t usage_begin) noexcept
     :
-      #ifdef HOPE_USE_SCOPE_NAME
+      #ifdef FORSCAPE_USE_SCOPE_NAME
       name_start(name_start), name_size(name_size),
       #endif
       start(start), fn(closure), parent(parent), prev_lexical_segment(prev), sym_begin(sym_begin), usage_begin(usage_begin) {}
@@ -70,7 +70,7 @@ size_t SymbolTable::containingScope(const Typeset::Marker& m) const noexcept{
 }
 
 std::vector<Typeset::Selection> SymbolTable::getSuggestions(const Typeset::Marker& loc) const{
-    HOPE_UNORDERED_SET<Typeset::Selection> suggestions;
+    FORSCAPE_UNORDERED_SET<Typeset::Selection> suggestions;
 
     Typeset::Marker left = loc;
     while(left.atTextStart()){
@@ -130,7 +130,7 @@ void SymbolTable::reset(const Typeset::Marker& doc_start) noexcept{
     usages.clear();
     stored_scopes.clear();
 
-    #if !defined(NDEBUG) && !defined(HOPE_TYPESET_HEADLESS)
+    #if !defined(NDEBUG) && !defined(FORSCAPE_TYPESET_HEADLESS)
     scope_names = "Global";
     #endif
 
@@ -138,7 +138,7 @@ void SymbolTable::reset(const Typeset::Marker& doc_start) noexcept{
 }
 
 void SymbolTable::addScope(
-        #ifdef HOPE_USE_SCOPE_NAME
+        #ifdef FORSCAPE_USE_SCOPE_NAME
         const std::string& name,
         #endif
         const Typeset::Marker& start, ParseNode closure) alloc_except {
@@ -146,7 +146,7 @@ void SymbolTable::addScope(
     active_scope.sym_end = symbols.size();
     active_scope.usage_end = usages.size();
     scopes.push_back(ScopeSegment(SCOPE_NAME(scope_names.size()) SCOPE_NAME(name.size()) start, closure, scopes.size()-1, NONE, symbols.size(), usages.size()));
-    #ifdef HOPE_USE_SCOPE_NAME
+    #ifdef FORSCAPE_USE_SCOPE_NAME
     scope_names += name;
     #endif
 }

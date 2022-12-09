@@ -1,11 +1,11 @@
 //CODEGEN FILE
 
-#ifndef HOPE_UNICODE_ZEROWIDTH_H
-#define HOPE_UNICODE_ZEROWIDTH_H
+#ifndef FORSCAPE_UNICODE_ZEROWIDTH_H
+#define FORSCAPE_UNICODE_ZEROWIDTH_H
 
-#include <hope_common.h>
+#include <forscape_common.h>
 
-namespace Hope {
+namespace Forscape {
 
 inline bool isZeroWidth(uint32_t code) noexcept {
     switch(code){
@@ -1882,6 +1882,6 @@ inline bool isZeroWidth(uint32_t code) noexcept {
     }
 };
 
-} // namespace Hope
+} // namespace Forscape
 
-#endif // HOPE_UNICODE_ZEROWIDTH_H
+#endif // FORSCAPE_UNICODE_ZEROWIDTH_H

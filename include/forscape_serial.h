@@ -1,5 +1,5 @@
-#ifndef HOPE_SERIAL_H
-#define HOPE_SERIAL_H
+#ifndef FORSCAPE_SERIAL_H
+#define FORSCAPE_SERIAL_H
 
 #include "construct_codes.h"
 #include <cassert>
@@ -7,7 +7,7 @@
 #include <limits>
 #include <string>
 
-namespace Hope {
+namespace Forscape {
 
 inline bool isValidSerial(const std::string& src) noexcept{
     uint32_t depth = 0;
@@ -17,12 +17,12 @@ inline bool isValidSerial(const std::string& src) noexcept{
         if(ch == OPEN){
             if(index >= src.size()) return false;
             switch (src[index++]) {
-                HOPE_SERIAL_NULLARY_CASES
+                FORSCAPE_SERIAL_NULLARY_CASES
                     break;
-                HOPE_SERIAL_UNARY_CASES
+                FORSCAPE_SERIAL_UNARY_CASES
                     depth += 1;
                     break;
-                HOPE_SERIAL_BINARY_CASES
+                FORSCAPE_SERIAL_BINARY_CASES
                     depth += 2;
                     break;
                 case CASES: {
@@ -33,7 +33,7 @@ inline bool isValidSerial(const std::string& src) noexcept{
                     depth += 2*sze;
                     break;
                 }
-                HOPE_SERIAL_MATRIX_CASES {
+                FORSCAPE_SERIAL_MATRIX_CASES {
                     if(index+1 >= src.size()) return false;
                     uint16_t rows = static_cast<uint16_t>(src[index++]);
                     uint16_t cols = static_cast<uint16_t>(src[index++]);
@@ -57,4 +57,4 @@ inline bool isValidSerial(const std::string& src) noexcept{
 
 }
 
-#endif // HOPE_SERIAL_H
+#endif // FORSCAPE_SERIAL_H

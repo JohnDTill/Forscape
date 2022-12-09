@@ -5,7 +5,7 @@
 #include "typeset_subphrase.h"
 #include "typeset_integral_preference.h"
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -26,7 +26,7 @@ class BigIntegralSuper0 final : public Construct {
 public:
     virtual char constructCode() const noexcept override { return type; }
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual void updateSizeFromChildSizes() noexcept override {
         width = BIG_SYM_SCALE*CHARACTER_WIDTHS[scriptDepth()];
         above_center = BIG_SYM_SCALE*ABOVE_CENTER[scriptDepth()];
@@ -48,7 +48,7 @@ public:
 
     virtual char constructCode() const noexcept override { return type; }
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }
     double symbol_width;
 
@@ -95,7 +95,7 @@ public:
 
     virtual char constructCode() const noexcept override { return type; }
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }
     double symbol_width;
 

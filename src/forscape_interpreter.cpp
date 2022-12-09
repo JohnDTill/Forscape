@@ -1,9 +1,9 @@
-#include "hope_interpreter.h"
+#include "forscape_interpreter.h"
 
 #include <code_parsenode_ops.h>
 #include "construct_codes.h"
-#include "hope_message.h"
-#include "hope_symbol_link_pass.h"
+#include "forscape_message.h"
+#include "forscape_symbol_link_pass.h"
 
 #include <thread>
 #include <unsupported/Eigen/MatrixFunctions>
@@ -12,7 +12,7 @@
 #include <iostream>
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Code {
 

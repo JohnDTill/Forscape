@@ -1,11 +1,11 @@
-#include <hope_scanner.h>
+#include <forscape_scanner.h>
 #include "report.h"
 #include "typeset.h"
 
-using namespace Hope;
+using namespace Forscape;
 using namespace Code;
 
-static bool sameTypes(const std::vector<Token>& tokens, const std::vector<HopeTokenType>& expected){
+static bool sameTypes(const std::vector<Token>& tokens, const std::vector<ForscapeTokenType>& expected){
     if(tokens.size() != expected.size()) return false;
     for(size_t i = 0; i < tokens.size(); i++){
         if(tokens[i].type != expected[i])
@@ -14,7 +14,7 @@ static bool sameTypes(const std::vector<Token>& tokens, const std::vector<HopeTo
     return true;
 }
 
-static std::string toString(const std::vector<HopeTokenType>& types){
+static std::string toString(const std::vector<ForscapeTokenType>& types){
     std::string str = "{";
     str += std::to_string(types.front());
     for(size_t i = 1; i < types.size(); i++)
@@ -38,7 +38,7 @@ inline bool testScanner(){
     bool passing = true;
 
     std::string input = "print(\"Hello world!\") //This is a test";
-    std::vector<HopeTokenType> expected = {PRINT, LEFTPAREN, STRING, RIGHTPAREN, COMMENT, ENDOFFILE};
+    std::vector<ForscapeTokenType> expected = {PRINT, LEFTPAREN, STRING, RIGHTPAREN, COMMENT, ENDOFFILE};
     Typeset::Model* model = Typeset::Model::fromSerial(input);
     Code::Scanner* scanner = new Scanner(model);
     scanner->scanAll();

@@ -1,8 +1,8 @@
-#include "hope_parse_tree.h"
+#include "forscape_parse_tree.h"
 
 #include <code_parsenode_ops.h>
-#include <hope_common.h>
-#include <hope_static_pass.h>
+#include <forscape_common.h>
+#include <forscape_static_pass.h>
 #include "typeset_selection.h"
 
 #ifndef NDEBUG
@@ -10,7 +10,7 @@
 #include <iostream>
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Code {
 

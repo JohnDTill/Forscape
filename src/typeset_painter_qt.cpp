@@ -2,7 +2,7 @@
 
 #include <typeset_themes.h>
 #include <typeset_view.h>
-#include <hope_unicode.h>
+#include <forscape_unicode.h>
 
 #ifndef NDEBUG
 #include <iostream>
@@ -26,7 +26,7 @@ static constexpr double CAPHEIGHT[3] = {
     5.0625,
 };
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -373,7 +373,7 @@ void Painter::drawComma(double x, double y, bool selected) {
     painter.setFont(font);
 }
 
-#ifdef HOPE_TYPESET_LAYOUT_DEBUG
+#ifdef FORSCAPE_TYPESET_LAYOUT_DEBUG
 void Painter::drawDebugPhrase(double x, double y, double w, double u, double v){
     x += x_offset;
 

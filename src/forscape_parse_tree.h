@@ -1,5 +1,5 @@
-#ifndef HOPE_PARSE_TREE_H
-#define HOPE_PARSE_TREE_H
+#ifndef FORSCAPE_PARSE_TREE_H
+#define FORSCAPE_PARSE_TREE_H
 
 #include <code_ast_fields.h>
 #include <code_parsenode_ops.h>
@@ -12,7 +12,7 @@
 #include <unordered_set>
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 class Selection;
@@ -26,7 +26,7 @@ namespace Code {
 
 class ParseTree {
 public:
-    HOPE_AST_FIELD_CODEGEN_DECLARATIONS
+    FORSCAPE_AST_FIELD_CODEGEN_DECLARATIONS
 
     void clear() noexcept;
     bool empty() const noexcept;
@@ -110,7 +110,7 @@ private:
     std::vector<size_t> nary_start;
 
     #ifndef NDEBUG
-    HOPE_UNORDERED_SET<ParseNode> created;
+    FORSCAPE_UNORDERED_SET<ParseNode> created;
     #endif
 
     static constexpr size_t LEFT_MARKER_OFFSET = SELECTION_OFFSET + 2;
@@ -148,4 +148,4 @@ extern template ParseNode ParseTree::addNode(Op, const std::array<ParseNode, 5>&
 
 }
 
-#endif // HOPE_PARSE_TREE_H
+#endif // FORSCAPE_PARSE_TREE_H

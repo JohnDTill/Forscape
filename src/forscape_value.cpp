@@ -1,8 +1,8 @@
-#include "hope_value.h"
+#include "forscape_value.h"
 
-#include "hope_parse_tree.h"
+#include "forscape_parse_tree.h"
 
-namespace Hope {
+namespace Forscape {
 
 namespace Code {
 

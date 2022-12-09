@@ -3,7 +3,7 @@
 #include <string>
 #include "report.h"
 
-using namespace Hope;
+using namespace Forscape;
 
 inline bool testTypesetMutability(){
     bool passing = true;

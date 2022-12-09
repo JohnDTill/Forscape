@@ -1,9 +1,9 @@
-#ifndef HOPE_SYMBOL_LINK_PASS_H
-#define HOPE_SYMBOL_LINK_PASS_H
+#ifndef FORSCAPE_SYMBOL_LINK_PASS_H
+#define FORSCAPE_SYMBOL_LINK_PASS_H
 
-#include <hope_symbol_build_pass.h>
+#include <forscape_symbol_build_pass.h>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Code {
 
@@ -25,4 +25,4 @@ public:
 
 }
 
-#endif // HOPE_SYMBOL_LINK_PASS_H
+#endif // FORSCAPE_SYMBOL_LINK_PASS_H

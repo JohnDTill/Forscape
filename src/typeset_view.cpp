@@ -36,7 +36,7 @@ static constexpr auto THROTTLE_WINDOW = std::chrono::milliseconds(200);
         stmt \
     }
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -1138,7 +1138,7 @@ void LineEdit::wheelEvent(QWheelEvent* e){
     QWidget::wheelEvent(e);
 }
 
-void Hope::Typeset::LineEdit::fitToContentsVertically() noexcept {
+void Forscape::Typeset::LineEdit::fitToContentsVertically() noexcept {
     QWidget::setFixedHeight(yScreen(model->getHeight()) + MARGIN_BOT);
     v_scroll->setVisible(false);
     h_scroll->setVisible(false);
@@ -1263,7 +1263,7 @@ void Recommender::sizeToFit() {
     }
 }
 
-void Hope::Typeset::Recommender::keyPressEvent(QKeyEvent* e) {
+void Forscape::Typeset::Recommender::keyPressEvent(QKeyEvent* e) {
     switch (e->key()) {
         case Qt::Key::Key_Down:
             moveDown();

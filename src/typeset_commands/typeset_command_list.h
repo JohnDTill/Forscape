@@ -4,7 +4,7 @@
 #include <typeset_command.h>
 #include <vector>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 

@@ -5,13 +5,13 @@
 #include <string>
 #include "report.h"
 
-using namespace Hope;
+using namespace Forscape;
 
 inline bool testTypesetLoadSave(){
     bool passing = true;
 
     std::string input = readFile("serial_valid.txt");
-    Hope::Typeset::Model* model = Hope::Typeset::Model::fromSerial(input);
+    Forscape::Typeset::Model* model = Forscape::Typeset::Model::fromSerial(input);
     std::string serial = model->toSerial();
 
     if(serial != input){

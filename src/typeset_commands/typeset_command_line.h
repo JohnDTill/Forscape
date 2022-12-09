@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 

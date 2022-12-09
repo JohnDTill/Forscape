@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -58,11 +58,11 @@ public:
 
     size_t id;
 
-    #ifdef HOPE_SEMANTIC_DEBUGGING
+    #ifdef FORSCAPE_SEMANTIC_DEBUGGING
     std::string toStringWithSemanticTags() const;
     #endif
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     static constexpr double EMPTY_PHRASE_WIDTH_RATIO = 0.6;
     Text* textLeftOf(double x) const noexcept;
     Construct* constructAt(double x, double y) const noexcept;

@@ -1,18 +1,18 @@
 #ifndef TYPESET_MODEL_H
 #define TYPESET_MODEL_H
 
-#include "hope_error.h"
+#include "forscape_error.h"
 #include "typeset_command.h"
 #include <string>
 #include <vector>
 
-#include "hope_scanner.h"
-#include "hope_parser.h"
-#include "hope_symbol_build_pass.h"
-#include "hope_static_pass.h"
-#include "hope_interpreter.h"
+#include "forscape_scanner.h"
+#include "forscape_parser.h"
+#include "forscape_symbol_build_pass.h"
+#include "forscape_static_pass.h"
+#include "forscape_interpreter.h"
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -52,11 +52,11 @@ public:
     double width  DEBUG_INIT_STALE;
     double height  DEBUG_INIT_STALE;
 
-    #ifdef HOPE_SEMANTIC_DEBUGGING
+    #ifdef FORSCAPE_SEMANTIC_DEBUGGING
     std::string toSerialWithSemanticTags() const;
     #endif
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     void calculateSizes();
     void updateLayout();
     void paint(Painter& painter, double xL, double yT, double xR, double yB) const;
@@ -100,7 +100,7 @@ private:
     Line* prevLine(const Line* l) const noexcept;
     Line* nextLineAsserted(const Line* l) const noexcept;
     Line* prevLineAsserted(const Line* l) const noexcept;
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     Line* nearestAbove(double y) const noexcept;
     Construct* constructAt(double x, double y) const noexcept;
     ParseNode parseNodeAt(double x, double y) const noexcept;

@@ -1,15 +1,15 @@
-#ifndef HOPE_INTERPRETER_H
-#define HOPE_INTERPRETER_H
+#ifndef FORSCAPE_INTERPRETER_H
+#define FORSCAPE_INTERPRETER_H
 
-#include "hope_parse_tree.h"
-#include "hope_stack.h"
-#include "hope_static_pass.h"
+#include "forscape_parse_tree.h"
+#include "forscape_stack.h"
+#include "forscape_static_pass.h"
 #include <memory>
 #include <readerwriterqueue/readerwriterqueue.h>
 #include <variant>
 #include <vector>
 
-namespace Hope {
+namespace Forscape {
 
 class InterpreterOutput;
 
@@ -128,4 +128,4 @@ private:
 
 }
 
-#endif // HOPE_INTERPRETER_H
+#endif // FORSCAPE_INTERPRETER_H

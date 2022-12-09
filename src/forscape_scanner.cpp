@@ -1,7 +1,7 @@
-#include "hope_scanner.h"
+#include "forscape_scanner.h"
 
 #include <construct_codes.h>
-#include <hope_unicode.h>
+#include <forscape_unicode.h>
 #include <typeset_controller.h>
 #include <typeset_model.h>
 #include <typeset_line.h>
@@ -11,7 +11,7 @@
 #include <iostream>
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Code {
 
@@ -41,9 +41,9 @@ void Scanner::scanToken() alloc_except {
 
     //EVENTUALLY: look at symbol perfect hashing
     switch (code) {
-        HOPE_SCANNER_CASES
+        FORSCAPE_SCANNER_CASES
 
-        #ifdef HOPE_IDENTIFIERS_USE_MULTIPLE_CHARS
+        #ifdef FORSCAPE_IDENTIFIERS_USE_MULTIPLE_CHARS
         case '_': scanIdentifier(); break;
         #endif
 
@@ -79,7 +79,7 @@ void Scanner::comment() alloc_except {
     createToken(COMMENT);
 }
 
-void Scanner::createToken(HopeTokenType type) alloc_except {
+void Scanner::createToken(ForscapeTokenType type) alloc_except {
     tokens.push_back( Token(Typeset::Selection(controller->anchor, controller->active), type) );
 }
 
@@ -88,8 +88,8 @@ void Scanner::scanNumber() alloc_except {
     createToken(INTEGER);
 }
 
-HOPE_STATIC_MAP<std::string_view, HopeTokenType> Scanner::keywords {
-    HOPE_KEYWORD_MAP
+FORSCAPE_STATIC_MAP<std::string_view, ForscapeTokenType> Scanner::keywords {
+    FORSCAPE_KEYWORD_MAP
 };
 
 void Scanner::scanIdentifier() alloc_except {
@@ -130,7 +130,7 @@ void Scanner::unrecognizedSymbol(uint32_t code) alloc_except {
     error(UNRECOGNIZED_SYMBOL);
 }
 
-void Scanner::scanConstruct(HopeTokenType type) alloc_except {
+void Scanner::scanConstruct(ForscapeTokenType type) alloc_except {
     createToken(type);
     controller->consolidateToAnchor();
     controller->moveToNextChar();

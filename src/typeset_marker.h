@@ -1,11 +1,11 @@
 #ifndef TYPESET_MARKER_H
 #define TYPESET_MARKER_H
 
-#include <hope_common.h>
+#include <forscape_common.h>
 #include <inttypes.h>
 #include <string_view>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -60,7 +60,7 @@ struct Marker{
     bool compareLeft(const Marker& other) const noexcept;
     Model* getModel() const noexcept;
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     double x() const;
     double y() const noexcept;
     double yBot() const noexcept;
@@ -90,8 +90,8 @@ struct Marker{
 
 }
 
-template<> struct std::hash<Hope::Typeset::Marker> {
-    std::size_t operator()(const Hope::Typeset::Marker& marker) const noexcept {
+template<> struct std::hash<Forscape::Typeset::Marker> {
+    std::size_t operator()(const Forscape::Typeset::Marker& marker) const noexcept {
         std::size_t h1 = std::hash<void*>{}(marker.text);
         std::size_t h2 = std::hash<size_t>{}(marker.index);
         return h1 ^ (h2 << 1); // or use boost::hash_combine (see Discussion) https://en.cppreference.com/w/Talk:cpp/utility/hash

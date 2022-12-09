@@ -1,12 +1,12 @@
-#ifndef HOPE_UNICODE_H
-#define HOPE_UNICODE_H
+#ifndef FORSCAPE_UNICODE_H
+#define FORSCAPE_UNICODE_H
 
 #include <cassert>
 #include <inttypes.h>
 #include <string>
 #include <unicode_zerowidth.h>
 
-namespace Hope {
+namespace Forscape {
 
 inline constexpr size_t codepointSize(uint8_t ch) noexcept{
     if(ch >> 7 == 0) return 1;
@@ -212,4 +212,4 @@ inline size_t charIndexOfGrapheme(StringType str, size_t grapheme_index, size_t 
 
 }
 
-#endif // HOPE_UNICODE_H
+#endif // FORSCAPE_UNICODE_H

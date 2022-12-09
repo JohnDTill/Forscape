@@ -3,7 +3,7 @@
 
 #include <string_view>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 

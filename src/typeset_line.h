@@ -3,7 +3,7 @@
 
 #include "typeset_phrase.h"
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -22,7 +22,7 @@ public:
     size_t leadingSpaces() const noexcept;
     const std::vector<Line*>& lines() const noexcept;
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     Line* nearestLine(double y) const noexcept;
     Line* nearestAbove(double y) const noexcept;
     #ifndef NDEBUG

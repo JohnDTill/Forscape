@@ -19,7 +19,7 @@ class QTreeWidget;
 class QTreeWidgetItem;
 class Splitter;
 
-namespace Hope{
+namespace Forscape{
 namespace Typeset {
 class Console;
 class Editor;
@@ -33,12 +33,12 @@ public:
     MainWindow(QWidget* parent = nullptr);
     virtual ~MainWindow();
     QSettings settings;
-    Hope::Typeset::Editor* editor;
+    Forscape::Typeset::Editor* editor;
 
 private:
     SearchDialog* search;
     Ui::MainWindow* ui;
-    Hope::Typeset::Console* console;
+    Forscape::Typeset::Console* console;
     QGroupBox* group_box;
     MathToolbar* math_toolbar;
     QToolBar* action_toolbar;

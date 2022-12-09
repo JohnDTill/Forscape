@@ -4,11 +4,11 @@
 #include "typeset_construct.h"
 #include "typeset_line.h"
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 #include "typeset_view.h"
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -37,7 +37,7 @@ public:
         out[curr++] = ':';
     }
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     MarkerLink(Line* line, View* view) : line_id(line->id), view(view) {}
 
     void clickThrough() const {

@@ -1,9 +1,9 @@
-#include <hope_parser.h>
-#include <hope_scanner.h>
+#include <forscape_parser.h>
+#include <forscape_scanner.h>
 #include "report.h"
 #include "typeset.h"
 
-using namespace Hope;
+using namespace Forscape;
 using namespace Code;
 
 static ParseTree eval(const std::string& src){

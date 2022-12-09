@@ -1,10 +1,10 @@
-#ifndef HOPE_MESSAGE_H
-#define HOPE_MESSAGE_H
+#ifndef FORSCAPE_MESSAGE_H
+#define FORSCAPE_MESSAGE_H
 
 #include <string>
 #include <vector>
 
-namespace Hope {
+namespace Forscape {
 
 class InterpreterOutput {
 public:
@@ -52,4 +52,4 @@ public:
 
 }
 
-#endif // HOPE_MESSAGE_H
+#endif // FORSCAPE_MESSAGE_H

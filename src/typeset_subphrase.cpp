@@ -2,7 +2,7 @@
 
 #include "typeset_construct.h"
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -30,7 +30,7 @@ void Subphrase::setParent(Construct* c) noexcept{
     parent = c;
 }
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 void Subphrase::paint(Painter& painter) const{
     if(numTexts() > 1 || !text(0)->empty()) Phrase::paint(painter);
     else painter.drawEmptySubphrase(x, y, width, height());

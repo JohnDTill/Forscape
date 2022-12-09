@@ -5,9 +5,9 @@
 #include <string>
 #include <vector>
 
-#include <hope_common.h>
+#include <forscape_common.h>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -21,7 +21,7 @@ class Phrase;
 class Text {
     public:
         #ifdef TYPESET_MEMORY_DEBUG
-        static HOPE_UNORDERED_SET<Text*> all;
+        static FORSCAPE_UNORDERED_SET<Text*> all;
         Text();
         ~Text();
         #endif
@@ -85,11 +85,11 @@ class Text {
                 : pn(pn), token_start(token_start), token_end(token_end) {}
         };
 
-        #ifdef HOPE_SEMANTIC_DEBUGGING
+        #ifdef FORSCAPE_SEMANTIC_DEBUGGING
         std::string toSerialWithSemanticTags() const;
         #endif
 
-        #ifndef HOPE_TYPESET_HEADLESS
+        #ifndef FORSCAPE_TYPESET_HEADLESS
         double aboveCenter() const noexcept;
         double underCenter() const noexcept;
         double height() const noexcept;

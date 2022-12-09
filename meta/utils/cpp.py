@@ -56,10 +56,10 @@ class Writer:
         self.str += f"class {name}{{\n"
 
     def _outer_namespace_begin(self):
-        self.str += "namespace Hope {\n\n"
+        self.str += "namespace Forscape {\n\n"
 
     def _outer_namespace_end(self):
-        self.str += "} // namespace Hope\n\n"
+        self.str += "} // namespace Forscape\n\n"
 
     def _inner_namespace_begin(self):
         if self.inner_namespace:
@@ -91,7 +91,7 @@ class HeaderWriter(Writer):
     def __init__(self, name, inner_namespace=None, includes=(), extra_guards=()):
         super().__init__(inner_namespace, includes)
         self.name = name.lower()
-        self.guard = (f"HOPE_{inner_namespace}_{name}_H" if inner_namespace else f"HOPE_{name}_H").upper()
+        self.guard = (f"FORSCAPE_{inner_namespace}_{name}_H" if inner_namespace else f"FORSCAPE_{name}_H").upper()
         self.extra_guards = extra_guards
         self.__head_boilerplate(includes)
         self.filename = (f"{self.inner_namespace}_{self.name}.h" if inner_namespace else f"{self.name}.h").lower()

@@ -1,10 +1,10 @@
 #include "typeset_remove_chars.h"
 
-#include <hope_unicode.h>
+#include <forscape_unicode.h>
 #include <typeset_controller.h>
 #include <typeset_text.h>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 

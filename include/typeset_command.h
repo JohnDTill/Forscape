@@ -1,7 +1,7 @@
 #ifndef TYPESET_COMMAND_H
 #define TYPESET_COMMAND_H
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 

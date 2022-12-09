@@ -22,28 +22,28 @@ def main():
         curr += 1
     header_writer.write("\n")
 
-    header_writer.write("#define HOPE_SERIAL_NULLARY_CASES")
+    header_writer.write("#define FORSCAPE_SERIAL_NULLARY_CASES")
     for name in [entry.name for entry in constructs if entry.arity == "0"]:
         header_writer.write(f" \\\n    case {name.upper()}:")
     header_writer.write("\n")
 
-    header_writer.write("#define HOPE_SERIAL_UNARY_CASES")
+    header_writer.write("#define FORSCAPE_SERIAL_UNARY_CASES")
     for name in [entry.name for entry in constructs if entry.arity == "1"]:
         header_writer.write(f" \\\n    case {name.upper()}:")
     header_writer.write("\n")
 
-    header_writer.write("#define HOPE_SERIAL_BINARY_CASES")
+    header_writer.write("#define FORSCAPE_SERIAL_BINARY_CASES")
     for name in [entry.name for entry in constructs if entry.arity == "2"]:
         header_writer.write(f" \\\n    case {name.upper()}:")
     header_writer.write("\n")
 
-    header_writer.write("#define HOPE_SERIAL_MATRIX_CASES")
+    header_writer.write("#define FORSCAPE_SERIAL_MATRIX_CASES")
     for name in [entry.name for entry in constructs if entry.arity == "nxm"]:
         header_writer.write(f" \\\n    case {name.upper()}:")
     header_writer.write("\n")
 
     header_writer.write("\n")
-    header_writer.write("#define HOPE_TYPESET_PARSER_CASES")
+    header_writer.write("#define FORSCAPE_TYPESET_PARSER_CASES")
     for entry in constructs:
         name = entry.name
         header_writer.write(f" \\\n    case {name.upper()}: TypesetSetup")

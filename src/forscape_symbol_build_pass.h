@@ -1,12 +1,12 @@
-#ifndef HOPE_SYMBOL_BUILD_PASS_H
-#define HOPE_SYMBOL_BUILD_PASS_H
+#ifndef FORSCAPE_SYMBOL_BUILD_PASS_H
+#define FORSCAPE_SYMBOL_BUILD_PASS_H
 
-#include "hope_error.h"
-#include "hope_parse_tree.h"
-#include "hope_symbol_table.h"
+#include "forscape_error.h"
+#include "forscape_parse_tree.h"
+#include "forscape_symbol_table.h"
 #include <vector>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Code {
 
@@ -25,9 +25,9 @@ public:
     SymbolTable symbol_table;
 
 private:
-    static HOPE_STATIC_MAP<std::string_view, Op> predef;
+    static FORSCAPE_STATIC_MAP<std::string_view, Op> predef;
     size_t active_scope_id;
-    HOPE_UNORDERED_MAP<Typeset::Selection, SymbolId> map;
+    FORSCAPE_UNORDERED_MAP<Typeset::Selection, SymbolId> map;
     static constexpr size_t GLOBAL_DEPTH = 0;
     size_t lexical_depth = GLOBAL_DEPTH;
     size_t closure_depth = 0;
@@ -41,7 +41,7 @@ private:
     void reset() noexcept;
     ScopeSegment& activeScope() noexcept;
     void addScope(
-        #ifdef HOPE_USE_SCOPE_NAME
+        #ifdef FORSCAPE_USE_SCOPE_NAME
         const std::string& name,
         #endif
         const Typeset::Marker& begin, ParseNode closure = NONE) alloc_except;
@@ -49,13 +49,13 @@ private:
     Symbol& lastDefinedSymbol() noexcept;
     size_t symbolIndexFromSelection(const Typeset::Selection& sel) const noexcept;
     void increaseLexicalDepth(
-        #ifdef HOPE_USE_SCOPE_NAME
+        #ifdef FORSCAPE_USE_SCOPE_NAME
         const std::string& name,
         #endif
         const Typeset::Marker& begin) alloc_except;
     void decreaseLexicalDepth(const Typeset::Marker& end) alloc_except;
     void increaseClosureDepth(
-        #ifdef HOPE_USE_SCOPE_NAME
+        #ifdef FORSCAPE_USE_SCOPE_NAME
         const std::string& name,
         #endif
         const Typeset::Marker& begin, ParseNode pn) alloc_except;
@@ -75,7 +75,7 @@ private:
     void resolveIdMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except;
     void resolveScriptMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except;
     void resolveConditional1(
-        #ifdef HOPE_USE_SCOPE_NAME
+        #ifdef FORSCAPE_USE_SCOPE_NAME
         const std::string& name,
         #endif
         ParseNode pn) alloc_except;
@@ -83,7 +83,7 @@ private:
     void resolveFor(ParseNode pn) alloc_except;
     void resolveRangedFor(ParseNode pn) alloc_except;
     void resolveBody(
-        #ifdef HOPE_USE_SCOPE_NAME
+        #ifdef FORSCAPE_USE_SCOPE_NAME
         const std::string& name,
         #endif
         ParseNode pn) alloc_except;
@@ -111,7 +111,7 @@ private:
     bool declared(ParseNode pn) const noexcept;
     size_t symIndex(ParseNode pn) const noexcept;
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     template<bool first = true> void fixSubIdDocMap(ParseNode pn) const alloc_except;
     #endif
 };
@@ -120,4 +120,4 @@ private:
 
 }
 
-#endif // HOPE_SYMBOL_BUILD_PASS_H
+#endif // FORSCAPE_SYMBOL_BUILD_PASS_H

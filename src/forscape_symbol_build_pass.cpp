@@ -1,7 +1,7 @@
-#include "hope_symbol_build_pass.h"
+#include "forscape_symbol_build_pass.h"
 
 #include <code_parsenode_ops.h>
-#include <hope_common.h>
+#include <forscape_common.h>
 #include "typeset_model.h"
 #include "typeset_construct.h"
 #include <algorithm>
@@ -11,11 +11,11 @@
 #include <iostream>
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Code {
 
-HOPE_STATIC_MAP<std::string_view, Op> SymbolTableBuilder::predef {
+FORSCAPE_STATIC_MAP<std::string_view, Op> SymbolTableBuilder::predef {
     {"π", OP_PI},
     {"e", OP_EULERS_NUMBER},
     {"φ", OP_GOLDEN_RATIO},
@@ -77,7 +77,7 @@ ScopeSegment& SymbolTableBuilder::activeScope() noexcept{
 }
 
 void SymbolTableBuilder::addScope(
-        #ifdef HOPE_USE_SCOPE_NAME
+        #ifdef FORSCAPE_USE_SCOPE_NAME
         const std::string& name,
         #endif
         const Typeset::Marker& begin, ParseNode closure) alloc_except {
@@ -319,7 +319,7 @@ bool SymbolTableBuilder::resolvePotentialIdSub(ParseNode pn) alloc_except {
         return false;
 
     parse_tree.setOp(pn, OP_IDENTIFIER);
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     fixSubIdDocMap(pn);
     #endif
 
@@ -379,7 +379,7 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
     left = parse_tree.getLeft(pn);
     Typeset::Text* t = left.text;
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     size_t index = t->parseNodeTagIndex(left.index);
     t->insertParseNodes(index, num_terms-1);
     #endif
@@ -392,7 +392,7 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
         Typeset::Selection sel(left, m);
         auto lookup = map.find(sel);
         ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
-        #ifndef HOPE_TYPESET_HEADLESS
+        #ifndef FORSCAPE_TYPESET_HEADLESS
         if(left.text != m.text){
             t->patchParseNode(index++, pn, left.index, t->numChars());
             sel.mapConstructToParseNode(pn);
@@ -444,7 +444,7 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
     parse_tree.prepareNary();
     left = parse_tree.getLeft(pn);
     Typeset::Text* t = left.text;
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     t->popParseNode();
     #endif
     m = left;
@@ -453,7 +453,7 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
         Typeset::Selection sel(left, m);
         auto lookup = map.find(sel);
         ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
-        #ifndef HOPE_TYPESET_HEADLESS
+        #ifndef FORSCAPE_TYPESET_HEADLESS
         t->tagParseNode(pn, left.index, m.index);
         #endif
         resolveReference(pn, lookup->second);
@@ -461,7 +461,7 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
         left = m;
     }
     parse_tree.addNaryChild(script);
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     if(parse_tree.getOp(script) == OP_IDENTIFIER){
         t->tagParseNode(script, left.index, t->numChars());
         fixSubIdDocMap<false>(script);
@@ -476,7 +476,7 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
 }
 
 void SymbolTableBuilder::resolveConditional1(
-        #ifdef HOPE_USE_SCOPE_NAME
+        #ifdef FORSCAPE_USE_SCOPE_NAME
         const std::string& name,
         #endif
         ParseNode pn) alloc_except {
@@ -508,7 +508,7 @@ void SymbolTableBuilder::resolveRangedFor(ParseNode pn) alloc_except {
 }
 
 void SymbolTableBuilder::resolveBody(
-        #ifdef HOPE_USE_SCOPE_NAME
+        #ifdef FORSCAPE_USE_SCOPE_NAME
         const std::string& name,
         #endif
         ParseNode pn) alloc_except {
@@ -648,7 +648,7 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn) alloc_except {
     if(lhs_type_eligible && rhs_type_eligible && UNDECLARED_ELEMS){
         parse_tree.setFlag(pn, OP_SUBSCRIPT_ACCESS); //EVENTUALLY: this is held together with duct tape and prayers
         parse_tree.setOp(pn, OP_IDENTIFIER);
-        #ifndef HOPE_TYPESET_HEADLESS
+        #ifndef FORSCAPE_TYPESET_HEADLESS
         fixSubIdDocMap(pn);
         #endif
         resolveReference<true>(pn);
@@ -957,7 +957,7 @@ size_t SymbolTableBuilder::symIndex(ParseNode pn) const noexcept{
     return lookup == map.end() ? NONE : lookup->second;
 }
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 template<bool first>
 void SymbolTableBuilder::fixSubIdDocMap(ParseNode pn) const alloc_except {
     //Update doc map
@@ -975,7 +975,7 @@ void SymbolTableBuilder::fixSubIdDocMap(ParseNode pn) const alloc_except {
 #endif
 
 void SymbolTableBuilder::increaseLexicalDepth(
-        #ifdef HOPE_USE_SCOPE_NAME
+        #ifdef FORSCAPE_USE_SCOPE_NAME
         const std::string& name,
         #endif
         const Typeset::Marker& begin) alloc_except {
@@ -1004,7 +1004,7 @@ void SymbolTableBuilder::decreaseLexicalDepth(const Typeset::Marker& end) alloc_
 }
 
 void SymbolTableBuilder::increaseClosureDepth(
-        #ifdef HOPE_USE_SCOPE_NAME
+        #ifdef FORSCAPE_USE_SCOPE_NAME
         const std::string& name,
         #endif
         const Typeset::Marker& begin, ParseNode pn) alloc_except {

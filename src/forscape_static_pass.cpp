@@ -1,10 +1,10 @@
-#include "hope_static_pass.h"
+#include "forscape_static_pass.h"
 
-#include "hope_error.h"
-#include "hope_parse_tree.h"
-#include "hope_symbol_table.h"
+#include "forscape_error.h"
+#include "forscape_parse_tree.h"
+#include "forscape_symbol_table.h"
 
-namespace Hope {
+namespace Forscape {
 
 namespace Code {
 
@@ -76,7 +76,7 @@ void StaticPass::resolve(){
     if(!errors.empty()) return;
     assert(parse_tree.inFinalState());
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     static std::unordered_set<ParseNode> doc_map_nodes;
     doc_map_nodes.clear();
 

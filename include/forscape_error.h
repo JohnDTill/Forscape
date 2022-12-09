@@ -1,11 +1,11 @@
-#ifndef HOPE_ERROR_H
-#define HOPE_ERROR_H
+#ifndef FORSCAPE_ERROR_H
+#define FORSCAPE_ERROR_H
 
 #include <typeset_selection.h>
 #include <code_error_types.h>
 #include <vector>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset{
     class View;
@@ -19,7 +19,7 @@ struct Error {
 
     Error(Typeset::Selection controller, ErrorCode code);
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     void writeTo(Typeset::Text* t, Typeset::View* caller) const;
     static void writeErrors(const std::vector<Error>& errors, Typeset::Model* m, Typeset::View* caller);
     static Typeset::Model* writeErrors(const std::vector<Error>& errors, Typeset::View* caller);
@@ -32,4 +32,4 @@ struct Error {
 
 }
 
-#endif // HOPE_ERROR_H
+#endif // FORSCAPE_ERROR_H

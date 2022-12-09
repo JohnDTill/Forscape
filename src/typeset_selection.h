@@ -11,7 +11,7 @@
 #include <QtSvg/QSvgGenerator>
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -54,7 +54,7 @@ public:
     void formatSimple(SemanticType type) const noexcept;
     SemanticType getFormat() const noexcept;
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     bool contains(double x, double y) const noexcept;
     bool containsWithEmptyMargin(double x, double y) const noexcept;
     bool containsText(double x, double y) const noexcept;
@@ -103,7 +103,7 @@ private:
     void searchText(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const;
     void searchPhrase(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const;
     void searchLines(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const;
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     std::array<double, 4> getDimensions() const noexcept;
     std::array<double, 4> getDimensionsText() const noexcept;
     std::array<double, 4> getDimensionsPhrase() const noexcept;
@@ -119,8 +119,8 @@ private:
 
 
 template <>
-struct std::hash<Hope::Typeset::Selection>{
-    std::size_t operator()(const Hope::Typeset::Selection& s) const{
+struct std::hash<Forscape::Typeset::Selection>{
+    std::size_t operator()(const Forscape::Typeset::Selection& s) const{
         return s.hashDesignedForIdentifiers();
     }
 };

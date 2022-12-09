@@ -21,7 +21,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-#add_compile_definitions(HOPE_TYPESET_LAYOUT_DEBUG)
+#add_compile_definitions(FORSCAPE_TYPESET_LAYOUT_DEBUG)
 
 add_compile_definitions(alloc_except=noexcept)
 add_compile_definitions(EIGEN_NO_AUTOMATIC_RESIZING)
@@ -61,7 +61,7 @@ set(GEN_FILES
     ${GEN}/code_parsenode_ops.h
     ${GEN}/code_tokentype.h
     ${GEN}/construct_codes.h
-    ${GEN}/hope_interpreter_gen.cpp
+    ${GEN}/forscape_interpreter_gen.cpp
     ${GEN}/semantic_tags.h
     ${GEN}/typeset_closesymbol.h
     ${GEN}/typeset_keywords.cpp
@@ -129,34 +129,34 @@ set(PROJECT_SOURCES
     ${EMBEDDED_RESOURCES}
     ${GEN_FILES}
     ${CONSTRUCT_FILES}
-    ${SRC}/hope_common.h
-    ${SRC}/hope_error.cpp
-    ${INCLUDE}/hope_error.h
-    ${SRC}/hope_interpreter.cpp
-    ${SRC}/hope_interpreter.h
-    ${SRC}/hope_message.h
-    ${SRC}/hope_parse_tree.cpp
-    ${SRC}/hope_parse_tree.h
-    ${SRC}/hope_parser.cpp
-    ${SRC}/hope_parser.h
-    ${SRC}/hope_scanner.cpp
-    ${SRC}/hope_scanner.h
-    ${INCLUDE}/hope_serial.h
-    ${INCLUDE}/hope_serial_unicode.h
-    ${SRC}/hope_stack.cpp
-    ${SRC}/hope_stack.h
-    ${SRC}/hope_static_pass.cpp
-    ${SRC}/hope_static_pass.h
-    ${SRC}/hope_symbol_build_pass.cpp
-    ${SRC}/hope_symbol_build_pass.h
-    ${SRC}/hope_symbol_link_pass.cpp
-    ${SRC}/hope_symbol_link_pass.h
-    ${SRC}/hope_symbol_table.cpp
-    ${SRC}/hope_symbol_table.h
-    ${SRC}/hope_token.h
-    ${SRC}/hope_unicode.h
-    ${SRC}/hope_value.cpp
-    ${SRC}/hope_value.h
+    ${SRC}/forscape_common.h
+    ${SRC}/forscape_error.cpp
+    ${INCLUDE}/forscape_error.h
+    ${SRC}/forscape_interpreter.cpp
+    ${SRC}/forscape_interpreter.h
+    ${SRC}/forscape_message.h
+    ${SRC}/forscape_parse_tree.cpp
+    ${SRC}/forscape_parse_tree.h
+    ${SRC}/forscape_parser.cpp
+    ${SRC}/forscape_parser.h
+    ${SRC}/forscape_scanner.cpp
+    ${SRC}/forscape_scanner.h
+    ${INCLUDE}/forscape_serial.h
+    ${INCLUDE}/forscape_serial_unicode.h
+    ${SRC}/forscape_stack.cpp
+    ${SRC}/forscape_stack.h
+    ${SRC}/forscape_static_pass.cpp
+    ${SRC}/forscape_static_pass.h
+    ${SRC}/forscape_symbol_build_pass.cpp
+    ${SRC}/forscape_symbol_build_pass.h
+    ${SRC}/forscape_symbol_link_pass.cpp
+    ${SRC}/forscape_symbol_link_pass.h
+    ${SRC}/forscape_symbol_table.cpp
+    ${SRC}/forscape_symbol_table.h
+    ${SRC}/forscape_token.h
+    ${SRC}/forscape_unicode.h
+    ${SRC}/forscape_value.cpp
+    ${SRC}/forscape_value.h
     ${INCLUDE}/typeset_command.h
     ${SRC}/typeset_construct.cpp
     ${SRC}/typeset_construct.h

@@ -1,5 +1,5 @@
-#ifndef HOPE_TYPESET_ALL_CONSTRUCTS_H
-#define HOPE_TYPESET_ALL_CONSTRUCTS_H
+#ifndef FORSCAPE_TYPESET_ALL_CONSTRUCTS_H
+#define FORSCAPE_TYPESET_ALL_CONSTRUCTS_H
 
 #include <typeset_accentbar.h>
 #include <typeset_accentbreve.h>
@@ -26,4 +26,4 @@
 #include <typeset_sup.h>
 #include <typeset_superscript.h>
 
-#endif // HOPE_TYPESET_ALL_CONSTRUCTS_H
+#endif // FORSCAPE_TYPESET_ALL_CONSTRUCTS_H

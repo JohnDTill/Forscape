@@ -6,19 +6,19 @@
 #include <string>
 #include <vector>
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 #include "typeset_painter.h"
 #endif
 
 #ifdef TYPESET_MEMORY_DEBUG
-#include <hope_common.h>
+#include <forscape_common.h>
 #endif
 
 #ifndef NDEBUG
 #include <iostream>
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -31,7 +31,7 @@ class Text;
 class Construct {
 public:
     #ifdef TYPESET_MEMORY_DEBUG
-    static HOPE_UNORDERED_SET<Construct*> all;
+    static FORSCAPE_UNORDERED_SET<Construct*> all;
     Construct();
     #endif
 
@@ -62,11 +62,11 @@ public:
     Phrase* parent;
     size_t id;
 
-    #ifdef HOPE_SEMANTIC_DEBUGGING
+    #ifdef FORSCAPE_SEMANTIC_DEBUGGING
     std::string toStringWithSemanticTags() const;
     #endif
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     ParseNode parseNodeAt(double x, double y) const noexcept;
     bool contains(double x, double y) const noexcept;
     Construct* constructAt(double x, double y) noexcept;
@@ -115,7 +115,7 @@ protected:
     Subphrase* first() const noexcept;
     Subphrase* second() const noexcept;
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual void updateChildPositions() noexcept;
     virtual void paintSpecific(Painter&) const;
     virtual void invalidateX() noexcept;

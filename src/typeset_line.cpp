@@ -2,13 +2,13 @@
 
 #include <typeset_model.h>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
 Line::Line()
     : Phrase() {
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     script_level = 0;
     x = 0; //EVENTUALLY: this is const 0
     #endif
@@ -16,7 +16,7 @@ Line::Line()
 
 Line::Line(Model* model){
     parent = model;
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     script_level = 0;
     x = 0; //EVENTUALLY: this is const 0
     #endif
@@ -50,7 +50,7 @@ const std::vector<Line*>& Line::lines() const noexcept{
     return parent->lines;
 }
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 Line* Line::nearestLine(double y) const noexcept{
     return parent->nearestLine(y);
 }

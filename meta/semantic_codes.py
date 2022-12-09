@@ -29,7 +29,7 @@ def main():
                        "    return type >= SEM_ID;\n"
                        "}\n\n")
 
-    header_writer.write("#ifndef HOPE_TYPESET_HEADLESS\n")
+    header_writer.write("#ifndef FORSCAPE_TYPESET_HEADLESS\n")
 
     header_writer.write(f"constexpr size_t NUM_SEM_TYPES = {len(entries)};\n\n")
 

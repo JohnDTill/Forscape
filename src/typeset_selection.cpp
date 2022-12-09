@@ -13,7 +13,7 @@
 #include <iostream>
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -407,7 +407,7 @@ void Selection::searchLines(const std::string& str, std::vector<Selection>& hits
     tR->search(str, hits, 0, iR, use_case, word);
 }
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 std::array<double, 4> Selection::getDimensions() const noexcept{
     if(isTextSelection()) return getDimensionsText();
     else if(isPhraseSelection()) return getDimensionsPhrase();
@@ -491,7 +491,7 @@ bool Selection::inValidState() const{
 }
 #endif
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 bool Selection::contains(double x, double y) const noexcept{
     if(isTextSelection()) return containsText(x, y);
     else if(isPhraseSelection()) return containsPhrase(x, y);

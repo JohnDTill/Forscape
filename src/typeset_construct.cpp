@@ -5,12 +5,12 @@
 #include <algorithm>
 #include <cassert>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
 #ifdef TYPESET_MEMORY_DEBUG
-HOPE_UNORDERED_SET<Construct*> Construct::all;
+FORSCAPE_UNORDERED_SET<Construct*> Construct::all;
 
 Construct::Construct(){
     all.insert(this);
@@ -113,7 +113,7 @@ std::string Construct::toString() const{
     return str;
 }
 
-#ifdef HOPE_SEMANTIC_DEBUGGING
+#ifdef FORSCAPE_SEMANTIC_DEBUGGING
 std::string Construct::toStringWithSemanticTags() const{
     std::string out;
     out.resize(2 + dims());
@@ -130,7 +130,7 @@ std::string Construct::toStringWithSemanticTags() const{
 }
 #endif
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 ParseNode Construct::parseNodeAt(double x, double y) const noexcept {
     if(Subphrase* s = argAt(x, y)){
         ParseNode pn_from_child = s->parseNodeAt(x, y);

@@ -7,7 +7,7 @@
 #include <typeset_model.h>
 #include <typeset_text.h>
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 #include <typeset_view.h>
 #endif
 
@@ -15,7 +15,7 @@
 #include <iostream>
 #include <sstream>
 
-using namespace Hope;
+using namespace Forscape;
 
 inline std::string readFile(const std::string& filename){
     std::ifstream in(filename);
@@ -35,7 +35,7 @@ inline std::string readFile(const std::string& filename){
 }
 
 inline Typeset::Model* loadModel(const std::string& filename){
-    return Hope::Typeset::Model::fromSerial( readFile(filename) );
+    return Forscape::Typeset::Model::fromSerial( readFile(filename) );
 }
 
 inline bool allTypesetElementsFreed(){

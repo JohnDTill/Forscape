@@ -11,7 +11,7 @@
 #include <iostream>
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -229,7 +229,7 @@ bool Phrase::empty() const noexcept{
     return texts.size() == 1 && front()->empty();
 }
 
-#ifdef HOPE_SEMANTIC_DEBUGGING
+#ifdef FORSCAPE_SEMANTIC_DEBUGGING
 std::string Phrase::toStringWithSemanticTags() const{
     std::string out = texts[0]->toSerialWithSemanticTags();
     for(size_t i = 0; i < constructs.size(); i++){
@@ -241,7 +241,7 @@ std::string Phrase::toStringWithSemanticTags() const{
 }
 #endif
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 Text* Phrase::textLeftOf(double x) const noexcept{
     auto search = std::lower_bound(
                 texts.rbegin(),
@@ -306,7 +306,7 @@ void Phrase::updateLayout() noexcept{
 }
 
 void Phrase::paint(Painter& painter) const{
-    #ifdef HOPE_TYPESET_LAYOUT_DEBUG
+    #ifdef FORSCAPE_TYPESET_LAYOUT_DEBUG
     painter.drawDebugPhrase(x, y, width, above_center, under_center);
     #endif
 

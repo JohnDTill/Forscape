@@ -1,6 +1,6 @@
 #include "typeset_marker.h"
 
-#include "hope_unicode.h"
+#include "forscape_unicode.h"
 #include "typeset_construct.h"
 #include "typeset_line.h"
 #include "typeset_model.h"
@@ -10,7 +10,7 @@
 #include <unicode_zerowidth.h>
 #include <cassert>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -229,7 +229,7 @@ Model* Marker::getModel() const noexcept{
     return text->getModel();
 }
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 double Marker::x() const{
     return text->xGlobal(index);
 }

@@ -1,10 +1,10 @@
-#include "hope_stack.h"
+#include "forscape_stack.h"
 
 #ifndef NDEBUG
 #include <iostream>
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Code {
 

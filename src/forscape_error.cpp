@@ -1,15 +1,15 @@
-#include "hope_error.h"
+#include "forscape_error.h"
 
 #include <typeset_line.h>
 #include <typeset_markerlink.h>
 #include <typeset_model.h>
 #include <typeset_text.h>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Code {
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 void Error::writeTo(Typeset::Text* t, Typeset::View* caller) const {
     Typeset::Line* l = selection.getStartLine();
     if(caller){

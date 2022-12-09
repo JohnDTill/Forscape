@@ -1,18 +1,18 @@
-#include "hope_parser.h"
+#include "forscape_parser.h"
 
 #include <code_parsenode_ops.h>
-#include <hope_common.h>
+#include <forscape_common.h>
 #include "typeset_filesystem.h"
 #include "typeset_model.h"
 
-#ifdef HOPE_TYPESET_HEADLESS
+#ifdef FORSCAPE_TYPESET_HEADLESS
 #define registerParseNodeRegion(a, b)
 #define registerParseNodeRegionToPatch(a)
 #define startPatch()
 #define finishPatch(a)
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Code {
 
@@ -50,7 +50,7 @@ void Parser::parseAll() alloc_except {
 void Parser::reset() noexcept {
     parse_tree.clear();
     token_map_stack.clear();
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     open_symbols.clear();
     close_symbols.clear();
     #endif
@@ -65,7 +65,7 @@ void Parser::registerGrouping(const Typeset::Selection& sel) alloc_except {
 }
 
 void Parser::registerGrouping(const Typeset::Marker& l, const Typeset::Marker& r) alloc_except {
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     if(!noErrors()) return;
     open_symbols[l] = r;
     close_symbols[r] = l;
@@ -427,7 +427,7 @@ ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
     if(parse_tree.getOp(id) == OP_SUBSCRIPT_ACCESS){
         parse_tree.setOp(id, OP_IDENTIFIER);
 
-        #ifndef HOPE_TYPESET_HEADLESS
+        #ifndef FORSCAPE_TYPESET_HEADLESS
         parse_tree.getLeft(parse_tree.lhs(id)).text->retagParseNodeLast(id);
 
         ParseNode sub = parse_tree.rhs(id);
@@ -649,7 +649,7 @@ ParseNode Parser::implicitMult() alloc_except {
     ParseNode n = rightUnary();
 
     switch (currentType()) {
-        HOPE_IMPLICIT_MULT_TOKENS
+        FORSCAPE_IMPLICIT_MULT_TOKENS
         case LEFTPAREN:{
             ParseNode pn = collectImplicitMult(n);
             return parse_tree.getNumArgs(pn) != 1 ? pn : parse_tree.child(pn);
@@ -667,7 +667,7 @@ ParseNode Parser::collectImplicitMult(ParseNode n) alloc_except {
         if(!noErrors()) return error_node;
 
         switch (currentType()) {
-            HOPE_IMPLICIT_MULT_TOKENS
+            FORSCAPE_IMPLICIT_MULT_TOKENS
                 parse_tree.addNaryChild(rightUnary());
                 break;
             case LEFTPAREN:
@@ -1007,7 +1007,7 @@ ParseNode Parser::captureList() alloc_except {
     }
 }
 
-ParseNode Parser::grouping(size_t type, HopeTokenType close) alloc_except {
+ParseNode Parser::grouping(size_t type, ForscapeTokenType close) alloc_except {
     Typeset::Marker left = lMark();
     advance();
     ParseNode nested = disjunction();
@@ -1121,7 +1121,7 @@ ParseNode Parser::generalSet(Op op) noexcept {
     return pn;
 }
 
-Hope::ParseNode Hope::Code::Parser::integerRange() noexcept {
+Forscape::ParseNode Forscape::Code::Parser::integerRange() noexcept {
     Typeset::Marker left = lMark();
     advance();
     ParseNode start = expression();
@@ -1261,7 +1261,7 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
                 ParseNode pn = twoDims(OP_IDENTITY_MATRIX);
                 if(noErrors()){
                     parse_tree.getSelection(id).format(SEM_PREDEFINEDMAT);
-                    #ifndef HOPE_TYPESET_HEADLESS
+                    #ifndef FORSCAPE_TYPESET_HEADLESS
                     parse_tree.getLeft(pn).text->retagParseNodeLast(pn);
                     parse_tree.getSelection(pn).mapConstructToParseNode(pn);
                     #endif
@@ -1278,7 +1278,7 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
                 advance();
                 advance();
                 parse_tree.setRight(id, rMark());
-                #ifndef HOPE_TYPESET_HEADLESS
+                #ifndef FORSCAPE_TYPESET_HEADLESS
                 registerParseNodeRegion(id, index-1);
                 parse_tree.getSelection(id).mapConstructToParseNode(id);
                 #endif
@@ -1302,7 +1302,7 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
                 if(!noErrors()) return error_node;
                 if(!match(ARGCLOSE)) return error(UNRECOGNIZED_EXPR, Typeset::Selection(rMarkPrev(), rMarkPrev()));
                 ParseNode n = parse_tree.addNode<3>(OP_UNIT_VECTOR, c, {elem, dim0, dim1});
-                #ifndef HOPE_TYPESET_HEADLESS
+                #ifndef FORSCAPE_TYPESET_HEADLESS
                 parse_tree.getLeft(n).text->retagParseNodeLast(n);
                 parse_tree.getSelection(n).mapConstructToParseNode(n);
                 #endif
@@ -1324,7 +1324,7 @@ ParseNode Parser::isolatedIdentifier() alloc_except{
             advance();
             if((match(IDENTIFIER) || match(INTEGER)) && match(ARGCLOSE)){
                 parse_tree.setRight(id, rMarkPrev());
-                #ifndef HOPE_TYPESET_HEADLESS
+                #ifndef FORSCAPE_TYPESET_HEADLESS
                 registerParseNodeRegion(id, index-2);
                 parse_tree.getSelection(id).mapConstructToParseNode(id);
                 #endif
@@ -1336,7 +1336,7 @@ ParseNode Parser::isolatedIdentifier() alloc_except{
             advance();
             if((match(IDENTIFIER) || match(MULTIPLY)) && match(ARGCLOSE)){
                 parse_tree.setRight(id, rMarkPrev());
-                #ifndef HOPE_TYPESET_HEADLESS
+                #ifndef FORSCAPE_TYPESET_HEADLESS
                 registerParseNodeRegion(id, index-2);
                 parse_tree.getSelection(id).mapConstructToParseNode(id);
                 #endif
@@ -1408,7 +1408,7 @@ ParseNode Parser::fraction() alloc_except{
     }
 }
 
-ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, HopeTokenType tt) alloc_except{
+ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, ForscapeTokenType tt) alloc_except{
     advance();
     if(match(ARGCLOSE)){
         consume(tt);
@@ -1614,7 +1614,7 @@ ParseNode Parser::matrix() alloc_except{
 
     ParseNode m = parse_tree.finishNary(OP_MATRIX, c);
     parse_tree.setFlag(m, c.getMatrixRows());
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     if(noErrors()) c.mapConstructToParseNode(m);
     #endif
 
@@ -1849,7 +1849,7 @@ void Parser::advance() noexcept{
     index++;
 }
 
-bool Parser::match(HopeTokenType type) noexcept{
+bool Parser::match(ForscapeTokenType type) noexcept{
     if(tokens[index].type == type){
         advance();
         return true;
@@ -1858,20 +1858,20 @@ bool Parser::match(HopeTokenType type) noexcept{
     }
 }
 
-bool Parser::peek(HopeTokenType type) const noexcept{
+bool Parser::peek(ForscapeTokenType type) const noexcept{
     return tokens[index].type == type;
 }
 
-bool Parser::lookahead(HopeTokenType type) const noexcept{
+bool Parser::lookahead(ForscapeTokenType type) const noexcept{
     assert(index+1 < tokens.size());
     return tokens[index+1].type == type;
 }
 
-void Parser::require(HopeTokenType type) noexcept{
+void Parser::require(ForscapeTokenType type) noexcept{
     if(tokens[index].type != type) error(CONSUME);
 }
 
-void Parser::consume(HopeTokenType type) noexcept{
+void Parser::consume(ForscapeTokenType type) noexcept{
     if(tokens[index].type == type){
         advance();
     }else{
@@ -1888,7 +1888,7 @@ void Parser::skipNewline() noexcept{
     else if(tokens[index].type == NEWLINE) index++;
 }
 
-HopeTokenType Parser::currentType() const noexcept{
+ForscapeTokenType Parser::currentType() const noexcept{
     return tokens[index].type;
 }
 
@@ -1937,7 +1937,7 @@ void Parser::recover() noexcept{
     index = tokens.size()-1; //Give up for now //EVENTUALLY: improve error recovery
 }
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 void Parser::registerParseNodeRegion(ParseNode pn, size_t token_index) alloc_except {
     if(!noErrors()) return;
 

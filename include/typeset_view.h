@@ -8,7 +8,7 @@
 
 class QScrollBar;
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 

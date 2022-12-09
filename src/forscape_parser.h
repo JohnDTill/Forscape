@@ -1,16 +1,16 @@
-#ifndef HOPE_PARSER_H
-#define HOPE_PARSER_H
+#ifndef FORSCAPE_PARSER_H
+#define FORSCAPE_PARSER_H
 
-#include "hope_error.h"
-#include "hope_parse_tree.h"
-#include "hope_scanner.h"
+#include "forscape_error.h"
+#include "forscape_parse_tree.h"
+#include "forscape_scanner.h"
 #include <vector>
 
 #ifndef NDEBUG
 #include <iostream>
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Code {
 
@@ -20,9 +20,9 @@ public:
     void parseAll() alloc_except;
     ParseTree parse_tree;
 
-    #ifndef HOPE_TYPESET_HEADLESS
-    HOPE_UNORDERED_MAP<Typeset::Marker, Typeset::Marker> open_symbols;
-    HOPE_UNORDERED_MAP<Typeset::Marker, Typeset::Marker> close_symbols;
+    #ifndef FORSCAPE_TYPESET_HEADLESS
+    FORSCAPE_UNORDERED_MAP<Typeset::Marker, Typeset::Marker> open_symbols;
+    FORSCAPE_UNORDERED_MAP<Typeset::Marker, Typeset::Marker> close_symbols;
     #endif
 
 private:
@@ -69,7 +69,7 @@ private:
     ParseNode parenGrouping() alloc_except;
     ParseNode paramList() alloc_except;
     ParseNode captureList() alloc_except;
-    ParseNode grouping(size_t type, HopeTokenType close) alloc_except;
+    ParseNode grouping(size_t type, ForscapeTokenType close) alloc_except;
     ParseNode set() alloc_except;
     template<Op basic, Op positive, Op negative> ParseNode setWithSigns() alloc_except;
     ParseNode generalSet(Op op) alloc_except;
@@ -84,7 +84,7 @@ private:
     ParseNode lambda(ParseNode params) alloc_except;
     ParseNode filename() alloc_except;
     ParseNode fraction() alloc_except;
-    ParseNode fractionDeriv(const Typeset::Selection& c, Op type, HopeTokenType tt) alloc_except;
+    ParseNode fractionDeriv(const Typeset::Selection& c, Op type, ForscapeTokenType tt) alloc_except;
     ParseNode fractionDefault(const Typeset::Selection& c) alloc_except;
     ParseNode binomial() alloc_except;
     ParseNode superscript(ParseNode lhs) alloc_except;
@@ -111,14 +111,14 @@ private:
     ParseNode error(ErrorCode code) alloc_except;
     ParseNode error(ErrorCode code, const Typeset::Selection& c) alloc_except;
     void advance() noexcept;
-    bool match(HopeTokenType type) noexcept;
-    bool peek(HopeTokenType type) const noexcept;
-    bool lookahead(HopeTokenType type) const noexcept;
-    void require(HopeTokenType type) noexcept;
-    void consume(HopeTokenType type) noexcept;
+    bool match(ForscapeTokenType type) noexcept;
+    bool peek(ForscapeTokenType type) const noexcept;
+    bool lookahead(ForscapeTokenType type) const noexcept;
+    void require(ForscapeTokenType type) noexcept;
+    void consume(ForscapeTokenType type) noexcept;
     void skipNewlines() noexcept;
     void skipNewline() noexcept;
-    HopeTokenType currentType() const noexcept;
+    ForscapeTokenType currentType() const noexcept;
     ParseNode makeTerminalNode(size_t type) alloc_except;
     ParseNode terminalAndAdvance(size_t type) alloc_except;
     const Typeset::Selection selection() const noexcept;
@@ -129,7 +129,7 @@ private:
     const Typeset::Marker& rMarkPrev() const noexcept;
     bool noErrors() const noexcept;
     void recover() noexcept;
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     void registerParseNodeRegion(ParseNode pn, size_t token_index) alloc_except;
     void registerParseNodeRegionToPatch(size_t token_index) alloc_except;
     void startPatch() alloc_except;
@@ -155,4 +155,4 @@ private:
 
 }
 
-#endif // HOPE_PARSER_H
+#endif // FORSCAPE_PARSER_H

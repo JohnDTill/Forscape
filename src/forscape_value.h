@@ -1,14 +1,14 @@
-#ifndef HOPE_VALUE_H
-#define HOPE_VALUE_H
+#ifndef FORSCAPE_VALUE_H
+#define FORSCAPE_VALUE_H
 
-#include <hope_common.h>
-#include "hope_error.h"
+#include <forscape_common.h>
+#include "forscape_error.h"
 #include <memory>
 #include <variant>
 #include <vector>
 #include <Eigen/Core>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Code {
 
@@ -81,4 +81,4 @@ inline bool valid(const Value& v){ return v.index() <= Unitialized_index; }
 
 }
 
-#endif // HOPE_VALUE_H
+#endif // FORSCAPE_VALUE_H

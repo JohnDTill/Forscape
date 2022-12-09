@@ -8,7 +8,7 @@
 #include "typeset_selection.h"
 #include <semantic_tags.h>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Code {
 class Parser;
@@ -85,7 +85,7 @@ public:
     Selection selection() const noexcept;
     bool isTextSelection() const noexcept;
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     void moveToNextLine(double setpoint) noexcept;
     void moveToPrevLine(double setpoint) noexcept;
     void moveToNextPage(double setpoint, double page_height) noexcept;
@@ -145,7 +145,7 @@ private:
     Command* getInsertSerial(const std::string& str);
     Command* insertSerialNoSelection(const std::string& str);
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     void clickTo(const Phrase* p, double x, double y) noexcept;
     void clickTo(const Construct* c, double x, double y) noexcept;
     void shiftClick(const Phrase* p, double x) noexcept;

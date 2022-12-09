@@ -3,7 +3,7 @@
 
 #include "typeset_phrase.h"
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -17,7 +17,7 @@ public:
     void setParent(Construct* c) noexcept;
     Construct* parent;
 
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual void paint(Painter& painter) const override;
     #ifndef NDEBUG
     virtual void invalidateWidth() noexcept override;

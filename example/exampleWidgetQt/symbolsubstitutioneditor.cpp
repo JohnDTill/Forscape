@@ -1,12 +1,12 @@
 #include "symbolsubstitutioneditor.h"
 
-#include <hope_unicode.h>
+#include <forscape_unicode.h>
 #include <typeset_shorthand.h>
 #include <QCoreApplication>
 #include <QHeaderView>
 #include <QScrollBar>
 #include <QSettings>
-using Hope::Typeset::Shorthand;
+using Forscape::Typeset::Shorthand;
 
 static int FIRST_COL = 0;
 static int SECOND_COL = 1;
@@ -121,14 +121,14 @@ void SymbolSubstitutionEditor::populateFromMap(){
         first_item->setTextAlignment(Qt::AlignCenter);
         uint32_t first = entry.first.first;
         first_item->setData(Qt::UserRole, first);
-        first_item->setText(QString::fromStdString(Hope::fromCodepointBytes(first)));
+        first_item->setText(QString::fromStdString(Forscape::fromCodepointBytes(first)));
         setItem(row, FIRST_COL, first_item);
 
         QTableWidgetItem* second_item = new QTableWidgetItem();
         second_item->setTextAlignment(Qt::AlignCenter);
         uint32_t second = entry.first.second;
         second_item->setData(Qt::UserRole, second);
-        second_item->setText(QString::fromStdString(Hope::fromCodepointBytes(second)));
+        second_item->setText(QString::fromStdString(Forscape::fromCodepointBytes(second)));
         setItem(row, SECOND_COL, second_item);
 
         QTableWidgetItem* final_item = new QTableWidgetItem();
@@ -214,6 +214,6 @@ uint32_t SymbolSubstitutionEditor::getCode(int row, int col) const {
     assert(row < rowCount());
 
     std::string str = item(row, col)->text().toStdString();
-    if(!Hope::isSingleCodepoint(str) || str[0] == ' ') return 0;
-    return Hope::codepointInt(str);
+    if(!Forscape::isSingleCodepoint(str) || str[0] == ' ') return 0;
+    return Forscape::codepointInt(str);
 }

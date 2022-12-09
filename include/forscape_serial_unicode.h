@@ -1,9 +1,9 @@
-#ifndef HOPE_SERIAL_UNICODE_H
-#define HOPE_SERIAL_UNICODE_H
+#ifndef FORSCAPE_SERIAL_UNICODE_H
+#define FORSCAPE_SERIAL_UNICODE_H
 
 #include "construct_codes.h"
-#include "hope_serial.h"
-#include "hope_unicode.h"
+#include "forscape_serial.h"
+#include "forscape_unicode.h"
 #include "unicode_subscripts.h"
 #include "unicode_superscripts.h"
 #include <cassert>
@@ -12,7 +12,7 @@
 #include <string>
 #include <string_view>
 
-namespace Hope {
+namespace Forscape {
 
 class UnicodeConverter{
 private:
@@ -49,7 +49,7 @@ private:
 
     bool superscriptFails(size_t& index) const noexcept{
         for(;;) switch (getCode(index)) {
-            HOPE_SUPERSCRIPTS_CASES
+            FORSCAPE_SUPERSCRIPTS_CASES
             case ' ':
                 break;
 
@@ -63,7 +63,7 @@ private:
 
     bool subscriptFails(size_t& index) const noexcept{
         for(;;) switch (getCode(index)) {
-            HOPE_SUBSCRIPTS_CASES
+            FORSCAPE_SUBSCRIPTS_CASES
             case ' ':
                 break;
 
@@ -187,7 +187,7 @@ private:
 
     void writeSuperscript(){
         for(;;) switch (getCode(index)) {
-            HOPE_SUPERSCRIPTS_CONVERSION
+            FORSCAPE_SUPERSCRIPTS_CONVERSION
             case ' ': out += ' '; break;
             case CLOSE: return;
             default: assert(false);
@@ -196,7 +196,7 @@ private:
 
     void writeSubscript(){
         for(;;) switch (getCode(index)) {
-            HOPE_SUBSCRIPTS_CONVERSION
+            FORSCAPE_SUBSCRIPTS_CONVERSION
             case ' ': out += ' '; break;
             case CLOSE: return;
             default: assert(false);
@@ -384,4 +384,4 @@ public:
 
 }
 
-#endif // HOPE_SERIAL_UNICODE_H
+#endif // FORSCAPE_SERIAL_UNICODE_H

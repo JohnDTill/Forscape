@@ -5,7 +5,7 @@
 #include <inttypes.h>
 #include <string>
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 

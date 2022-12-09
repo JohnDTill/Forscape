@@ -1,7 +1,7 @@
-#ifndef HOPE_STACK_H
-#define HOPE_STACK_H
+#ifndef FORSCAPE_STACK_H
+#define FORSCAPE_STACK_H
 
-#include "hope_value.h"
+#include "forscape_value.h"
 #include <vector>
 
 #ifndef NDEBUG
@@ -12,7 +12,7 @@
 #define DEBUG_STACK_ARG(x)
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Code {
 
@@ -40,4 +40,4 @@ private:
 
 }
 
-#endif // HOPE_STACK_H
+#endif // FORSCAPE_STACK_H

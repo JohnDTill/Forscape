@@ -23,7 +23,7 @@ def main():
     header_writer = cpp.HeaderWriter(
         name="parsenodegraphviz",
         inner_namespace="Code",
-        includes="hope_parse_tree.h"
+        includes="forscape_parse_tree.h"
     )
 
     header_writer.write("void ParseTree::writeType(std::string& src, ParseNode n) const{\n"

@@ -1,6 +1,6 @@
 #include "typeset_controller.h"
 
-#include "hope_unicode.h"
+#include "forscape_unicode.h"
 #include "typeset_closesymbol.h"
 #include "typeset_construct.h"
 #include "typeset_keywords.h"
@@ -24,7 +24,7 @@
 #include <iostream>
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Typeset {
 
@@ -198,7 +198,7 @@ std::string Controller::selectedText() const{
     return selection().str();
 }
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 void Controller::moveToNextLine(double setpoint) noexcept{
     if(isNested()) active.setToLeftOf(subphrase()->textDown(setpoint), setpoint);
     else selectNextLine(setpoint);
@@ -656,7 +656,7 @@ void Controller::selectLine(const Line* l) noexcept{
 }
 
 void Controller::selectConstruct(const Construct* c) noexcept{
-    #ifndef HOPE_TYPESET_HEADLESS
+    #ifndef FORSCAPE_TYPESET_HEADLESS
     if(c->constructCode() != MARKERLINK){
         active.setToFrontOf(c->next());
         anchor.setToBackOf(c->prev());
@@ -780,7 +780,7 @@ Command* Controller::insertSerialNoSelection(const std::string& str){
     }
 }
 
-#ifndef HOPE_TYPESET_HEADLESS
+#ifndef FORSCAPE_TYPESET_HEADLESS
 void Controller::clickTo(const Phrase* p, double x, double y) noexcept{
     if(x <= p->x){
         setBothToFrontOf(p->front());

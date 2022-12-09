@@ -1,14 +1,14 @@
-#include "hope_symbol_link_pass.h"
+#include "forscape_symbol_link_pass.h"
 
 #ifndef NDEBUG
 #include <iostream>
 #endif
 
-namespace Hope {
+namespace Forscape {
 
 namespace Code {
 
-Hope::Code::SymbolTableLinker::SymbolTableLinker(SymbolTable& symbol_table, Hope::Code::ParseTree& parse_tree) noexcept
+Forscape::Code::SymbolTableLinker::SymbolTableLinker(SymbolTable& symbol_table, Forscape::Code::ParseTree& parse_tree) noexcept
     : symbol_table(symbol_table), parse_tree(parse_tree) {}
 
 void SymbolTableLinker::link() noexcept{
