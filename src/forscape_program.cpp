@@ -43,10 +43,10 @@ Program::ptr_or_code Program::openFromAbsolutePath(std::filesystem::path path){
 }
 
 Program::ptr_or_code Program::openFromRelativePath(std::string_view file_name){
-    const bool auto_extension = (file_name.find('.') == std::string_view::npos);
-    Program::ptr_or_code result = auto_extension ?
-        openFromRelativePathAutoExtension(file_name) :
-        openFromRelativePathSpecifiedExtension(file_name);
+    std::filesystem::path rel_path(file_name);
+    Program::ptr_or_code result = rel_path.has_extension() ?
+        openFromRelativePathSpecifiedExtension(rel_path) :
+        openFromRelativePathAutoExtension(rel_path);
 
     return result;
 }
@@ -57,18 +57,18 @@ void Program::freeFileMemory() noexcept {
     source_files.clear();
 }
 
-Program::ptr_or_code Program::openFromRelativePathSpecifiedExtension(std::string_view file_name){
+Program::ptr_or_code Program::openFromRelativePathSpecifiedExtension(std::filesystem::path rel_path){
     for(std::filesystem::path path_entry : project_path){
-        path_entry /= file_name;
+        path_entry /= rel_path;
         if(Program::ptr_or_code model = openFromAbsolutePath(path_entry)) return model;
     }
 
     return FILE_NOT_FOUND;
 }
 
-Program::ptr_or_code Program::openFromRelativePathAutoExtension(std::string_view file_name){
+Program::ptr_or_code Program::openFromRelativePathAutoExtension(std::filesystem::path rel_path){
     for(std::filesystem::path path_entry : project_path){
-        path_entry /= file_name;
+        path_entry /= rel_path;
 
         //This seems like pointlessly much interaction
         for(const std::string_view& extension : extensions){

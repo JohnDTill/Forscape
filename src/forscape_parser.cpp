@@ -312,10 +312,10 @@ ParseNode Parser::plotStatement() alloc_except {
 
 ParseNode Parser::includeStatement() noexcept {
     advance();
-    consume(FILEPATH);
 
-    //DO THIS: allow clicking to follow file path
-    ParseNode file = parse_tree.addTerminal(OP_FILE_REF, selectionPrev());
+    if(!peek(FILEPATH)) return error(UNRECOGNIZED_SYMBOL);
+    ParseNode file = terminalAndAdvance(OP_FILE_REF);
+    registerParseNodeRegion(file, index-1);
 
     return file;
 }

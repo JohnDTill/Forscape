@@ -22,15 +22,15 @@ public:
 private:
     static Program* singleton_instance;
     Program() = default;
-    ptr_or_code openFromRelativePathSpecifiedExtension(std::string_view file_name);
-    ptr_or_code openFromRelativePathAutoExtension(std::string_view file_name);
+    ptr_or_code openFromRelativePathSpecifiedExtension(std::filesystem::path file_name);
+    ptr_or_code openFromRelativePathAutoExtension(std::filesystem::path file_name);
 
     FORSCAPE_UNORDERED_MAP<std::filesystem::path, Typeset::Model*> source_files;
     std::vector<std::filesystem::path> project_path = {
         std::filesystem::current_path(),
         //DO THIS: stop hardcoding these, make an "addpath" mechanism or similar
-        std::filesystem::current_path() / "../test/interpreter_scripts/in",
-        std::filesystem::current_path() / "../../test/interpreter_scripts/in",};
+        std::filesystem::current_path() / ".." / "test" / "interpreter_scripts" / "in",
+        std::filesystem::current_path() / ".." / ".." / "test" / "interpreter_scripts" / "in",};
     static constexpr std::string_view extensions[] = {".txt"};
 };
 
