@@ -165,6 +165,7 @@ void Scanner::decrementScope() noexcept{
 
 void Scanner::scanFile(std::string_view path) noexcept {
     //DO THIS - guard against cyclical includes
+    //DO THIS - should it be possible to include the same file in two different include statements?
     Program::ptr_or_code ptr_or_code = Program::instance()->openFromRelativePath(path);
 
     switch (ptr_or_code) {

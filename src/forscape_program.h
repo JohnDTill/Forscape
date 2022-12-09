@@ -3,6 +3,7 @@
 
 #include "forscape_common.h"
 #include <filesystem>
+#include <vector>
 
 namespace Forscape {
 
