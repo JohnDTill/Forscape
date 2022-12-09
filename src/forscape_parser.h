@@ -138,7 +138,7 @@ private:
 
     void import(ParseNode pn);
 
-    //DO THIS: the parser should not assume there is a single Typeset::Model
+    //EVENTUALLY: the parser should not assume there is a single Typeset::Model
     std::vector<std::pair<size_t, size_t>> token_map_stack;
     std::vector<size_t> token_stack_frames;
     const std::vector<Token>& tokens;

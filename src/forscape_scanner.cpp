@@ -165,7 +165,7 @@ void Scanner::decrementScope() noexcept{
 }
 
 void Scanner::scanFile(std::string_view path) noexcept {
-    //DO THIS
+    //EVENTUALLY
 
     //Keep in mind we probably start with a relative path, but need an absolute path
 

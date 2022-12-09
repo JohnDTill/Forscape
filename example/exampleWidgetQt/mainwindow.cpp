@@ -88,7 +88,7 @@ MainWindow::MainWindow(QWidget* parent)
     project_browser->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(project_browser, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onFileRightClicked(const QPoint&)));
     QTreeWidgetItem* root = new QTreeWidgetItem(project_browser);
-    root->setText(0, "DO THIS");
+    root->setText(0, "NOT IMPLEMENTED");
     root->setIcon(0, QFileIconProvider().icon(QFileIconProvider::Folder));
     QTreeWidgetItem* leaf = new QTreeWidgetItem(root);
     leaf->setText(0, "Wire up project browser");
@@ -856,14 +856,14 @@ void MainWindow::onSplitterResize(int pos, int index) {
 }
 
 void MainWindow::anchor(){
-    //DO THIS: the active file is the program entry point
+    //EVENTUALLY: the active file is the program entry point
 
-    //DO THIS: depress the anchor button if the active file is anchored
+    //EVENTUALLY: depress the anchor button if the active file is anchored
 }
 
 void MainWindow::onFileClicked(QTreeWidgetItem* item, int column) {
     std::cout << item->text(0).toStdString() << " clicked" << std::endl;
-    //DO THIS: go to the file
+    //EVENTUALLY: go to the file
 }
 
 void MainWindow::onFileRightClicked(const QPoint& pos) {
@@ -874,14 +874,14 @@ void MainWindow::onFileRightClicked(const QPoint& pos) {
     QMenu menu(this);
     const bool item_is_file = (item->childCount() == 0);
     if(item_is_file){
-        menu.addAction("Open File")->setStatusTip("DO THIS");
-        menu.addAction("Rename File")->setStatusTip("DO THIS");
-        menu.addAction("Anchor Project")->setStatusTip("DO THIS");
+        menu.addAction("Open File")->setStatusTip("EVENTUALLY");
+        menu.addAction("Rename File")->setStatusTip("EVENTUALLY");
+        menu.addAction("Anchor Project")->setStatusTip("EVENTUALLY");
     }else{
-        menu.addAction("Rename Folder")->setStatusTip("DO THIS");
-        menu.addAction("Add New File")->setStatusTip("DO THIS");
+        menu.addAction("Rename Folder")->setStatusTip("EVENTUALLY");
+        menu.addAction("Add New File")->setStatusTip("EVENTUALLY");
     }
-    menu.addAction("Show in Explorer")->setStatusTip("DO THIS");
+    menu.addAction("Show in Explorer")->setStatusTip("EVENTUALLY");
     //connect(newAct, SIGNAL(triggered()), this, SLOT(something()));
 
     menu.exec(project_browser->mapToGlobal(pos));

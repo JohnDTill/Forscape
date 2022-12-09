@@ -713,7 +713,7 @@ ParseNode Parser::call_or_mult(ParseNode n) alloc_except {
     }
 
     if(!noErrors()){
-        //DO THIS:
+        //EVENTUALLY:
         //  Check if the user is typing here
         //  If so, display a tooltip with the function parameters
         //  This depends on doing the work to resolve the called function, despite errors

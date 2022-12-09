@@ -97,7 +97,7 @@ void StaticPass::resolve(){
 
     //model->populateDocMapParseNodes(doc_map_nodes);
 
-    //DO THIS: check this later?
+    //EVENTUALLY: check this later?
     //Every identifier in the doc map goes to a valid symbol
     //for(ParseNode pn : doc_map_nodes)
     //    if(parse_tree.getOp(pn) == OP_IDENTIFIER){
@@ -108,7 +108,6 @@ void StaticPass::resolve(){
     //Every usage in the symbol table is in the doc map
     //for(const Usage& usage : symbol_table.usages)
     //    assert(selection_in_map.find(parse_tree.getSelection(usage.pn)) != selection_in_map.end());
-    //DO THIS: can this work?
     #endif
     #endif
 

@@ -1505,7 +1505,7 @@ void Editor::findUsages(){
 
 void Editor::goToFile() {
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_FILE_REF);
-    //DO THIS
+    //EVENTUALLY
 }
 
 void Editor::showTooltipParseNode(){

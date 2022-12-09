@@ -24,7 +24,7 @@ FORSCAPE_STATIC_MAP<std::string_view, Op> SymbolTableBuilder::predef {
     {"ℏ", OP_REDUCED_PLANCK_CONSTANT},
     {"σ", OP_STEFAN_BOLTZMANN_CONSTANT},
     {"I", OP_IDENTITY_AUTOSIZE},
-    //{"i", OP_IMAGINARY}, //DO THIS - re-enable
+    //{"i", OP_IMAGINARY}, //EVENTUALLY - support complex numbers
     {"g", OP_GRAVITY},
     {"Γ", OP_GAMMA_FUNCTION},
 
@@ -875,7 +875,7 @@ void SymbolTableBuilder::unloadScope(ParseNode body, size_t scope_sym_id) noexce
     }
 
     //The namespace scope runs together with the lexical scope for purposes of calculating the stack size
-    //DO THIS: it's a kludge that we accomodate later stack size calculations here
+    //EVENTUALLY: it's a kludge that we accomodate later stack size calculations here
     symbol_table.scopes[scope.scope_tail+1].prev_lexical_segment = scope.scope_tail;
     symbol_table.scopes[scope.scope_tail].next_lexical_segment = scope.scope_tail+1;
 
