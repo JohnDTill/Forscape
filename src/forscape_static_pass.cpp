@@ -382,6 +382,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
 
         case OP_FROM_IMPORT:
         case OP_IMPORT:
+        case OP_FILE_REF:
             return pn; //EVENTUALLY: this can be discarded by now
 
         case OP_NAMESPACE:

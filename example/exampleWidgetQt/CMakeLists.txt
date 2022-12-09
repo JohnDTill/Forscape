@@ -137,6 +137,8 @@ set(PROJECT_SOURCES
     ${SRC}/forscape_parse_tree.h
     ${SRC}/forscape_parser.cpp
     ${SRC}/forscape_parser.h
+    ${SRC}/forscape_program.cpp
+    ${SRC}/forscape_program.h
     ${SRC}/forscape_scanner.cpp
     ${SRC}/forscape_scanner.h
     ${SRC}/forscape_serial.h
@@ -160,8 +162,6 @@ set(PROJECT_SOURCES
     ${SRC}/typeset_construct.h
     ${SRC}/typeset_controller.cpp
     ${SRC}/typeset_controller.h
-    ${SRC}/typeset_filesystem.cpp
-    ${SRC}/typeset_filesystem.h
     ${SRC}/typeset_integral_preference.h
     ${SRC}/typeset_line.cpp
     ${SRC}/typeset_line.h

@@ -209,7 +209,7 @@ void Text::search(const std::string& target, std::vector<Selection>& hits, bool 
 }
 
 bool Text::precedes(Text* other) const noexcept{
-    assert(getModel() == other->getModel());
+    //assert(getModel() == other->getModel()); //DO THIS: this is broken
     if(parent == other->parent) return id < other->id;
 
     size_t depth = parent->nestingDepth();

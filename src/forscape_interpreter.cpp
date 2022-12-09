@@ -81,6 +81,14 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_FOR: forStmt(pn); break;
         case OP_IF: ifStmt(pn); break;
         case OP_IF_ELSE: ifElseStmt(pn); break;
+        case OP_FILE_REF: break; //DO THIS - get rid
+        case OP_INCLUDE:{
+            if(parse_tree.getFlag(pn) != 1)
+            stack.push(static_cast<void*>(nullptr)
+                DEBUG_STACK_ARG("import-" + parse_tree.str(parse_tree.child(pn))));
+            break; //EVENTUALLY: this shouldn't be in the interpreter
+            // It's assumed every symbol has a role in the runtime, and that's a bad assumption for multiple reasons.
+        }
         case OP_NAMESPACE:{
             if(parse_tree.getFlag(pn) != 1)
             stack.push(static_cast<void*>(nullptr)

@@ -37,6 +37,12 @@ extern inline constexpr size_t UNITIALISED = NONE-1;
 #define DEBUG_INIT_STALE
 #endif
 
+namespace Typeset {
+class Controller;
+class Model;
+class Selection;
+}
+
 }
 
 #endif // FORSCAPE_COMMON_H

@@ -23,7 +23,7 @@ Marker::Marker(Text* t, size_t i) noexcept
     : text(t), index(i) {}
 
 bool Marker::precedesInclusive(const Marker& other) const noexcept{
-    assert(getModel() == other.getModel());
+    //assert(getModel() == other.getModel()); //DO THIS: this is broken
     if(text != other.text) return text->precedes(other.text);
     else return index <= other.index;
 }

@@ -1,5 +1,6 @@
 #include <forscape_interpreter.h>
 #include <forscape_parser.h>
+#include <forscape_program.h>
 #include <forscape_scanner.h>
 #include "report.h"
 #include "typeset.h"
@@ -58,6 +59,7 @@ inline bool testCase(const std::string& name){
     #endif
 
     delete input;
+    Program::instance()->freeFileMemory();
 
     if(str != out){
         std::cout << "Interpretation case \"" << name << "\" failed.\n"
