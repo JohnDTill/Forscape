@@ -22,13 +22,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(TEST .)
 set(BASE ..)
 set(META ${BASE}/meta)
-set(INCLUDE ${BASE}/include)
 set(SRC ${BASE}/src)
 set(CONSTRUCT ${SRC}/typeset_constructs)
 set(GEN ${SRC}/generated)
 set(COMMAND ${SRC}/typeset_commands)
 set(EXAMPLE ${BASE}/example/exampleWidgetQt)
-include_directories(${INCLUDE})
 include_directories(${SRC})
 include_directories(${CONSTRUCT})
 include_directories(${GEN})
@@ -108,7 +106,7 @@ set(SOURCES
     ${CONSTRUCT_FILES}
     ${SRC}/forscape_common.h
     ${SRC}/forscape_error.cpp
-    ${INCLUDE}/forscape_error.h
+    ${SRC}/forscape_error.h
     ${SRC}/forscape_interpreter.cpp
     ${SRC}/forscape_interpreter.h
     ${SRC}/forscape_message.h
@@ -118,8 +116,8 @@ set(SOURCES
     ${SRC}/forscape_parser.h
     ${SRC}/forscape_scanner.cpp
     ${SRC}/forscape_scanner.h
-    ${INCLUDE}/forscape_serial.h
-    ${INCLUDE}/forscape_serial_unicode.h
+    ${SRC}/forscape_serial.h
+    ${SRC}/forscape_serial_unicode.h
     ${SRC}/forscape_stack.cpp
     ${SRC}/forscape_stack.h
     ${SRC}/forscape_static_pass.cpp
@@ -134,11 +132,11 @@ set(SOURCES
     ${SRC}/forscape_unicode.h
     ${SRC}/forscape_value.cpp
     ${SRC}/forscape_value.h
-    ${INCLUDE}/typeset_command.h
+    ${SRC}/typeset_command.h
     ${SRC}/typeset_construct.cpp
     ${SRC}/typeset_construct.h
     ${SRC}/typeset_controller.cpp
-    ${INCLUDE}/typeset_controller.h
+    ${SRC}/typeset_controller.h
     ${SRC}/typeset_filesystem.cpp
     ${SRC}/typeset_filesystem.h
     ${SRC}/typeset_integral_preference.h
@@ -147,7 +145,7 @@ set(SOURCES
     ${SRC}/typeset_marker.cpp
     ${SRC}/typeset_marker.h
     ${SRC}/typeset_model.cpp
-    ${INCLUDE}/typeset_model.h
+    ${SRC}/typeset_model.h
     ${SRC}/typeset_phrase.cpp
     ${SRC}/typeset_phrase.h
     ${SRC}/typeset_selection.cpp
