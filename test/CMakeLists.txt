@@ -186,7 +186,7 @@ if (${TEST_QT})
         ${SRC}/typeset_painter.h
         ${SRC}/typeset_painter_qt.cpp
         ${SRC}/typeset_view.cpp
-        ${INCLUDE}/typeset_view.h
+        ${SRC}/typeset_view.h
         ${EXAMPLE}/symboltreeview.cpp
         ${EXAMPLE}/symboltreeview.h
     )

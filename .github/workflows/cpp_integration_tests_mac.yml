@@ -7,7 +7,7 @@ jobs:
   build-and-test:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - id: install_conan
         uses: turtlebrowser/get-conan@main
       - id: run_conan
