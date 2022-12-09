@@ -9,8 +9,6 @@ jobs:
     steps:
       - id: Qt
         uses: jurplel/install-qt-action@v3
-        with:
-          modules: qtsvg
       - uses: actions/checkout@v3
       - id: install_conan
         uses: turtlebrowser/get-conan@main
