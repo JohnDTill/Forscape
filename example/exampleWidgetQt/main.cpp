@@ -16,6 +16,8 @@ int main(int argc, char* argv[]){
     QCoreApplication::setOrganizationName("AutoMath");
     QCoreApplication::setOrganizationDomain("https://github.com/JohnDTill/Forscape");
 
+    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+
     QApplication a(argc, nullptr);
     Forscape::Typeset::setPreset(Forscape::Typeset::PRESET_DEFAULT);
     MainWindow w;
