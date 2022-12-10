@@ -297,11 +297,11 @@ bool MainWindow::isSavedDeepComparison() const {
     if(path.isEmpty()) return editor->getModel()->empty();
 
     //Avoid a deep comparison if size from file meta data doesn't match
-    auto filename = settings.value(ACTIVE_FILE).toString().toStdU16String();
+    auto filename = settings.value(ACTIVE_FILE).toString().toStdString();
     if(std::filesystem::file_size(filename) != editor->getModel()->serialChars()) return false;
 
-    std::ifstream in(filename);
-    if(!in.is_open()) std::cout << "Failed to open " << settings.value(ACTIVE_FILE).toString().toStdString() << std::endl;
+    std::ifstream in(std::filesystem::u8path(filename));
+    if(!in.is_open()) std::cout << "Failed to open " << filename << std::endl;
     assert(in.is_open());
 
     std::stringstream buffer;
