@@ -43,7 +43,7 @@ Program::ptr_or_code Program::openFromAbsolutePath(std::filesystem::path path){
 }
 
 Program::ptr_or_code Program::openFromRelativePath(std::string_view file_name){
-    std::filesystem::path rel_path(file_name);
+    std::filesystem::path rel_path = std::filesystem::u8path(file_name);
     Program::ptr_or_code result = rel_path.has_extension() ?
         openFromRelativePathSpecifiedExtension(rel_path) :
         openFromRelativePathAutoExtension(rel_path);
@@ -72,7 +72,7 @@ Program::ptr_or_code Program::openFromRelativePathAutoExtension(std::filesystem:
 
         //This seems like pointlessly much interaction
         for(const std::string_view& extension : extensions){
-            path_entry.replace_extension(extension);
+            path_entry.replace_extension(std::filesystem::u8path(extension));
             if(Program::ptr_or_code model = openFromAbsolutePath(path_entry)) return model;
         }
     }

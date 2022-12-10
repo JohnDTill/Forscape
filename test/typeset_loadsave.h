@@ -10,7 +10,7 @@ using namespace Forscape;
 inline bool testTypesetLoadSave(){
     bool passing = true;
 
-    std::string input = readFile("serial_valid.txt");
+    std::string input = readFile(BASE_TEST_DIR "/serial_valid.π");
     Forscape::Typeset::Model* model = Forscape::Typeset::Model::fromSerial(input);
     std::string serial = model->toSerial();
 

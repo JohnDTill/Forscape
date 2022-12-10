@@ -21,7 +21,7 @@ using namespace Forscape;
 using namespace Code;
 
 inline bool testErrorAndNoCrash(const std::string& name){
-    std::string in = readFile(BASE_TEST_DIR "/errors/" + name + ".txt");
+    std::string in = readFile(BASE_TEST_DIR "/errors/" + name + ".π");
 
     Typeset::Model* input = Typeset::Model::fromSerial(in);
     bool had_error = !input->errors.empty();

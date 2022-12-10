@@ -32,6 +32,7 @@ class MainWindow : public QMainWindow{
 public:
     MainWindow(QWidget* parent = nullptr);
     virtual ~MainWindow();
+    void open(QString path);
     QSettings settings;
     Forscape::Typeset::Editor* editor;
 
@@ -111,7 +112,6 @@ private:
     void checkOutput();
     bool savePrompt();
     bool saveAs(QString name);
-    void open(QString path);
     void addPlot(const std::string& title, const std::string& x_label, const std::string& y_label);
     void addSeries(const std::vector<std::pair<double, double>>& data) const alloc_except;
     QString getLastDir();

@@ -297,11 +297,11 @@ bool MainWindow::isSavedDeepComparison() const {
     if(path.isEmpty()) return editor->getModel()->empty();
 
     //Avoid a deep comparison if size from file meta data doesn't match
-    std::string filename = settings.value(ACTIVE_FILE).toString().toStdString();
+    auto filename = settings.value(ACTIVE_FILE).toString().toStdU16String();
     if(std::filesystem::file_size(filename) != editor->getModel()->serialChars()) return false;
 
     std::ifstream in(filename);
-    if(!in.is_open()) std::cout << "Failed to open " << filename << std::endl;
+    if(!in.is_open()) std::cout << "Failed to open " << settings.value(ACTIVE_FILE).toString().toStdString() << std::endl;
     assert(in.is_open());
 
     std::stringstream buffer;
@@ -407,7 +407,7 @@ void MainWindow::on_actionNew_triggered(){
 void MainWindow::on_actionOpen_triggered(){
     if(!editor->isEnabled()) return;
 
-    QString path = QFileDialog::getOpenFileName(nullptr, tr("Load File"), getLastDir(), tr("Text (*.txt)"));
+    QString path = QFileDialog::getOpenFileName(nullptr, tr("Load File"), getLastDir(), tr("Text (*.π)"));
     if(path.isEmpty()) return;
 
     open(path);
@@ -473,10 +473,10 @@ void MainWindow::checkOutput(){
 bool MainWindow::savePrompt(){
     if(!editor->isEnabled()) return false;
 
-    QString prompt_name = path.isEmpty() ? getLastDir() + "/untitled.txt" : path;
+    QString prompt_name = path.isEmpty() ? getLastDir() + "/untitled.π" : path;
     QString file_name = QFileDialog::getSaveFileName(nullptr, tr("Save File"),
                                 prompt_name,
-                                tr("Text (*.txt)"));
+                                tr("Forscape script (*.π)"));
 
     if(!file_name.isEmpty()) return saveAs(file_name);
     return false;
@@ -512,7 +512,7 @@ bool MainWindow::saveAs(QString path){
 }
 
 void MainWindow::open(QString path){
-    std::ifstream in(path.toStdString());
+    std::ifstream in(std::filesystem::u8path(path.toStdString()));
     if(!in.is_open()){
         QMessageBox messageBox;
         messageBox.critical(nullptr, "Error", "Could not open \"" + path + "\" to read.");
@@ -541,7 +541,7 @@ void MainWindow::open(QString path){
     setWindowTitle(QFile(path).fileName() + WINDOW_TITLE_SUFFIX);
     settings.setValue(ACTIVE_FILE, path);
     this->path = path;
-    write_time = std::filesystem::last_write_time(path.toStdString());
+    write_time = std::filesystem::last_write_time(path.toStdU16String());
 
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
 }
@@ -778,7 +778,7 @@ void MainWindow::checkForChanges(){
     if(path.isEmpty()) return;
 
     assert(settings.contains(ACTIVE_FILE));
-    std::string filename = settings.value(ACTIVE_FILE).toString().toStdString();
+    auto filename = settings.value(ACTIVE_FILE).toString().toStdU16String();
 
     const std::filesystem::file_time_type modified_time = std::filesystem::last_write_time(filename);
     if(modified_time <= write_time) return;

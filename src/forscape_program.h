@@ -31,7 +31,7 @@ private:
         //DO THIS: stop hardcoding these, make an "addpath" mechanism or similar
         std::filesystem::current_path() / ".." / "test" / "interpreter_scripts" / "in",
         std::filesystem::current_path() / ".." / ".." / "test" / "interpreter_scripts" / "in",};
-    static constexpr std::string_view extensions[] = {".txt"};
+    static constexpr std::string_view extensions[] = {".π"};
 };
 
 }

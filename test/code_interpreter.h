@@ -45,8 +45,8 @@ inline bool testExpression(const std::string& in, const std::string& expect){
 }
 
 inline bool testCase(const std::string& name){
-    std::string in = readFile(BASE_TEST_DIR "/in/" + name + ".txt");
-    std::string out = readFile(BASE_TEST_DIR "/out/" + name + ".txt");
+    std::string in = readFile(BASE_TEST_DIR "/in/" + name + ".π");
+    std::string out = readFile(BASE_TEST_DIR "/out/" + name + ".π");
 
     Typeset::Model* input = Typeset::Model::fromSerial(in);
     std::string str = input->run();
