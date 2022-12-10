@@ -19,8 +19,11 @@ void Program::setProgramEntryPoint(std::filesystem::path path, Typeset::Model* m
 }
 
 Program::ptr_or_code Program::openFromAbsolutePath(std::filesystem::path path){
-    auto lookup = source_files.find(path);
-    if(lookup != source_files.end()) return FILE_ALREADY_OPEN;
+    #define FILE_NOT_FOUND_PTR reinterpret_cast<Typeset::Model*>(FILE_NOT_FOUND)
+
+    auto result = source_files.insert({path, FILE_NOT_FOUND_PTR});
+    auto& entry = result.first;
+    if(!result.second) return entry->second == FILE_NOT_FOUND_PTR ? FILE_NOT_FOUND : FILE_ALREADY_OPEN;
 
     std::ifstream in(path);
     if(!in.is_open()) return FILE_NOT_FOUND;
@@ -37,7 +40,7 @@ Program::ptr_or_code Program::openFromAbsolutePath(std::filesystem::path path){
     if(!Forscape::isValidSerial(src)) return FILE_CORRUPTED;
 
     Typeset::Model* model = Typeset::Model::fromSerial(src);
-    source_files[path] = model; //DO THIS: how to avoid 2 map operations?
+    entry->second = model;
 
     return reinterpret_cast<size_t>(model);
 }
@@ -53,7 +56,8 @@ Program::ptr_or_code Program::openFromRelativePath(std::string_view file_name){
 
 void Program::freeFileMemory() noexcept {
     for(auto& entry : source_files)
-        delete entry.second;
+        if(reinterpret_cast<size_t>(entry.second) > FILE_NOT_FOUND)
+            delete entry.second;
     source_files.clear();
 }
 

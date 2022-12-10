@@ -298,9 +298,10 @@ bool MainWindow::isSavedDeepComparison() const {
 
     //Avoid a deep comparison if size from file meta data doesn't match
     auto filename = settings.value(ACTIVE_FILE).toString().toStdString();
-    if(std::filesystem::file_size(filename) != editor->getModel()->serialChars()) return false;
+    auto path = std::filesystem::u8path(filename);
+    if(std::filesystem::file_size(path) != editor->getModel()->serialChars()) return false;
 
-    std::ifstream in(std::filesystem::u8path(filename));
+    std::ifstream in(path);
     if(!in.is_open()) std::cout << "Failed to open " << filename << std::endl;
     assert(in.is_open());
 
@@ -505,7 +506,7 @@ bool MainWindow::saveAs(QString path){
     settings.setValue(ACTIVE_FILE, path);
     this->path = path;
     out.flush();
-    write_time = std::filesystem::last_write_time(path.toStdString());
+    write_time = std::filesystem::last_write_time(std::filesystem::u8path(path.toStdString()));
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
 
     return true;

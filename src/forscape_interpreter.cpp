@@ -81,7 +81,7 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_FOR: forStmt(pn); break;
         case OP_IF: ifStmt(pn); break;
         case OP_IF_ELSE: ifElseStmt(pn); break;
-        case OP_FILE_REF: break; //DO THIS - get rid
+        case OP_FILE_REF: break; //EVENTUALLY: This shouldn't be in the interpreter stage
         case OP_INCLUDE:{
             if(parse_tree.getFlag(pn) != 1)
             stack.push(static_cast<void*>(nullptr)

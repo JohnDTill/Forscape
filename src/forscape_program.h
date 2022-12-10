@@ -28,7 +28,7 @@ private:
     FORSCAPE_UNORDERED_MAP<std::filesystem::path, Typeset::Model*> source_files;
     std::vector<std::filesystem::path> project_path = {
         std::filesystem::current_path(),
-        //DO THIS: stop hardcoding these, make an "addpath" mechanism or similar
+        //EVENTUALLY: stop hardcoding these, make an "include directory" mechanism or similar
         std::filesystem::current_path() / ".." / "test" / "interpreter_scripts" / "in",
         std::filesystem::current_path() / ".." / ".." / "test" / "interpreter_scripts" / "in",};
     static constexpr std::string_view extensions[] = {".π"};
