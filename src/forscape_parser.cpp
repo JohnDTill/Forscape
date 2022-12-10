@@ -2,7 +2,6 @@
 
 #include <code_parsenode_ops.h>
 #include <forscape_common.h>
-#include "typeset_filesystem.h"
 #include "typeset_model.h"
 
 #ifdef FORSCAPE_TYPESET_HEADLESS
@@ -96,7 +95,7 @@ ParseNode Parser::statement() alloc_except {
         case FOR: return forStatement();
         case FROM: return fromStatement();
         case IF: return ifStatement();
-        case IMPORT: return importStatement();
+        case INCLUDE: return includeStatement();
         case NAMESPACE: return namespaceStatement();
         case PLOT: return plotStatement();
         case PRINT: return printStatement();
@@ -311,22 +310,14 @@ ParseNode Parser::plotStatement() alloc_except {
     return parse_tree.addNode<5>(OP_PLOT, sel, {title, x_label, x, y_label, y});
 }
 
-ParseNode Parser::importStatement() noexcept {
-    const Typeset::Marker& left = lMark();
-
+ParseNode Parser::includeStatement() noexcept {
     advance();
-    ParseNode file = filename();
-    ParseNode alias = match(AS) ? isolatedIdentifier() : NONE;
 
-    if(noErrors()){
-        ParseNode pn = parse_tree.addUnary(OP_IMPORT, Typeset::Selection(left, rMarkPrev()), file);
-        parse_tree.setFlag(pn, alias);
-        import(file);
+    if(!peek(FILEPATH)) return error(UNRECOGNIZED_SYMBOL);
+    ParseNode file = terminalAndAdvance(OP_FILE_REF);
+    registerParseNodeRegion(file, index-1);
 
-        return pn;
-    }else{
-        return error_node;
-    }
+    return file;
 }
 
 ParseNode Parser::fromStatement() noexcept {
@@ -1181,24 +1172,6 @@ Forscape::ParseNode Forscape::Code::Parser::integerRange() noexcept {
     return parse_tree.addNode<2>(OP_INTERVAL_INTEGER, sel, {start, end});
 }
 
-void Parser::import(ParseNode pn){
-    const Typeset::Selection& sel = parse_tree.getSelection(pn);
-    if(!sel.isTextSelection()){
-        error(FILE_NOT_FOUND, sel);
-        return;
-    }
-
-    std::string_view file_name = sel.strView();
-
-    Typeset::Model* loaded_model = Typeset::Filesystem::open(file_name);
-    if(loaded_model == nullptr){
-        error(FILE_NOT_FOUND, sel);
-        return;
-    }
-
-    delete loaded_model;
-}
-
 ParseNode Parser::norm() alloc_except {
     Typeset::Marker left = lMark();
     advance();
@@ -1414,34 +1387,6 @@ ParseNode Parser::lambda(ParseNode params) alloc_except{
     Typeset::Selection sel(left, rMarkPrev());
 
     return parse_tree.addNode<4>(OP_LAMBDA, sel, {capture_list, referenced_upvalues, params, e});
-}
-
-ParseNode Parser::filename() noexcept {
-    const Typeset::Marker& left = lMark();
-
-    consume(IDENTIFIER);
-    if(!noErrors()) return error_node;
-
-    for(;;){
-        switch (currentType()) {
-            case PERIOD:
-            case MINUS:
-            case BACKSLASH:
-            case FORWARDSLASH:
-            case IDENTIFIER:
-                if(lMark() != rMarkPrev()) return error(UNRECOGNIZED_EXPR, selection());
-                advance();
-                break;
-
-            default:
-                Typeset::Selection sel(left, rMarkPrev());
-                sel.format(SEM_STRING);
-
-                ParseNode file = parse_tree.addTerminal(OP_FILE_REF, sel);
-                if(noErrors()) registerParseNodeRegion(file, index-1);
-                return file;
-        }
-    }
 }
 
 ParseNode Parser::fraction() alloc_except{

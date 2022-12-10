@@ -57,6 +57,7 @@ Euro9€9y9999
 Exclam9!9y9999
 Exists9∃9y9999
 FalseLiteral9false99y999
+Filepath9filepath99999
 For9for99y999
 ForAll9∀9y9999
 Forwardslash9/99999
@@ -67,6 +68,7 @@ Hamiltonian9ℋ9y9999
 Identifier9ID999y99
 If9if99y999
 Import9import99y999
+Include9include99y999
 Member9∈9y9999
 Infty9∞9y9999
 Integer999999

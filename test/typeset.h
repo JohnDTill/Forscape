@@ -11,6 +11,7 @@
 #include <typeset_view.h>
 #endif
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -18,7 +19,7 @@
 using namespace Forscape;
 
 inline std::string readFile(const std::string& filename){
-    std::ifstream in(filename);
+    std::ifstream in(std::filesystem::u8path(filename));
     if(!in.is_open()) std::cout << "Failed to open " << filename << std::endl;
     assert(in.is_open());
 

@@ -41,7 +41,7 @@ private:
     ParseNode algStatement() alloc_except;
     ParseNode returnStatement() alloc_except;
     ParseNode plotStatement() alloc_except;
-    ParseNode importStatement() alloc_except;
+    ParseNode includeStatement() alloc_except;
     ParseNode fromStatement() alloc_except;
     ParseNode namespaceStatement() alloc_except;
     ParseNode unknownsStatement() alloc_except;
@@ -83,7 +83,6 @@ private:
     ParseNode isolatedIdentifier() alloc_except;
     ParseNode param() alloc_except;
     ParseNode lambda(ParseNode params) alloc_except;
-    ParseNode filename() alloc_except;
     ParseNode fraction() alloc_except;
     ParseNode fractionDeriv(const Typeset::Selection& c, Op type, ForscapeTokenType tt) alloc_except;
     ParseNode fractionDefault(const Typeset::Selection& c) alloc_except;
@@ -136,8 +135,6 @@ private:
     void startPatch() alloc_except;
     void finishPatch(ParseNode pn) noexcept;
     #endif
-
-    void import(ParseNode pn);
 
     //EVENTUALLY: the parser should not assume there is a single Typeset::Model
     std::vector<std::pair<size_t, size_t>> token_map_stack;

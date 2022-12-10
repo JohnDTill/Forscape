@@ -1,10 +1,11 @@
 #include "forscape_scanner.h"
 
-#include <construct_codes.h>
-#include <forscape_unicode.h>
-#include <typeset_controller.h>
-#include <typeset_model.h>
-#include <typeset_line.h>
+#include "construct_codes.h"
+#include "forscape_program.h"
+#include "forscape_unicode.h"
+#include "typeset_controller.h"
+#include "typeset_model.h"
+#include "typeset_line.h"
 #include <string_view>
 
 #ifndef NDEBUG
@@ -99,22 +100,20 @@ void Scanner::scanIdentifier() alloc_except {
     if(lookup != keywords.end()){
         controller->formatKeyword();
 
-        /*
-        if(lookup->second == IMPORT){
-            //NO! You need to take a path, not an identifier
+        if(lookup->second == INCLUDE){
+            createToken(INCLUDE);
             controller->skipWhitespace();
             controller->selectToPathEnd();
             if(!controller->hasSelection()){
                 errors.push_back(Error(controller->selection(), EXPECTED_FILEPATH));
             }else{
+                createToken(FILEPATH);
+                controller->formatSimple(SEM_FILE);
                 scanFile(controller->selectedFlatText());
             }
         }else{
             createToken(lookup->second);
         }
-        */
-
-        createToken(lookup->second);
     }else{
         controller->formatBasicIdentifier();
         createToken(IDENTIFIER);
@@ -165,15 +164,40 @@ void Scanner::decrementScope() noexcept{
 }
 
 void Scanner::scanFile(std::string_view path) noexcept {
-    //EVENTUALLY
+    //EVENTUALLY - guard against cyclical includes
+    //EVENTUALLY - should it be possible to include the same file in two different include statements?
+    Program::ptr_or_code ptr_or_code = Program::instance()->openFromRelativePath(path);
 
-    //Keep in mind we probably start with a relative path, but need an absolute path
+    switch (ptr_or_code) {
+        case Program::FILE_NOT_FOUND: error(FILE_NOT_FOUND); break;
+        case Program::FILE_CORRUPTED: error(FILE_CORRUPTED); break;
+        case Program::FILE_ALREADY_OPEN: break;
+        default: importModel(reinterpret_cast<Typeset::Model*>(ptr_or_code));
+    }
+}
 
-    //If the file has been scanned before, we don't need to scan it again
-    //If the file doesn't exist, that's an error
+void Scanner::importModel(Typeset::Model* imported_model) noexcept {
+    //EVENTUALLY: this horrible kludge!
 
-    //Just scan the file in and proceed as normal
-    //There is the caveat that errors are currently attached to models, and they should be attached to programs
+    Typeset::Model* old_model = model;
+    Typeset::Controller* old_controller = controller;
+    size_t old_scope_depth = scope_depth;
+
+    model = imported_model;
+    model->clearFormatting();
+    controller = new Typeset::Controller(model);
+    controller->moveToStartOfDocument();
+
+    do{
+        scanToken();
+    } while(tokens.back().type != ENDOFFILE);
+    tokens.pop_back();
+
+    delete controller;
+
+    model = old_model;
+    controller = old_controller;
+    scope_depth = old_scope_depth;
 }
 
 }

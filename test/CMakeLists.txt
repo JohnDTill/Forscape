@@ -32,10 +32,6 @@ include_directories(${CONSTRUCT})
 include_directories(${GEN})
 include_directories(${COMMAND})
 
-configure_file(${TEST}/serial_valid.txt ${CMAKE_BINARY_DIR} COPYONLY)
-configure_file(${TEST}/serial_malformed.txt ${CMAKE_BINARY_DIR} COPYONLY)
-configure_file(${TEST}/serial_exhaustive.txt ${CMAKE_BINARY_DIR} COPYONLY)
-
 add_compile_definitions(TYPESET_MEMORY_DEBUG FORSCAPE_SEMANTIC_DEBUGGING)
 add_compile_definitions(EIGEN_NO_AUTOMATIC_RESIZING)
 add_compile_definitions(BASE_TEST_DIR="../test/interpreter_scripts")
@@ -114,6 +110,8 @@ set(SOURCES
     ${SRC}/forscape_parse_tree.h
     ${SRC}/forscape_parser.cpp
     ${SRC}/forscape_parser.h
+    ${SRC}/forscape_program.cpp
+    ${SRC}/forscape_program.h
     ${SRC}/forscape_scanner.cpp
     ${SRC}/forscape_scanner.h
     ${SRC}/forscape_serial.h
@@ -137,8 +135,6 @@ set(SOURCES
     ${SRC}/typeset_construct.h
     ${SRC}/typeset_controller.cpp
     ${SRC}/typeset_controller.h
-    ${SRC}/typeset_filesystem.cpp
-    ${SRC}/typeset_filesystem.h
     ${SRC}/typeset_integral_preference.h
     ${SRC}/typeset_line.cpp
     ${SRC}/typeset_line.h

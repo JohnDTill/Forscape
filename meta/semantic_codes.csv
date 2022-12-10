@@ -17,3 +17,4 @@ Id_Ewise_Index,CMU_Serif_Mono,Italic,COLOUR_KEYWORD
 Big_Sym,CMU_Serif_Mono,Italic,COLOUR_TEXT
 Warning,JuliaMono,Regular,COLOUR_WARNINGBORDER
 Bold,TrimmedJuliaMono,Bold,COLOUR_TEXT
+File,JuliaMono,Regular,COLOUR_STRING

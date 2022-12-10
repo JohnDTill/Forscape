@@ -2,10 +2,12 @@
 <Package>
     <DisplayName>Forscape</DisplayName>
     <Description>Core</Description>
-    <Version>0.0.1</Version>
-    <ReleaseDate>2022-05-29</ReleaseDate>
+    <Version>0.0.2</Version>
+    <ReleaseDate>2022-12-10</ReleaseDate>
     <Licenses>
         <License name="MIT License" file="LICENSE" />
     </Licenses>
-    <Default>script</Default>
+    <Default>true</Default>
+    <Script>installscript.qs</Script>
+    <ForcedInstallation>true</ForcedInstallation>
 </Package>

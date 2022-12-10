@@ -5,15 +5,15 @@
 #include "report.h"
 
 inline bool testSerial(){
-    std::ifstream good_examples("serial_valid.txt");
+    std::ifstream good_examples(std::filesystem::u8path(BASE_TEST_DIR "/serial_valid.π"));
     if(!good_examples.is_open()){
-        printf("Failed to open \"serial_valid.txt\"\n");
+        printf("Failed to open \"serial_valid.π\"\n");
         return false;
     }
 
-    std::ifstream bad_examples("serial_malformed.txt");
+    std::ifstream bad_examples(std::filesystem::u8path(BASE_TEST_DIR "/serial_malformed.π"));
     if(!bad_examples.is_open()){
-        printf("Failed to open \"serial_malformed.txt\"\n");
+        printf("Failed to open \"serial_malformed.π\"\n");
         return false;
     }
 
