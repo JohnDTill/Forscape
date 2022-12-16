@@ -57,6 +57,7 @@
 #define PROJECT_BROWSER_VISIBLE "project_tb_visible"
 #define WINDOW_STATE "win_state"
 #define LAST_DIRECTORY "last_dir"
+#define FORSCAPE_FILE_TYPE_DESC "Forscape script (*.π)"
 
 using namespace Forscape;
 
@@ -408,7 +409,7 @@ void MainWindow::on_actionNew_triggered(){
 void MainWindow::on_actionOpen_triggered(){
     if(!editor->isEnabled()) return;
 
-    QString path = QFileDialog::getOpenFileName(nullptr, tr("Load File"), getLastDir(), tr("Text (*.π)"));
+    QString path = QFileDialog::getOpenFileName(nullptr, tr("Load File"), getLastDir(), tr(FORSCAPE_FILE_TYPE_DESC));
     if(path.isEmpty()) return;
 
     open(path);
@@ -477,7 +478,7 @@ bool MainWindow::savePrompt(){
     QString prompt_name = path.isEmpty() ? getLastDir() + "/untitled.π" : path;
     QString file_name = QFileDialog::getSaveFileName(nullptr, tr("Save File"),
                                 prompt_name,
-                                tr("Forscape script (*.π)"));
+                                tr(FORSCAPE_FILE_TYPE_DESC));
 
     if(!file_name.isEmpty()) return saveAs(file_name);
     return false;

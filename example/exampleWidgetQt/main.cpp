@@ -3,6 +3,8 @@
 #include <typeset_themes.h>
 #include <QApplication>
 #include <QFileInfo>
+#include <QLibraryInfo>
+#include <QTranslator>
 
 #ifdef _WIN32
 #pragma comment(linker, "/ENTRY:wmainCRTStartup")
@@ -19,6 +21,12 @@ int main(int argc, char* argv[]){
     QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
     QApplication a(argc, nullptr);
+
+    //EVENTUALLY: get translations working
+    QTranslator translator;
+    if(translator.load(QLocale::system(), "qtbase", "_", QLibraryInfo::path(QLibraryInfo::TranslationsPath)))
+        a.installTranslator(&translator);
+
     Forscape::Typeset::setPreset(Forscape::Typeset::PRESET_DEFAULT);
     MainWindow w;
     if(file_supplied){
