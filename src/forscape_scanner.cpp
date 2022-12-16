@@ -97,26 +97,26 @@ void Scanner::scanIdentifier() alloc_except {
     controller->selectToIdentifierEnd();
 
     auto lookup = keywords.find(controller->selectedFlatText());
-    if(lookup != keywords.end()){
-        controller->formatKeyword();
-
-        if(lookup->second == INCLUDE){
-            createToken(INCLUDE);
-            controller->skipWhitespace();
-            controller->selectToPathEnd();
-            if(!controller->hasSelection()){
-                errors.push_back(Error(controller->selection(), EXPECTED_FILEPATH));
-            }else{
-                createToken(FILEPATH);
-                controller->formatSimple(SEM_FILE);
-                scanFile(controller->selectedFlatText());
-            }
-        }else{
-            createToken(lookup->second);
-        }
-    }else{
+    if(lookup == keywords.end()){
         controller->formatBasicIdentifier();
         createToken(IDENTIFIER);
+    }else{
+        ForscapeTokenType type = lookup->second;
+        controller->formatKeyword();
+        createToken(type);
+
+        //Handle special scanning for file paths here
+        if(type == IMPORT){
+            scanFilePath();
+        }else if(type == FROM){
+            scanFilePath();
+            controller->skipWhitespace();
+            controller->selectToIdentifierEnd();
+            if(controller->selection().strView() == "import")
+                controller->formatKeyword();
+            else if(errors.empty())
+                errors.push_back(Error(controller->selection(), CONSUME));
+        }
     }
 }
 
@@ -163,9 +163,19 @@ void Scanner::decrementScope() noexcept{
     if(scope_depth) scope_depth--;
 }
 
+void Scanner::scanFilePath() alloc_except {
+    controller->skipWhitespace();
+    controller->selectToPathEnd();
+
+    if(!controller->hasSelection()){
+        errors.push_back(Error(controller->selection(), EXPECTED_FILEPATH));
+    }else{
+        createToken(FILEPATH);
+        controller->formatSimple(SEM_FILE);
+    }
+}
+
 void Scanner::scanFile(std::string_view path) noexcept {
-    //DO THIS - guard against cyclical includes
-    //DO THIS - should it be possible to include the same file in two different include statements?
     Program::ptr_or_code ptr_or_code = Program::instance()->openFromRelativePath(path);
 
     switch (ptr_or_code) {

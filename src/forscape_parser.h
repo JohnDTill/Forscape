@@ -41,9 +41,10 @@ private:
     ParseNode algStatement() alloc_except;
     ParseNode returnStatement() alloc_except;
     ParseNode plotStatement() alloc_except;
-    ParseNode includeStatement() alloc_except;
+    ParseNode importStatement() alloc_except;
     ParseNode fromStatement() alloc_except;
-    ParseNode namespaceStatement() alloc_except;
+    ParseNode filename() alloc_except;
+    ParseNode namespaceStatement() alloc_except; //DO THIS: namespaces don't serve much purpose with modules
     ParseNode unknownsStatement() alloc_except;
     ParseNode classStatement() alloc_except;
     ParseNode mathStatement() alloc_except;

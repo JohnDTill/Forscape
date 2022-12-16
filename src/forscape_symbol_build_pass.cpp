@@ -785,9 +785,30 @@ void SymbolTableBuilder::resolveImport(ParseNode pn) alloc_except {
     ParseNode alias = parse_tree.getFlag(pn);
     if(alias == NONE){
         ParseNode file = parse_tree.child(pn);
-        parse_tree.setOp(file, OP_IDENTIFIER);
-        defineLocalScope(file);
-        parse_tree.setOp(file, OP_FILE_REF);
+        Typeset::Selection id_sel = parse_tree.getSelection(file);
+        std::string_view file_path = id_sel.strView();
+
+        //Constrict the file path to the identifier, e.g. ../foo/bar.π => bar
+        bool found_extension = false;
+        for(size_t i = file_path.size(); i-->0;){
+            switch (file_path[i]) {
+                case '.':
+                    if(!found_extension){
+                        id_sel.right.index = id_sel.left.index + i;
+                        found_extension = true;
+                    }
+                    break;
+
+                case '/':
+                case '\\':
+                    id_sel.left.index += i+1;
+                    i = 0;
+                    break;
+            }
+        }
+
+        ParseNode id = parse_tree.addTerminal(OP_IDENTIFIER, id_sel);
+        defineLocalScope(id);
     }else{
         defineLocalScope(alias);
     }

@@ -2,6 +2,7 @@
 
 #include <code_parsenode_ops.h>
 #include <forscape_common.h>
+#include <forscape_program.h>
 #include "typeset_model.h"
 
 #ifdef FORSCAPE_TYPESET_HEADLESS
@@ -21,10 +22,6 @@ Parser::Parser(const Scanner& scanner, Typeset::Model* model) noexcept
 void Parser::parseAll() alloc_except {
     reset();
 
-    #ifndef NDEBUG
-    bool scanner_error = !errors.empty();
-    #endif
-
     parse_tree.prepareNary();
     skipNewlines();
     while (!peek(ENDOFFILE)) {
@@ -43,7 +40,7 @@ void Parser::parseAll() alloc_except {
     }
 
     assert(!errors.empty() || parse_tree.inFinalState());
-    assert((errors.empty() == (error_node == NONE)) || (scanner_error && (error_node == NONE)));
+    assert((errors.empty() == (error_node == NONE)) || (!errors.empty() && (error_node == NONE)));
 }
 
 void Parser::reset() noexcept {
@@ -56,7 +53,7 @@ void Parser::reset() noexcept {
     index = 0;
     parsing_dims = false;
     loops = 0;
-    error_node = NONE;
+    error_node = errors.empty() ? NONE: parse_tree.addTerminal(errors.back().code, errors.back().selection);
 }
 
 void Parser::registerGrouping(const Typeset::Selection& sel) alloc_except {
@@ -95,7 +92,7 @@ ParseNode Parser::statement() alloc_except {
         case FOR: return forStatement();
         case FROM: return fromStatement();
         case IF: return ifStatement();
-        case INCLUDE: return includeStatement();
+        case IMPORT: return importStatement();
         case NAMESPACE: return namespaceStatement();
         case PLOT: return plotStatement();
         case PRINT: return printStatement();
@@ -310,27 +307,26 @@ ParseNode Parser::plotStatement() alloc_except {
     return parse_tree.addNode<5>(OP_PLOT, sel, {title, x_label, x, y_label, y});
 }
 
-ParseNode Parser::includeStatement() noexcept {
+ParseNode Parser::importStatement() noexcept {
+    const Typeset::Marker& left = lMark();
     advance();
 
-    if(!peek(FILEPATH)) return error(UNRECOGNIZED_SYMBOL);
-    ParseNode file = terminalAndAdvance(OP_FILE_REF);
-    registerParseNodeRegion(file, index-1);
+    ParseNode file = filename();
+    ParseNode alias = match(AS) ? isolatedIdentifier() : NONE;
+    ParseNode import_stmt = parse_tree.addUnary(OP_IMPORT, Typeset::Selection(left, rMarkPrev()), file);
+    parse_tree.setFlag(import_stmt, alias);
 
-    return file;
+    return import_stmt;
 }
 
 ParseNode Parser::fromStatement() noexcept {
     const Typeset::Marker& left = lMark();
-
     advance();
-    consume(IDENTIFIER);
-    ParseNode file = parse_tree.addTerminal(OP_FILE_REF, selectionPrev());
-    consume(IMPORT);
+
+    ParseNode file = filename();
 
     parse_tree.prepareNary();
     parse_tree.addNaryChild(file);
-
     do {
         ParseNode component = isolatedIdentifier();
         ParseNode alias = match(AS) ? isolatedIdentifier() : NONE;
@@ -339,6 +335,29 @@ ParseNode Parser::fromStatement() noexcept {
     } while(match(COMMA));
 
     return parse_tree.finishNary(OP_FROM_IMPORT, Typeset::Selection(left, rMarkPrev()));
+}
+
+ParseNode Parser::filename() noexcept {
+    if(!peek(FILEPATH)) return error_node;
+    ParseNode file = terminalAndAdvance(OP_FILE_REF);
+    parse_tree.setFlag(file, 0);
+    registerParseNodeRegion(file, index-1);
+
+    //DO THIS: make sure the file is loaded, parsed, and ready to jump to
+    std::string_view path = parse_tree.getSelection(file).strView();
+    Program::ptr_or_code ptr_or_code = Program::instance()->openFromRelativePath(path);
+
+    switch (ptr_or_code) {
+        case Program::FILE_NOT_FOUND: error(FILE_NOT_FOUND); break;
+        case Program::FILE_CORRUPTED: error(FILE_CORRUPTED); break;
+        case Program::FILE_ALREADY_OPEN: break;
+        default:
+            parse_tree.setFlag(file, ptr_or_code);
+            //Typeset::Model* loaded = reinterpret_cast<Typeset::Model*>(ptr_or_code);
+            //loaded->performSemanticFormatting(); //DO THIS?
+    }
+
+    return file;
 }
 
 ParseNode Parser::namespaceStatement() noexcept {

@@ -1426,7 +1426,9 @@ void Editor::populateContextMenuFromModel(QMenu& menu, double x, double y) {
             menu.addSeparator();
             break;
         case Code::OP_FILE_REF:
-            append("Go to file", goToFile, true, true);
+            append("Go to file", goToFile, true, true)
+            //append("Find usages", findUsages, true, true) //DO THIS: figure out cross-file usages
+            menu.addSeparator();
             break;
     }
 }
@@ -1505,7 +1507,10 @@ void Editor::findUsages(){
 
 void Editor::goToFile() {
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_FILE_REF);
-    //EVENTUALLY
+    Typeset::Model* referenced = reinterpret_cast<Typeset::Model*>(model->parseTree().getFlag(contextNode));
+    setModel(referenced, false); //DO THIS: confirm ownership is okay
+    controller.moveToStartOfDocument();
+    //DO THIS: back and forth actions are hugely helpful for this kind of jumping between files
 }
 
 void Editor::showTooltipParseNode(){

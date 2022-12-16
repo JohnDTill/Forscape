@@ -37,6 +37,7 @@ private:
     void endOfFile() alloc_except;
     void incrementScope() noexcept;
     void decrementScope() noexcept;
+    void scanFilePath() alloc_except;
     void scanFile(std::string_view path) alloc_except;
     void importModel(Typeset::Model* imported_model) alloc_except;
 
