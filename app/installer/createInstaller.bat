@@ -10,5 +10,5 @@ C:\Qt\6.3.0\msvc2019_64\bin\windeployqt.exe ../../build/Release/Forscape.exe
 mkdir "packages\com.automath.forscape\data"
 robocopy ..\..\build\Release packages\com.automath.forscape\data Forscape.exe *.dll /S
 copy ..\lambda.ico config
-copy "..\..\..\LICENSE" "packages\com.automath.forscape\meta"
+copy "..\..\LICENSE" "packages\com.automath.forscape\meta"
 C:\Qt\Tools\QtInstallerFramework\4.3\bin\binarycreator.exe --offline-only -c config/config.xml -p packages ForscapeInstaller_Win64.exe

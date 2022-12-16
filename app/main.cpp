@@ -6,7 +6,7 @@
 #include <QLibraryInfo>
 #include <QTranslator>
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 #pragma comment(linker, "/ENTRY:wmainCRTStartup")
 int wmain(int argc, wchar_t* argv[]){
 #else
@@ -24,13 +24,13 @@ int main(int argc, char* argv[]){
 
     //EVENTUALLY: get translations working
     QTranslator translator;
-    if(translator.load(QLocale::system(), "qtbase", "_", QLibraryInfo::path(QLibraryInfo::TranslationsPath)))
+    if(translator.load(QLocale::system(), "qtbase", "_", QLibraryInfo::location(QLibraryInfo::TranslationsPath)))
         a.installTranslator(&translator);
 
     Forscape::Typeset::setPreset(Forscape::Typeset::PRESET_DEFAULT);
     MainWindow w;
     if(file_supplied){
-        #ifdef _WIN32
+        #ifdef _MSC_VER
         QString supplied_path = QString::fromWCharArray(argv[1]);
         #else
         QString supplied_path(argv[1]);

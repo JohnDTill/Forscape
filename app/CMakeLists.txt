@@ -28,7 +28,7 @@ add_compile_definitions(EIGEN_NO_AUTOMATIC_RESIZING)
 
 set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/forscape.rc")
 
-set(BASE ../..)
+set(BASE ..)
 set(META ${BASE}/meta)
 set(SRC ${BASE}/src)
 set(CONSTRUCT ${SRC}/typeset_constructs)

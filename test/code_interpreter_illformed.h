@@ -14,7 +14,7 @@ using std::filesystem::directory_iterator;
 #endif
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
-#include "../example/exampleWidgetQt/symboltreeview.h"
+#include <symboltreeview.h>
 #endif
 
 using namespace Forscape;

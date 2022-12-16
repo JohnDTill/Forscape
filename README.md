@@ -1,21 +1,21 @@
 # Forscape
 ## A language and editor for scientific computation
 
-![alt text](limerick.png?raw=true "Forscape")
+![alt text](doc/readme/limerick.png?raw=true "Forscape")
 
 ### Focus on the problem, not the implementation details
 
 **Forscape** aims to solve engineering problems with low-cost abstraction, safety checks, and an intuitive user experience. The editor supports math rendering so that objects such as matrices, fractions, and symbols can be programmed in parity with scientific papers and notes.
 
-![alt text](EditorInteraction.gif?raw=true "Editor interaction")
+![alt text](doc/readme/EditorInteraction.gif?raw=true "Editor interaction")
 
 Forscape has particular emphasis on matrices. Standard matrix operations such as multiplication, norm, cross product, transpose, etcetera are supported with mathematical syntax.
 
-![alt text](root_finding.png?raw=true "Forscape is designed around matrices")
+![alt text](doc/readme/root_finding.png?raw=true "Forscape is designed around matrices")
 
 The editor code-model interaction has various features for matrices. The syntax highlighting will bold matrix identifiers. Where possible, dimensions are checked at compile time with violations highlighted in real time while typing. Hovering over an identifier will show the compile-time dimensions in the tooltip.
 
-![alt text](EditorMatrixFeatures.png?raw=true "The editor code-model interaction has various matrix features")
+![alt text](doc/readme/EditorMatrixFeatures.png?raw=true "The editor code-model interaction has various matrix features")
 
 ## Installation
 
@@ -32,7 +32,7 @@ Use the [.deb file](https://github.com/JohnDTill/Forscape/releases/download/pre-
 apt-get install cmake python3 qt5-default libqt5svg5-dev
 pip3 install conan
 git clone https://github.com/JohnDTill/Forscape
-cd ./Forscape/example/exampleWidgetQt
+cd ./Forscape/app
 conan install --generator cmake_find_package .
 cmake CMakeLists.txt
 make
