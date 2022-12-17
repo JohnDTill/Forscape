@@ -367,7 +367,6 @@ bool Model::isSavedDeepComparison() const {
     if(std::filesystem::file_size(path) != serialChars()) return false;
 
     std::ifstream in(path);
-    if(!in.is_open()) std::cout << "Failed to open " << path << std::endl;
     assert(in.is_open());
 
     std::stringstream buffer;

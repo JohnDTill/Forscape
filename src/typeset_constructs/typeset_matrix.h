@@ -252,7 +252,7 @@ public:
             void remove(Controller& c) noexcept{
                 owning = true;
                 mat.removeRow(row);
-                c.setBothToFrontOf(mat.arg(mat.cols*(row-1))->front());
+                c.setBothToFrontOf(mat.arg(row > 0 ? mat.cols*(row-1) : 0)->front());
             }
 
             virtual void redo(Controller& c) override final{
