@@ -175,41 +175,6 @@ void Scanner::scanFilePath() alloc_except {
     }
 }
 
-void Scanner::scanFile(std::string_view path) noexcept {
-    Program::ptr_or_code ptr_or_code = Program::instance()->openFromRelativePath(path);
-
-    switch (ptr_or_code) {
-        case Program::FILE_NOT_FOUND: error(FILE_NOT_FOUND); break;
-        case Program::FILE_CORRUPTED: error(FILE_CORRUPTED); break;
-        case Program::FILE_ALREADY_OPEN: break;
-        default: importModel(reinterpret_cast<Typeset::Model*>(ptr_or_code));
-    }
-}
-
-void Scanner::importModel(Typeset::Model* imported_model) noexcept {
-    //DO THIS: this horrible kludge!
-
-    Typeset::Model* old_model = model;
-    Typeset::Controller* old_controller = controller;
-    size_t old_scope_depth = scope_depth;
-
-    model = imported_model;
-    model->clearFormatting();
-    controller = new Typeset::Controller(model);
-    controller->moveToStartOfDocument();
-
-    do{
-        scanToken();
-    } while(tokens.back().type != ENDOFFILE);
-    tokens.pop_back();
-
-    delete controller;
-
-    model = old_model;
-    controller = old_controller;
-    scope_depth = old_scope_depth;
-}
-
 }
 
 }

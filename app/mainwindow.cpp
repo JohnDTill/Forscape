@@ -8,6 +8,7 @@
 #include <forscape_serial.h>
 #include <forscape_serial_unicode.h>
 #include <forscape_parser.h>
+#include <forscape_program.h>
 #include <forscape_symbol_build_pass.h>
 #include <forscape_message.h>
 #include <QBuffer>
@@ -46,7 +47,7 @@
 #include "qgraphvizcall.h"
 #endif
 
-#define ACTIVE_FILE "active_file"
+#define PROJECT_ROOT_FILE "project_root_file"
 #define ZOOM_EDITOR "editor_zoom"
 #define ZOOM_CONSOLE "console_zoom"
 #define LINE_NUMBERS_VISIBLE "line_nums_shown"
@@ -96,7 +97,6 @@ MainWindow::MainWindow(QWidget* parent)
     leaf->setIcon(0, QFileIconProvider().icon(QFileIconProvider::File));
     QTreeWidgetItem* anchor_leaf = new QTreeWidgetItem(root);
     anchor_leaf->setText(0, "Anchor leaf");
-    anchor_leaf->setIcon(0, QIcon(":/fonts/anchor.svg"));
     ui->actionGoBack->setIcon(QIcon(":/fonts/arrow_back.svg"));
     ui->actionGoForward->setIcon(QIcon(":/fonts/arrow_forward.svg"));
     horizontal_splitter->addWidget(project_browser);
@@ -109,8 +109,8 @@ MainWindow::MainWindow(QWidget* parent)
 
     editor = new Typeset::Editor();
     setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
-    if(settings.contains(ACTIVE_FILE))
-        open(settings.value(ACTIVE_FILE).toString());
+    if(settings.contains(PROJECT_ROOT_FILE))
+        openProject(settings.value(PROJECT_ROOT_FILE).toString());
     vertical_splitter->addWidget(editor);
     resetViewJumpPointElements();
 
@@ -197,13 +197,6 @@ MainWindow::MainWindow(QWidget* parent)
     github_act->setShortcuts(QKeySequence::InsertLineSeparator);
     connect(github_act, &QAction::triggered, this, &MainWindow::github);
     action_toolbar->addAction(github_act);
-
-    QAction* anchor_act = new QAction("ŗ", this);
-    anchor_act->setToolTip(tr("Anchor project to the active file (sets program entry point)"));
-    anchor_act->setFont(glyph_font);
-    anchor_act->setShortcuts(QKeySequence::InsertLineSeparator);
-    connect(anchor_act, &QAction::triggered, this, &MainWindow::anchor);
-    action_toolbar->addAction(anchor_act);
 
     action_toolbar->addSeparator();
 
@@ -319,10 +312,10 @@ void MainWindow::resizeHackToFixScrollbars(){
 }
 
 bool MainWindow::isSavedDeepComparison() const {
-    if(path.isEmpty()) return editor->getModel()->empty();
+    if(active_file_path.isEmpty()) return editor->getModel()->empty();
 
     //Avoid a deep comparison if size from file meta data doesn't match
-    auto filename = settings.value(ACTIVE_FILE).toString().toStdString();
+    auto filename = active_file_path.toStdString();
     auto path = std::filesystem::u8path(filename);
     if(std::filesystem::file_size(path) != editor->getModel()->serialChars()) return false;
 
@@ -349,6 +342,9 @@ void MainWindow::updateViewJumpPointElements() {
     file_next->setEnabled(can_go_forward);
     ui->actionGoBack->setEnabled(can_go_backward);
     file_back->setEnabled(can_go_backward);
+
+    active_file_path = QString::fromStdString(editor->getModel()->path.string());
+    onTextChanged();
 }
 
 void MainWindow::resetViewJumpPointElements() {
@@ -438,37 +434,33 @@ void MainWindow::github(){
 
 void MainWindow::on_actionNew_triggered(){
     if(!editor->isEnabled()) return;
-    editor->setFromSerial("");
+    Typeset::Model* model = Typeset::Model::fromSerial("");
+    viewModel(model, 0);
     setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
-    settings.remove(ACTIVE_FILE);
-    path.clear();
+    active_file_path.clear();
 }
-
 
 void MainWindow::on_actionOpen_triggered(){
     if(!editor->isEnabled()) return;
 
-    QString path = QFileDialog::getOpenFileName(nullptr, tr("Load File"), getLastDir(), tr(FORSCAPE_FILE_TYPE_DESC));
+    QString path = QFileDialog::getOpenFileName(nullptr, tr("Open Project"), getLastDir(), tr(FORSCAPE_FILE_TYPE_DESC));
     if(path.isEmpty()) return;
 
-    open(path);
+    openProject(path);
 }
-
 
 bool MainWindow::on_actionSave_triggered(){
     if(!editor->isEnabled()) return false;
 
-    if(path.isEmpty()) return savePrompt();
-    else return saveAs(path);
+    if(active_file_path.isEmpty()) return savePrompt();
+    else return saveAs(active_file_path);
 }
-
 
 void MainWindow::on_actionSave_As_triggered(){
     if(!editor->isEnabled()) return;
 
     savePrompt();
 }
-
 
 void MainWindow::on_actionExit_triggered(){
     close();
@@ -514,7 +506,7 @@ void MainWindow::checkOutput(){
 bool MainWindow::savePrompt(){
     if(!editor->isEnabled()) return false;
 
-    QString prompt_name = path.isEmpty() ? getLastDir() + "/untitled.π" : path;
+    QString prompt_name = active_file_path.isEmpty() ? getLastDir() + "/untitled.π" : active_file_path;
     QString file_name = QFileDialog::getSaveFileName(nullptr, tr("Save File"),
                                 prompt_name,
                                 tr(FORSCAPE_FILE_TYPE_DESC));
@@ -543,17 +535,23 @@ bool MainWindow::saveAs(QString path){
     out << QByteArray::fromStdString(editor->getModel()->toSerial());
 
     setWindowTitle(file.fileName() + WINDOW_TITLE_SUFFIX);
-    settings.setValue(ACTIVE_FILE, path);
-    this->path = path;
+    if(project_path.isEmpty()){
+        settings.setValue(PROJECT_ROOT_FILE, path);
+        project_path = path;
+    }
+    active_file_path = path;
     out.flush();
     write_time = std::filesystem::last_write_time(std::filesystem::u8path(path.toStdString()));
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
 
+    editor->getModel()->path = std::filesystem::u8path(active_file_path.toStdString());
+
     return true;
 }
 
-void MainWindow::open(QString path){
-    std::ifstream in(std::filesystem::u8path(path.toStdString()));
+void MainWindow::openProject(QString path){
+    std::filesystem::path std_path = std::filesystem::u8path(path.toStdString());
+    std::ifstream in(std_path);
     if(!in.is_open()){
         QMessageBox messageBox;
         messageBox.critical(nullptr, "Error", "Could not open \"" + path + "\" to read.");
@@ -578,10 +576,17 @@ void MainWindow::open(QString path){
         return;
     }
 
-    editor->setFromSerial(src);
+    Typeset::Model* model = Typeset::Model::fromSerial(src);
+    std_path = std::filesystem::canonical(std_path);
+    model->path = std_path;
+    Forscape::Program::instance()->setProgramEntryPoint(std_path, model);
+    model->postmutate();
+    editor->setModel(model);
+
     setWindowTitle(QFile(path).fileName() + WINDOW_TITLE_SUFFIX);
-    settings.setValue(ACTIVE_FILE, path);
-    this->path = path;
+    settings.setValue(PROJECT_ROOT_FILE, path);
+    project_path = path;
+    active_file_path = path;
     write_time = std::filesystem::last_write_time(path.toStdU16String());
 
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
@@ -781,10 +786,10 @@ void MainWindow::on_actionUnicode_triggered(){
 
 void MainWindow::onTextChanged(){
     //EVENTUALLY: doing a deep comparison is terrible. Need a more efficient way to determine if the document is saved
-    bool changed_from_save = !isSavedDeepComparison();
+    bool changed_from_save = !editor->getModel()->isSavedDeepComparison();
     setWindowTitle(
         (changed_from_save ? "*" : "") +
-        (path.isEmpty() ? NEW_SCRIPT_TITLE : QFile(path).fileName()) +
+        (active_file_path.isEmpty() ? NEW_SCRIPT_TITLE : QFile(active_file_path).fileName()) +
         WINDOW_TITLE_SUFFIX);
 }
 
@@ -824,11 +829,9 @@ void MainWindow::on_actionShow_project_browser_toggled(bool show){
 }
 
 void MainWindow::checkForChanges(){
-    if(path.isEmpty()) return;
+    if(active_file_path.isEmpty()) return;
 
-    assert(settings.contains(ACTIVE_FILE));
-    auto filename = settings.value(ACTIVE_FILE).toString().toStdU16String();
-
+    auto filename = active_file_path.toStdU16String();
     const std::filesystem::file_time_type modified_time = std::filesystem::last_write_time(filename);
     if(modified_time <= write_time) return;
     write_time = modified_time;
@@ -839,7 +842,7 @@ void MainWindow::checkForChanges(){
         QMessageBox::Yes|QMessageBox::No
     );
 
-    if(reply == QMessageBox::Yes) open(path);
+    if(reply == QMessageBox::Yes) openProject(active_file_path);
     else onTextChanged();
 }
 
@@ -904,12 +907,6 @@ void MainWindow::onSplitterResize(int pos, int index) {
     program_control_of_hsplitter = false;
 }
 
-void MainWindow::anchor(){
-    //EVENTUALLY: the active file is the program entry point
-
-    //EVENTUALLY: depress the anchor button if the active file is anchored
-}
-
 void MainWindow::onFileClicked(QTreeWidgetItem* item, int column) {
     std::cout << item->text(0).toStdString() << " clicked" << std::endl;
     //EVENTUALLY: go to the file
@@ -925,7 +922,6 @@ void MainWindow::onFileRightClicked(const QPoint& pos) {
     if(item_is_file){
         menu.addAction("Open File")->setStatusTip("EVENTUALLY");
         menu.addAction("Rename File")->setStatusTip("EVENTUALLY");
-        menu.addAction("Anchor Project")->setStatusTip("EVENTUALLY");
     }else{
         menu.addAction("Rename Folder")->setStatusTip("EVENTUALLY");
         menu.addAction("Add New File")->setStatusTip("EVENTUALLY");
@@ -965,11 +961,8 @@ void MainWindow::viewModel(Forscape::Typeset::Model* model, size_t line) {
     viewing_chain.push_back(JumpPoint(editor->getModel(), editor->currentLine()));
     viewing_chain.push_back(JumpPoint(model, line));
     viewing_index = viewing_chain.size()-1;
+    model->postmutate();
     setEditorToModelAndLine(model, line);
     updateViewJumpPointElements();
-
-    //DO THIS: opening the first/main file needs to be consistent with opening other files
-
-    //DO THIS: need to update window title, decide how scanning for changes works with multiple files, etc...
 }
 

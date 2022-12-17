@@ -785,6 +785,7 @@ void SymbolTableBuilder::resolveImport(ParseNode pn) alloc_except {
     ParseNode alias = parse_tree.getFlag(pn);
     if(alias == NONE){
         ParseNode file = parse_tree.child(pn);
+        if(parse_tree.getOp(file) != OP_FILE_REF) return;
         Typeset::Selection id_sel = parse_tree.getSelection(file);
         std::string_view file_path = id_sel.strView();
 

@@ -3,6 +3,7 @@
 
 #include "forscape_error.h"
 #include "typeset_command.h"
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -38,8 +39,7 @@ public:
     Code::Interpreter interpreter;
     std::vector<Code::Error> errors;
     std::vector<Code::Error> warnings;
-
-    //DO THIS: you probably need to attach the path to the model
+    std::filesystem::path path;
 
     Model();
     ~Model();
@@ -55,6 +55,7 @@ public:
     double getHeight() noexcept;
     size_t numLines() const noexcept;
     void appendSerialToOutput(const std::string& src);
+    bool isSavedDeepComparison() const;
     double width  DEBUG_INIT_STALE;
     double height  DEBUG_INIT_STALE;
 
@@ -95,6 +96,7 @@ public:
     size_t serialChars() const noexcept;
     Line* nearestLine(double y) const noexcept;
     void registerCommaSeparatedNumber(const Typeset::Selection& sel) alloc_except;
+    void postmutate();
 
     static constexpr double LINE_VERTICAL_PADDING = 5;
 
@@ -129,7 +131,6 @@ private:
     Selection find(const std::string& str) noexcept;
     void performSemanticFormatting();
     void premutate() noexcept;
-    void postmutate();
 
     void rename(const std::vector<Selection>& targets, const std::string& name, Controller& c);
 

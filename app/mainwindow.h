@@ -33,7 +33,7 @@ class MainWindow : public QMainWindow{
 public:
     MainWindow(QWidget* parent = nullptr);
     virtual ~MainWindow();
-    void open(QString path);
+    void openProject(QString path);
     QSettings settings;
     Forscape::Typeset::Editor* editor;
 
@@ -50,7 +50,8 @@ private:
     Splitter* vertical_splitter;
     Preferences* preferences;
     Plot* active_plot = nullptr;
-    QString path;
+    QString project_path;
+    QString active_file_path;
     QTimer interpreter_poll_timer;
     static constexpr std::chrono::milliseconds INTERPETER_POLL_PERIOD = std::chrono::milliseconds(15);
     bool editor_had_focus;
@@ -115,7 +116,6 @@ private slots:
     void onColourChanged();
     void on_actionGo_to_line_triggered();
     void onSplitterResize(int pos, int index);
-    void anchor();
     void onFileClicked(QTreeWidgetItem* item, int column);
     void onFileRightClicked(const QPoint& pos);
     void setHSplitterDefaultWidth();

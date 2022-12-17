@@ -36,7 +36,7 @@ int main(int argc, char* argv[]){
         QString supplied_path(argv[1]);
         #endif
         QString abs_path = QFileInfo(supplied_path).absoluteFilePath();
-        w.open(abs_path);
+        w.openProject(abs_path);
     }
     w.show();
     auto code = a.exec();

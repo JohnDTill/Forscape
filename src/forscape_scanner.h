@@ -38,8 +38,6 @@ private:
     void incrementScope() noexcept;
     void decrementScope() noexcept;
     void scanFilePath() alloc_except;
-    void scanFile(std::string_view path) alloc_except;
-    void importModel(Typeset::Model* imported_model) alloc_except;
 
     Typeset::Model* model;
     Typeset::Controller* controller;

@@ -95,7 +95,7 @@
   </action>
   <action name="actionOpen">
    <property name="text">
-    <string>Open</string>
+    <string>Open Project</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
