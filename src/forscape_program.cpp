@@ -46,6 +46,8 @@ Program::ptr_or_code Program::openFromAbsolutePath(std::filesystem::path path){
 }
 
 Program::ptr_or_code Program::openFromRelativePath(std::string_view file_name){
+    //DO THIS: the search should start from the directory of the calling file
+
     std::filesystem::path rel_path = std::filesystem::u8path(file_name);
     Program::ptr_or_code result = rel_path.has_extension() ?
         openFromRelativePathSpecifiedExtension(rel_path) :

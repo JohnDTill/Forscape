@@ -343,7 +343,6 @@ ParseNode Parser::filename() noexcept {
     parse_tree.setFlag(file, 0);
     registerParseNodeRegion(file, index-1);
 
-    //DO THIS: make sure the file is loaded, parsed, and ready to jump to
     std::string_view path = parse_tree.getSelection(file).strView();
     Program::ptr_or_code ptr_or_code = Program::instance()->openFromRelativePath(path);
 
@@ -351,6 +350,7 @@ ParseNode Parser::filename() noexcept {
         case Program::FILE_NOT_FOUND: error(FILE_NOT_FOUND); break;
         case Program::FILE_CORRUPTED: error(FILE_CORRUPTED); break;
         case Program::FILE_ALREADY_OPEN: break;
+        //DO THIS: guard against self import? or warn since it's stupid but not harmful?
         default:
             parse_tree.setFlag(file, ptr_or_code);
             //Typeset::Model* loaded = reinterpret_cast<Typeset::Model*>(ptr_or_code);

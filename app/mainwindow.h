@@ -23,6 +23,7 @@ namespace Forscape{
 namespace Typeset {
 class Console;
 class Editor;
+class Model;
 }
 }
 
@@ -53,9 +54,24 @@ private:
     QTimer interpreter_poll_timer;
     static constexpr std::chrono::milliseconds INTERPETER_POLL_PERIOD = std::chrono::milliseconds(15);
     bool editor_had_focus;
+    QAction* file_back;
+    QAction* file_next;
     void loadGeometry();
     void resizeHackToFixScrollbars();
     bool isSavedDeepComparison() const;
+    void updateViewJumpPointElements();
+    void resetViewJumpPointElements();
+
+    struct JumpPoint {
+        Forscape::Typeset::Model* model;
+        size_t line;
+
+        JumpPoint() noexcept = default;
+        JumpPoint(Forscape::Typeset::Model* model, size_t line) noexcept :
+            model(model), line(line){}
+    };
+    std::vector<JumpPoint> viewing_chain;
+    size_t viewing_index = 0;
 
 private slots:
     void run();
@@ -104,6 +120,9 @@ private slots:
     void onFileRightClicked(const QPoint& pos);
     void setHSplitterDefaultWidth();
     void setVSplitterDefaultHeight();
+    void on_actionGoBack_triggered();
+    void on_actionGoForward_triggered();
+    void viewModel(Forscape::Typeset::Model* model, size_t line);
 
 protected:
     virtual void closeEvent(QCloseEvent* event) override;
@@ -115,5 +134,6 @@ private:
     void addPlot(const std::string& title, const std::string& x_label, const std::string& y_label);
     void addSeries(const std::vector<std::pair<double, double>>& data) const alloc_except;
     QString getLastDir();
+    void setEditorToModelAndLine(Forscape::Typeset::Model* model, size_t line);
 };
 #endif // MAINWINDOW_H

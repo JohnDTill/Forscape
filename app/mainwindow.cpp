@@ -96,7 +96,9 @@ MainWindow::MainWindow(QWidget* parent)
     leaf->setIcon(0, QFileIconProvider().icon(QFileIconProvider::File));
     QTreeWidgetItem* anchor_leaf = new QTreeWidgetItem(root);
     anchor_leaf->setText(0, "Anchor leaf");
-    anchor_leaf->setIcon(0, QIcon(":/anchor.svg"));
+    anchor_leaf->setIcon(0, QIcon(":/fonts/anchor.svg"));
+    ui->actionGoBack->setIcon(QIcon(":/fonts/arrow_back.svg"));
+    ui->actionGoForward->setIcon(QIcon(":/fonts/arrow_forward.svg"));
     horizontal_splitter->addWidget(project_browser);
     connect(horizontal_splitter, SIGNAL(splitterMoved(int, int)), this, SLOT(onSplitterResize(int, int)));
     connect(horizontal_splitter, SIGNAL(splitterDoubleClicked(int)), this, SLOT(setHSplitterDefaultWidth()));
@@ -110,6 +112,7 @@ MainWindow::MainWindow(QWidget* parent)
     if(settings.contains(ACTIVE_FILE))
         open(settings.value(ACTIVE_FILE).toString());
     vertical_splitter->addWidget(editor);
+    resetViewJumpPointElements();
 
     group_box = new QGroupBox(this);
     group_box->setTitle("Console");
@@ -150,7 +153,7 @@ MainWindow::MainWindow(QWidget* parent)
 
     editor->setFocus();
 
-    int id = QFontDatabase::addApplicationFont(":/toolbar_glyphs.otf");
+    int id = QFontDatabase::addApplicationFont(":/fonts/toolbar_glyphs.otf");
     assert(id!=-1);
     QString family = QFontDatabase::applicationFontFamilies(id).at(0);
     QFont glyph_font = QFont(family);
@@ -158,49 +161,70 @@ MainWindow::MainWindow(QWidget* parent)
 
     action_toolbar = addToolBar(tr("File"));
     action_toolbar->setObjectName("action_toolbar");
-    QAction* run_act = new QAction(tr("Œ"), this);
-    run_act->setToolTip("Run script   Ctrl+R");
+    QAction* run_act = new QAction("Œ", this);
+    run_act->setToolTip(tr("Run script   Ctrl+R"));
     run_act->setFont(glyph_font);
     run_act->setShortcuts(QKeySequence::InsertLineSeparator);
     connect(run_act, &QAction::triggered, this, &MainWindow::run);
     action_toolbar->addAction(run_act);
 
-    QAction* stop_act = new QAction(tr("Ŗ"), this);
-    stop_act->setToolTip("Stop script");
+    QAction* stop_act = new QAction("Ŗ", this);
+    stop_act->setToolTip(tr("Stop script"));
     stop_act->setFont(glyph_font);
     stop_act->setShortcuts(QKeySequence::InsertLineSeparator);
     connect(stop_act, &QAction::triggered, this, &MainWindow::stop);
     action_toolbar->addAction(stop_act);
 
     #ifndef NDEBUG
-    QAction* ast_act = new QAction(tr("œ"), this);
-    ast_act->setToolTip("Show AST");
+    QAction* ast_act = new QAction("œ", this);
+    ast_act->setToolTip(tr("Show AST"));
     ast_act->setFont(glyph_font);
     ast_act->setShortcuts(QKeySequence::InsertLineSeparator);
     connect(ast_act, &QAction::triggered, this, &MainWindow::parseTree);
     action_toolbar->addAction(ast_act);
 
-    QAction* sym_act = new QAction(tr("Ŕ"), this);
-    sym_act->setToolTip("Show symbol table");
+    QAction* sym_act = new QAction("Ŕ", this);
+    sym_act->setToolTip(tr("Show symbol table"));
     sym_act->setFont(glyph_font);
     sym_act->setShortcuts(QKeySequence::InsertLineSeparator);
     connect(sym_act, &QAction::triggered, this, &MainWindow::symbolTable);
     action_toolbar->addAction(sym_act);
     #endif
 
-    QAction* github_act = new QAction(tr("ŕ"), this);
-    github_act->setToolTip("View on GitHub");
+    QAction* github_act = new QAction("ŕ", this);
+    github_act->setToolTip(tr("View on GitHub"));
     github_act->setFont(glyph_font);
     github_act->setShortcuts(QKeySequence::InsertLineSeparator);
     connect(github_act, &QAction::triggered, this, &MainWindow::github);
     action_toolbar->addAction(github_act);
 
-    QAction* anchor_act = new QAction(tr("ŗ"), this);
-    anchor_act->setToolTip("Anchor project to the active file (sets program entry point)");
+    QAction* anchor_act = new QAction("ŗ", this);
+    anchor_act->setToolTip(tr("Anchor project to the active file (sets program entry point)"));
     anchor_act->setFont(glyph_font);
     anchor_act->setShortcuts(QKeySequence::InsertLineSeparator);
     connect(anchor_act, &QAction::triggered, this, &MainWindow::anchor);
     action_toolbar->addAction(anchor_act);
+
+    action_toolbar->addSeparator();
+
+    file_back = new QAction("Ř", this);
+    file_back->setToolTip(tr("View the previous file"));
+    file_back->setFont(glyph_font);
+    file_back->setShortcuts(QKeySequence::InsertLineSeparator);
+    file_back->setDisabled(true);
+    connect(file_back, &QAction::triggered, this, &MainWindow::on_actionGoBack_triggered);
+    action_toolbar->addAction(file_back);
+
+    file_next = new QAction("ř", this);
+    file_next->setToolTip(tr("View the next file"));
+    file_next->setFont(glyph_font);
+    file_next->setShortcuts(QKeySequence::InsertLineSeparator);
+    file_next->setDisabled(true);
+    connect(file_next, &QAction::triggered, this, &MainWindow::on_actionGoForward_triggered);
+    action_toolbar->addAction(file_next);
+
+    connect(editor, SIGNAL(goToModel(Forscape::Typeset::Model*, size_t)),
+            this, SLOT(viewModel(Forscape::Typeset::Model*, size_t)));
 
     if(settings.contains(ACTION_TOOLBAR_VISIBLE)){
         bool visible = settings.value(ACTION_TOOLBAR_VISIBLE).toBool();
@@ -316,6 +340,21 @@ bool MainWindow::isSavedDeepComparison() const {
     std::string curr_src = editor->getModel()->toSerial();
 
     return saved_src == curr_src;
+}
+
+void MainWindow::updateViewJumpPointElements() {
+    bool can_go_forward = viewing_index < viewing_chain.size()-1;
+    bool can_go_backward = viewing_index > 0;
+    ui->actionGoForward->setEnabled(can_go_forward);
+    file_next->setEnabled(can_go_forward);
+    ui->actionGoBack->setEnabled(can_go_backward);
+    file_back->setEnabled(can_go_backward);
+}
+
+void MainWindow::resetViewJumpPointElements() {
+    viewing_chain.clear();
+    viewing_chain.push_back(JumpPoint(editor->getModel(), 0));
+    viewing_index = 0;
 }
 
 void MainWindow::run(){
@@ -546,6 +585,8 @@ void MainWindow::open(QString path){
     write_time = std::filesystem::last_write_time(path.toStdU16String());
 
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
+
+    resetViewJumpPointElements();
 }
 
 void MainWindow::addPlot(const std::string& title, const std::string& x_label, const std::string& y_label){
@@ -567,6 +608,11 @@ QString MainWindow::getLastDir(){
     }
 
     return QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+}
+
+void MainWindow::setEditorToModelAndLine(Forscape::Typeset::Model* model, size_t line){
+    editor->setModel(model);
+    editor->goToLine(line);
 }
 
 void MainWindow::on_actionFind_Replace_triggered(){
@@ -743,6 +789,7 @@ void MainWindow::onTextChanged(){
 }
 
 void MainWindow::closeEvent(QCloseEvent* event){
+    //DO THIS: check for unsaved changes to all project files
     if(!isSavedDeepComparison()){
         QMessageBox::StandardButton reply = QMessageBox::question(this, "Unsaved changes", "Save file before closing?",
         QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
@@ -898,3 +945,31 @@ void MainWindow::setVSplitterDefaultHeight() {
     const int console_height = h/3;
     vertical_splitter->setSizes({h-console_height, console_height});
 }
+
+void MainWindow::on_actionGoBack_triggered() {
+    assert(viewing_index > 0);
+    const JumpPoint& jump_point = viewing_chain[--viewing_index];
+    setEditorToModelAndLine(jump_point.model, jump_point.line);
+    updateViewJumpPointElements();
+}
+
+void MainWindow::on_actionGoForward_triggered() {
+    assert(viewing_index < viewing_chain.size()-1);
+    const JumpPoint& jump_point = viewing_chain[++viewing_index];
+    setEditorToModelAndLine(jump_point.model, jump_point.line);
+    updateViewJumpPointElements();
+}
+
+void MainWindow::viewModel(Forscape::Typeset::Model* model, size_t line) {
+    viewing_chain.erase(viewing_chain.begin() + viewing_index, viewing_chain.end());
+    viewing_chain.push_back(JumpPoint(editor->getModel(), editor->currentLine()));
+    viewing_chain.push_back(JumpPoint(model, line));
+    viewing_index = viewing_chain.size()-1;
+    setEditorToModelAndLine(model, line);
+    updateViewJumpPointElements();
+
+    //DO THIS: opening the first/main file needs to be consistent with opening other files
+
+    //DO THIS: need to update window title, decide how scanning for changes works with multiple files, etc...
+}
+

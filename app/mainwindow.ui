@@ -75,6 +75,9 @@
     <addaction name="actionShow_action_toolbar"/>
     <addaction name="actionShow_typesetting_toolbar"/>
     <addaction name="actionShow_project_browser"/>
+    <addaction name="separator"/>
+    <addaction name="actionGoBack"/>
+    <addaction name="actionGoForward"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -297,6 +300,28 @@
    </property>
    <property name="text">
     <string>Show project browser</string>
+   </property>
+  </action>
+  <action name="actionGoBack">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Go back</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Left</string>
+   </property>
+  </action>
+  <action name="actionGoForward">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Go forward</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Right</string>
    </property>
   </action>
  </widget>

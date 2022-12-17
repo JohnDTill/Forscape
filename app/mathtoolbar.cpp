@@ -13,7 +13,7 @@ using namespace Typeset;
 static QFont glyph_font;
 
 MathToolbar::MathToolbar(QWidget* parent) : QToolBar(parent) {
-    int id = QFontDatabase::addApplicationFont(":/toolbar_glyphs.otf");
+    int id = QFontDatabase::addApplicationFont(":/fonts/toolbar_glyphs.otf");
     assert(id!=-1);
     QString family = QFontDatabase::applicationFontFamilies(id).at(0);
     glyph_font = QFont(family);

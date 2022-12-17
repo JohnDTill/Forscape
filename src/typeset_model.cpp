@@ -24,7 +24,14 @@ namespace Forscape {
 
 namespace Typeset {
 
+#ifdef TYPESET_MEMORY_DEBUG
+FORSCAPE_UNORDERED_SET<Model*> Model::all;
+#endif
+
 Model::Model(){
+    #ifdef TYPESET_MEMORY_DEBUG
+    all.insert(this);
+    #endif
     lines.push_back( new Line(this) );
     lines[0]->id = 0;
 }
@@ -33,6 +40,10 @@ Model::~Model(){
     clearRedo();
     for(Command* cmd : undo_stack) delete cmd;
     for(Line* l : lines) delete l;
+
+    #ifdef TYPESET_MEMORY_DEBUG
+    all.erase(this);
+    #endif
 }
 
 void Model::clear() noexcept{

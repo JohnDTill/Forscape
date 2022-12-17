@@ -27,6 +27,10 @@ class Editor;
 
 class Model {
 public:
+    #ifdef TYPESET_MEMORY_DEBUG
+    static FORSCAPE_UNORDERED_SET<Model*> all;
+    #endif
+
     Code::Scanner scanner = Code::Scanner(this);
     Code::Parser parser = Code::Parser(scanner, this);
     Code::SymbolTableBuilder symbol_builder = Code::SymbolTableBuilder(parser.parse_tree, this);
@@ -34,6 +38,8 @@ public:
     Code::Interpreter interpreter;
     std::vector<Code::Error> errors;
     std::vector<Code::Error> warnings;
+
+    //DO THIS: you probably need to attach the path to the model
 
     Model();
     ~Model();

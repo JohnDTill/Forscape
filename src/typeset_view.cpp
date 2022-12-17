@@ -212,13 +212,10 @@ View::View() noexcept
 }
 
 View::~View() noexcept {
-    if(model_owned) delete model;
     all_views.remove(this);
 }
 
 void View::setFromSerial(const std::string& src, bool is_output){
-    if(model_owned) delete model;
-    model_owned = true;
     model = Model::fromSerial(src, is_output);
     controller = Controller(model);
     h_scroll->setValue(h_scroll->minimum());
@@ -238,10 +235,8 @@ Model* View::getModel() const noexcept {
     return model;
 }
 
-void View::setModel(Model* m, bool owned) noexcept {
-    if(model_owned) delete model;
+void View::setModel(Model* m) noexcept {
     highlighted_words.clear();
-    model_owned = owned;
     model = m;
     controller = Controller(model);
     updateXSetpoint();
@@ -1508,9 +1503,7 @@ void Editor::findUsages(){
 void Editor::goToFile() {
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_FILE_REF);
     Typeset::Model* referenced = reinterpret_cast<Typeset::Model*>(model->parseTree().getFlag(contextNode));
-    setModel(referenced, false); //DO THIS: confirm ownership is okay
-    controller.moveToStartOfDocument();
-    //DO THIS: back and forth actions are hugely helpful for this kind of jumping between files
+    emit goToModel(referenced, 0);
 }
 
 void Editor::showTooltipParseNode(){

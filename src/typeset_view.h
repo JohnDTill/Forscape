@@ -25,7 +25,7 @@ public:
     void setFromSerial(const std::string& src, bool is_output = false);
     std::string toSerial() const alloc_except;
     Model* getModel() const noexcept;
-    void setModel(Model* m, bool owned = true) noexcept;
+    void setModel(Model* m) noexcept;
     void setLineNumbersVisible(bool show) noexcept;
     Controller& getController() noexcept;
     void setReadOnly(bool read_only) noexcept;
@@ -101,7 +101,6 @@ protected:
     bool allow_write = true;
     bool insert_mode = false;
     bool show_cursor = false;
-    bool model_owned = true;
     friend MarkerLink;
     public: double zoom = ZOOM_DEFAULT;
     bool is_running = false;
@@ -268,6 +267,9 @@ private slots:
     void goToFile();
     void showTooltipParseNode();
     void showTooltip();
+
+signals:
+    void goToModel(Forscape::Typeset::Model* model, size_t line);
 
 private:
     void rename(const std::string& str);
