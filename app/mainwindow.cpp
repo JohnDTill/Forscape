@@ -343,7 +343,8 @@ void MainWindow::updateViewJumpPointElements() {
     ui->actionGoBack->setEnabled(can_go_backward);
     file_back->setEnabled(can_go_backward);
 
-    active_file_path = QString::fromUtf8(editor->getModel()->path.generic_u8string());
+    std::string path_str = editor->getModel()->path.generic_u8string();
+    active_file_path = QString::fromUtf8(path_str.data(), path_str.size());
     onTextChanged();
 }
 
