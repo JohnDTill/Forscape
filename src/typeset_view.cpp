@@ -241,6 +241,7 @@ void View::setModel(Model* m) noexcept {
     controller = Controller(model);
     updateXSetpoint();
     update();
+    v_scroll->update();
     handleResize();
 }
 
