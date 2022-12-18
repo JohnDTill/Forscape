@@ -444,7 +444,7 @@ void MainWindow::on_actionNew_triggered(){
     QTreeWidgetItem* item = new QTreeWidgetItem(project_browser);
     item->setText(0, "untitled");
     item->setIcon(0, file_icon);
-    item->setData(0, Qt::UserRole, reinterpret_cast<size_t>(model));
+    item->setData(0, Qt::UserRole, QVariant::fromValue(model));
     project_browser->sortItems(0, Qt::SortOrder::AscendingOrder);
     model->project_browser_entry = item;
 
@@ -616,7 +616,7 @@ void MainWindow::openProject(QString path){
     auto file_name = std_path.filename().u8string();
     main_file->setText(0, QString::fromUtf8(file_name.data(), file_name.size()));
     main_file->setIcon(0, main_icon);
-    main_file->setData(0, Qt::UserRole, reinterpret_cast<size_t>(model));
+    main_file->setData(0, Qt::UserRole, QVariant::fromValue(model));
     model->project_browser_entry = main_file;
     project_browser_entries[std_path] = main_file;
     std_path = std_path.parent_path();
@@ -686,7 +686,7 @@ void MainWindow::addProjectEntry(Forscape::Typeset::Model* model) {
 
     QTreeWidgetItem* tree_item = new QTreeWidgetItem;
     model->project_browser_entry = tree_item;
-    tree_item->setData(0, Qt::UserRole, reinterpret_cast<size_t>(model));
+    tree_item->setData(0, Qt::UserRole, QVariant::fromValue(model));
     auto file_name = path.filename().u8string();
     tree_item->setText(0, QString::fromUtf8(file_name.data(), file_name.size()));
     tree_item->setIcon(0, file_icon);
@@ -1003,7 +1003,7 @@ void MainWindow::onSplitterResize(int pos, int index) {
 
 static Forscape::Typeset::Model* model(QTreeWidgetItem* item) noexcept {
     assert(item->childCount() == 0);
-    return reinterpret_cast<Forscape::Typeset::Model*>(item->data(0, Qt::UserRole).toULongLong());
+    return item->data(0, Qt::UserRole).value<Forscape::Typeset::Model*>();
 }
 
 static bool isSavedToDisk(QTreeWidgetItem* item) noexcept {
