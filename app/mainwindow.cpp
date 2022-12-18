@@ -75,6 +75,8 @@ static QIcon main_icon;
 static QIcon file_icon;
 static QIcon folder_icon;
 
+Q_DECLARE_METATYPE(Forscape::Typeset::Model*); //EVENTUALLY: this is only for compability with old versions
+
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow){
