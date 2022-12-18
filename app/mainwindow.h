@@ -1,6 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <forscape_common.h>
+#include <filesystem>
 #include <QMainWindow>
 #include <QSettings>
 #include <QTimer>
@@ -46,6 +48,7 @@ private:
     QToolBar* action_toolbar;
     QToolBar* project_toolbar;
     QTreeWidget* project_browser;
+    QTreeWidgetItem* project_browser_active_item;
     Splitter* horizontal_splitter;
     Splitter* vertical_splitter;
     Preferences* preferences;
@@ -117,6 +120,8 @@ private slots:
     void on_actionGo_to_line_triggered();
     void onSplitterResize(int pos, int index);
     void onFileClicked(QTreeWidgetItem* item, int column);
+    void onFileClicked();
+    void onShowInExplorer();
     void onFileRightClicked(const QPoint& pos);
     void setHSplitterDefaultWidth();
     void setVSplitterDefaultHeight();
@@ -135,5 +140,9 @@ private:
     void addSeries(const std::vector<std::pair<double, double>>& data) const alloc_except;
     QString getLastDir();
     void setEditorToModelAndLine(Forscape::Typeset::Model* model, size_t line);
+    void updateProjectBrowser();
+    void addProjectEntry(Forscape::Typeset::Model* model);
+
+    FORSCAPE_UNORDERED_MAP<std::filesystem::path, QTreeWidgetItem*> project_browser_entries;
 };
 #endif // MAINWINDOW_H

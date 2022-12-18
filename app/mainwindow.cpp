@@ -71,11 +71,19 @@ static constexpr int CHANGE_CHECK_PERIOD_MS = 100;
 static constexpr int FILE_BROWSER_WIDTH = 200;
 static bool program_control_of_hsplitter = false;
 
+static QIcon main_icon;
+static QIcon file_icon;
+static QIcon folder_icon;
+
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow){
     ui->setupUi(this);
     Typeset::Painter::init();
+
+    main_icon = QIcon(":/fonts/anchor.svg");
+    file_icon = QIcon(":/lambda.ico");
+    folder_icon = QFileIconProvider().icon(QFileIconProvider::Folder);
 
     external_change_timer = new QTimer(this);
     connect(external_change_timer, &QTimer::timeout, this, &MainWindow::checkForChanges);
@@ -89,14 +97,8 @@ MainWindow::MainWindow(QWidget* parent)
     connect(project_browser, SIGNAL(itemActivated(QTreeWidgetItem*, int)), this, SLOT(onFileClicked(QTreeWidgetItem*, int)));
     project_browser->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(project_browser, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onFileRightClicked(const QPoint&)));
-    QTreeWidgetItem* root = new QTreeWidgetItem(project_browser);
-    root->setText(0, "NOT IMPLEMENTED");
-    root->setIcon(0, QFileIconProvider().icon(QFileIconProvider::Folder));
-    QTreeWidgetItem* leaf = new QTreeWidgetItem(root);
-    leaf->setText(0, "Wire up project browser");
-    leaf->setIcon(0, QFileIconProvider().icon(QFileIconProvider::File));
-    QTreeWidgetItem* anchor_leaf = new QTreeWidgetItem(root);
-    anchor_leaf->setText(0, "Anchor leaf");
+    project_browser->setRootIsDecorated(false);
+    project_browser_active_item = project_browser->invisibleRootItem();
     ui->actionGoBack->setIcon(QIcon(":/fonts/arrow_back.svg"));
     ui->actionGoForward->setIcon(QIcon(":/fonts/arrow_forward.svg"));
     horizontal_splitter->addWidget(project_browser);
@@ -436,9 +438,17 @@ void MainWindow::github(){
 void MainWindow::on_actionNew_triggered(){
     if(!editor->isEnabled()) return;
     Typeset::Model* model = Typeset::Model::fromSerial("");
-    viewModel(model, 0);
     setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
     active_file_path.clear();
+
+    QTreeWidgetItem* item = new QTreeWidgetItem(project_browser);
+    item->setText(0, "untitled");
+    item->setIcon(0, file_icon);
+    item->setData(0, Qt::UserRole, reinterpret_cast<size_t>(model));
+    project_browser->sortItems(0, Qt::SortOrder::AscendingOrder);
+    model->project_browser_entry = item;
+
+    viewModel(model, 0);
 }
 
 void MainWindow::on_actionOpen_triggered(){
@@ -545,7 +555,23 @@ bool MainWindow::saveAs(QString path){
     write_time = std::filesystem::last_write_time(std::filesystem::u8path(path.toStdString()));
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
 
-    editor->getModel()->path = std::filesystem::u8path(active_file_path.toStdString());
+    //Re-jig the project browser
+    std::filesystem::path std_path = std::filesystem::u8path(active_file_path.toStdString());
+    auto model = editor->getModel();
+    if(model->path.empty()){
+        model->path = std_path;
+        QTreeWidgetItem* item = model->project_browser_entry;
+        assert(item->text(0) == "untitled");
+        auto filename = std_path.filename().u8string();
+        item->setText(0, QString::fromUtf8(filename.data(), filename.size()));
+
+        //DO THIS - find common ancestor and put file in right place
+
+        project_browser_entries[std_path] = item;
+    }else if(model->path != std_path){
+        //DO THIS - handle renames
+    }
+    project_browser->sortItems(0, Qt::SortOrder::AscendingOrder);
 
     return true;
 }
@@ -584,6 +610,23 @@ void MainWindow::openProject(QString path){
     model->postmutate();
     editor->setModel(model);
 
+    project_browser->clear();
+    project_browser_entries.clear();
+    QTreeWidgetItem* main_file = new QTreeWidgetItem(project_browser->invisibleRootItem());
+    auto file_name = std_path.filename().u8string();
+    main_file->setText(0, QString::fromUtf8(file_name.data(), file_name.size()));
+    main_file->setIcon(0, main_icon);
+    main_file->setData(0, Qt::UserRole, reinterpret_cast<size_t>(model));
+    model->project_browser_entry = main_file;
+    project_browser_entries[std_path] = main_file;
+    std_path = std_path.parent_path();
+    project_browser_entries[std_path] = project_browser->invisibleRootItem();
+    project_browser_active_item = main_file;
+    QFont normal_font = project_browser->font();
+    QFont bold_font = normal_font;
+    bold_font.setBold(true);
+    project_browser_active_item->setFont(0, bold_font);
+
     setWindowTitle(QFile(path).fileName() + WINDOW_TITLE_SUFFIX);
     settings.setValue(PROJECT_ROOT_FILE, path);
     project_path = path;
@@ -619,6 +662,54 @@ QString MainWindow::getLastDir(){
 void MainWindow::setEditorToModelAndLine(Forscape::Typeset::Model* model, size_t line){
     editor->setModel(model);
     editor->goToLine(line);
+
+    QFont normal_font = project_browser->font();
+    QFont bold_font = normal_font;
+    bold_font.setBold(true);
+    project_browser_active_item->setFont(0, QFont());
+    project_browser_active_item = model->project_browser_entry;
+    project_browser_active_item->setFont(0, bold_font);
+}
+
+void MainWindow::updateProjectBrowser() {
+    const auto& parsed_files = Forscape::Program::instance()->getPendingProjectBrowserUpdates();
+    if(parsed_files.empty()) return;
+
+    for(const auto& entry : parsed_files) addProjectEntry(entry);
+    Forscape::Program::instance()->clearPendingProjectBrowserUpdates();
+    project_browser->sortByColumn(0, Qt::AscendingOrder);
+}
+
+void MainWindow::addProjectEntry(Forscape::Typeset::Model* model) {
+    std::filesystem::path path = model->path;
+    assert(project_browser_entries.find(path) == project_browser_entries.end());
+
+    QTreeWidgetItem* tree_item = new QTreeWidgetItem;
+    model->project_browser_entry = tree_item;
+    tree_item->setData(0, Qt::UserRole, reinterpret_cast<size_t>(model));
+    auto file_name = path.filename().u8string();
+    tree_item->setText(0, QString::fromUtf8(file_name.data(), file_name.size()));
+    tree_item->setIcon(0, file_icon);
+    project_browser_entries[path] = tree_item;
+    path = path.parent_path();
+
+    //DO THIS - find greatest common ancestor with the current root
+
+    auto parent_result = project_browser_entries.insert({path, nullptr});
+    while(parent_result.second){
+        QTreeWidgetItem* new_tree_item = new QTreeWidgetItem;
+        new_tree_item->addChild(tree_item);
+        tree_item = new_tree_item;
+        auto file_name = path.filename().u8string();
+        tree_item->setText(0, QString::fromUtf8(file_name.data(), file_name.size()));
+        tree_item->setIcon(0, folder_icon);
+        tree_item->setExpanded(true);
+        parent_result.first->second = tree_item;
+        path = path.parent_path();
+        parent_result = project_browser_entries.insert({path, nullptr});
+    }
+
+    parent_result.first->second->addChild(tree_item);
 }
 
 void MainWindow::on_actionFind_Replace_triggered(){
@@ -792,6 +883,8 @@ void MainWindow::onTextChanged(){
         (changed_from_save ? "*" : "") +
         (active_file_path.isEmpty() ? NEW_SCRIPT_TITLE : QFile(active_file_path).fileName()) +
         WINDOW_TITLE_SUFFIX);
+
+    updateProjectBrowser();
 }
 
 void MainWindow::closeEvent(QCloseEvent* event){
@@ -908,27 +1001,65 @@ void MainWindow::onSplitterResize(int pos, int index) {
     program_control_of_hsplitter = false;
 }
 
+static Forscape::Typeset::Model* model(QTreeWidgetItem* item) noexcept {
+    assert(item->childCount() == 0);
+    return reinterpret_cast<Forscape::Typeset::Model*>(item->data(0, Qt::UserRole).toULongLong());
+}
+
+static bool isSavedToDisk(QTreeWidgetItem* item) noexcept {
+    return !model(item)->path.empty();
+}
+
 void MainWindow::onFileClicked(QTreeWidgetItem* item, int column) {
-    std::cout << item->text(0).toStdString() << " clicked" << std::endl;
-    //EVENTUALLY: go to the file
+    auto m = model(item);
+    if(m != editor->getModel()) viewModel(m, 0);
+}
+
+void MainWindow::onFileClicked() {
+    onFileClicked(project_browser->currentItem(), 0);
+}
+
+void MainWindow::onShowInExplorer() {
+    QTreeWidgetItem* item = project_browser->currentItem();
+    assert(isSavedToDisk(item));
+    auto m = model(item);
+    auto path = m->path.u8string();
+    QString q_path = QString::fromUtf8(path.data(), path.size());
+
+    //DO THIS: support folders
+
+    QStringList args;
+    args << "/select," << QDir::toNativeSeparators(q_path);
+    QProcess *process = new QProcess(this);
+    process->start("explorer.exe", args);
 }
 
 void MainWindow::onFileRightClicked(const QPoint& pos) {
-    QTreeWidgetItem* item = project_browser->itemAt(pos);
-    if(item == nullptr) return;
-    std::cout << item->text(0).toStdString() << " right clicked" << std::endl;
-
     QMenu menu(this);
-    const bool item_is_file = (item->childCount() == 0);
-    if(item_is_file){
-        menu.addAction("Open File")->setStatusTip("EVENTUALLY");
-        menu.addAction("Rename File")->setStatusTip("EVENTUALLY");
+
+    QTreeWidgetItem* item = project_browser->itemAt(pos);
+    if(item == nullptr){
+        item = project_browser->invisibleRootItem();
+        QAction* new_file = menu.addAction(tr("Add New File"));
+        new_file->setToolTip(tr("Create a new file for the project"));
+        connect(new_file, SIGNAL(triggered(bool)), this, SLOT(on_actionNew_triggered()));
+    }else if(item->childCount() == 0){
+        //Item is file
+        QAction* open_file = menu.addAction(tr("Open File"));
+        open_file->setToolTip(tr("Open the selected file in the editor"));
+        connect(open_file, SIGNAL(triggered(bool)), this, SLOT(onFileClicked()));
+
+        //DO THIS - support rename with project
+
+        if(isSavedToDisk(item)){
+            QAction* show_in_explorer = menu.addAction(tr("Show in Explorer"));
+            show_in_explorer->setToolTip(tr("Show in the OS file browser"));
+            connect(show_in_explorer, SIGNAL(triggered(bool)), this, SLOT(onShowInExplorer()));
+        }
     }else{
-        menu.addAction("Rename Folder")->setStatusTip("EVENTUALLY");
-        menu.addAction("Add New File")->setStatusTip("EVENTUALLY");
+        //DO THIS - support rename with project
+        menu.addAction(tr("Add New File"))->setStatusTip("EVENTUALLY");
     }
-    menu.addAction("Show in Explorer")->setStatusTip("EVENTUALLY");
-    //connect(newAct, SIGNAL(triggered()), this, SLOT(something()));
 
     menu.exec(project_browser->mapToGlobal(pos));
 }

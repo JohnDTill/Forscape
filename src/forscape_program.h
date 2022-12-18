@@ -19,6 +19,8 @@ public:
     ptr_or_code openFromRelativePath(std::string_view file_name, std::filesystem::path dir);
     ptr_or_code openFromRelativePath(std::string_view file_name);
     void freeFileMemory() noexcept;
+    const std::vector<Typeset::Model*>& getPendingProjectBrowserUpdates() const noexcept;
+    void clearPendingProjectBrowserUpdates() noexcept;
 
 private:
     static Program* singleton_instance;
@@ -27,6 +29,7 @@ private:
     ptr_or_code openFromRelativePathAutoExtension(std::filesystem::path file_name);
 
     FORSCAPE_UNORDERED_MAP<std::filesystem::path, Typeset::Model*> source_files;
+    std::vector<Typeset::Model*> pending_project_browser_updates;
     std::vector<std::filesystem::path> project_path = {
         std::filesystem::path(), //Placeholder for searching file's directory
         std::filesystem::current_path(), //Placeholder for base project directory

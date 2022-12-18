@@ -15,6 +15,7 @@ Program* Program::instance() noexcept {
 
 void Program::clear() noexcept {
     source_files.clear();
+    pending_project_browser_updates.clear();
 }
 
 void Program::setProgramEntryPoint(std::filesystem::path path, Typeset::Model* model) {
@@ -50,6 +51,7 @@ Program::ptr_or_code Program::openFromAbsolutePath(const std::filesystem::path& 
     Typeset::Model* model = Typeset::Model::fromSerial(src);
     model->path = path;
     entry->second = model;
+    pending_project_browser_updates.push_back(model);
 
     return reinterpret_cast<size_t>(model);
 }
@@ -72,6 +74,14 @@ void Program::freeFileMemory() noexcept {
     for(auto& entry : source_files)
         delete entry.second;
     source_files.clear();
+}
+
+const std::vector<Typeset::Model*>& Program::getPendingProjectBrowserUpdates() const noexcept {
+    return pending_project_browser_updates;
+}
+
+void Program::clearPendingProjectBrowserUpdates() noexcept {
+    pending_project_browser_updates.clear();
 }
 
 Program::ptr_or_code Program::openFromRelativePathSpecifiedExtension(std::filesystem::path rel_path){

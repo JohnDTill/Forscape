@@ -13,6 +13,10 @@
 #include "forscape_static_pass.h"
 #include "forscape_interpreter.h"
 
+#ifdef QT_VERSION
+class QTreeWidgetItem;
+#endif
+
 namespace Forscape {
 
 namespace Typeset {
@@ -40,6 +44,9 @@ public:
     std::vector<Code::Error> errors;
     std::vector<Code::Error> warnings;
     std::filesystem::path path;
+    #ifdef QT_VERSION
+    QTreeWidgetItem* project_browser_entry  DEBUG_INIT_NULLPTR;
+    #endif
 
     Model();
     ~Model();
