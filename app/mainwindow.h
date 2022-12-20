@@ -128,6 +128,8 @@ private slots:
     void on_actionGoBack_triggered();
     void on_actionGoForward_triggered();
     void viewModel(Forscape::Typeset::Model* model, size_t line);
+    bool on_actionSave_All_triggered();
+    void on_actionReload_triggered();
 
 protected:
     virtual void closeEvent(QCloseEvent* event) override;
@@ -136,6 +138,7 @@ private:
     void checkOutput();
     bool savePrompt();
     bool saveAs(QString name);
+    bool saveAs(QString path, Forscape::Typeset::Model* model);
     void addPlot(const std::string& title, const std::string& x_label, const std::string& y_label);
     void addSeries(const std::vector<std::pair<double, double>>& data) const alloc_except;
     QString getLastDir();
@@ -144,5 +147,6 @@ private:
     void addProjectEntry(Forscape::Typeset::Model* model);
 
     FORSCAPE_UNORDERED_MAP<std::filesystem::path, QTreeWidgetItem*> project_browser_entries;
+    FORSCAPE_UNORDERED_SET<Forscape::Typeset::Model*> modified_files;
 };
 #endif // MAINWINDOW_H

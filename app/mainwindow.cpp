@@ -62,8 +62,6 @@
 
 using namespace Forscape;
 
-static std::filesystem::file_time_type write_time;
-
 static QTimer* external_change_timer;
 
 static constexpr int CHANGE_CHECK_PERIOD_MS = 100;
@@ -292,9 +290,12 @@ MainWindow::~MainWindow(){
     settings.setValue(ACTION_TOOLBAR_VISIBLE, ui->actionShow_action_toolbar->isChecked());
     settings.setValue(PROJECT_BROWSER_VISIBLE, ui->actionShow_project_browser->isChecked());
     settings.setValue(WINDOW_STATE, QList({QVariant(saveGeometry()), QVariant(saveState())}));
+    //DO THIS - cache active file
     search->saveSettings(settings);
     delete preferences;
     delete ui;
+
+    //DO THIS - debug check there are no memory leaks (which there certainly are currently)
 }
 
 void MainWindow::loadGeometry(){
@@ -465,8 +466,17 @@ void MainWindow::on_actionOpen_triggered(){
 bool MainWindow::on_actionSave_triggered(){
     if(!editor->isEnabled()) return false;
 
-    if(active_file_path.isEmpty()) return savePrompt();
-    else return saveAs(active_file_path);
+    if(active_file_path.isEmpty()){
+        return savePrompt();
+    }else if(saveAs(active_file_path)){
+        onTextChanged();
+        return true;
+    }else{
+        assert(false);
+        //EVENTUALLY - popup on failure?
+
+        return false;
+    }
 }
 
 void MainWindow::on_actionSave_As_triggered(){
@@ -529,6 +539,10 @@ bool MainWindow::savePrompt(){
 }
 
 bool MainWindow::saveAs(QString path){
+    return saveAs(path, editor->getModel());
+}
+
+bool MainWindow::saveAs(QString path, Forscape::Typeset::Model* model) {
     if(!editor->isEnabled()) return false;
 
     QFile file(path);
@@ -545,7 +559,7 @@ bool MainWindow::saveAs(QString path){
     #ifdef QT5
     out.setCodec("UTF-8");
     #endif
-    out << QByteArray::fromStdString(editor->getModel()->toSerial());
+    out << QByteArray::fromStdString(model->toSerial());
 
     setWindowTitle(file.fileName() + WINDOW_TITLE_SUFFIX);
     if(project_path.isEmpty()){
@@ -554,12 +568,11 @@ bool MainWindow::saveAs(QString path){
     }
     active_file_path = path;
     out.flush();
-    write_time = std::filesystem::last_write_time(std::filesystem::u8path(path.toStdString()));
+    model->write_time = std::filesystem::last_write_time(model->path);
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
 
     //Re-jig the project browser
     std::filesystem::path std_path = std::filesystem::u8path(active_file_path.toStdString());
-    auto model = editor->getModel();
     if(model->path.empty()){
         model->path = std_path;
         QTreeWidgetItem* item = model->project_browser_entry;
@@ -633,11 +646,16 @@ void MainWindow::openProject(QString path){
     settings.setValue(PROJECT_ROOT_FILE, path);
     project_path = path;
     active_file_path = path;
-    write_time = std::filesystem::last_write_time(path.toStdU16String());
+    model->write_time = std::filesystem::last_write_time(model->path);
 
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
 
     resetViewJumpPointElements();
+
+    ui->actionSave->setEnabled(false);
+    ui->actionSave_All->setEnabled(false);
+
+    onTextChanged();
 }
 
 void MainWindow::addPlot(const std::string& title, const std::string& x_label, const std::string& y_label){
@@ -694,6 +712,7 @@ void MainWindow::addProjectEntry(Forscape::Typeset::Model* model) {
     tree_item->setIcon(0, file_icon);
     project_browser_entries[path] = tree_item;
     path = path.parent_path();
+    model->write_time = std::filesystem::last_write_time(model->path);
 
     //DO THIS - find greatest common ancestor with the current root
 
@@ -745,7 +764,6 @@ void MainWindow::on_actionCut_triggered(){
     editor->updateModel();
 }
 
-
 void MainWindow::on_actionCopy_triggered(){
     if(!editor->isEnabled()) return;
 
@@ -753,14 +771,12 @@ void MainWindow::on_actionCopy_triggered(){
     editor->updateModel();
 }
 
-
 void MainWindow::on_actionPaste_triggered(){
     if(!editor->isEnabled()) return;
 
     editor->paste();
     editor->updateModel();
 }
-
 
 void MainWindow::on_actionDelete_triggered(){
     if(!editor->isEnabled()) return;
@@ -880,28 +896,78 @@ void MainWindow::on_actionUnicode_triggered(){
 
 void MainWindow::onTextChanged(){
     //EVENTUALLY: doing a deep comparison is terrible. Need a more efficient way to determine if the document is saved
-    bool changed_from_save = !editor->getModel()->isSavedDeepComparison();
+    auto model = editor->getModel();
+    const bool changed_from_save = !model->isSavedDeepComparison();
+    const bool never_saved = active_file_path.isEmpty();
+    const bool saveable = changed_from_save || never_saved;
     setWindowTitle(
         (changed_from_save ? "*" : "") +
         (active_file_path.isEmpty() ? NEW_SCRIPT_TITLE : QFile(active_file_path).fileName()) +
         WINDOW_TITLE_SUFFIX);
 
+    ui->actionSave->setEnabled(saveable);
+
     updateProjectBrowser();
+
+    if(saveable) modified_files.insert(model);
+    else modified_files.erase(model);
+    ui->actionSave_All->setDisabled(modified_files.empty());
+
+    ui->actionReload->setDisabled(never_saved);
 }
 
 void MainWindow::closeEvent(QCloseEvent* event){
-    //DO THIS: check for unsaved changes to all project files
-    if(!isSavedDeepComparison()){
-        QMessageBox::StandardButton reply = QMessageBox::question(this, "Unsaved changes", "Save file before closing?",
-        QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
-        if(reply == QMessageBox::Cancel){
-            event->ignore();
-            return;
-        }else if(reply == QMessageBox::Yes){
-            if(!on_actionSave_triggered()){
+    if(!modified_files.empty()){
+        const bool multiple_files = (modified_files.size() > 1);
+
+        QList<QString> files;
+        for(Forscape::Typeset::Model* model : modified_files){
+            auto path = model->path.filename().u8string();
+            QString qpath = QString::fromUtf8(path.data(), path.size());
+            files.push_back(qpath);
+        }
+        files.sort();
+
+        static constexpr int NUM_PRINT = 7;
+
+        QString msg = files.front();
+        for(int i = 1; i < std::min(files.size(), NUM_PRINT); i++){
+            msg += '\n';
+            msg += files[i];
+        }
+        if(files.size() > NUM_PRINT)
+            msg += "\n... and " + QString::number(files.size()-NUM_PRINT) + " more";
+
+        QString prompt = "Save file";
+        if(multiple_files) prompt += 's';
+        prompt += " before closing?";
+
+        QMessageBox msg_box;
+        msg_box.setWindowTitle("Unsaved changes");
+        msg_box.setText(prompt);
+        msg_box.setInformativeText(msg);
+        msg_box.setStandardButtons((multiple_files ? QMessageBox::SaveAll : QMessageBox::Save) | QMessageBox::Discard | QMessageBox::Cancel);
+        msg_box.setDefaultButton(QMessageBox::SaveAll);
+        msg_box.setEscapeButton(QMessageBox::Cancel);
+        msg_box.setIcon(QMessageBox::Icon::Question);
+        int ret = msg_box.exec();
+
+        //DO THIS: make sure message box doesn't impede Windows shutdown
+
+        switch (ret) {
+            case QMessageBox::Save:
+            case QMessageBox::SaveAll:
+                if(!on_actionSave_All_triggered()){
+                    event->ignore();
+                    return;
+                }
+            case QMessageBox::Discard:
+                break;
+            case QMessageBox::Cancel:
                 event->ignore();
                 return;
-            }
+            default:
+                assert(false);
         }
     }
 
@@ -927,10 +993,10 @@ void MainWindow::on_actionShow_project_browser_toggled(bool show){
 void MainWindow::checkForChanges(){
     if(active_file_path.isEmpty()) return;
 
-    auto filename = active_file_path.toStdU16String();
-    const std::filesystem::file_time_type modified_time = std::filesystem::last_write_time(filename);
-    if(modified_time <= write_time) return;
-    write_time = modified_time;
+    Forscape::Typeset::Model* model = editor->getModel();
+    const std::filesystem::file_time_type modified_time = std::filesystem::last_write_time(model->path);
+    if(modified_time <= model->write_time) return;
+    model->write_time = modified_time;
 
     QMessageBox::StandardButton reply = QMessageBox::question(this,
         "File modified externally",
@@ -938,7 +1004,7 @@ void MainWindow::checkForChanges(){
         QMessageBox::Yes|QMessageBox::No
     );
 
-    if(reply == QMessageBox::Yes) openProject(active_file_path);
+    if(reply == QMessageBox::Yes) on_actionReload_triggered();
     else onTextChanged();
 }
 
@@ -985,13 +1051,15 @@ void MainWindow::onColourChanged(){
 }
 
 void MainWindow::on_actionGo_to_line_triggered(){
+    int num_lines = static_cast<int>(editor->numLines());
     QInputDialog dialog(this);
     dialog.setWindowTitle("Go to line...");
-    dialog.setLabelText("Line:");
-    dialog.setIntRange(1, static_cast<int>(editor->numLines()));
+    dialog.setLabelText("Line: (max " + QString::number(num_lines) + ")");
+    dialog.setIntRange(1, num_lines);
     dialog.setIntValue(static_cast<int>(editor->currentLine()+1));
     dialog.setIntStep(1);
     QSpinBox* spinbox = dialog.findChild<QSpinBox*>();
+    dialog.setWindowFlags(dialog.windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
     if(dialog.exec() == QDialog::Accepted)
         editor->goToLine(spinbox->value() - 1);
@@ -1098,5 +1166,69 @@ void MainWindow::viewModel(Forscape::Typeset::Model* model, size_t line) {
     model->postmutate();
     setEditorToModelAndLine(model, line);
     updateViewJumpPointElements();
+}
+
+bool MainWindow::on_actionSave_All_triggered() {
+    static std::vector<Forscape::Typeset::Model*> failed;
+
+    for(Forscape::Typeset::Model* model : modified_files){
+        auto path = model->path.u8string();
+        QString qpath = QString::fromUtf8(path.data(), path.size());
+        bool success = saveAs(qpath, model);
+        if(!success) failed.push_back(model);
+    }
+
+    modified_files.clear();
+
+    bool success = failed.empty();
+    for(Forscape::Typeset::Model* model : failed)
+        modified_files.insert(model);
+    failed.clear();
+
+    onTextChanged();
+
+    return success;
+}
+
+void MainWindow::on_actionReload_triggered() {
+    Forscape::Typeset::Model* model = editor->getModel();
+    assert(!model->path.empty());
+    std::ifstream in(model->path);
+    if(!in.is_open()){
+        QMessageBox messageBox;
+        auto path_str = model->path.u8string();
+        QString str = QString::fromUtf8(path_str.data(), path_str.size());
+        messageBox.critical(nullptr, "Error", "Could not open \"" + str + "\" to read.");
+        messageBox.setFixedSize(500,200);
+        return;
+    }
+
+    std::stringstream buffer;
+    buffer << in.rdbuf();
+
+    std::string src = buffer.str();
+    for(size_t i = 1; i < src.size(); i++)
+        if(src[i] == '\r' && src[i-1] != OPEN)
+            src[i] = '\0';
+    src.erase( std::remove(src.begin(), src.end(), '\0'), src.end() );
+
+    assert(Forscape::isValidSerial(src));
+    if(!Forscape::isValidSerial(src)){
+        QMessageBox messageBox;
+        auto path_str = model->path.u8string();
+        QString str = QString::fromUtf8(path_str.data(), path_str.size());
+        messageBox.critical(nullptr, "Error", "\"" + str + "\" is corrupted.");
+        messageBox.setFixedSize(500,200);
+        return;
+    }
+
+    Forscape::Typeset::Controller& controller = editor->getController();
+    controller.selectAll();
+    controller.insertSerial(src);
+    //EVENTUALLY: leave the controller at the same place as before, if possible
+    model->resetUndoRedo();
+
+    onTextChanged();
+    editor->updateModel();
 }
 

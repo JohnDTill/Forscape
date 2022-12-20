@@ -46,6 +46,7 @@ public:
     std::filesystem::path path;
     #ifdef QT_VERSION
     QTreeWidgetItem* project_browser_entry  DEBUG_INIT_NULLPTR;
+    std::filesystem::file_time_type write_time;
     #endif
 
     Model();
@@ -88,6 +89,7 @@ public:
 public:
     void undo(Controller& controller);
     void redo(Controller& controller);
+    void resetUndoRedo() noexcept;
     bool undoAvailable() const noexcept;
     bool redoAvailable() const noexcept;
     void mutate(Command* cmd, Controller& controller);

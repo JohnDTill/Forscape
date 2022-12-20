@@ -425,6 +425,13 @@ void Model::redo(Controller& controller){
     }
 }
 
+void Model::resetUndoRedo() noexcept {
+    clearRedo();
+    for(Command* cmd : undo_stack) delete cmd;
+    undo_stack.clear();
+    redo_stack.clear();
+}
+
 bool Model::undoAvailable() const noexcept{
     return !undo_stack.empty();
 }

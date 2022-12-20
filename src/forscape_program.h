@@ -22,13 +22,14 @@ public:
     const std::vector<Typeset::Model*>& getPendingProjectBrowserUpdates() const noexcept;
     void clearPendingProjectBrowserUpdates() noexcept;
 
+    FORSCAPE_UNORDERED_MAP<std::filesystem::path, Typeset::Model*> source_files;
+
 private:
     static Program* singleton_instance;
     Program() = default;
     ptr_or_code openFromRelativePathSpecifiedExtension(std::filesystem::path file_name);
     ptr_or_code openFromRelativePathAutoExtension(std::filesystem::path file_name);
 
-    FORSCAPE_UNORDERED_MAP<std::filesystem::path, Typeset::Model*> source_files;
     std::vector<Typeset::Model*> pending_project_browser_updates;
     std::vector<std::filesystem::path> project_path = {
         std::filesystem::path(), //Placeholder for searching file's directory
