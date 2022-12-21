@@ -21,6 +21,7 @@
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QMimeData>
+#include <QProcess>
 #include <QSpinBox>
 #include <QSplitter>
 #include <QStandardPaths>
@@ -280,6 +281,9 @@ MainWindow::MainWindow(QWidget* parent)
     }else{
         on_actionShow_project_browser_toggled(true);
     }
+
+    connect(QGuiApplication::instance(), SIGNAL(commitDataRequest(QSessionManager&)), this, SLOT(onForcedExit()));
+    connect(&shutdown_timer, &QTimer::timeout, this, &MainWindow::updateDuringForcedExit);
 }
 
 MainWindow::~MainWindow(){
@@ -916,7 +920,11 @@ void MainWindow::onTextChanged(){
     ui->actionReload->setDisabled(never_saved);
 }
 
+int seconds_to_shutdown = 0;
+
 void MainWindow::closeEvent(QCloseEvent* event){
+    while(seconds_to_shutdown != 0) QGuiApplication::processEvents();
+
     if(!modified_files.empty()){
         const bool multiple_files = (modified_files.size() > 1);
 
@@ -1100,7 +1108,7 @@ void MainWindow::onShowInExplorer() {
 
     QStringList args;
     args << "/select," << QDir::toNativeSeparators(q_path);
-    QProcess *process = new QProcess(this);
+    QProcess* process = new QProcess(this);
     process->start("explorer.exe", args);
 }
 
@@ -1232,3 +1240,30 @@ void MainWindow::on_actionReload_triggered() {
     editor->updateModel();
 }
 
+void MainWindow::onForcedExit() {
+    if(!modified_files.empty()){
+        seconds_to_shutdown = 20;
+        shutdown_timer.start(1000);
+    }
+}
+
+void MainWindow::updateDuringForcedExit() {
+    if(QGuiApplication::focusWindow() != nullptr){
+        seconds_to_shutdown = 0;
+        shutdown_timer.stop();
+        onTextChanged(); //Need to reset the window title
+        return;
+    }
+
+    //EVENTUALLY: this doesn't dynamically update. Other apps can dynamically update this.
+    setWindowTitle("Unsaved changes, automatically save and close in " +
+                   QString::number(seconds_to_shutdown) + " seconds");
+    seconds_to_shutdown--;
+
+    if(seconds_to_shutdown == 0) {
+        if(on_actionSave_All_triggered())
+            close();
+        else
+            exit(0); //EVENTUALLY: should probably do something better here
+    }
+}

@@ -56,6 +56,7 @@ private:
     QString project_path;
     QString active_file_path;
     QTimer interpreter_poll_timer;
+    QTimer shutdown_timer;
     static constexpr std::chrono::milliseconds INTERPETER_POLL_PERIOD = std::chrono::milliseconds(15);
     bool editor_had_focus;
     QAction* file_back;
@@ -130,6 +131,8 @@ private slots:
     void viewModel(Forscape::Typeset::Model* model, size_t line);
     bool on_actionSave_All_triggered();
     void on_actionReload_triggered();
+    void onForcedExit();
+    void updateDuringForcedExit();
 
 protected:
     virtual void closeEvent(QCloseEvent* event) override;
