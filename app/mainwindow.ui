@@ -28,6 +28,9 @@
      <string>File</string>
     </property>
     <widget class="QMenu" name="menuRecent_Projects">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="title">
       <string>Recent Projects</string>
      </property>

@@ -82,6 +82,8 @@ MainWindow::MainWindow(QWidget* parent)
     , ui(new Ui::MainWindow){
     ui->setupUi(this);
     Typeset::Painter::init();
+    //DO THIS: check again before merging
+    //settings.clear(); // To check a fresh install boots; e.g. loading does not have a cache dependency
 
     main_icon = QIcon(":/fonts/anchor.svg");
     file_icon = QIcon(":/lambda.ico");
@@ -113,10 +115,7 @@ MainWindow::MainWindow(QWidget* parent)
 
     editor = new Typeset::Editor();
     setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
-    if(settings.contains(PROJECT_ROOT_FILE))
-        openProject(settings.value(PROJECT_ROOT_FILE).toString());
     vertical_splitter->addWidget(editor);
-    resetViewJumpPointElements();
 
     group_box = new QGroupBox(this);
     group_box->setTitle("Console");
@@ -287,6 +286,15 @@ MainWindow::MainWindow(QWidget* parent)
     connect(&shutdown_timer, &QTimer::timeout, this, &MainWindow::updateDuringForcedExit);
 
     loadRecentProjects();
+
+    if(settings.contains(PROJECT_ROOT_FILE)){
+        openProject(settings.value(PROJECT_ROOT_FILE).toString());
+    }else{
+        on_actionNew_triggered();
+        Forscape::Typeset::Model* model = editor->getModel();
+        model->project_browser_entry->setIcon(0, main_icon);
+    }
+    resetViewJumpPointElements();
 }
 
 MainWindow::~MainWindow(){
@@ -349,6 +357,7 @@ bool MainWindow::isSavedDeepComparison() const {
 }
 
 void MainWindow::updateViewJumpPointElements() {
+    assert(!viewing_chain.empty());
     bool can_go_forward = viewing_index < viewing_chain.size()-1;
     bool can_go_backward = viewing_index > 0;
     ui->actionGoForward->setEnabled(can_go_forward);
@@ -365,6 +374,11 @@ void MainWindow::resetViewJumpPointElements() {
     viewing_chain.clear();
     viewing_chain.push_back(JumpPoint(editor->getModel(), 0));
     viewing_index = 0;
+
+    ui->actionGoForward->setEnabled(false);
+    file_next->setEnabled(false);
+    ui->actionGoBack->setEnabled(false);
+    file_back->setEnabled(false);
 }
 
 void MainWindow::run(){
@@ -627,13 +641,13 @@ bool MainWindow::saveAs(QString path, Forscape::Typeset::Model* model) {
     }
     active_file_path = path;
     out.flush();
-    model->write_time = std::filesystem::last_write_time(model->path);
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
 
     //Re-jig the project browser
     std::filesystem::path std_path = std::filesystem::u8path(active_file_path.toStdString());
-    if(model->path.empty()){
+    if(model->path.empty()){        
         model->path = std_path;
+        model->write_time = std::filesystem::last_write_time(model->path);
         QTreeWidgetItem* item = model->project_browser_entry;
         assert(item->text(0) == "untitled");
         auto filename = std_path.filename().u8string();
@@ -647,7 +661,11 @@ bool MainWindow::saveAs(QString path, Forscape::Typeset::Model* model) {
     }
     project_browser->sortItems(0, Qt::SortOrder::AscendingOrder);
 
+    //DO THIS - what if you saved over another project file?
+
     updateRecentProjectsFromCurrent();
+
+    onTextChanged();
 
     return true;
 }
