@@ -461,6 +461,57 @@ void MainWindow::on_actionNew_triggered(){
 void MainWindow::on_actionOpen_triggered(){
     if(!editor->isEnabled()) return;
 
+    if(!modified_files.empty()){
+        const bool multiple_files = (modified_files.size() > 1);
+
+        QList<QString> files;
+        for(Forscape::Typeset::Model* model : modified_files){
+            auto path = model->path.filename().u8string();
+            QString qpath = QString::fromUtf8(path.data(), path.size());
+            files.push_back(qpath);
+        }
+        files.sort();
+
+        static constexpr int NUM_PRINT = 7;
+
+        QString msg = files.front();
+        for(int i = 1; i < std::min(files.size(), NUM_PRINT); i++){
+            msg += '\n';
+            msg += files[i];
+        }
+        if(files.size() > NUM_PRINT)
+            msg += "\n... and " + QString::number(files.size()-NUM_PRINT) + " more";
+
+        QString prompt = "Save file";
+        if(multiple_files) prompt += 's';
+        prompt += " before changing project?";
+
+        QMessageBox msg_box;
+        msg_box.setWindowTitle("Unsaved changes");
+        msg_box.setText(prompt);
+        msg_box.setInformativeText(msg);
+        msg_box.setStandardButtons((multiple_files ? QMessageBox::SaveAll : QMessageBox::Save) | QMessageBox::Discard | QMessageBox::Cancel);
+        msg_box.setDefaultButton(QMessageBox::SaveAll);
+        msg_box.setEscapeButton(QMessageBox::Cancel);
+        msg_box.setIcon(QMessageBox::Icon::Question);
+        int ret = msg_box.exec();
+
+        switch (ret) {
+            case QMessageBox::Save:
+            case QMessageBox::SaveAll:
+                if(!on_actionSave_All_triggered()){
+                    //EVENTUALLY: have feedback here
+                    return;
+                }
+            case QMessageBox::Discard:
+                break;
+            case QMessageBox::Cancel:
+                return;
+            default:
+                assert(false);
+        }
+    }
+
     QString path = QFileDialog::getOpenFileName(nullptr, tr("Open Project"), getLastDir(), tr(FORSCAPE_FILE_TYPE_DESC));
     if(path.isEmpty()) return;
 
@@ -629,6 +680,7 @@ void MainWindow::openProject(QString path){
     model->postmutate();
     editor->setModel(model);
 
+    modified_files.clear();
     project_browser->clear();
     project_browser_entries.clear();
     QTreeWidgetItem* main_file = new QTreeWidgetItem(project_browser->invisibleRootItem());
@@ -920,10 +972,10 @@ void MainWindow::onTextChanged(){
     ui->actionReload->setDisabled(never_saved);
 }
 
-int seconds_to_shutdown = 0;
+int seconds_to_shutdown = -1;
 
 void MainWindow::closeEvent(QCloseEvent* event){
-    while(seconds_to_shutdown != 0) QGuiApplication::processEvents();
+    while(seconds_to_shutdown != -1) QGuiApplication::processEvents();
 
     if(!modified_files.empty()){
         const bool multiple_files = (modified_files.size() > 1);
@@ -1249,8 +1301,8 @@ void MainWindow::onForcedExit() {
 
 void MainWindow::updateDuringForcedExit() {
     if(QGuiApplication::focusWindow() != nullptr){
-        seconds_to_shutdown = 0;
         shutdown_timer.stop();
+        seconds_to_shutdown = -1;
         onTextChanged(); //Need to reset the window title
         return;
     }
@@ -1261,9 +1313,11 @@ void MainWindow::updateDuringForcedExit() {
     seconds_to_shutdown--;
 
     if(seconds_to_shutdown == 0) {
-        if(on_actionSave_All_triggered())
+        if(on_actionSave_All_triggered()){ //EVENTUALLY: this isn't possible for previously unsaved files
+            seconds_to_shutdown = -1;
             close();
-        else
+        }else{
             exit(0); //EVENTUALLY: should probably do something better here
+        }
     }
 }
