@@ -60,6 +60,7 @@
 #define WINDOW_STATE "win_state"
 #define LAST_DIRECTORY "last_dir"
 #define FORSCAPE_FILE_TYPE_DESC "Forscape script (*.π)"
+#define RECENT_PROJECTS "recent"
 
 using namespace Forscape;
 
@@ -284,6 +285,8 @@ MainWindow::MainWindow(QWidget* parent)
 
     connect(QGuiApplication::instance(), SIGNAL(commitDataRequest(QSessionManager&)), this, SLOT(onForcedExit()));
     connect(&shutdown_timer, &QTimer::timeout, this, &MainWindow::updateDuringForcedExit);
+
+    loadRecentProjects();
 }
 
 MainWindow::~MainWindow(){
@@ -294,6 +297,7 @@ MainWindow::~MainWindow(){
     settings.setValue(ACTION_TOOLBAR_VISIBLE, ui->actionShow_action_toolbar->isChecked());
     settings.setValue(PROJECT_BROWSER_VISIBLE, ui->actionShow_project_browser->isChecked());
     settings.setValue(WINDOW_STATE, QList({QVariant(saveGeometry()), QVariant(saveState())}));
+    settings.setValue(RECENT_PROJECTS, recent_projects);
     //DO THIS - cache active file
     search->saveSettings(settings);
     delete preferences;
@@ -643,6 +647,8 @@ bool MainWindow::saveAs(QString path, Forscape::Typeset::Model* model) {
     }
     project_browser->sortItems(0, Qt::SortOrder::AscendingOrder);
 
+    updateRecentProjectsFromCurrent();
+
     return true;
 }
 
@@ -710,6 +716,8 @@ void MainWindow::openProject(QString path){
 
     ui->actionSave->setEnabled(false);
     ui->actionSave_All->setEnabled(false);
+
+    updateRecentProjectsFromCurrent();
 
     onTextChanged();
 }
@@ -1319,5 +1327,61 @@ void MainWindow::updateDuringForcedExit() {
         }else{
             exit(0); //EVENTUALLY: should probably do something better here
         }
+    }
+}
+
+void MainWindow::on_actionClearRecentProjects_triggered() {
+    recent_projects.clear();
+    if(!project_path.isEmpty()) recent_projects.push_back(project_path);
+    ui->menuRecent_Projects->clear();
+    ui->menuRecent_Projects->setEnabled(false);
+}
+
+void MainWindow::openRecent(QAction* action) {
+    QString path = action->data().toString();
+    openProject(path);
+}
+
+void MainWindow::loadRecentProjects() {
+    connect(ui->menuRecent_Projects, SIGNAL(triggered(QAction*)), this, SLOT(openRecent(QAction*)));
+    if(!settings.contains(RECENT_PROJECTS)) return;
+    recent_projects = settings.value(RECENT_PROJECTS).toStringList();
+    updateRecentProjectsFromList();
+}
+
+void MainWindow::updateRecentProjectsFromList() {
+    ui->menuRecent_Projects->clear();
+    if(recent_projects.size() < 2){
+        ui->menuRecent_Projects->setDisabled(true);
+        return;
+    }
+
+    size_t entries = 0;
+    for(int i = 1; i < recent_projects.size(); i++){
+        const QString& recent_project = recent_projects[i];
+        if(QFileInfo::exists(recent_project)){
+            QFileInfo info(recent_project);
+            QAction* open_action = new QAction(info.fileName());
+            open_action->setData(recent_project);
+            ui->menuRecent_Projects->addAction(open_action);
+
+            if(++entries == MAX_DISPLAYED_RECENT_PROJECTS) break;
+        }
+    }
+
+    ui->menuRecent_Projects->addSeparator();
+    ui->menuRecent_Projects->addAction(ui->actionClearRecentProjects);
+    ui->menuRecent_Projects->setEnabled(true);
+}
+
+void MainWindow::updateRecentProjectsFromCurrent() {
+    if(project_path.isEmpty()) return;
+    if(recent_projects.empty()) recent_projects.push_back(project_path);
+
+    if(recent_projects.front() != project_path){
+        recent_projects.removeOne(project_path);
+        recent_projects.push_front(project_path);
+        if(recent_projects.size() > MAX_STORED_RECENT_PROJECTS) recent_projects.pop_back();
+        updateRecentProjectsFromList();
     }
 }

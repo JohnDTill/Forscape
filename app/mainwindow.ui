@@ -27,8 +27,16 @@
     <property name="title">
      <string>File</string>
     </property>
+    <widget class="QMenu" name="menuRecent_Projects">
+     <property name="title">
+      <string>Recent Projects</string>
+     </property>
+     <addaction name="separator"/>
+     <addaction name="actionClearRecentProjects"/>
+    </widget>
     <addaction name="actionNew"/>
     <addaction name="actionOpen"/>
+    <addaction name="menuRecent_Projects"/>
     <addaction name="separator"/>
     <addaction name="actionSave"/>
     <addaction name="actionSave_As"/>
@@ -335,6 +343,11 @@
   <action name="actionReload">
    <property name="text">
     <string>Reload</string>
+   </property>
+  </action>
+  <action name="actionClearRecentProjects">
+   <property name="text">
+    <string>Clear</string>
    </property>
   </action>
  </widget>

@@ -133,6 +133,8 @@ private slots:
     void on_actionReload_triggered();
     void onForcedExit();
     void updateDuringForcedExit();
+    void on_actionClearRecentProjects_triggered();
+    void openRecent(QAction* action);
 
 protected:
     virtual void closeEvent(QCloseEvent* event) override;
@@ -148,8 +150,14 @@ private:
     void setEditorToModelAndLine(Forscape::Typeset::Model* model, size_t line);
     void updateProjectBrowser();
     void addProjectEntry(Forscape::Typeset::Model* model);
+    void loadRecentProjects();
+    void updateRecentProjectsFromList();
+    void updateRecentProjectsFromCurrent();
 
     FORSCAPE_UNORDERED_MAP<std::filesystem::path, QTreeWidgetItem*> project_browser_entries;
     FORSCAPE_UNORDERED_SET<Forscape::Typeset::Model*> modified_files;
+    QStringList recent_projects;
+    static constexpr int MAX_DISPLAYED_RECENT_PROJECTS = 20;
+    static constexpr int MAX_STORED_RECENT_PROJECTS = 50;
 };
 #endif // MAINWINDOW_H
