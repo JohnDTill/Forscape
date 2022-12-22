@@ -1445,7 +1445,7 @@ void Editor::populateContextMenuFromModel(QMenu& menu, double x, double y) {
             break;
         case Code::OP_FILE_REF:
             append("Go to file", goToFile, true, true)
-            //append("Find usages", findUsages, true, true) //DO THIS: figure out cross-file usages
+            //append("Find usages", findUsages, true, true) //EVENTUALLY: figure out cross-file usages
             menu.addSeparator();
             break;
     }

@@ -82,3 +82,4 @@ FILE_NOT_FOUND,y,File not found on compiler search path
 EXPECTED_FILEPATH,,Expected filepath
 FILE_CORRUPTED,,File contains invalid encoding
 SELF_IMPORT,,Self import not allowed
+NOT_IMPLEMENTED,,Import statements are not supported yet

@@ -44,7 +44,7 @@ private:
     ParseNode importStatement() alloc_except;
     ParseNode fromStatement() alloc_except;
     ParseNode filename() alloc_except;
-    ParseNode namespaceStatement() alloc_except; //DO THIS: namespaces don't serve much purpose with modules
+    ParseNode namespaceStatement() alloc_except; //EVENTUALLY: namespaces don't serve much purpose with modules
     ParseNode unknownsStatement() alloc_except;
     ParseNode classStatement() alloc_except;
     ParseNode mathStatement() alloc_except;

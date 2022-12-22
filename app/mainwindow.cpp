@@ -87,8 +87,9 @@ MainWindow::MainWindow(QWidget* parent)
     , ui(new Ui::MainWindow){
     ui->setupUi(this);
     Typeset::Painter::init();
-    //DO THIS: check again before merging
-    //settings.clear(); // To check a fresh install boots; e.g. loading does not have a cache dependency
+    #ifdef FORSCAPE_LOAD_WITHOUT_CACHE_DEBUG
+    settings.clear(); // To check a fresh install boots; e.g. loading does not have a cache dependency
+    #endif
 
     main_icon = QIcon(":/fonts/anchor.svg");
     file_icon = QIcon(":/fonts/pi_file.svg");
@@ -311,12 +312,18 @@ MainWindow::~MainWindow(){
     settings.setValue(PROJECT_BROWSER_VISIBLE, ui->actionShow_project_browser->isChecked());
     settings.setValue(WINDOW_STATE, QList({QVariant(saveGeometry()), QVariant(saveState())}));
     settings.setValue(RECENT_PROJECTS, recent_projects);
-    //DO THIS - cache active file
     search->saveSettings(settings);
     delete preferences;
     delete ui;
 
-    //DO THIS - debug check there are no memory leaks (which there certainly are currently)
+    for(const auto& entry : Forscape::Program::instance()->source_files)
+        delete entry.second;
+
+    #ifdef TYPESET_MEMORY_DEBUG
+    assert(Typeset::Model::all.empty());
+    //assert(Typeset::Text::all.empty()); //EVENTUALLY: really tighten down on this
+    //assert(Typeset::Construct::all.empty());
+    #endif
 }
 
 void MainWindow::loadGeometry(){
@@ -727,6 +734,8 @@ void MainWindow::openProject(QString path){
     Typeset::Model* model = Typeset::Model::fromSerial(src);
     std_path = std::filesystem::canonical(std_path);
     model->path = std_path;
+    for(const auto& entry : Forscape::Program::instance()->source_files)
+        delete entry.second;
     Forscape::Program::instance()->setProgramEntryPoint(std_path, model);
     model->postmutate();
     editor->setModel(model);
@@ -1061,8 +1070,6 @@ void MainWindow::closeEvent(QCloseEvent* event){
         msg_box.setIcon(QMessageBox::Icon::Question);
         int ret = msg_box.exec();
 
-        //DO THIS: make sure message box doesn't impede Windows shutdown
-
         switch (ret) {
             case QMessageBox::Save:
             case QMessageBox::SaveAll:
@@ -1196,15 +1203,20 @@ void MainWindow::onFileClicked() {
 
 void MainWindow::onShowInExplorer() {
     QTreeWidgetItem* item = project_browser->currentItem();
-    assert(isSavedToDisk(item));
-    auto m = model(item);
-    auto path = m->path.u8string();
-    QString q_path = QString::fromUtf8(path.data(), path.size());
-
-    //DO THIS: support folders
 
     QStringList args;
-    args << "/select," << QDir::toNativeSeparators(q_path);
+
+    if(item->childCount() == 0){
+        assert(isSavedToDisk(item));
+        auto m = model(item);
+        auto path = m->path.u8string();
+        QString q_path = QString::fromUtf8(path.data(), path.size());
+        args << "/select," << QDir::toNativeSeparators(q_path);
+    }else{
+        QString q_path = item->data(0, Qt::UserRole).toString();
+        args << QDir::toNativeSeparators(q_path);
+    }
+
     QProcess* process = new QProcess(this);
     process->start("explorer.exe", args);
 }
@@ -1224,7 +1236,7 @@ void MainWindow::onFileRightClicked(const QPoint& pos) {
         open_file->setToolTip(tr("Open the selected file in the editor"));
         connect(open_file, SIGNAL(triggered(bool)), this, SLOT(onFileClicked()));
 
-        //DO THIS - support rename with project
+        //EVENTUALLY - support project-wide rename
 
         if(isSavedToDisk(item)){
             QAction* show_in_explorer = menu.addAction(tr("Show in Explorer"));
@@ -1232,8 +1244,11 @@ void MainWindow::onFileRightClicked(const QPoint& pos) {
             connect(show_in_explorer, SIGNAL(triggered(bool)), this, SLOT(onShowInExplorer()));
         }
     }else{
-        //DO THIS - support rename with project
-        menu.addAction(tr("Add New File"))->setStatusTip("EVENTUALLY");
+        //EVENTUALLY - support project-wide rename
+
+        QAction* show_in_explorer = menu.addAction(tr("Show in Explorer"));
+        show_in_explorer->setToolTip(tr("Show in the OS file browser"));
+        connect(show_in_explorer, SIGNAL(triggered(bool)), this, SLOT(onShowInExplorer()));
     }
 
     menu.exec(project_browser->mapToGlobal(pos));
@@ -1522,6 +1537,6 @@ void MainWindow::linkItemToExistingAncestor(QTreeWidgetItem* item, std::filesyst
 
 void MainWindow::on_actionGo_to_main_file_triggered() {
     Forscape::Typeset::Model* entry_point = Forscape::Program::instance()->program_entry_point;
-    viewModel(entry_point, 0);
+    if(entry_point != editor->getModel()) viewModel(entry_point, 0);
 }
 

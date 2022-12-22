@@ -382,7 +382,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
 
         case OP_FROM_IMPORT:
         case OP_IMPORT:
-            return error(pn, pn, UNUSED_EXPRESSION); //DO THIS: how to support typing for modules, with support for codepenency?
+            return error(pn, pn, NOT_IMPLEMENTED); //EVENTUALLY: support imports
 
         case OP_NAMESPACE:
             //return resolveStmt(parse_tree.arg<1>(pn)); //TODO: this should be resolveBlock
