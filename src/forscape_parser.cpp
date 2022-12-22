@@ -339,17 +339,18 @@ ParseNode Parser::fromStatement() noexcept {
 
 ParseNode Parser::filename() noexcept {
     if(!peek(FILEPATH)) return error_node;
+    const Typeset::Selection& sel = selection();
     ParseNode file = terminalAndAdvance(OP_FILE_REF);
 
     std::string_view path = parse_tree.getSelection(file).strView();
     Program::ptr_or_code ptr_or_code = Program::instance()->openFromRelativePath(path, model->path.parent_path());
 
     switch (ptr_or_code) {
-        case Program::FILE_NOT_FOUND: return error(FILE_NOT_FOUND, parse_tree.getSelection(file));
-        case Program::FILE_CORRUPTED: return error(FILE_CORRUPTED, parse_tree.getSelection(file));
+        case Program::FILE_NOT_FOUND: return error(FILE_NOT_FOUND, sel);
+        case Program::FILE_CORRUPTED: return error(FILE_CORRUPTED, sel);
         default:
             if(reinterpret_cast<Typeset::Model*>(ptr_or_code) == model)
-                return error(SELF_IMPORT, parse_tree.getSelection(file));
+                return error(SELF_IMPORT, sel);
             parse_tree.setFlag(file, ptr_or_code);
             registerParseNodeRegion(file, index-1);
     }
