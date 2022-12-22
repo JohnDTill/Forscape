@@ -164,6 +164,9 @@ void Scanner::decrementScope() noexcept{
 }
 
 void Scanner::scanFilePath() alloc_except {
+    //EVENTUALLY: what are the pros & cons of requiring fully hardcoded import paths?
+    //e.g. would there be advantages to the import path being calculated by a compile-time expression?
+
     controller->skipWhitespace();
     controller->selectToPathEnd();
 

@@ -50,6 +50,8 @@ public:
     void updateBackgroundColour() noexcept;
     void updateAfterHighlightChange() noexcept;
 
+    Typeset::Selection search_selection;
+
 protected:
     void dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held) alloc_except;
     void dispatchRelease(double x, double y);

@@ -778,8 +778,16 @@ void View::drawModel(double xL, double yT, double xR, double yB) {
     painter.setZoom(zoom);
     painter.setOffset(xOrigin(), yOrigin());
 
+    //EVENTUALLY: get rid of this hack
     QColor error_background = getColour(COLOUR_ERRORBACKGROUND);
     QColor error_border = getColour(COLOUR_ERRORBORDER);
+
+    setColour(COLOUR_ERRORBACKGROUND, getColour(COLOUR_BACKGROUND));
+    setColour(COLOUR_ERRORBORDER, getColour(COLOUR_LINK));
+
+    if(!search_selection.isEmpty())
+        if(search_selection.overlapsY(yT, yB))
+            search_selection.paintError(painter);
 
     //EVENTUALLY: get rid of this hack
     setColour(COLOUR_ERRORBACKGROUND, getColour(COLOUR_WARNINGBACKGROUND));

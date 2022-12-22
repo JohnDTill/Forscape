@@ -802,6 +802,8 @@ void MainWindow::setEditorToModelAndLine(Forscape::Typeset::Model* model, size_t
     project_browser_active_item = model->project_browser_entry;
     project_browser_active_item->setFont(0, bold_font);
     project_browser->setCurrentItem(project_browser_active_item);
+
+    if(search->isVisible()) search->updateSelection();
 }
 
 void MainWindow::updateProjectBrowser() {
@@ -1011,6 +1013,12 @@ void MainWindow::onTextChanged(){
     ui->actionSave_All->setDisabled(modified_files.empty());
 
     ui->actionReload->setDisabled(never_saved);
+
+    //A selection search region is invalidated by an edit
+    if(search->isVisible()){
+        search->updateSelection();
+        editor->updateAfterHighlightChange(); //EVENTUALLY: this is poor scheduling
+    }
 }
 
 int seconds_to_shutdown = -1;

@@ -35,6 +35,8 @@ SearchDialog::SearchDialog(QWidget* parent, Typeset::View* in, Typeset::View* ou
     setWindowTitle("Search / Replace");
     setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Minimum);
     resize(width(), 1);
+
+    //EVENTUALLY: support multi-file search, e.g. find in project
 }
 
 SearchDialog::~SearchDialog(){
@@ -48,6 +50,7 @@ void SearchDialog::setWord(QString fill_word){
 
 void SearchDialog::updateSelection(){
     sel = in->getController().selection();
+    in->search_selection = sel;
     bool has_sel = !sel.isEmpty();
     ui->selectionBox->setVisible(has_sel);
     ui->selectionOnlyLabel->setVisible(has_sel);
@@ -93,6 +96,7 @@ bool SearchDialog::event(QEvent* event){
 }
 
 void SearchDialog::closeEvent(QCloseEvent*){
+    in->search_selection.left = in->search_selection.right;
     hide();
 }
 
@@ -109,7 +113,7 @@ void SearchDialog::populateHits(const std::string& str){
         else m.search(str, hits, use_case, word);
 
         index = 0;
-        if(!hits.empty()){
+        if(!hits.empty() && hasFocus()){
             in->getController() = hits[index];
             in->ensureCursorVisible();
         }
