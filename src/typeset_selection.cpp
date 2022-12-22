@@ -183,12 +183,21 @@ bool Selection::isPhraseSelection() const noexcept{
     return left.phrase() == right.phrase();
 }
 
+bool Selection::isConstructSelection() const noexcept {
+    return isPhraseSelection() && left.index == right.index-1 && left.atTextEnd() && right.atTextStart();
+}
+
 bool Selection::isEmpty() const noexcept{
     return left == right;
 }
 
 Line* Selection::getStartLine() const noexcept{
     return tL->getLine();
+}
+
+Model* Selection::getModel() const noexcept {
+    assert(left.getModel() == right.getModel());
+    return left.getModel();
 }
 
 void Selection::search(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const{

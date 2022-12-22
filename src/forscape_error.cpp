@@ -13,7 +13,7 @@ namespace Code {
 void Error::writeTo(Typeset::Text* t, Typeset::View* caller) const {
     Typeset::Line* l = selection.getStartLine();
     if(caller){
-        t->getParent()->appendConstruct(new Typeset::MarkerLink(l, caller));
+        t->getParent()->appendConstruct(new Typeset::MarkerLink(l, caller, selection.getModel()));
         t = t->nextTextAsserted();
         t->setString(" - " + message());
     }else{

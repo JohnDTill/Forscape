@@ -250,6 +250,7 @@ public:
     void runThread();
     bool isRunning() const noexcept;
     void reenable() noexcept;
+    void clickLink(Forscape::Typeset::Model* model, size_t line);
 
     //EVENTUALLY: define hierarchy
 protected:

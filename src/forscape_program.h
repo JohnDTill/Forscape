@@ -23,6 +23,7 @@ public:
     void clearPendingProjectBrowserUpdates() noexcept;
 
     FORSCAPE_UNORDERED_MAP<std::filesystem::path, Typeset::Model*> source_files;
+    Typeset::Model* program_entry_point;
 
 private:
     static Program* singleton_instance;

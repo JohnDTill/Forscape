@@ -91,7 +91,7 @@ MainWindow::MainWindow(QWidget* parent)
     //settings.clear(); // To check a fresh install boots; e.g. loading does not have a cache dependency
 
     main_icon = QIcon(":/fonts/anchor.svg");
-    file_icon = QIcon(":/lambda.ico"); //DO THIS: use svg, the .ico is noticeably bad
+    file_icon = QIcon(":/fonts/pi_file.svg");
     folder_icon = QFileIconProvider().icon(QFileIconProvider::Folder);
 
     external_change_timer = new QTimer(this);
@@ -1519,3 +1519,9 @@ void MainWindow::linkItemToExistingAncestor(QTreeWidgetItem* item, std::filesyst
 
     parent_result.first->second->addChild(item);
 }
+
+void MainWindow::on_actionGo_to_main_file_triggered() {
+    Forscape::Typeset::Model* entry_point = Forscape::Program::instance()->program_entry_point;
+    viewModel(entry_point, 0);
+}
+

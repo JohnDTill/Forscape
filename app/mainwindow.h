@@ -135,6 +135,7 @@ private slots:
     void updateDuringForcedExit();
     void on_actionClearRecentProjects_triggered();
     void openRecent(QAction* action);
+    void on_actionGo_to_main_file_triggered();
 
 protected:
     virtual void closeEvent(QCloseEvent* event) override;

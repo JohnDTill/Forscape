@@ -23,6 +23,7 @@ void Program::setProgramEntryPoint(std::filesystem::path path, Typeset::Model* m
     source_files.clear();
     source_files[path] = model;
     projectDirectory() = path.parent_path();
+    program_entry_point = model;
 }
 
 Program::ptr_or_code Program::openFromAbsolutePath(const std::filesystem::path& path){

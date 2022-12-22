@@ -304,6 +304,12 @@ void View::dispatchRelease(double x, double y){
 
 void View::dispatchDoubleClick(double x, double y){
     if(!isInLineBox(x)){
+        //EVENTUALLY: do something better than this hack to avoid highlight when double clicking link
+        if(controller.atTextEnd())
+            if(Construct* c = controller.anchor.text->nextConstructInPhrase())
+                if(c->constructCode() == MARKERLINK)
+                    return;
+
         resolveWordClick(x, y);
         update();
     }
@@ -322,8 +328,10 @@ void View::dispatchHover(double x, double y){
         case DoubleClick: resolveWordDrag(x, y); update(); break;
         case TripleClick: resolveLineDrag(y); update(); break;
         case ClickedOnSelection:
-            mouse_hold_state = SelectionDrag;
-            QWidget::setCursor(Qt::DragMoveCursor);
+            if(allow_write){
+                mouse_hold_state = SelectionDrag;
+                QWidget::setCursor(Qt::DragMoveCursor);
+            }
             break;
         default: break;
     }
@@ -404,8 +412,10 @@ void View::resolveRightClick(double x, double y, int xScreen, int yScreen){
 
 void View::resolveWordClick(double x, double y){
     resolveClick(x, y);
-    controller.moveToPrevWord();
-    controller.selectNextWord();
+    if(!controller.isConstructSelection()){
+        controller.moveToPrevWord();
+        controller.selectNextWord();
+    }
     restartCursorBlink();
     updateXSetpoint();
 }
@@ -1375,6 +1385,10 @@ void Editor::reenable() noexcept{
     allow_write = true;
 }
 
+void Editor::clickLink(Model* model, size_t line) {
+    emit goToModel(model, line);
+}
+
 void Editor::focusOutEvent(QFocusEvent* event){
     View::focusOutEvent(event);
     if(event->isAccepted()){
@@ -1500,7 +1514,7 @@ void Editor::findUsages(){
         Line* target_line = entry.getStartLine();
         if(target_line->id != last_handled){
             last_handled = target_line->id;
-            m->lastLine()->appendConstruct(new Typeset::MarkerLink(target_line, this));
+            m->lastLine()->appendConstruct(new Typeset::MarkerLink(target_line, this, getModel()));
             std::string line_snippet = target_line->toString();
             console->appendSerial("  " + line_snippet + "\n");
         }

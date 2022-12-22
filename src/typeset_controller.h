@@ -111,6 +111,7 @@ private:
     bool isTopLevel() const noexcept;
     bool isNested() const noexcept;
     bool isPhraseSelection() const noexcept;
+    bool isConstructSelection() const noexcept;
     char charRight() const noexcept;
     char charLeft() const noexcept;
     Phrase* phrase() const noexcept;

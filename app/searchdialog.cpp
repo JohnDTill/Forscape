@@ -177,7 +177,7 @@ void SearchDialog::on_findAllButton_clicked(){
         for(const Typeset::Selection& sel : hits){
             m->appendLine();
             Typeset::Text* t = m->lastText();
-            t->getParent()->appendConstruct( new Typeset::MarkerLink(sel.getStartLine(), in) );
+            t->getParent()->appendConstruct( new Typeset::MarkerLink(sel.getStartLine(), in, in->getModel()) );
         }
     }
 
