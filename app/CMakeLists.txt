@@ -22,13 +22,15 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 #add_compile_definitions(FORSCAPE_TYPESET_LAYOUT_DEBUG)
+#add_compile_definitions(TYPESET_MEMORY_DEBUG)
+#add_compile_definitions(FORSCAPE_LOAD_WITHOUT_CACHE_DEBUG)
 
 add_compile_definitions(alloc_except=noexcept)
 add_compile_definitions(EIGEN_NO_AUTOMATIC_RESIZING)
 
 set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/forscape.rc")
 
-set(BASE ../..)
+set(BASE ..)
 set(META ${BASE}/meta)
 set(SRC ${BASE}/src)
 set(CONSTRUCT ${SRC}/typeset_constructs)

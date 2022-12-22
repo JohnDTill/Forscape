@@ -15,8 +15,8 @@ jobs:
       - id: patch_conan
         run: conan profile new default --detect && conan profile update settings.compiler.libcxx=libstdc++11 default
       - id: run_conan
-        run: cd ${GITHUB_WORKSPACE}/example/exampleWidgetQt && conan install --generator cmake_find_package --install-folder ../build/conan-dependencies .
+        run: cd ${GITHUB_WORKSPACE}/app && conan install --generator cmake_find_package --install-folder ../build/conan-dependencies .
       - id: cmake
-        run: cd ${GITHUB_WORKSPACE}/example/exampleWidgetQt && cmake -B../build -S.
+        run: cd ${GITHUB_WORKSPACE}/app && cmake -B../build -S.
       - id: make
-        run: cd ${GITHUB_WORKSPACE}/example/build && make
+        run: cd ${GITHUB_WORKSPACE}/build && make

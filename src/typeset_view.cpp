@@ -212,13 +212,10 @@ View::View() noexcept
 }
 
 View::~View() noexcept {
-    if(model_owned) delete model;
     all_views.remove(this);
 }
 
 void View::setFromSerial(const std::string& src, bool is_output){
-    if(model_owned) delete model;
-    model_owned = true;
     model = Model::fromSerial(src, is_output);
     controller = Controller(model);
     h_scroll->setValue(h_scroll->minimum());
@@ -238,14 +235,13 @@ Model* View::getModel() const noexcept {
     return model;
 }
 
-void View::setModel(Model* m, bool owned) noexcept {
-    if(model_owned) delete model;
+void View::setModel(Model* m) noexcept {
     highlighted_words.clear();
-    model_owned = owned;
     model = m;
     controller = Controller(model);
     updateXSetpoint();
     update();
+    v_scroll->update();
     handleResize();
 }
 
@@ -308,6 +304,12 @@ void View::dispatchRelease(double x, double y){
 
 void View::dispatchDoubleClick(double x, double y){
     if(!isInLineBox(x)){
+        //EVENTUALLY: do something better than this hack to avoid highlight when double clicking link
+        if(controller.atTextEnd())
+            if(Construct* c = controller.anchor.text->nextConstructInPhrase())
+                if(c->constructCode() == MARKERLINK)
+                    return;
+
         resolveWordClick(x, y);
         update();
     }
@@ -326,8 +328,10 @@ void View::dispatchHover(double x, double y){
         case DoubleClick: resolveWordDrag(x, y); update(); break;
         case TripleClick: resolveLineDrag(y); update(); break;
         case ClickedOnSelection:
-            mouse_hold_state = SelectionDrag;
-            QWidget::setCursor(Qt::DragMoveCursor);
+            if(allow_write){
+                mouse_hold_state = SelectionDrag;
+                QWidget::setCursor(Qt::DragMoveCursor);
+            }
             break;
         default: break;
     }
@@ -408,8 +412,10 @@ void View::resolveRightClick(double x, double y, int xScreen, int yScreen){
 
 void View::resolveWordClick(double x, double y){
     resolveClick(x, y);
-    controller.moveToPrevWord();
-    controller.selectNextWord();
+    if(!controller.isConstructSelection()){
+        controller.moveToPrevWord();
+        controller.selectNextWord();
+    }
     restartCursorBlink();
     updateXSetpoint();
 }
@@ -782,8 +788,16 @@ void View::drawModel(double xL, double yT, double xR, double yB) {
     painter.setZoom(zoom);
     painter.setOffset(xOrigin(), yOrigin());
 
+    //EVENTUALLY: get rid of this hack
     QColor error_background = getColour(COLOUR_ERRORBACKGROUND);
     QColor error_border = getColour(COLOUR_ERRORBORDER);
+
+    setColour(COLOUR_ERRORBACKGROUND, getColour(COLOUR_BACKGROUND));
+    setColour(COLOUR_ERRORBORDER, getColour(COLOUR_LINK));
+
+    if(!search_selection.isEmpty())
+        if(search_selection.overlapsY(yT, yB))
+            search_selection.paintError(painter);
 
     //EVENTUALLY: get rid of this hack
     setColour(COLOUR_ERRORBACKGROUND, getColour(COLOUR_WARNINGBACKGROUND));
@@ -1371,6 +1385,10 @@ void Editor::reenable() noexcept{
     allow_write = true;
 }
 
+void Editor::clickLink(Model* model, size_t line) {
+    emit goToModel(model, line);
+}
+
 void Editor::focusOutEvent(QFocusEvent* event){
     View::focusOutEvent(event);
     if(event->isAccepted()){
@@ -1426,7 +1444,9 @@ void Editor::populateContextMenuFromModel(QMenu& menu, double x, double y) {
             menu.addSeparator();
             break;
         case Code::OP_FILE_REF:
-            append("Go to file", goToFile, true, true);
+            append("Go to file", goToFile, true, true)
+            //append("Find usages", findUsages, true, true) //EVENTUALLY: figure out cross-file usages
+            menu.addSeparator();
             break;
     }
 }
@@ -1494,7 +1514,7 @@ void Editor::findUsages(){
         Line* target_line = entry.getStartLine();
         if(target_line->id != last_handled){
             last_handled = target_line->id;
-            m->lastLine()->appendConstruct(new Typeset::MarkerLink(target_line, this));
+            m->lastLine()->appendConstruct(new Typeset::MarkerLink(target_line, this, getModel()));
             std::string line_snippet = target_line->toString();
             console->appendSerial("  " + line_snippet + "\n");
         }
@@ -1505,7 +1525,8 @@ void Editor::findUsages(){
 
 void Editor::goToFile() {
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_FILE_REF);
-    //EVENTUALLY
+    Typeset::Model* referenced = reinterpret_cast<Typeset::Model*>(model->parseTree().getFlag(contextNode));
+    emit goToModel(referenced, 0);
 }
 
 void Editor::showTooltipParseNode(){

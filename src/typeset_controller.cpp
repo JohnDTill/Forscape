@@ -576,6 +576,10 @@ bool Controller::isPhraseSelection() const noexcept{
     return active.phrase() == anchor.phrase();
 }
 
+bool Controller::isConstructSelection() const noexcept{
+    return selection().isConstructSelection();
+}
+
 char Controller::charRight() const noexcept{
     return active.charRight();
 }
@@ -661,6 +665,8 @@ void Controller::selectConstruct(const Construct* c) noexcept{
         active.setToFrontOf(c->next());
         anchor.setToBackOf(c->prev());
     }else{
+        anchor.setToBackOf(c->prev());
+        consolidateToAnchor();
         static_cast<const MarkerLink*>(c)->clickThrough();
     }
     #else

@@ -24,7 +24,7 @@ static constexpr size_t ITER_PRINT_LAYOUT = 100;
 static constexpr size_t ITER_PRINT_PAINT = 30;
 
 void runBenchmark(){
-    std::string src = readFile("../test/interpreter_scripts/in/root_finding_terse.txt");
+    std::string src = readFile("../test/interpreter_scripts/in/root_finding_terse.π");
 
     startClock();
     for(size_t i = 0; i < ITER_SERIAL_VALIDATION; i++)

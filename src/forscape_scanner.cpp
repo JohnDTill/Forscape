@@ -97,26 +97,26 @@ void Scanner::scanIdentifier() alloc_except {
     controller->selectToIdentifierEnd();
 
     auto lookup = keywords.find(controller->selectedFlatText());
-    if(lookup != keywords.end()){
-        controller->formatKeyword();
-
-        if(lookup->second == INCLUDE){
-            createToken(INCLUDE);
-            controller->skipWhitespace();
-            controller->selectToPathEnd();
-            if(!controller->hasSelection()){
-                errors.push_back(Error(controller->selection(), EXPECTED_FILEPATH));
-            }else{
-                createToken(FILEPATH);
-                controller->formatSimple(SEM_FILE);
-                scanFile(controller->selectedFlatText());
-            }
-        }else{
-            createToken(lookup->second);
-        }
-    }else{
+    if(lookup == keywords.end()){
         controller->formatBasicIdentifier();
         createToken(IDENTIFIER);
+    }else{
+        ForscapeTokenType type = lookup->second;
+        controller->formatKeyword();
+        createToken(type);
+
+        //Handle special scanning for file paths here
+        if(type == IMPORT){
+            scanFilePath();
+        }else if(type == FROM){
+            scanFilePath();
+            controller->skipWhitespace();
+            controller->selectToIdentifierEnd();
+            if(controller->selection().strView() == "import")
+                controller->formatKeyword();
+            else if(errors.empty())
+                errors.push_back(Error(controller->selection(), CONSUME));
+        }
     }
 }
 
@@ -163,41 +163,19 @@ void Scanner::decrementScope() noexcept{
     if(scope_depth) scope_depth--;
 }
 
-void Scanner::scanFile(std::string_view path) noexcept {
-    //EVENTUALLY - guard against cyclical includes
-    //EVENTUALLY - should it be possible to include the same file in two different include statements?
-    Program::ptr_or_code ptr_or_code = Program::instance()->openFromRelativePath(path);
+void Scanner::scanFilePath() alloc_except {
+    //EVENTUALLY: what are the pros & cons of requiring fully hardcoded import paths?
+    //e.g. would there be advantages to the import path being calculated by a compile-time expression?
 
-    switch (ptr_or_code) {
-        case Program::FILE_NOT_FOUND: error(FILE_NOT_FOUND); break;
-        case Program::FILE_CORRUPTED: error(FILE_CORRUPTED); break;
-        case Program::FILE_ALREADY_OPEN: break;
-        default: importModel(reinterpret_cast<Typeset::Model*>(ptr_or_code));
+    controller->skipWhitespace();
+    controller->selectToPathEnd();
+
+    if(!controller->hasSelection()){
+        errors.push_back(Error(controller->selection(), EXPECTED_FILEPATH));
+    }else{
+        createToken(FILEPATH);
+        controller->formatSimple(SEM_FILE);
     }
-}
-
-void Scanner::importModel(Typeset::Model* imported_model) noexcept {
-    //EVENTUALLY: this horrible kludge!
-
-    Typeset::Model* old_model = model;
-    Typeset::Controller* old_controller = controller;
-    size_t old_scope_depth = scope_depth;
-
-    model = imported_model;
-    model->clearFormatting();
-    controller = new Typeset::Controller(model);
-    controller->moveToStartOfDocument();
-
-    do{
-        scanToken();
-    } while(tokens.back().type != ENDOFFILE);
-    tokens.pop_back();
-
-    delete controller;
-
-    model = old_model;
-    controller = old_controller;
-    scope_depth = old_scope_depth;
 }
 
 }

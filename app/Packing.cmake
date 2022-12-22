@@ -1,6 +1,6 @@
 # these are cache variables, so they could be overwritten with -D,
-set(CPACK_PACKAGE_NAME "forscape_0.0.1"
-    CACHE STRING "The resulting package name"
+set(CPACK_PACKAGE_NAME "forscape_0.0.2"
+    CACHE STRING "Forscape"
 )
 # which is useful in case of packing only selected components instead of the whole thing
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Language and editor for scientific computation"
@@ -28,15 +28,15 @@ set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 set(CPACK_PACKAGE_CONTACT "JohnDTill@gmail.com")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "John Till")
 
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/../../LICENSE")
-set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/../../README.md")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/../LICENSE")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/../README.md")
 
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "cmake, python3, qt5-default, libqt5svg5-dev")
 
 # package name for deb
 # if set, then instead of some-application-0.9.2-Linux.deb
 # you'll get some-application_0.9.2_amd64.deb (note the underscores too)
-set(CPACK_DEBIAN_FILE_NAME forscape_0.0.1_amd64.deb)
+set(CPACK_DEBIAN_FILE_NAME forscape_0.0.2_amd64.deb)
 # if you want every group to have its own package,
 # although the same happens if this is not sent (so it defaults to ONE_PER_GROUP)
 # and CPACK_DEB_COMPONENT_INSTALL is set to YES

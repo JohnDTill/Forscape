@@ -25,7 +25,7 @@ public:
     void setFromSerial(const std::string& src, bool is_output = false);
     std::string toSerial() const alloc_except;
     Model* getModel() const noexcept;
-    void setModel(Model* m, bool owned = true) noexcept;
+    void setModel(Model* m) noexcept;
     void setLineNumbersVisible(bool show) noexcept;
     Controller& getController() noexcept;
     void setReadOnly(bool read_only) noexcept;
@@ -49,6 +49,8 @@ public:
     std::vector<Typeset::Selection> highlighted_words;
     void updateBackgroundColour() noexcept;
     void updateAfterHighlightChange() noexcept;
+
+    Typeset::Selection search_selection;
 
 protected:
     void dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held) alloc_except;
@@ -101,7 +103,6 @@ protected:
     bool allow_write = true;
     bool insert_mode = false;
     bool show_cursor = false;
-    bool model_owned = true;
     friend MarkerLink;
     public: double zoom = ZOOM_DEFAULT;
     bool is_running = false;
@@ -249,6 +250,7 @@ public:
     void runThread();
     bool isRunning() const noexcept;
     void reenable() noexcept;
+    void clickLink(Forscape::Typeset::Model* model, size_t line);
 
     //EVENTUALLY: define hierarchy
 protected:
@@ -268,6 +270,9 @@ private slots:
     void goToFile();
     void showTooltipParseNode();
     void showTooltip();
+
+signals:
+    void goToModel(Forscape::Typeset::Model* model, size_t line);
 
 private:
     void rename(const std::string& str);

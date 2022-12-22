@@ -13,7 +13,7 @@ using std::filesystem::directory_iterator;
 #endif
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
-#include "../example/exampleWidgetQt/symboltreeview.h"
+#include <symboltreeview.h>
 #endif
 
 using namespace Forscape;
@@ -21,6 +21,7 @@ using namespace Code;
 
 inline bool testExpression(const std::string& in, const std::string& expect){
     Typeset::Model* input = Typeset::Model::fromSerial("print(" + in + ")");
+    input->postmutate();
     std::string str = input->run();
 
     #ifndef NDEBUG
@@ -45,10 +46,14 @@ inline bool testExpression(const std::string& in, const std::string& expect){
 }
 
 inline bool testCase(const std::string& name){
-    std::string in = readFile(BASE_TEST_DIR "/in/" + name + ".π");
+    std::string file_name = BASE_TEST_DIR "/in/" + name + ".π";
+    std::string in = readFile(file_name);
     std::string out = readFile(BASE_TEST_DIR "/out/" + name + ".π");
 
     Typeset::Model* input = Typeset::Model::fromSerial(in);
+    input->path = std::filesystem::canonical(std::filesystem::u8path(file_name));
+    Forscape::Program::instance()->setProgramEntryPoint(input->path, input);
+    input->postmutate();
     std::string str = input->run();
 
     #ifndef NDEBUG
@@ -58,7 +63,6 @@ inline bool testCase(const std::string& name){
     #endif
     #endif
 
-    delete input;
     Program::instance()->freeFileMemory();
 
     if(str != out){

@@ -26,7 +26,7 @@ set(SRC ${BASE}/src)
 set(CONSTRUCT ${SRC}/typeset_constructs)
 set(GEN ${SRC}/generated)
 set(COMMAND ${SRC}/typeset_commands)
-set(EXAMPLE ${BASE}/example/exampleWidgetQt)
+set(APP ${BASE}/app)
 include_directories(${SRC})
 include_directories(${CONSTRUCT})
 include_directories(${GEN})
@@ -169,6 +169,7 @@ set(SOURCES
 )
 
 if (${TEST_QT})
+    include_directories(${APP})
     set(CMAKE_AUTOUIC ON)
     set(CMAKE_AUTOMOC ON)
     set(CMAKE_AUTORCC ON)
@@ -176,15 +177,15 @@ if (${TEST_QT})
     find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
     find_package(Qt${QT_VERSION_MAJOR}Svg REQUIRED)
     add_compile_definitions(TEST_QT)
-    qt_add_resources(EMBEDDED_RESOURCES ${EXAMPLE}/resources.qrc)
+    qt_add_resources(EMBEDDED_RESOURCES ${APP}/resources.qrc)
     list(APPEND SOURCES
         ${EMBEDDED_RESOURCES}
         ${SRC}/typeset_painter.h
         ${SRC}/typeset_painter_qt.cpp
         ${SRC}/typeset_view.cpp
         ${SRC}/typeset_view.h
-        ${EXAMPLE}/symboltreeview.cpp
-        ${EXAMPLE}/symboltreeview.h
+        ${APP}/symboltreeview.cpp
+        ${APP}/symboltreeview.h
     )
 else()
     add_compile_definitions(FORSCAPE_TYPESET_HEADLESS)

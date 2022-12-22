@@ -3,6 +3,7 @@
 
 #include "forscape_error.h"
 #include "typeset_command.h"
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -11,6 +12,10 @@
 #include "forscape_symbol_build_pass.h"
 #include "forscape_static_pass.h"
 #include "forscape_interpreter.h"
+
+#ifdef QT_VERSION
+class QTreeWidgetItem;
+#endif
 
 namespace Forscape {
 
@@ -27,6 +32,10 @@ class Editor;
 
 class Model {
 public:
+    #ifdef TYPESET_MEMORY_DEBUG
+    static FORSCAPE_UNORDERED_SET<Model*> all;
+    #endif
+
     Code::Scanner scanner = Code::Scanner(this);
     Code::Parser parser = Code::Parser(scanner, this);
     Code::SymbolTableBuilder symbol_builder = Code::SymbolTableBuilder(parser.parse_tree, this);
@@ -34,6 +43,11 @@ public:
     Code::Interpreter interpreter;
     std::vector<Code::Error> errors;
     std::vector<Code::Error> warnings;
+    std::filesystem::path path;
+    #ifdef QT_VERSION
+    QTreeWidgetItem* project_browser_entry  DEBUG_INIT_NULLPTR;
+    std::filesystem::file_time_type write_time;
+    #endif
 
     Model();
     ~Model();
@@ -49,6 +63,7 @@ public:
     double getHeight() noexcept;
     size_t numLines() const noexcept;
     void appendSerialToOutput(const std::string& src);
+    bool isSavedDeepComparison() const;
     double width  DEBUG_INIT_STALE;
     double height  DEBUG_INIT_STALE;
 
@@ -74,6 +89,7 @@ public:
 public:
     void undo(Controller& controller);
     void redo(Controller& controller);
+    void resetUndoRedo() noexcept;
     bool undoAvailable() const noexcept;
     bool redoAvailable() const noexcept;
     void mutate(Command* cmd, Controller& controller);
@@ -89,6 +105,7 @@ public:
     size_t serialChars() const noexcept;
     Line* nearestLine(double y) const noexcept;
     void registerCommaSeparatedNumber(const Typeset::Selection& sel) alloc_except;
+    void postmutate();
 
     static constexpr double LINE_VERTICAL_PADDING = 5;
 
@@ -123,7 +140,6 @@ private:
     Selection find(const std::string& str) noexcept;
     void performSemanticFormatting();
     void premutate() noexcept;
-    void postmutate();
 
     void rename(const std::vector<Selection>& targets, const std::string& name, Controller& c);
 

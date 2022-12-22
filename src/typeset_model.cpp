@@ -7,10 +7,6 @@
 #include "typeset_subphrase.h"
 #include "typeset_text.h"
 
-#ifndef NDEBUG
-#include <iostream>
-#endif
-
 #include <forscape_error.h>
 #include "forscape_message.h"
 #include <forscape_scanner.h>
@@ -18,13 +14,21 @@
 #include <forscape_symbol_build_pass.h>
 #include <forscape_symbol_link_pass.h>
 #include <forscape_interpreter.h>
+#include <fstream>
 #include <unordered_set>
 
 namespace Forscape {
 
 namespace Typeset {
 
+#ifdef TYPESET_MEMORY_DEBUG
+FORSCAPE_UNORDERED_SET<Model*> Model::all;
+#endif
+
 Model::Model(){
+    #ifdef TYPESET_MEMORY_DEBUG
+    all.insert(this);
+    #endif
     lines.push_back( new Line(this) );
     lines[0]->id = 0;
 }
@@ -33,6 +37,10 @@ Model::~Model(){
     clearRedo();
     for(Command* cmd : undo_stack) delete cmd;
     for(Line* l : lines) delete l;
+
+    #ifdef TYPESET_MEMORY_DEBUG
+    all.erase(this);
+    #endif
 }
 
 void Model::clear() noexcept{
@@ -131,8 +139,6 @@ Model::Model(const std::string& src, bool is_output)
         lines[i]->id = i;
         lines[i]->parent = this;
     }
-
-    performSemanticFormatting();
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     calculateSizes();
@@ -354,6 +360,27 @@ void Model::appendSerialToOutput(const std::string& src){
     #endif
 }
 
+bool Model::isSavedDeepComparison() const {
+    if(path.empty()) return empty();
+
+    //Avoid a deep comparison if size from file meta data doesn't match
+    if(std::filesystem::file_size(path) != serialChars()) return false;
+
+    std::ifstream in(path);
+    assert(in.is_open());
+
+    std::stringstream buffer;
+    buffer << in.rdbuf();
+
+    std::string saved_src = buffer.str();
+    saved_src.erase( std::remove(saved_src.begin(), saved_src.end(), '\r'), saved_src.end() );
+
+    //MAYDO: no need to convert model to serial, but cost is probably negligible compared to I/O
+    std::string curr_src = toSerial();
+
+    return saved_src == curr_src;
+}
+
 void Model::mutate(Command* cmd, Controller& controller){
     premutate();
     cmd->redo(controller);
@@ -396,6 +423,13 @@ void Model::redo(Controller& controller){
         updateLayout();
         #endif
     }
+}
+
+void Model::resetUndoRedo() noexcept {
+    clearRedo();
+    for(Command* cmd : undo_stack) delete cmd;
+    undo_stack.clear();
+    redo_stack.clear();
 }
 
 bool Model::undoAvailable() const noexcept{

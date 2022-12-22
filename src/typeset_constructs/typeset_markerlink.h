@@ -16,9 +16,10 @@ class MarkerLink final : public Construct {
 private:
     size_t line_id;
     View* view;
+    Model* model;
 
 public:
-    MarkerLink() : line_id(0), view(nullptr) {}
+    MarkerLink() : line_id(0), view(nullptr), model(nullptr) {}
     virtual char constructCode() const noexcept override { return MARKERLINK; }
 
     size_t serialChars() const noexcept override {
@@ -38,10 +39,10 @@ public:
     }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
-    MarkerLink(Line* line, View* view) : line_id(line->id), view(view) {}
+    MarkerLink(Line* line, View* view, Model* model) : line_id(line->id), view(view), model(model) {}
 
     void clickThrough() const {
-        view->goToLine(line_id);
+        debug_cast<Editor*>(view)->clickLink(model, line_id);
     }
 
     virtual void updateSizeFromChildSizes() noexcept override {

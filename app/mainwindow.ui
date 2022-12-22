@@ -27,11 +27,27 @@
     <property name="title">
      <string>File</string>
     </property>
+    <widget class="QMenu" name="menuRecent_Projects">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>Recent Projects</string>
+     </property>
+     <addaction name="separator"/>
+     <addaction name="actionClearRecentProjects"/>
+    </widget>
     <addaction name="actionNew"/>
     <addaction name="actionOpen"/>
+    <addaction name="menuRecent_Projects"/>
+    <addaction name="separator"/>
     <addaction name="actionSave"/>
     <addaction name="actionSave_As"/>
+    <addaction name="actionSave_All"/>
+    <addaction name="actionReload"/>
+    <addaction name="separator"/>
     <addaction name="actionPreferences"/>
+    <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
@@ -75,6 +91,10 @@
     <addaction name="actionShow_action_toolbar"/>
     <addaction name="actionShow_typesetting_toolbar"/>
     <addaction name="actionShow_project_browser"/>
+    <addaction name="separator"/>
+    <addaction name="actionGoBack"/>
+    <addaction name="actionGoForward"/>
+    <addaction name="actionGo_to_main_file"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -84,7 +104,7 @@
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionNew">
    <property name="text">
-    <string>New</string>
+    <string>New File</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
@@ -92,7 +112,7 @@
   </action>
   <action name="actionOpen">
    <property name="text">
-    <string>Open</string>
+    <string>Open Project</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
@@ -270,11 +290,6 @@
     <string>Show typesetting toolbar</string>
    </property>
   </action>
-  <action name="actionSee_log">
-   <property name="text">
-    <string>Open log</string>
-   </property>
-  </action>
   <action name="actionPreferences">
    <property name="text">
     <string>Preferences</string>
@@ -297,6 +312,51 @@
    </property>
    <property name="text">
     <string>Show project browser</string>
+   </property>
+  </action>
+  <action name="actionGoBack">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Go back</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Left</string>
+   </property>
+  </action>
+  <action name="actionGoForward">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Go forward</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Right</string>
+   </property>
+  </action>
+  <action name="actionSave_All">
+   <property name="text">
+    <string>Save All</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+S</string>
+   </property>
+  </action>
+  <action name="actionReload">
+   <property name="text">
+    <string>Reload</string>
+   </property>
+  </action>
+  <action name="actionClearRecentProjects">
+   <property name="text">
+    <string>Clear</string>
+   </property>
+  </action>
+  <action name="actionGo_to_main_file">
+   <property name="text">
+    <string>Go to main file</string>
    </property>
   </action>
  </widget>

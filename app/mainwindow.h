@@ -1,6 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <forscape_common.h>
+#include <filesystem>
 #include <QMainWindow>
 #include <QSettings>
 #include <QTimer>
@@ -23,6 +25,7 @@ namespace Forscape{
 namespace Typeset {
 class Console;
 class Editor;
+class Model;
 }
 }
 
@@ -32,7 +35,7 @@ class MainWindow : public QMainWindow{
 public:
     MainWindow(QWidget* parent = nullptr);
     virtual ~MainWindow();
-    void open(QString path);
+    void openProject(QString path);
     QSettings settings;
     Forscape::Typeset::Editor* editor;
 
@@ -45,17 +48,35 @@ private:
     QToolBar* action_toolbar;
     QToolBar* project_toolbar;
     QTreeWidget* project_browser;
+    QTreeWidgetItem* project_browser_active_item;
     Splitter* horizontal_splitter;
     Splitter* vertical_splitter;
     Preferences* preferences;
     Plot* active_plot = nullptr;
-    QString path;
+    QString project_path;
+    QString active_file_path;
     QTimer interpreter_poll_timer;
+    QTimer shutdown_timer;
     static constexpr std::chrono::milliseconds INTERPETER_POLL_PERIOD = std::chrono::milliseconds(15);
     bool editor_had_focus;
+    QAction* file_back;
+    QAction* file_next;
     void loadGeometry();
     void resizeHackToFixScrollbars();
     bool isSavedDeepComparison() const;
+    void updateViewJumpPointElements();
+    void resetViewJumpPointElements();
+
+    struct JumpPoint {
+        Forscape::Typeset::Model* model;
+        size_t line;
+
+        JumpPoint() noexcept = default;
+        JumpPoint(Forscape::Typeset::Model* model, size_t line) noexcept :
+            model(model), line(line){}
+    };
+    std::vector<JumpPoint> viewing_chain;
+    size_t viewing_index = 0;
 
 private slots:
     void run();
@@ -99,11 +120,22 @@ private slots:
     void onColourChanged();
     void on_actionGo_to_line_triggered();
     void onSplitterResize(int pos, int index);
-    void anchor();
     void onFileClicked(QTreeWidgetItem* item, int column);
+    void onFileClicked();
+    void onShowInExplorer();
     void onFileRightClicked(const QPoint& pos);
     void setHSplitterDefaultWidth();
     void setVSplitterDefaultHeight();
+    void on_actionGoBack_triggered();
+    void on_actionGoForward_triggered();
+    void viewModel(Forscape::Typeset::Model* model, size_t line);
+    bool on_actionSave_All_triggered();
+    void on_actionReload_triggered();
+    void onForcedExit();
+    void updateDuringForcedExit();
+    void on_actionClearRecentProjects_triggered();
+    void openRecent(QAction* action);
+    void on_actionGo_to_main_file_triggered();
 
 protected:
     virtual void closeEvent(QCloseEvent* event) override;
@@ -112,8 +144,23 @@ private:
     void checkOutput();
     bool savePrompt();
     bool saveAs(QString name);
+    bool saveAs(QString path, Forscape::Typeset::Model* model);
     void addPlot(const std::string& title, const std::string& x_label, const std::string& y_label);
     void addSeries(const std::vector<std::pair<double, double>>& data) const alloc_except;
     QString getLastDir();
+    void setEditorToModelAndLine(Forscape::Typeset::Model* model, size_t line);
+    void updateProjectBrowser();
+    void addProjectEntry(Forscape::Typeset::Model* model);
+    void loadRecentProjects();
+    void updateRecentProjectsFromList();
+    void updateRecentProjectsFromCurrent();
+    void linkFileToAncestor(QTreeWidgetItem* file_item, const std::filesystem::path file_path);
+    void linkItemToExistingAncestor(QTreeWidgetItem* item, std::filesystem::path path);
+
+    FORSCAPE_UNORDERED_MAP<std::filesystem::path, QTreeWidgetItem*> project_browser_entries;
+    FORSCAPE_UNORDERED_SET<Forscape::Typeset::Model*> modified_files;
+    QStringList recent_projects;
+    static constexpr int MAX_DISPLAYED_RECENT_PROJECTS = 20;
+    static constexpr int MAX_STORED_RECENT_PROJECTS = 50;
 };
 #endif // MAINWINDOW_H
