@@ -153,6 +153,8 @@ private:
     void loadRecentProjects();
     void updateRecentProjectsFromList();
     void updateRecentProjectsFromCurrent();
+    void linkFileToAncestor(QTreeWidgetItem* file_item, const std::filesystem::path file_path);
+    void linkItemToExistingAncestor(QTreeWidgetItem* item, std::filesystem::path path);
 
     FORSCAPE_UNORDERED_MAP<std::filesystem::path, QTreeWidgetItem*> project_browser_entries;
     FORSCAPE_UNORDERED_SET<Forscape::Typeset::Model*> modified_files;

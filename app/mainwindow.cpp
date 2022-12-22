@@ -75,6 +75,11 @@ static QIcon main_icon;
 static QIcon file_icon;
 static QIcon folder_icon;
 
+static Forscape::Typeset::Model* model(QTreeWidgetItem* item) noexcept {
+    assert(item->childCount() == 0);
+    return item->data(0, Qt::UserRole).value<Forscape::Typeset::Model*>();
+}
+
 Q_DECLARE_METATYPE(Forscape::Typeset::Model*); //EVENTUALLY: this is only for compability with old versions
 
 MainWindow::MainWindow(QWidget* parent)
@@ -86,7 +91,7 @@ MainWindow::MainWindow(QWidget* parent)
     //settings.clear(); // To check a fresh install boots; e.g. loading does not have a cache dependency
 
     main_icon = QIcon(":/fonts/anchor.svg");
-    file_icon = QIcon(":/lambda.ico");
+    file_icon = QIcon(":/lambda.ico"); //DO THIS: use svg, the .ico is noticeably bad
     folder_icon = QFileIconProvider().icon(QFileIconProvider::Folder);
 
     external_change_timer = new QTimer(this);
@@ -615,7 +620,7 @@ bool MainWindow::saveAs(QString path){
     return saveAs(path, editor->getModel());
 }
 
-bool MainWindow::saveAs(QString path, Forscape::Typeset::Model* model) {
+bool MainWindow::saveAs(QString path, Forscape::Typeset::Model* saved_model) {
     if(!editor->isEnabled()) return false;
 
     QFile file(path);
@@ -632,7 +637,7 @@ bool MainWindow::saveAs(QString path, Forscape::Typeset::Model* model) {
     #ifdef QT5
     out.setCodec("UTF-8");
     #endif
-    out << QByteArray::fromStdString(model->toSerial());
+    out << QByteArray::fromStdString(saved_model->toSerial());
 
     setWindowTitle(file.fileName() + WINDOW_TITLE_SUFFIX);
     if(project_path.isEmpty()){
@@ -644,24 +649,46 @@ bool MainWindow::saveAs(QString path, Forscape::Typeset::Model* model) {
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
 
     //Re-jig the project browser
-    std::filesystem::path std_path = std::filesystem::u8path(active_file_path.toStdString());
-    if(model->path.empty()){        
-        model->path = std_path;
-        model->write_time = std::filesystem::last_write_time(model->path);
-        QTreeWidgetItem* item = model->project_browser_entry;
-        assert(item->text(0) == "untitled");
+    std::filesystem::path old_path = saved_model->path;
+    std::filesystem::path std_path =
+        std::filesystem::canonical(std::filesystem::u8path(active_file_path.toStdString()));
+    const bool create_new_file = old_path.empty();
+    const bool rename_file = saved_model->path != std_path && !create_new_file;
+
+    if(rename_file){
+        //EVENTUALLY: this is a hacky solution to keep the old file, which is likely referenced in code
+        Forscape::Program::instance()->source_files.erase(old_path);
+        project_browser_entries.erase(old_path);
+        Forscape::Program::instance()->openFromAbsolutePath(old_path);
+    }
+
+    if(create_new_file || rename_file){
+        saved_model->path = std_path;
+        QTreeWidgetItem* item = saved_model->project_browser_entry;
         auto filename = std_path.filename().u8string();
         item->setText(0, QString::fromUtf8(filename.data(), filename.size()));
-
-        //DO THIS - find common ancestor and put file in right place
-
-        project_browser_entries[std_path] = item;
-    }else if(model->path != std_path){
-        //DO THIS - handle renames
+        auto result = project_browser_entries.insert({std_path, item});
+        if(!result.second){
+            //Saving over existing project file
+            QTreeWidgetItem* overwritten = result.first->second;
+            Forscape::Typeset::Model* overwritten_model = model(overwritten);
+            delete overwritten_model;
+            modified_files.erase(overwritten_model);
+            for(auto& entry : viewing_chain)
+                if(entry.model == overwritten_model)
+                    entry.model = saved_model;
+            project_browser->removeItemWidget(overwritten, 0);
+            delete overwritten;
+            result.first->second = item;
+        }else{
+            //New file created
+            project_browser->invisibleRootItem()->removeChild(item);
+            linkFileToAncestor(item, std_path);
+        }
     }
     project_browser->sortItems(0, Qt::SortOrder::AscendingOrder);
 
-    //DO THIS - what if you saved over another project file?
+    saved_model->write_time = std::filesystem::last_write_time(saved_model->path);
 
     updateRecentProjectsFromCurrent();
 
@@ -707,7 +734,8 @@ void MainWindow::openProject(QString path){
     modified_files.clear();
     project_browser->clear();
     project_browser_entries.clear();
-    QTreeWidgetItem* main_file = new QTreeWidgetItem(project_browser->invisibleRootItem());
+    QTreeWidgetItem* root = project_browser->invisibleRootItem();
+    QTreeWidgetItem* main_file = new QTreeWidgetItem(root);
     auto file_name = std_path.filename().u8string();
     main_file->setText(0, QString::fromUtf8(file_name.data(), file_name.size()));
     main_file->setIcon(0, main_icon);
@@ -715,7 +743,9 @@ void MainWindow::openProject(QString path){
     model->project_browser_entry = main_file;
     project_browser_entries[std_path] = main_file;
     std_path = std_path.parent_path();
-    project_browser_entries[std_path] = project_browser->invisibleRootItem();
+    project_browser_entries[std_path] = root;
+    auto parent_path = std_path.u8string();
+    root->setData(0, Qt::UserRole, QString::fromUtf8(parent_path.data(), parent_path.size()));
     project_browser_active_item = main_file;
     QFont normal_font = project_browser->font();
     QFont bold_font = normal_font;
@@ -771,6 +801,7 @@ void MainWindow::setEditorToModelAndLine(Forscape::Typeset::Model* model, size_t
     project_browser_active_item->setFont(0, QFont());
     project_browser_active_item = model->project_browser_entry;
     project_browser_active_item->setFont(0, bold_font);
+    project_browser->setCurrentItem(project_browser_active_item);
 }
 
 void MainWindow::updateProjectBrowser() {
@@ -793,26 +824,10 @@ void MainWindow::addProjectEntry(Forscape::Typeset::Model* model) {
     tree_item->setText(0, QString::fromUtf8(file_name.data(), file_name.size()));
     tree_item->setIcon(0, file_icon);
     project_browser_entries[path] = tree_item;
-    path = path.parent_path();
+
     model->write_time = std::filesystem::last_write_time(model->path);
 
-    //DO THIS - find greatest common ancestor with the current root
-
-    auto parent_result = project_browser_entries.insert({path, nullptr});
-    while(parent_result.second){
-        QTreeWidgetItem* new_tree_item = new QTreeWidgetItem;
-        new_tree_item->addChild(tree_item);
-        tree_item = new_tree_item;
-        auto file_name = path.filename().u8string();
-        tree_item->setText(0, QString::fromUtf8(file_name.data(), file_name.size()));
-        tree_item->setIcon(0, folder_icon);
-        tree_item->setExpanded(true);
-        parent_result.first->second = tree_item;
-        path = path.parent_path();
-        parent_result = project_browser_entries.insert({path, nullptr});
-    }
-
-    parent_result.first->second->addChild(tree_item);
+    linkFileToAncestor(tree_item, path);
 }
 
 void MainWindow::on_actionFind_Replace_triggered(){
@@ -1157,16 +1172,12 @@ void MainWindow::onSplitterResize(int pos, int index) {
     program_control_of_hsplitter = false;
 }
 
-static Forscape::Typeset::Model* model(QTreeWidgetItem* item) noexcept {
-    assert(item->childCount() == 0);
-    return item->data(0, Qt::UserRole).value<Forscape::Typeset::Model*>();
-}
-
 static bool isSavedToDisk(QTreeWidgetItem* item) noexcept {
     return !model(item)->path.empty();
 }
 
 void MainWindow::onFileClicked(QTreeWidgetItem* item, int column) {
+    if(item->childCount() != 0) return;
     auto m = model(item);
     if(m != editor->getModel()) viewModel(m, 0);
 }
@@ -1402,4 +1413,101 @@ void MainWindow::updateRecentProjectsFromCurrent() {
         if(recent_projects.size() > MAX_STORED_RECENT_PROJECTS) recent_projects.pop_back();
         updateRecentProjectsFromList();
     }
+}
+
+void MainWindow::linkFileToAncestor(QTreeWidgetItem* file_item, const std::filesystem::path file_path) {
+    assert(std::filesystem::is_regular_file(file_path));
+
+    QTreeWidgetItem* root = project_browser->invisibleRootItem();
+    QString stale_root_path_str = root->data(0, Qt::UserRole).toString();
+    std::filesystem::path stale_root_path = std::filesystem::u8path(stale_root_path_str.toStdString());
+    std::filesystem::path folder_path = file_path.parent_path();
+
+    //Link the file to it's folder
+    auto result = project_browser_entries.find(folder_path);
+    if(result != project_browser_entries.end()){
+        //Folder already exists
+        QTreeWidgetItem* preexisting_folder_entry = result->second;
+        preexisting_folder_entry->addChild(file_item);
+        return;
+    }
+
+    QList<QTreeWidgetItem*> taken_children;
+
+    //Find common ancestor of root directory and folder
+    if(stale_root_path_str.isEmpty()){
+        //Browser already showing different drives, do nothing
+    }else if(stale_root_path.root_name() != file_path.root_name()){
+        //These files come from different drives; change root to nothing since no common ancestor
+        project_browser_entries.erase(stale_root_path);
+        root->setData(0, Qt::UserRole, QString());
+        taken_children = root->takeChildren();
+    }else{
+        //Check if the root needs to change
+        auto root_path_str = stale_root_path.u8string();
+        auto folder_path_str = folder_path.u8string();
+        const size_t root_path_size = root_path_str.size();
+
+        size_t uncommon_index = std::min(root_path_size, folder_path_str.size());
+        for(size_t i = 0; i < uncommon_index; i++)
+            if(root_path_str[i] != folder_path_str[i]){
+                uncommon_index = i;
+                break;
+            }
+
+        //Root needs to move up
+        if(uncommon_index < root_path_size){
+            std::filesystem::path new_root_path = stale_root_path.parent_path();
+            while(new_root_path.u8string().size() > uncommon_index){
+                assert(new_root_path.has_parent_path());
+                new_root_path = new_root_path.parent_path();
+            }
+
+            taken_children = root->takeChildren();
+            project_browser_entries.erase(stale_root_path);
+            project_browser_entries[new_root_path] = root;
+            auto new_root_path_str = new_root_path.u8string();
+            root->setData(0, Qt::UserRole, QString::fromUtf8(new_root_path_str.data(), new_root_path_str.size()));
+        }
+    }
+
+    linkItemToExistingAncestor(file_item, file_path);
+
+    if(!taken_children.empty()){
+        linkItemToExistingAncestor(taken_children.back(), stale_root_path / "fake");
+        taken_children.pop_back();
+        QTreeWidgetItem* entry_for_stale_root = project_browser_entries[stale_root_path];
+        entry_for_stale_root->addChildren(taken_children);
+        project_browser->setCurrentItem(project_browser_active_item);
+    }
+}
+
+void MainWindow::linkItemToExistingAncestor(QTreeWidgetItem* item, std::filesystem::path path) {
+    path = path.parent_path();
+    auto parent_result = project_browser_entries.insert({path, nullptr});
+    while(parent_result.second){
+        QTreeWidgetItem* new_item = new QTreeWidgetItem;
+        new_item->addChild(item);
+        item = new_item;
+        auto file_name = path.filename().u8string();
+        auto path_str = path.u8string();
+        item->setText(0, QString::fromUtf8(file_name.data(), file_name.size()));
+        item->setData(0, Qt::UserRole, QString::fromUtf8(path_str.data(), path_str.size()));
+        item->setIcon(0, folder_icon);
+        item->setExpanded(true);
+        parent_result.first->second = item;
+
+        auto parent_path = path.parent_path();
+        if(parent_path != path){ //has_parent_path() lies, causing an infinite loop
+            path = parent_path;
+            parent_result = project_browser_entries.insert({path, nullptr});
+        }else{
+            project_browser->invisibleRootItem()->addChild(item);
+            auto drive = path.begin()->u8string();
+            item->setText(0, QString::fromUtf8(drive.data(), drive.size()));
+            return;
+        }
+    }
+
+    parent_result.first->second->addChild(item);
 }
