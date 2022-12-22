@@ -1017,7 +1017,7 @@ void MainWindow::onTextChanged(){
 
     updateProjectBrowser();
 
-    if(saveable) modified_files.insert(model);
+    if(changed_from_save) modified_files.insert(model);
     else modified_files.erase(model);
     ui->actionSave_All->setDisabled(modified_files.empty());
 

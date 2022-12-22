@@ -209,6 +209,7 @@ View::View() noexcept
     updateBackgroundColour();
     setAutoFillBackground(true);
     all_views.push_back(this);
+    search_selection = controller.selection();
 }
 
 View::~View() noexcept {
