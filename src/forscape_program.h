@@ -1,7 +1,6 @@
 #ifndef FORSCAPE_PROGRAM_H
 #define FORSCAPE_PROGRAM_H
 
-#include "forscape_abstract_syntax_tree.h"
 #include "forscape_common.h"
 #include "forscape_error.h"
 #include <filesystem>
@@ -23,9 +22,7 @@ public:
     void freeFileMemory() noexcept;
     const std::vector<Typeset::Model*>& getPendingProjectBrowserUpdates() const noexcept;
     void clearPendingProjectBrowserUpdates() noexcept;
-    void resetModels() noexcept;
 
-    Code::AbstractSyntaxTree ast;
     std::vector<Code::Error> errors;
     std::vector<Code::Error> warnings;
     FORSCAPE_UNORDERED_MAP<std::filesystem::path, Typeset::Model*> source_files;

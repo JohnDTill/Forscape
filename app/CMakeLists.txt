@@ -129,11 +129,7 @@ set(PROJECT_SOURCES
     ${EMBEDDED_RESOURCES}
     ${GEN_FILES}
     ${CONSTRUCT_FILES}
-    ${SRC}/forscape_abstract_syntax_tree.cpp
-    ${SRC}/forscape_abstract_syntax_tree.h
     ${SRC}/forscape_common.h
-    ${SRC}/forscape_compiler.cpp
-    ${SRC}/forscape_compiler.h
     ${SRC}/forscape_error.cpp
     ${SRC}/forscape_error.h
     ${SRC}/forscape_interpreter.cpp

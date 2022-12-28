@@ -87,10 +87,6 @@ void Program::clearPendingProjectBrowserUpdates() noexcept {
     pending_project_browser_updates.clear();
 }
 
-void Program::resetModels() noexcept {
-    for(auto& entry : source_files) entry.second->is_parsed = false;
-}
-
 Program::ptr_or_code Program::openFromRelativePathSpecifiedExtension(std::filesystem::path rel_path){
     for(const std::filesystem::path& path_entry : project_path){
         std::filesystem::path abs_path = std::filesystem::weakly_canonical(path_entry / rel_path);
