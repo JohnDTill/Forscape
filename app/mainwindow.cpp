@@ -491,57 +491,6 @@ void MainWindow::on_actionNew_triggered(){
 void MainWindow::on_actionOpen_triggered(){
     if(!editor->isEnabled()) return;
 
-    if(!modified_files.empty()){
-        const bool multiple_files = (modified_files.size() > 1);
-
-        QList<QString> files;
-        for(Forscape::Typeset::Model* model : modified_files){
-            auto path = model->path.filename().u8string();
-            QString qpath = QString::fromUtf8(path.data(), path.size());
-            files.push_back(qpath);
-        }
-        files.sort();
-
-        static constexpr int NUM_PRINT = 7;
-
-        QString msg = files.front();
-        for(int i = 1; i < std::min(files.size(), NUM_PRINT); i++){
-            msg += '\n';
-            msg += files[i];
-        }
-        if(files.size() > NUM_PRINT)
-            msg += "\n... and " + QString::number(files.size()-NUM_PRINT) + " more";
-
-        QString prompt = "Save file";
-        if(multiple_files) prompt += 's';
-        prompt += " before changing project?";
-
-        QMessageBox msg_box;
-        msg_box.setWindowTitle("Unsaved changes");
-        msg_box.setText(prompt);
-        msg_box.setInformativeText(msg);
-        msg_box.setStandardButtons((multiple_files ? QMessageBox::SaveAll : QMessageBox::Save) | QMessageBox::Discard | QMessageBox::Cancel);
-        msg_box.setDefaultButton(QMessageBox::SaveAll);
-        msg_box.setEscapeButton(QMessageBox::Cancel);
-        msg_box.setIcon(QMessageBox::Icon::Question);
-        int ret = msg_box.exec();
-
-        switch (ret) {
-            case QMessageBox::Save:
-            case QMessageBox::SaveAll:
-                if(!on_actionSave_All_triggered()){
-                    //EVENTUALLY: have feedback here
-                    return;
-                }
-            case QMessageBox::Discard:
-                break;
-            case QMessageBox::Cancel:
-                return;
-            default:
-                assert(false);
-        }
-    }
-
     QString path = QFileDialog::getOpenFileName(nullptr, tr("Open Project"), getLastDir(), tr(FORSCAPE_FILE_TYPE_DESC));
     if(path.isEmpty()) return;
 
@@ -705,6 +654,57 @@ bool MainWindow::saveAs(QString path, Forscape::Typeset::Model* saved_model) {
 }
 
 void MainWindow::openProject(QString path){
+    if(!modified_files.empty()){
+        const bool multiple_files = (modified_files.size() > 1);
+
+        QList<QString> files;
+        for(Forscape::Typeset::Model* model : modified_files){
+            auto path = model->path.filename().u8string();
+            QString qpath = QString::fromUtf8(path.data(), path.size());
+            files.push_back(qpath);
+        }
+        files.sort();
+
+        static constexpr int NUM_PRINT = 7;
+
+        QString msg = files.front();
+        for(int i = 1; i < std::min(files.size(), NUM_PRINT); i++){
+            msg += '\n';
+            msg += files[i];
+        }
+        if(files.size() > NUM_PRINT)
+            msg += "\n... and " + QString::number(files.size()-NUM_PRINT) + " more";
+
+        QString prompt = "Save file";
+        if(multiple_files) prompt += 's';
+        prompt += " before changing project?";
+
+        QMessageBox msg_box;
+        msg_box.setWindowTitle("Unsaved changes");
+        msg_box.setText(prompt);
+        msg_box.setInformativeText(msg);
+        msg_box.setStandardButtons((multiple_files ? QMessageBox::SaveAll : QMessageBox::Save) | QMessageBox::Discard | QMessageBox::Cancel);
+        msg_box.setDefaultButton(QMessageBox::SaveAll);
+        msg_box.setEscapeButton(QMessageBox::Cancel);
+        msg_box.setIcon(QMessageBox::Icon::Question);
+        int ret = msg_box.exec();
+
+        switch (ret) {
+            case QMessageBox::Save:
+            case QMessageBox::SaveAll:
+                if(!on_actionSave_All_triggered()){
+                    //EVENTUALLY: have feedback here
+                    return;
+                }
+            case QMessageBox::Discard:
+                break;
+            case QMessageBox::Cancel:
+                return;
+            default:
+                assert(false);
+        }
+    }
+
     std::filesystem::path std_path = std::filesystem::u8path(path.toStdString());
     std::ifstream in(std_path);
     if(!in.is_open()){

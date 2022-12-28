@@ -48,6 +48,7 @@ public:
     QTreeWidgetItem* project_browser_entry  DEBUG_INIT_NULLPTR;
     std::filesystem::file_time_type write_time;
     #endif
+    bool is_parsed = false;
 
     Model();
     ~Model();

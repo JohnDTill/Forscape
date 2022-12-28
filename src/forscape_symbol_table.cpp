@@ -128,7 +128,7 @@ void SymbolTable::reset(const Typeset::Marker& doc_start) noexcept{
     scopes.clear();
     symbols.clear();
     usages.clear();
-    stored_scopes.clear();
+    scoped_vars.clear();
 
     #if !defined(NDEBUG) && !defined(FORSCAPE_TYPESET_HEADLESS)
     scope_names = "Global";

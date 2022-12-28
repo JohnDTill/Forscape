@@ -16,6 +16,8 @@ Program* Program::instance() noexcept {
 void Program::clear() noexcept {
     source_files.clear();
     pending_project_browser_updates.clear();
+    errors.clear();
+    warnings.clear();
 }
 
 void Program::setProgramEntryPoint(std::filesystem::path path, Typeset::Model* model) {
@@ -83,6 +85,10 @@ const std::vector<Typeset::Model*>& Program::getPendingProjectBrowserUpdates() c
 
 void Program::clearPendingProjectBrowserUpdates() noexcept {
     pending_project_browser_updates.clear();
+}
+
+void Program::resetModels() noexcept {
+    for(auto& entry : source_files) entry.second->is_parsed = false;
 }
 
 Program::ptr_or_code Program::openFromRelativePathSpecifiedExtension(std::filesystem::path rel_path){

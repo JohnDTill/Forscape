@@ -131,19 +131,19 @@ public:
     void verifyIdentifier(ParseNode pn) const noexcept;
     #endif
 
-    struct StoredScopeKey {
+    struct ScopedVarKey {
         ParseNode symbol_root;
         Typeset::Selection sel;
-        StoredScopeKey(ParseNode symbol_root, const Typeset::Selection& sel) noexcept : symbol_root(symbol_root), sel(sel) {}
-        bool operator==(const StoredScopeKey& other) const noexcept {
+        ScopedVarKey(ParseNode symbol_root, const Typeset::Selection& sel) noexcept : symbol_root(symbol_root), sel(sel) {}
+        bool operator==(const ScopedVarKey& other) const noexcept {
             return symbol_root == other.symbol_root && sel == other.sel; }
     };
-    struct HashStoredScopeKey {
-        std::size_t operator()(const StoredScopeKey& s) const {
+    struct HashScopedVarKey {
+        std::size_t operator()(const ScopedVarKey& s) const {
             return s.symbol_root ^ std::hash<Typeset::Selection>()(s.sel);
         }
     };
-    FORSCAPE_UNORDERED_MAP<StoredScopeKey, size_t, HashStoredScopeKey> stored_scopes;
+    FORSCAPE_UNORDERED_MAP<ScopedVarKey, size_t, HashScopedVarKey> scoped_vars;
 
     void resolveReference(ParseNode pn, size_t sym_id, size_t closure_depth) alloc_except;
 };

@@ -1744,8 +1744,8 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
     size_t sym_id = parse_tree.getSymId(lhs_lvalue);
     ParseNode field = parse_tree.arg<1>(pn);
     assert(parse_tree.getOp(field) == OP_IDENTIFIER);
-    auto lookup = symbol_table.stored_scopes.find(SymbolTable::StoredScopeKey(sym_id, parse_tree.getSelection(field)));
-    if(lookup != symbol_table.stored_scopes.end()){
+    auto lookup = symbol_table.scoped_vars.find(SymbolTable::ScopedVarKey(sym_id, parse_tree.getSelection(field)));
+    if(lookup != symbol_table.scoped_vars.end()){
         size_t sym_id = lookup->second;
         size_t usage_index = parse_tree.getFlag(field);
         symbol_table.usages[usage_index].var_id = sym_id; //Patch the empty usage inserted earlier
