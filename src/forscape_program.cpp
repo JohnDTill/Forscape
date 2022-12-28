@@ -16,6 +16,8 @@ Program* Program::instance() noexcept {
 void Program::clear() noexcept {
     source_files.clear();
     pending_project_browser_updates.clear();
+    errors.clear();
+    warnings.clear();
 }
 
 void Program::setProgramEntryPoint(std::filesystem::path path, Typeset::Model* model) {

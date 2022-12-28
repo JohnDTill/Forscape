@@ -14,10 +14,11 @@ namespace Typeset{
 namespace Code {
 
 struct Error {
-    const Typeset::Selection selection;
-    const ErrorCode code;
+    Typeset::Selection selection;
+    ErrorCode code;
 
-    Error(Typeset::Selection controller, ErrorCode code);
+    Error() noexcept = default;
+    Error(Typeset::Selection controller, ErrorCode code) noexcept;
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     void writeTo(Typeset::Text* t, Typeset::View* caller) const;

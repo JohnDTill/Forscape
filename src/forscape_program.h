@@ -2,6 +2,7 @@
 #define FORSCAPE_PROGRAM_H
 
 #include "forscape_common.h"
+#include "forscape_error.h"
 #include <filesystem>
 #include <vector>
 
@@ -22,6 +23,8 @@ public:
     const std::vector<Typeset::Model*>& getPendingProjectBrowserUpdates() const noexcept;
     void clearPendingProjectBrowserUpdates() noexcept;
 
+    std::vector<Code::Error> errors;
+    std::vector<Code::Error> warnings;
     FORSCAPE_UNORDERED_MAP<std::filesystem::path, Typeset::Model*> source_files;
     Typeset::Model* program_entry_point;
 

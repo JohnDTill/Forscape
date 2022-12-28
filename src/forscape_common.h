@@ -20,6 +20,8 @@ inline constexpr T debug_cast(IN_TYPE in) noexcept {
 }
 
 typedef size_t ParseNode;
+typedef size_t AstNode;
+class Program;
 extern inline constexpr size_t NONE = std::numeric_limits<size_t>::max();
 extern inline constexpr size_t UNKNOWN_SIZE = 0;
 extern inline constexpr double STALE = std::numeric_limits<double>::quiet_NaN();
@@ -36,6 +38,12 @@ extern inline constexpr size_t UNITIALISED = NONE-1;
 #define DEBUG_INIT_UNITIALISED
 #define DEBUG_INIT_STALE
 #endif
+
+namespace Code {
+class AbstractSyntaxTree;
+struct Error;
+class ParseTree;
+}
 
 namespace Typeset {
 class Controller;

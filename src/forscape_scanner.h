@@ -21,6 +21,7 @@ public:
     void scanToken() alloc_except;
 
     std::vector<Token> tokens;
+    static FORSCAPE_STATIC_MAP<std::string_view, ForscapeTokenType> keywords; //EVENTUALLY: look at keyword perfect hashing
 
 private:
     void scanString() alloc_except;
@@ -42,7 +43,6 @@ private:
     Typeset::Model* model;
     Typeset::Controller* controller;
     std::vector<Error>& errors;
-    static FORSCAPE_STATIC_MAP<std::string_view, ForscapeTokenType> keywords; //EVENTUALLY: look at keyword perfect hashing
     size_t scope_depth = 0;
 };
 

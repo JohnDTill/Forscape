@@ -42,7 +42,7 @@ Typeset::Model* Error::writeErrors(const std::vector<Error>& errors, Typeset::Vi
 }
 #endif
 
-Error::Error(Typeset::Selection controller, ErrorCode code)
+Error::Error(Typeset::Selection controller, ErrorCode code) noexcept
     : selection(controller), code(code) {}
 
 std::string Error::message() const{

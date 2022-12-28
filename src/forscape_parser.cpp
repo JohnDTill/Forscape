@@ -929,8 +929,18 @@ ParseNode Parser::string() noexcept{
 ParseNode Parser::braceGrouping() noexcept {
     Typeset::Marker left = lMark();
     advance();
+    if(peek(RIGHTBRACE)){
+        //It's an empty list
+        Typeset::Marker right = rMark();
+        Typeset::Selection sel(left, right);
+        registerGrouping(sel);
+        advance();
+        return parse_tree.addTerminal(OP_LIST, sel);
+    }
+
     ParseNode nested = disjunction();
     if(peek(RIGHTBRACE)){
+        //Bracket expression
         Typeset::Marker right = rMark();
         Typeset::Selection sel(left, right);
         registerGrouping(sel);
@@ -941,20 +951,35 @@ ParseNode Parser::braceGrouping() noexcept {
     consume(COMMA);
     if(!noErrors()) return error_node;
 
-    ParseNode end = expression();
+    ParseNode end = disjunction();
 
-    Typeset::Marker right = rMark();
+    //It's a list
+    if(match(COMMA)){
+        parse_tree.prepareNary();
+        parse_tree.addNaryChild(nested);
+        parse_tree.addNaryChild(end);
+        do { parse_tree.addNaryChild(disjunction()); } while(match(COMMA));
 
-    Op op = OP_INTERVAL_CLOSE_CLOSE;
-    if(match(RIGHTPAREN)) op = OP_INTERVAL_CLOSE_OPEN;
-    else consume(RIGHTBRACE);
+        Typeset::Marker right = rMark();
+        Typeset::Selection sel(left, right);
+        consume(RIGHTBRACE);
+        if(noErrors()) registerGrouping(sel);
+        return parse_tree.finishNary(OP_LIST, sel);
+    }else{
+        //It's an interval
+        Typeset::Marker right = rMark();
 
-    if(!noErrors()) return error_node;
+        Op op = OP_INTERVAL_CLOSE_CLOSE;
+        if(match(RIGHTPAREN)) op = OP_INTERVAL_CLOSE_OPEN;
+        else consume(RIGHTBRACE);
 
-    Typeset::Selection sel(left, right);
-    registerGrouping(sel);
+        if(!noErrors()) return error_node;
 
-    return parse_tree.addNode<2>(op, sel, {nested, end});
+        Typeset::Selection sel(left, right);
+        registerGrouping(sel);
+
+        return parse_tree.addNode<2>(op, sel, {nested, end});
+    }
 }
 
 ParseNode Parser::parenGrouping() alloc_except {

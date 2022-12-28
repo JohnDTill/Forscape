@@ -1,6 +1,7 @@
 #ifndef FORSCAPE_SYMBOL_BUILD_PASS_H
 #define FORSCAPE_SYMBOL_BUILD_PASS_H
 
+#include "forscape_common.h"
 #include "forscape_error.h"
 #include "forscape_parse_tree.h"
 #include "forscape_symbol_table.h"
@@ -23,9 +24,9 @@ public:
     SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model) noexcept;
     void resolveSymbols() alloc_except;
     SymbolTable symbol_table;
+    static FORSCAPE_STATIC_MAP<std::string_view, Op> predef;
 
 private:
-    static FORSCAPE_STATIC_MAP<std::string_view, Op> predef;
     size_t active_scope_id;
     FORSCAPE_UNORDERED_MAP<Typeset::Selection, SymbolId> map;
     static constexpr size_t GLOBAL_DEPTH = 0;

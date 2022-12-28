@@ -920,7 +920,7 @@ void SymbolTableBuilder::unloadScope(ParseNode body, size_t scope_sym_id) noexce
         for(size_t sym_id = scope_segment.sym_begin; sym_id < scope_segment.sym_end; sym_id++){
             Symbol& sym = symbol_table.symbols[sym_id];
             if(sym.declaration_lexical_depth != lexical_depth+1) continue;
-            auto result = symbol_table.stored_scopes.insert({SymbolTable::StoredScopeKey(scope_sym_id, sym.sel(parse_tree)), sym_id});
+            auto result = symbol_table.scoped_vars.insert({SymbolTable::ScopedVarKey(scope_sym_id, sym.sel(parse_tree)), sym_id});
             assert(result.second); //Failure to add the symbol is a bug
         }
 
@@ -1134,7 +1134,7 @@ void SymbolTableBuilder::addStoredScope(ParseNode pn) {
         for(size_t sym_id = scope.sym_begin; sym_id < scope.sym_end; sym_id++){
             Symbol& sym = symbol_table.symbols[sym_id];
             if(sym.declaration_lexical_depth != lexical_depth+1) continue;
-            auto result = symbol_table.stored_scopes.insert({SymbolTable::StoredScopeKey(pn, sym.sel(parse_tree)), sym_id});
+            auto result = symbol_table.scoped_vars.insert({SymbolTable::ScopedVarKey(pn, sym.sel(parse_tree)), sym_id});
             if(!result.second) errors.push_back(Error(sym.sel(parse_tree), REASSIGN_CONSTANT));
             //TODO: this doesn't allow referencing any previous namespace variables
         }
