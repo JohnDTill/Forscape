@@ -1,6 +1,8 @@
 #include "forscape_symbol_table.h"
 
 #include "forscape_parse_tree.h"
+#include "forscape_scanner.h"
+#include "forscape_symbol_build_pass.h"
 #include <algorithm>
 #include <cassert>
 #include <unordered_set>
@@ -69,25 +71,26 @@ size_t SymbolTable::containingScope(const Typeset::Marker& m) const noexcept{
     return lookup - scopes.begin() - (lookup != scopes.begin());
 }
 
-std::vector<Typeset::Selection> SymbolTable::getSuggestions(const Typeset::Marker& loc) const{
-    FORSCAPE_UNORDERED_SET<Typeset::Selection> suggestions;
+std::vector<std::string> SymbolTable::getSuggestions(const Typeset::Marker& loc) const{
+    FORSCAPE_UNORDERED_SET<std::string> suggestions;
 
     Typeset::Marker left = loc;
     while(left.atTextStart()){
-        if(left.atFirstTextInPhrase()) return std::vector<Typeset::Selection>();
+        if(left.atFirstTextInPhrase()) return std::vector<std::string>();
         left.text = left.text->prevTextAsserted();
         left.index = left.text->numChars();
     }
     left.decrementToPrevWord();
     Typeset::Selection typed(left, loc);
 
+    //Add matching words in scope
     for(size_t i = containingScope(loc); i != NONE; i = scopes[i].parent){
         for(size_t j = i; j != NONE; j = scopes[j].prev_lexical_segment){
             const ScopeSegment& seg = scopes[j];
             for(size_t k = seg.sym_begin; k < seg.sym_end; k++){
                 const Typeset::Selection& candidate = parse_tree.getSelection(symbols[k].flag);
                 if(candidate.startsWith(typed) && candidate.right.precedesInclusive(loc) && candidate.right != loc)
-                    suggestions.insert(candidate);
+                    suggestions.insert(candidate.str());
 
                 //EVENTUALLY: filter suggestions based on type so suggestions are always context appropriate
                 //            don't use a trie or more specialised data structure unless necessary
@@ -95,12 +98,31 @@ std::vector<Typeset::Selection> SymbolTable::getSuggestions(const Typeset::Marke
         }
     }
 
-    std::vector<Typeset::Selection> sorted;
-    sorted.insert(sorted.end(), suggestions.begin(), suggestions.end());
-    auto comp = [](const Typeset::Selection& a, const Typeset::Selection& b){
-        return a.str() < b.str();
-    };
-    std::sort(sorted.begin(), sorted.end(), comp);
+    //Add predefined variables
+    if(typed.isTextSelection()){
+        const std::string_view typed_view = typed.strView();
+        for(const auto& entry : SymbolTableBuilder::predef){
+            const auto& keyword = entry.first;
+            if(keyword.size() >= typed_view.size() && std::string_view(keyword.data(), typed_view.size()) == typed_view)
+                suggestions.insert(std::string(keyword));
+        }
+    }
+
+    std::vector<std::string> sorted;
+    sorted.insert(sorted.end(), suggestions.cbegin(), suggestions.cend());
+    std::sort(sorted.begin(), sorted.end());
+
+    //Add matching keywords
+    if(typed.isTextSelection()){
+        const size_t sorted_size_prior = sorted.size();
+        const std::string_view typed_view = typed.strView();
+        for(const auto& entry : Scanner::keywords){
+            const auto& keyword = entry.first;
+            if(keyword.size() >= typed_view.size() && std::string_view(keyword.data(), typed_view.size()) == typed_view)
+                sorted.push_back(std::string(keyword));
+        }
+        std::sort(sorted.begin()+sorted_size_prior, sorted.end());
+    }
 
     return sorted;
 }

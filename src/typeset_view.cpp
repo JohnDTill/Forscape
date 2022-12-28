@@ -1595,8 +1595,8 @@ void Editor::recommend() {
         setFocus();
     }else{
         recommender->clear();
-        std::string str = suggestions.front().str();
-        for(size_t i = 1; i < suggestions.size(); i++) str += '\n' + suggestions[i].str();
+        std::string str = suggestions.front();
+        for(size_t i = 1; i < suggestions.size(); i++) str += '\n' + suggestions[i];
         recommender->setFromSerial(str, true);
         recommender->getController().moveToStartOfDocument();
         recommender->getController().selectEndOfLine();

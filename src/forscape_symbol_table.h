@@ -113,7 +113,7 @@ public:
 
     void addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed, bool is_const) alloc_except;
     size_t containingScope(const Typeset::Marker& m) const noexcept;
-    std::vector<Typeset::Selection> getSuggestions(const Typeset::Marker& loc) const;
+    std::vector<std::string> getSuggestions(const Typeset::Marker& loc) const;
     const Typeset::Selection& getSel(size_t sym_index) const noexcept;
     void getSymbolOccurences(size_t sym_id, std::vector<Typeset::Selection>& found) const;
 

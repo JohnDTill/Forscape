@@ -9,8 +9,6 @@ namespace Code {
 
 class AbstractSyntaxTree {
 
-private:
-    std::vector<size_t> store;
 };
 
 }
