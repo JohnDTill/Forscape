@@ -1,4 +1,4 @@
-#include "forscape_symbol_build_pass.h"
+#include "forscape_symbol_lexical_pass.h"
 
 #include <code_parsenode_ops.h>
 #include <forscape_common.h>
@@ -15,7 +15,7 @@ namespace Forscape {
 
 namespace Code {
 
-FORSCAPE_STATIC_MAP<std::string_view, Op> SymbolTableBuilder::predef {
+FORSCAPE_STATIC_MAP<std::string_view, Op> SymbolLexicalPass::predef {
     {"π", OP_PI},
     {"e", OP_EULERS_NUMBER},
     {"φ", OP_GOLDEN_RATIO},
@@ -47,10 +47,15 @@ FORSCAPE_STATIC_MAP<std::string_view, Op> SymbolTableBuilder::predef {
     {"T", OP_MAYBE_TRANSPOSE},
 };
 
-SymbolTableBuilder::SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model) noexcept
-    : errors(model->errors), warnings(model->warnings), parse_tree(parse_tree), model(model), symbol_table(parse_tree) {}
+SymbolLexicalPass::SymbolLexicalPass(ParseTree& parse_tree, Typeset::Model* model) noexcept
+    : errors(model->errors),
+      warnings(model->warnings),
+      parse_tree(parse_tree),
+      model(model),
+      symbol_table(parse_tree),
+      symbols(symbol_table.symbols) {}
 
-void SymbolTableBuilder::resolveSymbols() alloc_except {
+void SymbolLexicalPass::resolveSymbols() alloc_except {
     reset();
     if(!parse_tree.empty()){ // Note: symbol resolution runs DESPITE parse errors, because the editor needs it
         ParseNode n = parse_tree.root;
@@ -61,10 +66,10 @@ void SymbolTableBuilder::resolveSymbols() alloc_except {
     symbol_table.finalize();
 }
 
-void SymbolTableBuilder::reset() noexcept {
+void SymbolLexicalPass::reset() noexcept {
     symbol_table.reset(parse_tree.getLeft(parse_tree.root));
     //assert(map.empty()); //Not necessarily empty due to errors
-    map.clear();
+    lexical_map.clear();
     assert(refs.empty());
     assert(ref_frames.empty());
     lexical_depth = GLOBAL_DEPTH;
@@ -72,18 +77,18 @@ void SymbolTableBuilder::reset() noexcept {
     active_scope_id = 0;
 }
 
-ScopeSegment& SymbolTableBuilder::activeScope() noexcept{
+ScopeSegment& SymbolLexicalPass::activeScope() noexcept{
     return symbol_table.scopes[active_scope_id];
 }
 
-void SymbolTableBuilder::addScope(
+void SymbolLexicalPass::addScope(
         #ifdef FORSCAPE_USE_SCOPE_NAME
         const std::string& name,
         #endif
         const Typeset::Marker& begin, ParseNode closure) alloc_except {
     symbol_table.addScope(SCOPE_NAME(name) begin);
 
-    size_t sze = symbol_table.symbols.size();
+    size_t sze = symbols.size();
     size_t n_usages = symbol_table.usages.size();
     symbol_table.scopes[active_scope_id].sym_end = sze;
     symbol_table.scopes[active_scope_id].usage_end = n_usages;
@@ -93,10 +98,10 @@ void SymbolTableBuilder::addScope(
     symbol_table.scopes[active_scope_id].fn = closure;
 }
 
-void SymbolTableBuilder::closeScope(const Typeset::Marker& end) noexcept{
+void SymbolLexicalPass::closeScope(const Typeset::Marker& end) noexcept{
     symbol_table.closeScope(end);
 
-    size_t sze = symbol_table.symbols.size();
+    size_t sze = symbols.size();
     size_t n_usages = symbol_table.usages.size();
     symbol_table.scopes[active_scope_id].sym_end = sze;
     symbol_table.scopes[active_scope_id].usage_end = n_usages;
@@ -107,16 +112,16 @@ void SymbolTableBuilder::closeScope(const Typeset::Marker& end) noexcept{
     }
 }
 
-Symbol& SymbolTableBuilder::lastDefinedSymbol() noexcept{
-    return symbol_table.symbols.back();
+Symbol& SymbolLexicalPass::lastDefinedSymbol() noexcept{
+    return symbols.back();
 }
 
-size_t SymbolTableBuilder::symbolIndexFromSelection(const Typeset::Selection& sel) const noexcept{
-    auto lookup = map.find(sel);
-    return lookup == map.end() ? NONE : lookup->second;
+size_t SymbolLexicalPass::symbolIndexFromSelection(const Typeset::Selection& sel) const noexcept{
+    auto lookup = lexical_map.find(sel);
+    return lookup == lexical_map.end() ? NONE : lookup->second;
 }
 
-void SymbolTableBuilder::resolveStmt(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveStmt(ParseNode pn) alloc_except {
     switch (parse_tree.getOp(pn)) {
         case OP_ALGORITHM: resolveAlgorithm(pn); break;
         case OP_ASSIGN: resolveAssignment(pn); break;
@@ -143,7 +148,7 @@ void SymbolTableBuilder::resolveStmt(ParseNode pn) alloc_except {
     }
 }
 
-void SymbolTableBuilder::resolveExpr(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveExpr(ParseNode pn) alloc_except {
     switch (parse_tree.getOp(pn)) {
         case OP_IDENTIFIER: resolveReference<true>(pn); break;
         case OP_LAMBDA: resolveLambda(pn); break;
@@ -170,7 +175,7 @@ void SymbolTableBuilder::resolveExpr(ParseNode pn) alloc_except {
     }
 }
 
-void SymbolTableBuilder::resolveEquality(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveEquality(ParseNode pn) alloc_except {
     if(parse_tree.getNumArgs(pn) > 2){
         errors.push_back(Error(parse_tree.getSelection(pn), ErrorCode::TYPE_ERROR));
     }else{
@@ -179,7 +184,7 @@ void SymbolTableBuilder::resolveEquality(ParseNode pn) alloc_except {
     }
 }
 
-void SymbolTableBuilder::resolveAssignment(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveAssignment(ParseNode pn) alloc_except {
     assert(parse_tree.getNumArgs(pn) == 2);
 
     ParseNode lhs = parse_tree.lhs(pn);
@@ -197,7 +202,7 @@ void SymbolTableBuilder::resolveAssignment(ParseNode pn) alloc_except {
             break;
 
         case OP_SUBSCRIPT_ACCESS:
-            if(map.find(parse_tree.getSelection(lhs)) != map.end()){
+            if(lexical_map.find(parse_tree.getSelection(lhs)) != lexical_map.end()){
                 resolvePotentialIdSub(lhs);
                 resolveExpr(rhs);
                 resolveAssignmentId(pn);
@@ -212,7 +217,7 @@ void SymbolTableBuilder::resolveAssignment(ParseNode pn) alloc_except {
     }
 }
 
-void SymbolTableBuilder::resolveAssignmentId(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveAssignmentId(ParseNode pn) alloc_except {
     ParseNode id = parse_tree.lhs(pn);
     Typeset::Selection c = parse_tree.getSelection(id);
     if(parse_tree.getOp(id) != OP_IDENTIFIER){
@@ -220,12 +225,12 @@ void SymbolTableBuilder::resolveAssignmentId(ParseNode pn) alloc_except {
         return;
     }
 
-    auto lookup = map.find(c);
-    if(lookup == map.end()){
+    auto lookup = lexical_map.find(c);
+    if(lookup == lexical_map.end()){
         makeEntry(c, id, false);
     }else{
         size_t sym_index = lookup->second;
-        Symbol& sym = symbol_table.symbols[sym_index];
+        Symbol& sym = symbols[sym_index];
         if(sym.is_const){
             errors.push_back(Error(c, REASSIGN_CONSTANT));
         }else{
@@ -236,7 +241,7 @@ void SymbolTableBuilder::resolveAssignmentId(ParseNode pn) alloc_except {
     }
 }
 
-void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs, ParseNode rhs) alloc_except {
+void SymbolLexicalPass::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs, ParseNode rhs) alloc_except {
     ParseNode id = parse_tree.arg<0>(lhs);
     Typeset::Selection c = parse_tree.getSelection(id);
 
@@ -248,7 +253,7 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
     }else{
         size_t symbol_index = symbolIndexFromSelection(c);
         if(symbol_index != NONE){
-            symbol_table.symbols[symbol_index].is_reassigned = true;
+            symbols[symbol_index].is_reassigned = true;
             resolveReference(id, symbol_index);
         }else{
             errors.push_back(Error(c, BAD_READ));
@@ -279,7 +284,7 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
 
         parse_tree.setOp(pn, OP_ELEMENTWISE_ASSIGNMENT);
         increaseLexicalDepth(SCOPE_NAME("-ewise assign-")  parse_tree.getLeft(pn));
-        size_t vars_start = symbol_table.symbols.size();
+        size_t vars_start = symbols.size();
         for(ParseNode pn : potential_loop_vars){
             bool success = defineLocalScope(pn, false);
             (void)success;
@@ -288,7 +293,7 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
         resolveExpr(rhs);
 
         for(size_t i = 0; i < potential_loop_vars.size(); i++){
-            Symbol& sym = symbol_table.symbols[vars_start + i];
+            Symbol& sym = symbols[vars_start + i];
             ParseNode var = potential_loop_vars[potential_loop_vars.size()-1];
             sym.is_ewise_index = true;
             if(!sym.is_used){
@@ -308,7 +313,7 @@ void SymbolTableBuilder::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs,
     }
 }
 
-bool SymbolTableBuilder::resolvePotentialIdSub(ParseNode pn) alloc_except {
+bool SymbolLexicalPass::resolvePotentialIdSub(ParseNode pn) alloc_except {
     if(parse_tree.getNumArgs(pn) != 2) return false;
 
     ParseNode id = parse_tree.lhs(pn);
@@ -328,11 +333,11 @@ bool SymbolTableBuilder::resolvePotentialIdSub(ParseNode pn) alloc_except {
 }
 
 template <bool allow_imp_mult>
-void SymbolTableBuilder::resolveReference(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveReference(ParseNode pn) alloc_except {
     Typeset::Selection c = parse_tree.getSelection(pn);
 
-    auto lookup = map.find(c);
-    if(lookup == map.end()){
+    auto lookup = lexical_map.find(c);
+    if(lookup == lexical_map.end()){
         auto lookup = predef.find(c.isTextSelection() ? c.strView() : c.str());
         if(lookup != predef.end()){
             Op read_type = lookup->second;
@@ -354,20 +359,20 @@ void SymbolTableBuilder::resolveReference(ParseNode pn) alloc_except {
     }
 }
 
-void SymbolTableBuilder::resolveReference(ParseNode pn, size_t sym_id) alloc_except {
+void SymbolLexicalPass::resolveReference(ParseNode pn, size_t sym_id) alloc_except {
     if(sym_id >= cutoff) errors.push_back(Error(parse_tree.getSelection(pn), BAD_DEFAULT_ARG));
     symbol_table.resolveReference(pn, sym_id, closure_depth);
 }
 
-void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except {
+void SymbolLexicalPass::resolveIdMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except {
     Typeset::Marker m = left;
     size_t num_terms = 0;
     while(m != right){
         m.incrementGrapheme();
         if(m.index == m.text->numChars()) m = right;
 
-        auto lookup = map.find(Typeset::Selection(left, m));
-        if(lookup == map.end()){
+        auto lookup = lexical_map.find(Typeset::Selection(left, m));
+        if(lookup == lexical_map.end()){
             errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
             return;
         }
@@ -391,7 +396,7 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
         if(m.index == m.text->numChars()) m = right;
 
         Typeset::Selection sel(left, m);
-        auto lookup = map.find(sel);
+        auto lookup = lexical_map.find(sel);
         ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
         #ifndef FORSCAPE_TYPESET_HEADLESS
         if(left.text != m.text){
@@ -412,7 +417,7 @@ void SymbolTableBuilder::resolveIdMult(ParseNode pn, Typeset::Marker left, Types
     parse_tree.setOp(pn, OP_SINGLE_CHAR_MULT_PROXY);
 }
 
-void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except {
+void SymbolLexicalPass::resolveScriptMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except {
     assert(left.text != right.text);
 
     Typeset::Marker m = left;
@@ -426,8 +431,8 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
 
     while(m != end){
         m.incrementGrapheme();
-        auto lookup = map.find(Typeset::Selection(left, m));
-        if(lookup == map.end()){
+        auto lookup = lexical_map.find(Typeset::Selection(left, m));
+        if(lookup == lexical_map.end()){
             errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
             return;
         }
@@ -452,7 +457,7 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
     while(m != end){
         m.incrementGrapheme();
         Typeset::Selection sel(left, m);
-        auto lookup = map.find(sel);
+        auto lookup = lexical_map.find(sel);
         ParseNode pn = parse_tree.addTerminal(OP_IDENTIFIER, sel);
         #ifndef FORSCAPE_TYPESET_HEADLESS
         t->tagParseNode(pn, left.index, m.index);
@@ -476,7 +481,7 @@ void SymbolTableBuilder::resolveScriptMult(ParseNode pn, Typeset::Marker left, T
     parse_tree.setOp(pn, OP_SINGLE_CHAR_MULT_PROXY);
 }
 
-void SymbolTableBuilder::resolveConditional1(
+void SymbolLexicalPass::resolveConditional1(
         #ifdef FORSCAPE_USE_SCOPE_NAME
         const std::string& name,
         #endif
@@ -485,13 +490,13 @@ void SymbolTableBuilder::resolveConditional1(
     resolveBody( SCOPE_NAME(name)  parse_tree.arg<1>(pn) );
 }
 
-void SymbolTableBuilder::resolveConditional2(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveConditional2(ParseNode pn) alloc_except {
     resolveExpr( parse_tree.arg<0>(pn) );
     resolveBody( SCOPE_NAME("-if-")  parse_tree.arg<1>(pn) );
     resolveBody( SCOPE_NAME("-else-")  parse_tree.arg<2>(pn) );
 }
 
-void SymbolTableBuilder::resolveFor(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveFor(ParseNode pn) alloc_except {
     increaseLexicalDepth(SCOPE_NAME("-for-")  parse_tree.getLeft(parse_tree.arg<1>(pn)));
     resolveStmt(parse_tree.arg<0>(pn));
     resolveExpr(parse_tree.arg<1>(pn));
@@ -500,7 +505,7 @@ void SymbolTableBuilder::resolveFor(ParseNode pn) alloc_except {
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-void SymbolTableBuilder::resolveRangedFor(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveRangedFor(ParseNode pn) alloc_except {
     increaseLexicalDepth(SCOPE_NAME("-foreach-")  parse_tree.getLeft(parse_tree.arg<1>(pn)));
     defineLocalScope(parse_tree.arg<0>(pn));
     resolveExpr(parse_tree.arg<1>(pn));
@@ -508,7 +513,7 @@ void SymbolTableBuilder::resolveRangedFor(ParseNode pn) alloc_except {
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-void SymbolTableBuilder::resolveBody(
+void SymbolLexicalPass::resolveBody(
         #ifdef FORSCAPE_USE_SCOPE_NAME
         const std::string& name,
         #endif
@@ -526,17 +531,17 @@ void SymbolTableBuilder::resolveBody(
     }
 }
 
-void SymbolTableBuilder::resolveBlock(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveBlock(ParseNode pn) alloc_except {
     for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
         resolveStmt( parse_tree.arg(pn, i) );
 }
 
-void SymbolTableBuilder::resolveDefault(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveDefault(ParseNode pn) alloc_except {
     for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
         resolveExpr(parse_tree.arg(pn, i));
 }
 
-void SymbolTableBuilder::resolveLambda(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveLambda(ParseNode pn) alloc_except {
     increaseClosureDepth(SCOPE_NAME("-lambda-")  parse_tree.getLeft(pn), pn);
 
     ParseNode params = parse_tree.paramList(pn);
@@ -549,19 +554,19 @@ void SymbolTableBuilder::resolveLambda(ParseNode pn) alloc_except {
     decreaseClosureDepth(parse_tree.getRight(pn));
 }
 
-void SymbolTableBuilder::resolveAlgorithm(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveAlgorithm(ParseNode pn) alloc_except {
     ParseNode name = parse_tree.algName(pn);
     ParseNode val_cap = parse_tree.valCapList(pn);
     ParseNode params = parse_tree.paramList(pn);
     ParseNode body = parse_tree.body(pn);
 
     const Typeset::Selection sel = parse_tree.getSelection(name);
-    auto lookup = map.find(sel);
-    if(lookup == map.end()){
+    auto lookup = lexical_map.find(sel);
+    if(lookup == lexical_map.end()){
         makeEntry(sel, name, true);
     }else{
         size_t index = lookup->second;
-        Symbol& sym = symbol_table.symbols[index];
+        Symbol& sym = symbols[index];
         if(sym.declaration_lexical_depth == lexical_depth){
             if(sym.is_prototype){
                 resolveReference(name, index);
@@ -590,13 +595,13 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn) alloc_except {
     for(size_t i = 0; i < val_cap_size; i++){
         ParseNode capture = parse_tree.arg(val_cap, i);
         defineLocalScope(capture, false, false);
-        symbol_table.symbols.back().is_captured_by_value = true;
-        symbol_table.symbols.back().is_closure_nested = true;
-        symbol_table.symbols.back().comment = NONE; //EVENTUALLY: maybe take the comment of the referenced var
+        symbols.back().is_captured_by_value = true;
+        symbols.back().is_closure_nested = true;
+        symbols.back().comment = NONE; //EVENTUALLY: maybe take the comment of the referenced var
     }
 
     bool expect_default = false;
-    cutoff = symbol_table.symbols.size();
+    cutoff = symbols.size();
     for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
         ParseNode param = parse_tree.arg(params, i);
         if(parse_tree.getOp(param) == OP_EQUAL){
@@ -623,7 +628,7 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn) alloc_except {
         if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
         size_t sym_id = parse_tree.getSymId(param);
         if(sym_id != NONE){
-            Symbol& sym = symbol_table.symbols[sym_id];
+            Symbol& sym = symbols[sym_id];
             sym.is_const = !sym.is_reassigned;
         }
     }
@@ -631,12 +636,12 @@ void SymbolTableBuilder::resolveAlgorithm(ParseNode pn) alloc_except {
     decreaseClosureDepth(parse_tree.getRight(body));
 }
 
-void SymbolTableBuilder::resolvePrototype(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolvePrototype(ParseNode pn) alloc_except {
     if(defineLocalScope(parse_tree.child(pn)))
         lastDefinedSymbol().is_prototype = true;
 }
 
-void SymbolTableBuilder::resolveClass(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveClass(ParseNode pn) alloc_except {
     ParseNode name = parse_tree.arg<0>(pn);
     ParseNode parents = parse_tree.arg<1>(pn);
     if(parents != NONE){
@@ -648,12 +653,12 @@ void SymbolTableBuilder::resolveClass(ParseNode pn) alloc_except {
     ParseNode members = parse_tree.arg<2>(pn);
 
     const Typeset::Selection sel = parse_tree.getSelection(name);
-    auto lookup = map.find(sel);
-    if(lookup == map.end()){
+    auto lookup = lexical_map.find(sel);
+    if(lookup == lexical_map.end()){
         makeEntry(sel, name, true);
     }else{
         size_t index = lookup->second;
-        Symbol& sym = symbol_table.symbols[index];
+        Symbol& sym = symbols[index];
         if(sym.declaration_lexical_depth == lexical_depth){
             if(sym.is_prototype){
                 resolveReference(name, index);
@@ -675,7 +680,7 @@ void SymbolTableBuilder::resolveClass(ParseNode pn) alloc_except {
     decreaseLexicalDepth(parse_tree.getRight(members));
 }
 
-void SymbolTableBuilder::resolveSubscript(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveSubscript(ParseNode pn) alloc_except {
     if(parse_tree.getNumArgs(pn) != 2){ resolveDefault(pn); return; }
 
     ParseNode id = parse_tree.lhs(pn);
@@ -697,7 +702,7 @@ void SymbolTableBuilder::resolveSubscript(ParseNode pn) alloc_except {
     }
 }
 
-void SymbolTableBuilder::resolveBig(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveBig(ParseNode pn) alloc_except {
     increaseLexicalDepth(SCOPE_NAME("-big symbol-")  parse_tree.getLeft(pn));
     ParseNode assign = parse_tree.arg<0>(pn);
     if( parse_tree.getOp(assign) != OP_ASSIGN ) return;
@@ -714,7 +719,7 @@ void SymbolTableBuilder::resolveBig(ParseNode pn) alloc_except {
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-void SymbolTableBuilder::resolveDerivative(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveDerivative(ParseNode pn) alloc_except {
     ParseNode id = parse_tree.arg<1>(pn);
     size_t id_index = symIndex(id);
     if(id_index != NONE) resolveReference(parse_tree.arg<2>(pn));
@@ -729,7 +734,7 @@ void SymbolTableBuilder::resolveDerivative(ParseNode pn) alloc_except {
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-void SymbolTableBuilder::resolveLimit(ParseNode pn) noexcept {
+void SymbolLexicalPass::resolveLimit(ParseNode pn) noexcept {
     resolveExpr(parse_tree.arg<1>(pn));
     increaseLexicalDepth(SCOPE_NAME("-limit-")  parse_tree.getLeft(pn));
 
@@ -739,7 +744,7 @@ void SymbolTableBuilder::resolveLimit(ParseNode pn) noexcept {
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-void SymbolTableBuilder::resolveIndefiniteIntegral(ParseNode pn) noexcept {
+void SymbolLexicalPass::resolveIndefiniteIntegral(ParseNode pn) noexcept {
     increaseLexicalDepth(SCOPE_NAME("-indef_int-")  parse_tree.getLeft(pn));
 
     ParseNode id = parse_tree.arg<0>(pn);
@@ -749,7 +754,7 @@ void SymbolTableBuilder::resolveIndefiniteIntegral(ParseNode pn) noexcept {
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-void SymbolTableBuilder::resolveDefiniteIntegral(ParseNode pn) noexcept {
+void SymbolLexicalPass::resolveDefiniteIntegral(ParseNode pn) noexcept {
     resolveExpr(parse_tree.arg<1>(pn));
     resolveExpr(parse_tree.arg<2>(pn));
     increaseLexicalDepth(SCOPE_NAME("-def_int-")  parse_tree.getLeft(pn));
@@ -760,7 +765,7 @@ void SymbolTableBuilder::resolveDefiniteIntegral(ParseNode pn) noexcept {
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-void SymbolTableBuilder::resolveSetBuilder(ParseNode pn) noexcept {
+void SymbolLexicalPass::resolveSetBuilder(ParseNode pn) noexcept {
     increaseLexicalDepth(SCOPE_NAME("-set_builder-")  parse_tree.getLeft(pn));
 
     ParseNode var = parse_tree.arg<0>(pn);
@@ -776,12 +781,12 @@ void SymbolTableBuilder::resolveSetBuilder(ParseNode pn) noexcept {
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-void SymbolTableBuilder::resolveUnknownDeclaration(ParseNode pn) noexcept {
+void SymbolLexicalPass::resolveUnknownDeclaration(ParseNode pn) noexcept {
     for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
         defineLocalScope(parse_tree.arg(pn, i));
 }
 
-void SymbolTableBuilder::resolveImport(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveImport(ParseNode pn) alloc_except {
     ParseNode alias = parse_tree.getFlag(pn);
     if(alias == NONE){
         ParseNode file = parse_tree.child(pn);
@@ -815,7 +820,7 @@ void SymbolTableBuilder::resolveImport(ParseNode pn) alloc_except {
     }
 }
 
-void SymbolTableBuilder::resolveFromImport(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveFromImport(ParseNode pn) alloc_except {
     for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++){
         ParseNode child = parse_tree.arg(pn, i);
         ParseNode alias = parse_tree.getFlag(child);
@@ -828,16 +833,16 @@ void SymbolTableBuilder::resolveFromImport(ParseNode pn) alloc_except {
     }
 }
 
-void SymbolTableBuilder::resolveNamespace(ParseNode pn) alloc_except {
+void SymbolLexicalPass::resolveNamespace(ParseNode pn) alloc_except {
     ParseNode name = parse_tree.arg<0>(pn);
     ParseNode body = parse_tree.arg<1>(pn);
 
     if(!errors.empty()) return; //EVENTUALLY: more resiliency here
 
-    const auto lookup = map.find(parse_tree.getSelection(name));
-    if(lookup != map.end()){
+    const auto lookup = lexical_map.find(parse_tree.getSelection(name));
+    if(lookup != lexical_map.end()){
         const size_t sym_id = lookup->second;
-        const Symbol& candidate = symbol_table.symbols[sym_id];
+        const Symbol& candidate = symbols[sym_id];
         if(candidate.declaration_lexical_depth == lexical_depth){
             //This namespace already exists - load the previous variables
             parse_tree.setSymId(name, sym_id);
@@ -852,17 +857,17 @@ void SymbolTableBuilder::resolveNamespace(ParseNode pn) alloc_except {
     }
 
     //First definition of this namespace
-    const size_t sym_id = symbol_table.symbols.size();
+    const size_t sym_id = symbols.size();
     defineLocalScope(name);
     if(!errors.empty()) return; //EVENTUALLY: more resiliency here
-    symbol_table.symbols[sym_id].scope_tail = NONE;
+    symbols[sym_id].scope_tail = NONE;
     increaseLexicalDepth(SCOPE_NAME(parse_tree.str(name))  parse_tree.getLeft(body));
     resolveBlock(body);
     unloadScope(body, sym_id);
 }
 
-void SymbolTableBuilder::loadScope(ParseNode pn, size_t sym_id) noexcept {
-    const Symbol& scope = symbol_table.symbols[sym_id];
+void SymbolLexicalPass::loadScope(ParseNode pn, size_t sym_id) noexcept {
+    const Symbol& scope = symbols[sym_id];
 
     increaseLexicalDepth(SCOPE_NAME(scope.sel(parse_tree).str())  parse_tree.getLeft(pn));
 
@@ -873,11 +878,11 @@ void SymbolTableBuilder::loadScope(ParseNode pn, size_t sym_id) noexcept {
 
         //Put all the segment variables in the map
         for(size_t sym_id = scope_segment.sym_begin; sym_id < scope_segment.sym_end; sym_id++){
-            Symbol& sym = symbol_table.symbols[sym_id];
+            Symbol& sym = symbols[sym_id];
             const Typeset::Selection& sel = sym.sel(parse_tree);
-            auto result = map.insert({sel, sym_id});
+            auto result = lexical_map.insert({sel, sym_id});
             if(!result.second){
-                sym.shadowed_var = result.first->second;
+                sym.index_of_shadowed_var = result.first->second;
                 result.first->second = sym_id;
             }
         }
@@ -893,19 +898,19 @@ void SymbolTableBuilder::loadScope(ParseNode pn, size_t sym_id) noexcept {
     //      C++ class implementation files. Otherwise the trade-off seems good.
 }
 
-void SymbolTableBuilder::unloadScope(ParseNode body, size_t scope_sym_id) noexcept {
-    Symbol& scope = symbol_table.symbols[scope_sym_id];
+void SymbolLexicalPass::unloadScope(ParseNode body, size_t scope_sym_id) noexcept {
+    Symbol& scope = symbols[scope_sym_id];
     ScopeId scope_index = scope.scope_tail;
     while(scope_index != NONE){
         ScopeSegment& scope_segment = symbol_table.scopes[scope_index];
 
         //Remove all the previously defined scope variables from the lexical map
         for(size_t sym_id = scope_segment.sym_begin; sym_id < scope_segment.sym_end; sym_id++){
-            Symbol& sym = symbol_table.symbols[sym_id];
+            Symbol& sym = symbols[sym_id];
             const Typeset::Selection& sel = sym.sel(parse_tree);
-            assert(map.contains(sel));
-            if(sym.shadowed_var == NONE) map.erase(sel);
-            else map[sel] = sym.shadowed_var;
+            assert(lexical_map.contains(sel));
+            if(sym.index_of_shadowed_var == NONE) lexical_map.erase(sel);
+            else lexical_map[sel] = sym.index_of_shadowed_var;
         }
 
         scope_index = scope_segment.prev_namespace_segment;
@@ -918,7 +923,7 @@ void SymbolTableBuilder::unloadScope(ParseNode body, size_t scope_sym_id) noexce
 
         //Add all new scope variables to scope map
         for(size_t sym_id = scope_segment.sym_begin; sym_id < scope_segment.sym_end; sym_id++){
-            Symbol& sym = symbol_table.symbols[sym_id];
+            Symbol& sym = symbols[sym_id];
             if(sym.declaration_lexical_depth != lexical_depth+1) continue;
             auto result = symbol_table.scoped_vars.insert({SymbolTable::ScopedVarKey(scope_sym_id, sym.sel(parse_tree)), sym_id});
             assert(result.second); //Failure to add the symbol is a bug
@@ -945,7 +950,7 @@ void SymbolTableBuilder::unloadScope(ParseNode body, size_t scope_sym_id) noexce
     symbol_table.scopes[scope_index-1].next_lexical_segment = scope_index;
 }
 
-void SymbolTableBuilder::resolveScopeAccess(ParseNode pn) noexcept {
+void SymbolLexicalPass::resolveScopeAccess(ParseNode pn) noexcept {
     //Only resolve the leftmost part here
 
     ParseNode lhs = parse_tree.arg<0>(pn);
@@ -960,7 +965,7 @@ void SymbolTableBuilder::resolveScopeAccess(ParseNode pn) noexcept {
     symbol_table.usages.push_back(Usage(NONE, rhs, READ));
 }
 
-bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable, bool warn_on_shadow) alloc_except {
+bool SymbolLexicalPass::defineLocalScope(ParseNode pn, bool immutable, bool warn_on_shadow) alloc_except {
     Typeset::Selection c = parse_tree.getSelection(pn);
 
     if(parse_tree.getOp(pn) == OP_SUBSCRIPT_ACCESS && !resolvePotentialIdSub(pn)){
@@ -973,12 +978,14 @@ bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable, bool war
         return false;
     }
 
-    auto lookup = map.find(c);
-    if(lookup == map.end()){
+    //DO THIS: use single dict operation
+    //auto result = lexical_map.insert({c, symbols.size()});
+    auto lookup = lexical_map.find(c);
+    if(lookup == lexical_map.end()){
         makeEntry(c, pn, immutable);
     }else{
         size_t index = lookup->second;
-        Symbol& sym = symbol_table.symbols[index];
+        Symbol& sym = symbols[index];
         if(sym.declaration_lexical_depth == lexical_depth){
             bool CONST = sym.is_const;
             errors.push_back(Error(c, CONST ? REASSIGN_CONSTANT : MUTABLE_CONST_ASSIGN));
@@ -992,11 +999,11 @@ bool SymbolTableBuilder::defineLocalScope(ParseNode pn, bool immutable, bool war
 }
 
 //TODO: this should be sym id?
-ParseNode SymbolTableBuilder::defineOrAccessLocalScope(ParseNode pn, bool immutable, bool warn_on_shadow) noexcept {
-    const auto lookup = map.find(parse_tree.getSelection(pn));
-    if(lookup != map.end()){
+ParseNode SymbolLexicalPass::defineOrAccessLocalScope(ParseNode pn, bool immutable, bool warn_on_shadow) noexcept {
+    const auto lookup = lexical_map.find(parse_tree.getSelection(pn));
+    if(lookup != lexical_map.end()){
         const size_t sym_id = lookup->second;
-        const Symbol& candidate = symbol_table.symbols[sym_id];
+        const Symbol& candidate = symbols[sym_id];
         if(candidate.declaration_lexical_depth == lexical_depth){
             parse_tree.setSymId(pn, sym_id);
             symbol_table.usages.push_back(Usage(sym_id, pn, READ));
@@ -1010,18 +1017,18 @@ ParseNode SymbolTableBuilder::defineOrAccessLocalScope(ParseNode pn, bool immuta
     return pn;
 }
 
-bool SymbolTableBuilder::declared(ParseNode pn) const noexcept{
-    return map.find(parse_tree.getSelection(pn)) != map.end();
+bool SymbolLexicalPass::declared(ParseNode pn) const noexcept{
+    return lexical_map.find(parse_tree.getSelection(pn)) != lexical_map.end();
 }
 
-size_t SymbolTableBuilder::symIndex(ParseNode pn) const noexcept{
-    const auto& lookup = map.find(parse_tree.getSelection(pn));
-    return lookup == map.end() ? NONE : lookup->second;
+size_t SymbolLexicalPass::symIndex(ParseNode pn) const noexcept{
+    const auto& lookup = lexical_map.find(parse_tree.getSelection(pn));
+    return lookup == lexical_map.end() ? NONE : lookup->second;
 }
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
 template<bool first>
-void SymbolTableBuilder::fixSubIdDocMap(ParseNode pn) const alloc_except {
+void SymbolLexicalPass::fixSubIdDocMap(ParseNode pn) const alloc_except {
     //Update doc map
     parse_tree.getSelection(pn).mapConstructToParseNode(pn);
 
@@ -1036,7 +1043,7 @@ void SymbolTableBuilder::fixSubIdDocMap(ParseNode pn) const alloc_except {
 }
 #endif
 
-void SymbolTableBuilder::increaseLexicalDepth(
+void SymbolLexicalPass::increaseLexicalDepth(
         #ifdef FORSCAPE_USE_SCOPE_NAME
         const std::string& name,
         #endif
@@ -1045,27 +1052,27 @@ void SymbolTableBuilder::increaseLexicalDepth(
     addScope(SCOPE_NAME(name)  begin);
 }
 
-void SymbolTableBuilder::decreaseLexicalDepth(const Typeset::Marker& end) alloc_except {
+void SymbolLexicalPass::decreaseLexicalDepth(const Typeset::Marker& end) alloc_except {
     closeScope(end);
 
     for(size_t curr = symbol_table.head(active_scope_id-1); curr < active_scope_id; curr = symbol_table.scopes[curr].next_lexical_segment){
         ScopeSegment& scope = symbol_table.scopes[curr];
         for(size_t sym_id = scope.sym_begin; sym_id < scope.sym_end; sym_id++){
-            Symbol& sym = symbol_table.symbols[sym_id];
+            Symbol& sym = symbols[sym_id];
             if(sym.declaration_lexical_depth > lexical_depth) continue;
             assert(sym.declaration_lexical_depth == lexical_depth);
 
-            if(sym.shadowed_var == NONE)
-                map.erase(sym.sel(parse_tree)); //Much better to erase empty entries than check for them
+            if(sym.index_of_shadowed_var == NONE)
+                lexical_map.erase(sym.sel(parse_tree)); //Much better to erase empty entries than check for them
             else
-                map[sym.sel(parse_tree)] = sym.shadowed_var;
+                lexical_map[sym.sel(parse_tree)] = sym.index_of_shadowed_var;
         }
     }
 
     lexical_depth--;
 }
 
-void SymbolTableBuilder::increaseClosureDepth(
+void SymbolLexicalPass::increaseClosureDepth(
         #ifdef FORSCAPE_USE_SCOPE_NAME
         const std::string& name,
         #endif
@@ -1077,7 +1084,7 @@ void SymbolTableBuilder::increaseClosureDepth(
     addScope(SCOPE_NAME(name)  begin, pn);
 }
 
-void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end) alloc_except {
+void SymbolLexicalPass::decreaseClosureDepth(const Typeset::Marker& end) alloc_except {
     ParseNode fn = symbol_table.scopes.back().fn;
 
     decreaseLexicalDepth(end);
@@ -1088,7 +1095,7 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end) alloc_
         ScopeSegment& closed_seg = symbol_table.scopes[seg_index];
         for(size_t i = closed_seg.usage_begin; i < closed_seg.usage_end; i++){
             const Usage& usage = symbol_table.usages[i];
-            Symbol& sym = symbol_table.symbols[usage.var_id];
+            Symbol& sym = symbols[usage.var_id];
             bool is_closed = (usage.type != UsageType::DECLARE) && sym.is_closure_nested &&
                     (!sym.is_captured_by_value || sym.declaration_closure_depth <= closure_depth);
             if(!is_closed) continue;
@@ -1106,7 +1113,7 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end) alloc_
     for(size_t i = cutoff; i < refs.size(); i++){
         size_t sym_id = refs[i];
         if(sym_id == NONE) continue; //Tombstone: this node was promoted and we'll see it later
-        Symbol& sym = symbol_table.symbols[sym_id];
+        Symbol& sym = symbols[sym_id];
         Op op = sym.declaration_closure_depth <= closure_depth ? OP_READ_UPVALUE : OP_IDENTIFIER;
         Typeset::Selection sel = symbol_table.getSel(sym_id);
         assert(sel.left != sel.right);
@@ -1126,13 +1133,13 @@ void SymbolTableBuilder::decreaseClosureDepth(const Typeset::Marker& end) alloc_
     refs.resize(cutoff);
 }
 
-void SymbolTableBuilder::addStoredScope(ParseNode pn) {
+void SymbolLexicalPass::addStoredScope(ParseNode pn) {
     if(!errors.empty()) return;
 
     for(size_t curr = symbol_table.head(active_scope_id-1); curr < active_scope_id; curr = symbol_table.scopes[curr].next_lexical_segment){
         ScopeSegment& scope = symbol_table.scopes[curr];
         for(size_t sym_id = scope.sym_begin; sym_id < scope.sym_end; sym_id++){
-            Symbol& sym = symbol_table.symbols[sym_id];
+            Symbol& sym = symbols[sym_id];
             if(sym.declaration_lexical_depth != lexical_depth+1) continue;
             auto result = symbol_table.scoped_vars.insert({SymbolTable::ScopedVarKey(pn, sym.sel(parse_tree)), sym_id});
             if(!result.second) errors.push_back(Error(sym.sel(parse_tree), REASSIGN_CONSTANT));
@@ -1141,19 +1148,19 @@ void SymbolTableBuilder::addStoredScope(ParseNode pn) {
     }
 }
 
-void SymbolTableBuilder::makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable) alloc_except {
-    assert(map.find(c) == map.end());
-    map[c] = symbol_table.symbols.size();
-    symbol_table.usages.push_back(Usage(symbol_table.symbols.size(), pn, DECLARE));
+void SymbolLexicalPass::makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable) alloc_except {
+    assert(lexical_map.find(c) == lexical_map.end());
+    lexical_map[c] = symbols.size();
+    symbol_table.usages.push_back(Usage(symbols.size(), pn, DECLARE));
     symbol_table.addSymbol(pn, lexical_depth, closure_depth, NONE, immutable);
 }
 
-void SymbolTableBuilder::appendEntry(ParseNode pn, size_t& old_entry, bool immutable, bool warn_on_shadow) alloc_except {
+void SymbolLexicalPass::appendEntry(ParseNode pn, size_t& old_entry, bool immutable, bool warn_on_shadow) alloc_except {
     //EVENTUALLY: let the user control warnings, decide defaults
     if(warn_on_shadow) warnings.push_back(Error(parse_tree.getSelection(pn), SHADOWING_VAR));
-    symbol_table.usages.push_back(Usage(symbol_table.symbols.size(), pn, DECLARE));
+    symbol_table.usages.push_back(Usage(symbols.size(), pn, DECLARE));
     symbol_table.addSymbol(pn, lexical_depth, closure_depth, old_entry, immutable);
-    old_entry = symbol_table.symbols.size()-1;
+    old_entry = symbols.size()-1;
 }
 
 }

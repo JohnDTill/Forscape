@@ -1,5 +1,7 @@
 #include "forscape_symbol_link_pass.h"
 
+#include "forscape_parse_tree.h"
+
 #ifndef NDEBUG
 #include <iostream>
 #endif

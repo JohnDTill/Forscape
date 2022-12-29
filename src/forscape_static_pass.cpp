@@ -1234,7 +1234,7 @@ ParseNode StaticPass::resolveAlg(ParseNode pn){
         size_t inner_id = parse_tree.getFlag(cap);
         assert(inner_id < symbol_table.symbols.size());
         const Symbol& inner = symbol_table.symbols[inner_id];
-        const Symbol& outer = symbol_table.symbols[inner.shadowed_var];
+        const Symbol& outer = symbol_table.symbols[inner.index_of_shadowed_var];
         Type t = outer.type;
         sig.push_back(t);
         if(t == NUMERIC){
@@ -1355,7 +1355,7 @@ ParseNode StaticPass::resolveLambda(ParseNode pn){
         size_t inner_id = parse_tree.getFlag(cap);
         assert(inner_id < symbol_table.symbols.size());
         const Symbol& inner = symbol_table.symbols[inner_id];
-        const Symbol& outer = symbol_table.symbols[inner.shadowed_var];
+        const Symbol& outer = symbol_table.symbols[inner.index_of_shadowed_var];
         Type t = outer.type;
         sig.push_back(t);
         if(t == NUMERIC){

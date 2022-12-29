@@ -1,5 +1,5 @@
-#ifndef FORSCAPE_SYMBOL_BUILD_PASS_H
-#define FORSCAPE_SYMBOL_BUILD_PASS_H
+#ifndef FORSCAPE_SYMBOL_LEXICAL_PASS_H
+#define FORSCAPE_SYMBOL_LEXICAL_PASS_H
 
 #include "forscape_common.h"
 #include "forscape_error.h"
@@ -13,7 +13,7 @@ namespace Code {
 
 class ParseTree;
 
-class SymbolTableBuilder {
+class SymbolLexicalPass {
 private:
     std::vector<Error>& errors;
     std::vector<Error>& warnings;
@@ -21,17 +21,18 @@ private:
     Typeset::Model* model;
 
 public:
-    SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model) noexcept;
+    SymbolLexicalPass(ParseTree& parse_tree, Typeset::Model* model) noexcept;
     void resolveSymbols() alloc_except;
     SymbolTable symbol_table;
     static FORSCAPE_STATIC_MAP<std::string_view, Op> predef;
 
 private:
+    std::vector<Symbol>& symbols;
     size_t active_scope_id;
-    FORSCAPE_UNORDERED_MAP<Typeset::Selection, SymbolId> map;
+    FORSCAPE_UNORDERED_MAP<Typeset::Selection, SymbolIndex> lexical_map;
     static constexpr size_t GLOBAL_DEPTH = 0;
-    size_t lexical_depth = GLOBAL_DEPTH;
-    size_t closure_depth = 0;
+    uint16_t lexical_depth = GLOBAL_DEPTH;
+    uint8_t closure_depth = 0;
     size_t cutoff = std::numeric_limits<size_t>::max();
 
     std::vector<size_t> refs;
@@ -122,4 +123,4 @@ private:
 
 }
 
-#endif // FORSCAPE_SYMBOL_BUILD_PASS_H
+#endif // FORSCAPE_SYMBOL_LEXICAL_PASS_H

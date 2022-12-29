@@ -1,16 +1,16 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 
-#include <typeset_model.h>
-#include <typeset_painter.h>
-#include <typeset_view.h>
+#include <forscape_message.h>
 #include <forscape_scanner.h>
 #include <forscape_serial.h>
 #include <forscape_serial_unicode.h>
 #include <forscape_parser.h>
 #include <forscape_program.h>
-#include <forscape_symbol_build_pass.h>
-#include <forscape_message.h>
+#include <forscape_symbol_lexical_pass.h>
+#include <typeset_model.h>
+#include <typeset_painter.h>
+#include <typeset_view.h>
 #include <QBuffer>
 #include <QClipboard>
 #include <QCloseEvent>
@@ -665,7 +665,7 @@ void MainWindow::openProject(QString path){
         }
         files.sort();
 
-        static constexpr int NUM_PRINT = 7;
+        static constexpr qsizetype NUM_PRINT = 7;
 
         QString msg = files.front();
         for(int i = 1; i < std::min(files.size(), NUM_PRINT); i++){
@@ -1046,7 +1046,7 @@ void MainWindow::closeEvent(QCloseEvent* event){
         }
         files.sort();
 
-        static constexpr int NUM_PRINT = 7;
+        static constexpr qsizetype NUM_PRINT = 7;
 
         QString msg = files.front();
         for(int i = 1; i < std::min(files.size(), NUM_PRINT); i++){

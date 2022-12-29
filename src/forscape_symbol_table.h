@@ -21,17 +21,17 @@ namespace Code {
 class ParseTree;
 
 typedef size_t ScopeId;
-typedef size_t SymbolId;
+typedef size_t SymbolIndex;
 
 struct Symbol {
-    size_t declaration_lexical_depth  DEBUG_INIT_UNITIALISED;
-    size_t declaration_closure_depth  DEBUG_INIT_UNITIALISED;
-    size_t flag  DEBUG_INIT_UNITIALISED;
+    uint16_t declaration_lexical_depth  DEBUG_INIT_UNITIALISED(uint16_t);
+    uint8_t declaration_closure_depth  DEBUG_INIT_UNITIALISED(uint8_t);
+    size_t flag  DEBUG_INIT_UNITIALISED(size_t);
     size_t type = NONE;
     size_t rows = UNKNOWN_SIZE;
     size_t cols = UNKNOWN_SIZE;
-    size_t shadowed_var  DEBUG_INIT_UNITIALISED;
-    size_t comment  DEBUG_INIT_UNITIALISED;
+    SymbolIndex index_of_shadowed_var  DEBUG_INIT_UNITIALISED(SymbolIndex);
+    ParseNode comment  DEBUG_INIT_UNITIALISED(ParseNode);
     size_t scope_tail = NONE;
     bool is_const;
     bool is_used = false;
@@ -53,28 +53,28 @@ enum UsageType{
 };
 
 struct Usage{
-    size_t var_id  DEBUG_INIT_UNITIALISED;
-    ParseNode pn  DEBUG_INIT_UNITIALISED;
+    SymbolIndex var_id  DEBUG_INIT_UNITIALISED(SymbolIndex);
+    ParseNode pn  DEBUG_INIT_UNITIALISED(ParseNode);
     UsageType type;
 
     Usage() noexcept;
     Usage(size_t var_id, ParseNode pn, UsageType type) noexcept;
 };
 
-struct ScopeSegment{
+struct ScopeSegment {
     #ifdef FORSCAPE_USE_SCOPE_NAME
     size_t name_start;
     size_t name_size;
     #endif
     Typeset::Marker start;
-    ParseNode fn  DEBUG_INIT_UNITIALISED;
-    ScopeId parent  DEBUG_INIT_UNITIALISED;
-    ScopeId prev_lexical_segment  DEBUG_INIT_UNITIALISED;
-    SymbolId sym_begin  DEBUG_INIT_UNITIALISED;
-    size_t usage_begin  DEBUG_INIT_UNITIALISED;
+    ParseNode fn  DEBUG_INIT_UNITIALISED(ParseNode);
+    ScopeId parent  DEBUG_INIT_UNITIALISED(ScopeId);
+    ScopeId prev_lexical_segment  DEBUG_INIT_UNITIALISED(ScopeId);
+    SymbolIndex sym_begin  DEBUG_INIT_UNITIALISED(SymbolIndex);
+    size_t usage_begin  DEBUG_INIT_UNITIALISED(size_t);
     ScopeId next_lexical_segment = NONE;
-    ScopeId prev_namespace_segment  DEBUG_INIT_UNITIALISED;
-    SymbolId sym_end = NONE;
+    ScopeId prev_namespace_segment  DEBUG_INIT_UNITIALISED(ScopeId);
+    SymbolIndex sym_end = NONE;
     size_t usage_end = NONE;
 
     ScopeSegment(
@@ -86,7 +86,7 @@ struct ScopeSegment{
         ParseNode closure,
         ScopeId parent,
         ScopeId prev,
-        SymbolId sym_begin,
+        SymbolIndex sym_begin,
         size_t usage_begin
         ) noexcept;
 

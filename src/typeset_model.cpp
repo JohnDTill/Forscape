@@ -11,7 +11,7 @@
 #include "forscape_message.h"
 #include <forscape_scanner.h>
 #include <forscape_parser.h>
-#include <forscape_symbol_build_pass.h>
+#include <forscape_symbol_lexical_pass.h>
 #include <forscape_symbol_link_pass.h>
 #include <forscape_interpreter.h>
 #include <fstream>

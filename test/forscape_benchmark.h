@@ -3,7 +3,7 @@
 #include "forscape_scanner.h"
 #include "forscape_serial.h"
 #include "forscape_parser.h"
-#include "forscape_symbol_build_pass.h"
+#include "forscape_symbol_lexical_pass.h"
 #include "forscape_interpreter.h"
 
 using namespace Forscape;
@@ -56,12 +56,12 @@ void runBenchmark(){
     startClock();
     for(size_t i = 0; i < ITER_SYMBOL_TABLE; i++){
         Code::ParseTree parse_tree = parser.parse_tree;
-        Code::SymbolTableBuilder sym_table(parse_tree, m);
+        Code::SymbolLexicalPass sym_table(parse_tree, m);
         sym_table.resolveSymbols();
     }
     report("SymbolTable", ITER_SYMBOL_TABLE);
 
-    Code::SymbolTableBuilder sym_table(parser.parse_tree, m);
+    Code::SymbolLexicalPass sym_table(parser.parse_tree, m);
     sym_table.resolveSymbols();
     Code::StaticPass static_pass(parser.parse_tree, sym_table.symbol_table, m->errors, m->warnings);
     static_pass.resolve();

@@ -1,7 +1,7 @@
 #ifndef FORSCAPE_SYMBOL_LINK_PASS_H
 #define FORSCAPE_SYMBOL_LINK_PASS_H
 
-#include <forscape_symbol_build_pass.h>
+#include <forscape_symbol_table.h>
 
 namespace Forscape {
 

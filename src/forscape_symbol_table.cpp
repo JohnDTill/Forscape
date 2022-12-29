@@ -2,7 +2,7 @@
 
 #include "forscape_parse_tree.h"
 #include "forscape_scanner.h"
-#include "forscape_symbol_build_pass.h"
+#include "forscape_symbol_lexical_pass.h"
 #include <algorithm>
 #include <cassert>
 #include <unordered_set>
@@ -18,7 +18,7 @@ Symbol::Symbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t sha
     : declaration_lexical_depth(lexical_depth),
       declaration_closure_depth(closure_depth),
       flag(pn),
-      shadowed_var(shadowed_var),
+      index_of_shadowed_var(shadowed_var),
       is_const(is_const) {}
 
 size_t Symbol::closureIndex() const noexcept{
@@ -40,7 +40,7 @@ ScopeSegment::ScopeSegment(
         #ifdef FORSCAPE_USE_SCOPE_NAME
         size_t name_start, size_t name_size,
         #endif
-        const Typeset::Marker& start, ParseNode closure, ScopeId parent, ScopeId prev, SymbolId sym_begin, size_t usage_begin) noexcept
+        const Typeset::Marker& start, ParseNode closure, ScopeId parent, ScopeId prev, SymbolIndex sym_begin, size_t usage_begin) noexcept
     :
       #ifdef FORSCAPE_USE_SCOPE_NAME
       name_start(name_start), name_size(name_size),
@@ -101,7 +101,7 @@ std::vector<std::string> SymbolTable::getSuggestions(const Typeset::Marker& loc)
     //Add predefined variables
     if(typed.isTextSelection()){
         const std::string_view typed_view = typed.strView();
-        for(const auto& entry : SymbolTableBuilder::predef){
+        for(const auto& entry : SymbolLexicalPass::predef){
             const auto& keyword = entry.first;
             if(keyword.size() >= typed_view.size() && std::string_view(keyword.data(), typed_view.size()) == typed_view)
                 suggestions.insert(std::string(keyword));

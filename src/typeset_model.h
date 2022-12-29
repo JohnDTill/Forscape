@@ -9,7 +9,7 @@
 
 #include "forscape_scanner.h"
 #include "forscape_parser.h"
-#include "forscape_symbol_build_pass.h"
+#include "forscape_symbol_lexical_pass.h"
 #include "forscape_static_pass.h"
 #include "forscape_interpreter.h"
 
@@ -38,7 +38,7 @@ public:
 
     Code::Scanner scanner = Code::Scanner(this);
     Code::Parser parser = Code::Parser(scanner, this);
-    Code::SymbolTableBuilder symbol_builder = Code::SymbolTableBuilder(parser.parse_tree, this);
+    Code::SymbolLexicalPass symbol_builder = Code::SymbolLexicalPass(parser.parse_tree, this);
     Code::StaticPass static_pass = Code::StaticPass(parser.parse_tree, symbol_builder.symbol_table, errors, warnings);
     Code::Interpreter interpreter;
     std::vector<Code::Error> errors;
