@@ -14,7 +14,7 @@ Forscape::Code::SymbolTableLinker::SymbolTableLinker(SymbolTable& symbol_table, 
     : symbol_table(symbol_table), parse_tree(parse_tree) {}
 
 void SymbolTableLinker::link() noexcept{
-    for(ScopeSegment& scope : symbol_table.scopes){
+    for(ScopeSegment& scope : symbol_table.scope_segments){
         if(scope.isStartOfScope()){
             if(scope.fn != NONE){
                 ParseNode val_list = parse_tree.valCapList(scope.fn);
@@ -22,7 +22,7 @@ void SymbolTableLinker::link() noexcept{
                 size_t N_cap = parse_tree.valListSize(val_list);
 
                 for(size_t i = 0; i < N_cap; i++){
-                    size_t var_id = scope.sym_begin+i;
+                    size_t var_id = scope.first_sym_index+i;
                     Symbol& sym = symbol_table.symbols[var_id];
                     old_flags.push_back(sym.flag);
                     sym.flag = i;

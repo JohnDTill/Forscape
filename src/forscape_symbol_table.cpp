@@ -40,19 +40,19 @@ ScopeSegment::ScopeSegment(
         #ifdef FORSCAPE_USE_SCOPE_NAME
         size_t name_start, size_t name_size,
         #endif
-        const Typeset::Marker& start, ParseNode closure, ScopeId parent, ScopeId prev, SymbolIndex sym_begin, size_t usage_begin) noexcept
+        const Typeset::Marker& start, ParseNode closure, ScopeSegmentIndex parent, ScopeSegmentIndex prev, SymbolIndex sym_begin, size_t usage_begin) noexcept
     :
       #ifdef FORSCAPE_USE_SCOPE_NAME
       name_start(name_start), name_size(name_size),
       #endif
-      start(start), fn(closure), parent(parent), prev_lexical_segment(prev), sym_begin(sym_begin), usage_begin(usage_begin) {}
+      start(start), fn(closure), parent_lexical_segment_index(parent), prev_lexical_segment_index(prev), first_sym_index(sym_begin), usage_begin(usage_begin) {}
 
 bool ScopeSegment::isStartOfScope() const noexcept{
-    return prev_lexical_segment == NONE;
+    return prev_lexical_segment_index == NONE;
 }
 
 bool ScopeSegment::isEndOfScope() const noexcept{
-    return next_lexical_segment == NONE;
+    return next_lexical_segment_index == NONE;
 }
 
 void SymbolTable::addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed, bool is_const) alloc_except {
@@ -67,8 +67,8 @@ size_t SymbolTable::containingScope(const Typeset::Marker& m) const noexcept{
     auto search_fn = [](const ScopeSegment& scope, const Typeset::Marker& m){
         return scope.start.precedesInclusive(m);
     };
-    auto lookup = std::lower_bound(scopes.begin(), scopes.end(), m, search_fn);
-    return lookup - scopes.begin() - (lookup != scopes.begin());
+    auto lookup = std::lower_bound(scope_segments.begin(), scope_segments.end(), m, search_fn);
+    return lookup - scope_segments.begin() - (lookup != scope_segments.begin());
 }
 
 std::vector<std::string> SymbolTable::getSuggestions(const Typeset::Marker& loc) const{
@@ -84,10 +84,10 @@ std::vector<std::string> SymbolTable::getSuggestions(const Typeset::Marker& loc)
     Typeset::Selection typed(left, loc);
 
     //Add matching words in scope
-    for(size_t i = containingScope(loc); i != NONE; i = scopes[i].parent){
-        for(size_t j = i; j != NONE; j = scopes[j].prev_lexical_segment){
-            const ScopeSegment& seg = scopes[j];
-            for(size_t k = seg.sym_begin; k < seg.sym_end; k++){
+    for(size_t i = containingScope(loc); i != NONE; i = scope_segments[i].parent_lexical_segment_index){
+        for(size_t j = i; j != NONE; j = scope_segments[j].prev_lexical_segment_index){
+            const ScopeSegment& seg = scope_segments[j];
+            for(size_t k = seg.first_sym_index; k < seg.exclusive_end_sym_index; k++){
                 const Typeset::Selection& candidate = parse_tree.getSelection(symbols[k].flag);
                 if(candidate.startsWith(typed) && candidate.right.precedesInclusive(loc) && candidate.right != loc)
                     suggestions.insert(candidate.str());
@@ -137,17 +137,17 @@ void SymbolTable::getSymbolOccurences(size_t sym_id, std::vector<Typeset::Select
             found.push_back(parse_tree.getSelection(usage.pn));
 }
 
-ScopeId SymbolTable::head(ScopeId index) const noexcept{
-    size_t prev = scopes[index].prev_lexical_segment;
+ScopeSegmentIndex SymbolTable::head(ScopeSegmentIndex index) const noexcept{
+    size_t prev = scope_segments[index].prev_lexical_segment_index;
     while(prev != NONE){
         index = prev;
-        prev = scopes[index].prev_lexical_segment;
+        prev = scope_segments[index].prev_lexical_segment_index;
     }
     return index;
 }
 
 void SymbolTable::reset(const Typeset::Marker& doc_start) noexcept{
-    scopes.clear();
+    scope_segments.clear();
     symbols.clear();
     usages.clear();
     scoped_vars.clear();
@@ -156,7 +156,7 @@ void SymbolTable::reset(const Typeset::Marker& doc_start) noexcept{
     scope_names = "Global";
     #endif
 
-    scopes.push_back(ScopeSegment(SCOPE_NAME(0) SCOPE_NAME(scope_names.size()) doc_start, NONE, NONE, NONE, symbols.size(), usages.size()));
+    scope_segments.push_back(ScopeSegment(SCOPE_NAME(0) SCOPE_NAME(scope_names.size()) doc_start, NONE, NONE, NONE, symbols.size(), usages.size()));
 }
 
 void SymbolTable::addScope(
@@ -164,32 +164,32 @@ void SymbolTable::addScope(
         const std::string& name,
         #endif
         const Typeset::Marker& start, ParseNode closure) alloc_except {
-    ScopeSegment& active_scope = scopes.back();
-    active_scope.sym_end = symbols.size();
+    ScopeSegment& active_scope = scope_segments.back();
+    active_scope.exclusive_end_sym_index = symbols.size();
     active_scope.usage_end = usages.size();
-    scopes.push_back(ScopeSegment(SCOPE_NAME(scope_names.size()) SCOPE_NAME(name.size()) start, closure, scopes.size()-1, NONE, symbols.size(), usages.size()));
+    scope_segments.push_back(ScopeSegment(SCOPE_NAME(scope_names.size()) SCOPE_NAME(name.size()) start, closure, scope_segments.size()-1, NONE, symbols.size(), usages.size()));
     #ifdef FORSCAPE_USE_SCOPE_NAME
     scope_names += name;
     #endif
 }
 
 void SymbolTable::closeScope(const Typeset::Marker& stop) alloc_except {
-    ScopeSegment& closed_scope = scopes.back();
-    closed_scope.sym_end = symbols.size();
+    ScopeSegment& closed_scope = scope_segments.back();
+    closed_scope.exclusive_end_sym_index = symbols.size();
     closed_scope.usage_end = usages.size();
-    closed_scope.next_lexical_segment = NONE;
+    closed_scope.next_lexical_segment_index = NONE;
 
-    size_t prev_index = closed_scope.parent;
-    ScopeSegment& prev_scope = scopes[prev_index];
-    prev_scope.next_lexical_segment = scopes.size();
+    size_t prev_index = closed_scope.parent_lexical_segment_index;
+    ScopeSegment& prev_scope = scope_segments[prev_index];
+    prev_scope.next_lexical_segment_index = scope_segments.size();
 
-    scopes.push_back(ScopeSegment(SCOPE_NAME(prev_scope.name_start) SCOPE_NAME(prev_scope.name_size) stop, prev_scope.fn, prev_scope.parent, prev_index, symbols.size(), usages.size()));
+    scope_segments.push_back(ScopeSegment(SCOPE_NAME(prev_scope.name_start) SCOPE_NAME(prev_scope.name_size) stop, prev_scope.fn, prev_scope.parent_lexical_segment_index, prev_index, symbols.size(), usages.size()));
 }
 
 void SymbolTable::finalize() noexcept {
-    ScopeSegment& scope = scopes.back();
-    scope.next_lexical_segment = NONE;
-    scope.sym_end = symbols.size();
+    ScopeSegment& scope = scope_segments.back();
+    scope.next_lexical_segment_index = NONE;
+    scope.exclusive_end_sym_index = symbols.size();
     scope.usage_end = usages.size();
 }
 

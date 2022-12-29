@@ -9,19 +9,25 @@
 using namespace Forscape;
 using namespace Code;
 
-static constexpr size_t ITER_SERIAL_VALIDATION = 50000;
-static constexpr size_t ITER_MODEL_LOAD_DELETE = 5000;
-static constexpr size_t ITER_SCANNER = 500000;
-static constexpr size_t ITER_PARSER = 500000;
-static constexpr size_t ITER_SYMBOL_TABLE = 50000;
-static constexpr size_t ITER_INTERPRETER = 5000;
-static constexpr size_t ITER_CALC_SIZE = 5000000;
-static constexpr size_t ITER_LAYOUT = 10000000;
-static constexpr size_t ITER_PAINT = 1500;
-static constexpr size_t ITER_LOOP = 10;
-static constexpr size_t ITER_PRINT_SIZE = 100;
-static constexpr size_t ITER_PRINT_LAYOUT = 100;
-static constexpr size_t ITER_PRINT_PAINT = 30;
+#ifdef NDEBUG
+#define DEBUG_CAP(x) x
+#else
+#define DEBUG_CAP(x) 2
+#endif
+
+static constexpr size_t ITER_SERIAL_VALIDATION = DEBUG_CAP(50000);
+static constexpr size_t ITER_MODEL_LOAD_DELETE = DEBUG_CAP(5000);
+static constexpr size_t ITER_SCANNER = DEBUG_CAP(500000);
+static constexpr size_t ITER_PARSER = DEBUG_CAP(500000);
+static constexpr size_t ITER_SYMBOL_TABLE = DEBUG_CAP(50000);
+static constexpr size_t ITER_INTERPRETER = DEBUG_CAP(5000);
+static constexpr size_t ITER_CALC_SIZE = DEBUG_CAP(5000000);
+static constexpr size_t ITER_LAYOUT = DEBUG_CAP(10000000);
+static constexpr size_t ITER_PAINT = DEBUG_CAP(1500);
+static constexpr size_t ITER_LOOP = DEBUG_CAP(10);
+static constexpr size_t ITER_PRINT_SIZE = DEBUG_CAP(100);
+static constexpr size_t ITER_PRINT_LAYOUT = DEBUG_CAP(100);
+static constexpr size_t ITER_PRINT_PAINT = DEBUG_CAP(30);
 
 void runBenchmark(){
     std::string src = readFile("../test/interpreter_scripts/in/root_finding_terse.π");
@@ -99,9 +105,14 @@ void runBenchmark(){
     report("Paint", ITER_PAINT);
     #endif
 
+    #ifdef NDEBUG
     #define N_PRINTS "1000000"
+    #else
+    #define N_PRINTS "1000"
+    #endif
 
     m = Typeset::Model::fromSerial("for(i ← 0; i ≤ " N_PRINTS "; i ← i + 1)\n    print(i, \"\\n\")");
+    m->postmutate();
 
     startClock();
     for(size_t i = 0; i < ITER_LOOP; i++)

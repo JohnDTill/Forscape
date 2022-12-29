@@ -15,12 +15,12 @@ SymbolTreeView::SymbolTreeView(const Forscape::Code::SymbolTable& symbol_table, 
     QTreeWidgetItem* last_added_item = nullptr;
 
     std::stack<QTreeWidgetItem*> items;
-    for(const Forscape::Code::ScopeSegment& scope : symbol_table.scopes){
+    for(const Forscape::Code::ScopeSegment& scope : symbol_table.scope_segments){
         if(scope.isStartOfScope()){
-            if(scope.parent == NONE){
+            if(scope.parent_lexical_segment_index == NONE){
                 items.push(nullptr);
             }else{
-                Forscape::Code::ScopeId grandparent = symbol_table.scopes[scope.parent].parent;
+                Forscape::Code::ScopeSegmentIndex grandparent = symbol_table.scope_segments[scope.parent_lexical_segment_index].parent_lexical_segment_index;
                 QTreeWidgetItem* scope_item = (grandparent == NONE) ?
                             new QTreeWidgetItem(this) :
                             new QTreeWidgetItem(items.top());
@@ -39,8 +39,8 @@ SymbolTreeView::SymbolTreeView(const Forscape::Code::SymbolTable& symbol_table, 
             }
         }
 
-        for(size_t i = scope.sym_begin; i < scope.sym_end; i++){
-            QTreeWidgetItem* item = (scope.parent == NONE) ?
+        for(size_t i = scope.first_sym_index; i < scope.exclusive_end_sym_index; i++){
+            QTreeWidgetItem* item = (scope.parent_lexical_segment_index == NONE) ?
                         new QTreeWidgetItem(this) :
                         new QTreeWidgetItem(items.top());
             const auto& symbol = symbol_table.symbols[i];

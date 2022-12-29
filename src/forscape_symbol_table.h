@@ -20,7 +20,7 @@ namespace Code {
 
 class ParseTree;
 
-typedef size_t ScopeId;
+typedef size_t ScopeSegmentIndex;
 typedef size_t SymbolIndex;
 
 struct Symbol {
@@ -62,20 +62,21 @@ struct Usage{
 };
 
 struct ScopeSegment {
+    SymbolIndex first_sym_index  DEBUG_INIT_UNITIALISED(SymbolIndex);
+    SymbolIndex exclusive_end_sym_index = NONE; //First symbol NOT included in the scope segment
+    ScopeSegmentIndex parent_lexical_segment_index  DEBUG_INIT_UNITIALISED(ScopeSegmentIndex);
+    ScopeSegmentIndex prev_lexical_segment_index  DEBUG_INIT_UNITIALISED(ScopeSegmentIndex);
+    ScopeSegmentIndex next_lexical_segment_index = NONE;
+    Typeset::Marker start;
+    ParseNode fn  DEBUG_INIT_UNITIALISED(ParseNode);
+    size_t usage_begin  DEBUG_INIT_UNITIALISED(size_t);
+    ScopeSegmentIndex prev_namespace_segment  DEBUG_INIT_UNITIALISED(ScopeSegmentIndex);
+    size_t usage_end = NONE;
+
     #ifdef FORSCAPE_USE_SCOPE_NAME
     size_t name_start;
     size_t name_size;
     #endif
-    Typeset::Marker start;
-    ParseNode fn  DEBUG_INIT_UNITIALISED(ParseNode);
-    ScopeId parent  DEBUG_INIT_UNITIALISED(ScopeId);
-    ScopeId prev_lexical_segment  DEBUG_INIT_UNITIALISED(ScopeId);
-    SymbolIndex sym_begin  DEBUG_INIT_UNITIALISED(SymbolIndex);
-    size_t usage_begin  DEBUG_INIT_UNITIALISED(size_t);
-    ScopeId next_lexical_segment = NONE;
-    ScopeId prev_namespace_segment  DEBUG_INIT_UNITIALISED(ScopeId);
-    SymbolIndex sym_end = NONE;
-    size_t usage_end = NONE;
 
     ScopeSegment(
         #if !defined(NDEBUG) && !defined(FORSCAPE_TYPESET_HEADLESS)
@@ -84,8 +85,8 @@ struct ScopeSegment {
         #endif
         const Typeset::Marker& start,
         ParseNode closure,
-        ScopeId parent,
-        ScopeId prev,
+        ScopeSegmentIndex parent,
+        ScopeSegmentIndex prev,
         SymbolIndex sym_begin,
         size_t usage_begin
         ) noexcept;
@@ -96,7 +97,7 @@ struct ScopeSegment {
 
 class SymbolTable{
 public:
-    std::vector<ScopeSegment> scopes;
+    std::vector<ScopeSegment> scope_segments;
     std::vector<Symbol> symbols;
     std::vector<Usage> usages;
     ParseTree& parse_tree;
@@ -117,7 +118,7 @@ public:
     const Typeset::Selection& getSel(size_t sym_index) const noexcept;
     void getSymbolOccurences(size_t sym_id, std::vector<Typeset::Selection>& found) const;
 
-    ScopeId head(ScopeId index) const noexcept;
+    ScopeSegmentIndex head(ScopeSegmentIndex index) const noexcept;
     void reset(const Typeset::Marker& doc_start) noexcept;
     void addScope(
         #ifdef FORSCAPE_USE_SCOPE_NAME
