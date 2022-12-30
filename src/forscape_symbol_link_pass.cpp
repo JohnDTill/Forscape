@@ -44,7 +44,7 @@ void SymbolTableLinker::link() noexcept{
         for(size_t i = scope_segment.usage_begin; i < scope_segment.usage_end; i++){
             const SymbolUsage& usage = symbol_table.symbol_usages[i];
 
-            Symbol& sym = symbol_table.symbols[usage.symbol_index];
+            Symbol& sym = *usage.symbol();
             ParseNode pn = usage.pn;
 
             if(usage.isDeclaration()){

@@ -102,6 +102,7 @@ struct SymbolUsage {
     SymbolUsage() noexcept;
     SymbolUsage(SymbolUsageIndex prev_usage_index, SymbolIndex symbol_index, ParseNode pn, const Typeset::Selection& sel) noexcept;
     SymbolUsage* prevUsage() const noexcept { return reinterpret_cast<SymbolUsage*>(prev_usage_index); }
+    Symbol* symbol() const noexcept { return reinterpret_cast<Symbol*>(symbol_index); }
     bool isDeclaration() const noexcept { return prevUsage() == nullptr; }
 };
 

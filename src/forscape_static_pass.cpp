@@ -45,7 +45,7 @@ void StaticPass::resolve(){
             warnings.push_back(Error(symbol_table.getSel(i), UNUSED_VAR));
 
     for(const SymbolUsage& usage : symbol_table.symbol_usages){
-        const Symbol& sym = symbol_table.symbols[usage.symbol_index];
+        const Symbol& sym = *usage.symbol();
 
         SemanticType fmt = SEM_ID;
         if(sym.is_ewise_index){
@@ -99,7 +99,7 @@ void StaticPass::resolve(){
     #endif
 
     for(const SymbolUsage& usage : symbol_table.symbol_usages){
-        const Symbol& sym = symbol_table.symbols[usage.symbol_index];
+        const Symbol& sym = *usage.symbol();
 
         if(sym.type == StaticPass::NUMERIC && (sym.rows > 1 || sym.cols > 1)){
             const Typeset::Selection& sel = usage.sel;

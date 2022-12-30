@@ -230,9 +230,12 @@ void SymbolTable::finalize() noexcept {
         if(usage.prev_usage_index == NONE) usage.prev_usage_index = reinterpret_cast<SymbolUsageIndex>(nullptr);
         else usage.prev_usage_index = reinterpret_cast<SymbolUsageIndex>(usage_offset + usage.prev_usage_index);
 
-        //EVENTUALLY: usage.symbol_index should be converted to a pointer also
-        if(usage.symbol_index != NONE) //DO THIS: concession to current namespace scheme
-            parse_tree.setSymbol(usage.pn, symbol_offset + usage.symbol_index);
+        //EVENTUALLY: possibility of nullptr is a concession to current namespace scheme
+        if(usage.symbol_index == NONE) usage.symbol_index = reinterpret_cast<SymbolIndex>(nullptr);
+        else usage.symbol_index = reinterpret_cast<SymbolIndex>(symbol_offset + usage.symbol_index);
+
+        if(usage.symbol())
+            parse_tree.setSymbol(usage.pn, usage.symbol());
     }
     for(auto& entry : lexical_map) entry.second = reinterpret_cast<SymbolIndex>(symbol_offset + entry.second);
 
@@ -273,7 +276,7 @@ void SymbolTable::resolveScopeReference(SymbolUsageIndex usage_index, Symbol& sy
     ParseNode pn = usage.pn;
 
     //Patch the empty usage inserted earlier
-    usage.symbol_index = &sym - symbols.data();
+    usage.symbol_index = reinterpret_cast<size_t>(&sym);
     parse_tree.setSymbol(pn, &sym);
 
     usage.prev_usage_index = sym.last_usage_index;
