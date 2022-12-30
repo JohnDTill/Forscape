@@ -48,8 +48,9 @@ public:
     ParseNode error_node;
 
     Interpreter() noexcept;
-    void run(const ParseTree& parse_tree, SymbolTable symbol_table, const InstantiationLookup& inst_lookup);
-    void runThread(const ParseTree& parse_tree, SymbolTable symbol_table, const InstantiationLookup& inst_lookup);
+    void run(const ParseTree& parse_tree, SymbolTable* symbol_table, const InstantiationLookup& inst_lookup);
+    void runThread(const ParseTree& parse_tree, SymbolTable& symbol_table, const InstantiationLookup& inst_lookup);
+    void execute();
     void stop();
 
 private:

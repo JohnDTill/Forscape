@@ -92,7 +92,7 @@ std::string Model::toSerial() const {
 std::string Model::run(){
     assert(errors.empty());
 
-    interpreter.run(parser.parse_tree, symbol_builder.symbol_table, static_pass.instantiation_lookup);
+    interpreter.run(parser.parse_tree, &symbol_builder.symbol_table, static_pass.instantiation_lookup);
 
     std::string str;
 

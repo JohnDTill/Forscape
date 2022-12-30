@@ -67,8 +67,7 @@ void SymbolLexicalPass::resolveSymbols() alloc_except {
     }
 
     symbol_table.finalize();
-    //DO THIS: make closure vars use pointers
-    //for(ParseNode pn : processed_refs) parse_tree.setSymbol(pn, symbols.data() + parse_tree.getSymId(pn));
+    for(ParseNode pn : processed_refs) parse_tree.setSymbol(pn, symbols.data() + parse_tree.getSymId(pn));
 }
 
 void SymbolLexicalPass::reset() noexcept {

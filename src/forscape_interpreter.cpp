@@ -19,13 +19,13 @@ namespace Code {
 Interpreter::Interpreter() noexcept
     : error_node(NONE){}
 
-void Interpreter::run(const ParseTree& parse_tree, SymbolTable symbol_table, const InstantiationLookup& inst_lookup){
+void Interpreter::run(const ParseTree& parse_tree, SymbolTable* symbol_table, const InstantiationLookup& inst_lookup){
     assert(parse_tree.getOp(parse_tree.root) == OP_BLOCK);
     reset();
 
     this->parse_tree = parse_tree;
     this->inst_lookup = inst_lookup;
-    SymbolTableLinker linker(symbol_table, this->parse_tree);
+    SymbolTableLinker linker(*symbol_table, this->parse_tree);
     linker.link();
     this->parse_tree.patchClones();
 
@@ -33,9 +33,13 @@ void Interpreter::run(const ParseTree& parse_tree, SymbolTable symbol_table, con
     status = FINISHED;
 }
 
-void Interpreter::runThread(const ParseTree& parse_tree, SymbolTable symbol_table, const InstantiationLookup& inst_lookup){
+void Interpreter::runThread(const ParseTree& parse_tree, SymbolTable& symbol_table, const InstantiationLookup& inst_lookup){
     status = NORMAL;
-    std::thread(&Interpreter::run, this, parse_tree, symbol_table, inst_lookup).detach();
+    std::thread(&Interpreter::run, this, parse_tree, &symbol_table, inst_lookup).detach();
+
+    //EVENTUALLY: linking in a threaded call with the original symbol_table means a crash will happen
+    //            if the symbol_table is invalidated before the linker finishes running.
+    //            Not worth fixing now since the static and linking passes need a total overhaul
 }
 
 void Interpreter::stop(){

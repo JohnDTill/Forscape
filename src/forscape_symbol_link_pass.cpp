@@ -14,7 +14,7 @@ Forscape::Code::SymbolTableLinker::SymbolTableLinker(SymbolTable& symbol_table, 
     : symbol_table(symbol_table), parse_tree(parse_tree) {}
 
 void SymbolTableLinker::link() noexcept{
-    for(ScopeSegment& scope_segment : symbol_table.scope_segments){
+    for(const ScopeSegment& scope_segment : symbol_table.scope_segments){
         if(scope_segment.isStartOfScope()){
             if(scope_segment.fn != NONE){
                 ParseNode val_list = parse_tree.valCapList(scope_segment.fn);
@@ -30,9 +30,7 @@ void SymbolTableLinker::link() noexcept{
 
                 for(size_t i = 0; i < parse_tree.getNumArgs(ref_list); i++){
                     ParseNode ref = parse_tree.arg(ref_list, i);
-                    //EVENTUALLY: might need to make these pointers
-                    size_t var_id = parse_tree.getFlag(ref);
-                    Symbol& sym = symbol_table.symbols[var_id];
+                    Symbol& sym = *parse_tree.getSymbol(ref);
                     old_flags.push_back(sym.flag);
                     sym.flag = N_cap + i;
                 }
@@ -78,13 +76,14 @@ void SymbolTableLinker::link() noexcept{
 
                 for(size_t i = parse_tree.getNumArgs(ref_list); i-->0;){
                     ParseNode n = parse_tree.arg(ref_list, i);
-                    size_t symbol_index = parse_tree.getFlag(n);
-                    Symbol& sym = symbol_table.symbols[symbol_index];
+                    Symbol& sym = *parse_tree.getSymbol(n);
                     sym.flag = old_flags.back();
                     old_flags.pop_back();
 
-                    if(sym.declaration_closure_depth == closure_depth)
+                    if(sym.declaration_closure_depth == closure_depth){
+                        size_t symbol_index = parse_tree.getFlag(n);
                         parse_tree.setFlag(n, symbol_index);
+                    }
                 }
 
                 for(size_t i = N_val; i-->0;){
@@ -97,8 +96,7 @@ void SymbolTableLinker::link() noexcept{
 
                 for(size_t i = parse_tree.getNumArgs(ref_list); i-->0;){
                     ParseNode n = parse_tree.arg(ref_list, i);
-                    size_t symbol_index = parse_tree.getFlag(n);
-                    Symbol& sym = symbol_table.symbols[symbol_index];
+                    Symbol& sym = *parse_tree.getSymbol(n);
 
                     if(sym.declaration_closure_depth != closure_depth){
                         parse_tree.setOp(n, OP_READ_UPVALUE);

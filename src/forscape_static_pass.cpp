@@ -1227,8 +1227,7 @@ ParseNode StaticPass::resolveAlg(ParseNode pn){
     for(size_t i = 0; i < parse_tree.getNumArgs(ref_list); i++){
         ParseNode ref = parse_tree.arg(ref_list, i);
         if(parse_tree.getOp(ref) != OP_READ_UPVALUE) continue;
-        size_t sym_id = parse_tree.getFlag(ref);
-        const Symbol& sym = symbol_table.symbols[sym_id];
+        const Symbol& sym = *parse_tree.getSymbol(ref);
         Type t = sym.type;
         sig.push_back(t);
         if(t == NUMERIC){
@@ -1347,8 +1346,7 @@ ParseNode StaticPass::resolveLambda(ParseNode pn){
     for(size_t i = 0; i < parse_tree.getNumArgs(ref_list); i++){
         ParseNode ref = parse_tree.arg(ref_list, i);
         if(parse_tree.getOp(ref) != OP_READ_UPVALUE) continue;
-        size_t sym_id = parse_tree.getFlag(ref);
-        const Symbol& sym = symbol_table.symbols[sym_id];
+        const Symbol& sym = *parse_tree.getSymbol(ref);
         Type t = sym.type;
         sig.push_back(t);
         if(t == NUMERIC){
@@ -1907,8 +1905,7 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
     for(size_t i = 0; i < parse_tree.getNumArgs(ref_list); i++){
         ParseNode ref = parse_tree.arg(ref_list, i);
         if(parse_tree.getOp(ref) != OP_READ_UPVALUE) continue;
-        size_t sym_id = parse_tree.getFlag(ref);
-        Symbol& sym = symbol_table.symbols[sym_id];
+        Symbol& sym = *parse_tree.getSymbol(ref);
         old_ref_cap.push_back(sym);
         sym.type = dec[1+type_index++];
         if(sym.type == NUMERIC){
@@ -1999,8 +1996,7 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
     for(size_t i = 0; i < parse_tree.getNumArgs(ref_list); i++){
         ParseNode ref = parse_tree.arg(ref_list, i);
         if(parse_tree.getOp(ref) != OP_READ_UPVALUE) continue;
-        size_t sym_id = parse_tree.getFlag(ref);
-        Symbol& sym = symbol_table.symbols[sym_id];
+        Symbol& sym = *parse_tree.getSymbol(ref);
         old_ref_cap[j+old_ref_cap_index].restore(sym);
         j++;
     }

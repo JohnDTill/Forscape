@@ -75,7 +75,7 @@ void runBenchmark(){
 
     startClock();
     for(size_t i = 0; i < ITER_INTERPRETER; i++)
-        interpreter.run(parser.parse_tree, sym_table.symbol_table, static_pass.instantiation_lookup);
+        interpreter.run(parser.parse_tree, &sym_table.symbol_table, static_pass.instantiation_lookup);
     assert(interpreter.error_code == NO_ERROR_FOUND);
     report("Interpreter", ITER_INTERPRETER);
 

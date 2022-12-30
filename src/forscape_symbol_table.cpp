@@ -61,10 +61,8 @@ std::string Symbol::str() const noexcept {
 }
 
 void Symbol::getOccurences(std::vector<Typeset::Selection>& found) const {
-    for(SymbolUsage* usage = lastUsage(); usage != nullptr; usage = usage->prevUsage()){
-        std::cout << usage << std::endl;
+    for(SymbolUsage* usage = lastUsage(); usage != nullptr; usage = usage->prevUsage())
         found.push_back(usage->sel);
-    }
 }
 
 SymbolUsage::SymbolUsage() noexcept
