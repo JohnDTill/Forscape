@@ -563,7 +563,8 @@ void View::populateHighlightWordsFromParseNode(ParseNode pn){
     if(parse_tree.getOp(pn) != Code::OP_IDENTIFIER) return;
     size_t sym_id = parse_tree.getFlag(pn);
     const auto& symbol_table = model->symbol_builder.symbol_table;
-    symbol_table.getSymbolOccurences(sym_id, highlighted_words);
+    const Code::Symbol& sym = symbol_table.symbols[sym_id];
+    sym.getOccurences(highlighted_words);
 }
 
 bool View::scrolledToBottom() const noexcept{
@@ -1504,8 +1505,10 @@ void Editor::findUsages(){
 
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
     auto& symbol_table = model->symbol_builder.symbol_table;
+    const size_t sym_id = model->parseTree().getSymId(contextNode);
     std::vector<Typeset::Selection> occurences;
-    symbol_table.getSymbolOccurences(model->parseTree().getSymId(contextNode), occurences);
+    const Code::Symbol& sym = symbol_table.symbols[sym_id];
+    sym.getOccurences(highlighted_words);
 
     Model* m = new Model();
     m->is_output = true;
@@ -1574,8 +1577,10 @@ void Editor::showTooltip(){
 void Editor::rename(const std::string& str){
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
     auto& symbol_table = model->symbol_builder.symbol_table;
+    const size_t sym_id = model->parseTree().getSymId(contextNode);
     std::vector<Typeset::Selection> occurences;
-    symbol_table.getSymbolOccurences(model->parseTree().getSymId(contextNode), occurences);
+    const Code::Symbol& sym = symbol_table.symbols[sym_id];
+    sym.getOccurences(highlighted_words);
 
     replaceAll(occurences, str);
 

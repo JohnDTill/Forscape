@@ -30,11 +30,16 @@ const Typeset::Selection& Symbol::sel(const ParseTree& parse_tree) const noexcep
     return parse_tree.getSelection(flag);
 }
 
+void Symbol::getOccurences( std::vector<Typeset::Selection>& found) const {
+    for(SymbolUsage* usage = lastUsage(); usage != nullptr; usage = usage->prevUsage())
+        found.push_back(usage->sel);
+}
+
 SymbolUsage::SymbolUsage() noexcept
-    : prev_usage_index(NONE), var_id(NONE) {}
+    : prev_usage_index(NONE), symbol_index(NONE) {}
 
 SymbolUsage::SymbolUsage(SymbolUsageIndex prev_usage_index, size_t var_id, ParseNode pn, const Typeset::Selection& sel) noexcept
-    : sel(sel), prev_usage_index(prev_usage_index), var_id(var_id), pn(pn) {}
+    : sel(sel), prev_usage_index(prev_usage_index), symbol_index(var_id), pn(pn) {}
 
 ScopeSegment::ScopeSegment(
         #ifdef FORSCAPE_USE_SCOPE_NAME
@@ -131,16 +136,6 @@ const Typeset::Selection& SymbolTable::getSel(size_t sym_index) const noexcept{
     return symbols[sym_index].sel(parse_tree);
 }
 
-void SymbolTable::getSymbolOccurences(size_t sym_id, std::vector<Typeset::Selection>& found) const {
-    const Symbol& sym = symbols[sym_id];
-    for(SymbolUsageIndex usage_index = sym.last_usage_index;
-        usage_index != NONE;
-        usage_index = symbol_usages[usage_index].prev_usage_index){
-        const SymbolUsage& usage = symbol_usages[usage_index];
-        found.push_back(usage.sel);
-    }
-}
-
 void SymbolTable::reset(const Typeset::Marker& doc_start) noexcept{
     scope_segments.clear();
     symbols.clear();
@@ -182,6 +177,17 @@ void SymbolTable::finalize() noexcept {
     ScopeSegment& scope = scope_segments.back();
     scope.is_end_of_scope = true;
     scope.usage_end = symbol_usages.size();
+
+    const Symbol* const symbol_offset = symbols.data();
+    const SymbolUsage* const usage_offset = symbol_usages.data();
+    for(Symbol& sym : symbols){
+        sym.last_usage_index = reinterpret_cast<SymbolUsageIndex>(usage_offset + sym.last_usage_index);
+    }
+    for(SymbolUsage& usage : symbol_usages){
+        if(usage.prev_usage_index == NONE) usage.prev_usage_index = reinterpret_cast<SymbolUsageIndex>(nullptr);
+        else usage.prev_usage_index = reinterpret_cast<SymbolUsageIndex>(usage_offset + usage.prev_usage_index);
+    }
+    for(auto& entry : lexical_map) entry.second = reinterpret_cast<SymbolIndex>(symbol_offset + entry.second);
 }
 
 #ifndef NDEBUG
@@ -212,11 +218,11 @@ void SymbolTable::resolveScopeReference(SymbolUsageIndex usage_index, SymbolInde
     ParseNode pn = usage.pn;
 
     //Patch the empty usage inserted earlier
-    usage.var_id = sym_index;
+    usage.symbol_index = sym_index;
     parse_tree.setSymId(pn, sym_index);
 
     usage.prev_usage_index = sym.last_usage_index;
-    sym.last_usage_index = usage_index;
+    sym.last_usage_index = reinterpret_cast<SymbolUsageIndex>(symbol_usages.data() + usage_index);
 }
 
 }

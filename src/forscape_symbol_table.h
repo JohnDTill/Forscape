@@ -23,6 +23,7 @@ class ParseTree;
 typedef size_t ScopeSegmentIndex;
 typedef size_t SymbolIndex;
 typedef size_t SymbolUsageIndex;
+struct SymbolUsage;
 
 struct Symbol {
     uint16_t declaration_lexical_depth  DEBUG_INIT_UNITIALISED(uint16_t);
@@ -47,6 +48,8 @@ struct Symbol {
     Symbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed_var, bool is_const) noexcept;
     size_t closureIndex() const noexcept;
     const Typeset::Selection& sel(const ParseTree& parse_tree) const noexcept;
+    SymbolUsage* lastUsage() const noexcept { return reinterpret_cast<SymbolUsage*>(last_usage_index); }
+    void getOccurences(std::vector<Typeset::Selection>& found) const;
 };
 
 struct ScopeSegment {
@@ -84,12 +87,13 @@ struct ScopeSegment {
 struct SymbolUsage {
     const Typeset::Selection sel;
     SymbolUsageIndex prev_usage_index  DEBUG_INIT_UNITIALISED(SymbolUsageIndex);
-    SymbolIndex var_id  DEBUG_INIT_UNITIALISED(SymbolIndex);
+    SymbolIndex symbol_index  DEBUG_INIT_UNITIALISED(SymbolIndex);
     ParseNode pn  DEBUG_INIT_UNITIALISED(ParseNode); //DO THIS: I think this is not needed?
 
     SymbolUsage() noexcept;
     SymbolUsage(SymbolUsageIndex prev_usage_index, size_t var_id, ParseNode pn, const Typeset::Selection& sel) noexcept;
-    bool isDeclaration() const noexcept { return prev_usage_index == NONE; }
+    SymbolUsage* prevUsage() const noexcept { return reinterpret_cast<SymbolUsage*>(prev_usage_index); }
+    bool isDeclaration() const noexcept { return prevUsage() == nullptr; }
 };
 
 class SymbolTable{
@@ -114,7 +118,6 @@ public:
     size_t containingScope(const Typeset::Marker& m) const noexcept;
     std::vector<std::string> getSuggestions(const Typeset::Marker& loc) const;
     const Typeset::Selection& getSel(size_t sym_index) const noexcept;
-    void getSymbolOccurences(size_t sym_id, std::vector<Typeset::Selection>& found) const;
 
     void reset(const Typeset::Marker& doc_start) noexcept;
     void addScope(

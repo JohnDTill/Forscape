@@ -1091,15 +1091,15 @@ void SymbolLexicalPass::decreaseClosureDepth(const Typeset::Marker& end) alloc_e
         ScopeSegment& closed_seg = scope_segments[seg_index];
         for(size_t i = closed_seg.usage_begin; i < closed_seg.usage_end; i++){
             const SymbolUsage& usage = symbol_usages[i];
-            Symbol& sym = symbols[usage.var_id];
-            bool is_closed = (!usage.isDeclaration()) && sym.is_closure_nested &&
+            Symbol& sym = symbols[usage.symbol_index];
+            bool is_closed = (usage.prev_usage_index != NONE) && sym.is_closure_nested &&
                     (!sym.is_captured_by_value || sym.declaration_closure_depth <= closure_depth);
             if(!is_closed) continue;
 
             //The variable is closed, so we will add it to our book keeping
             if(sym.type != NONE) refs[sym.type] = NONE; //We have a more recent entry; mark the old one with a tombstone
             sym.type = refs.size();
-            refs.push_back(usage.var_id);
+            refs.push_back(usage.symbol_index);
         }
     }
 
