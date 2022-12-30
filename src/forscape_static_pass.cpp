@@ -39,8 +39,8 @@ void StaticPass::resolve(){
 
     //EVENTUALLY: replace this with something less janky
     parse_tree.patchClonedTypes();
-    for(const Usage& usage : symbol_table.usages){
-        if(usage.type == DECLARE){
+    for(const SymbolUsage& usage : symbol_table.symbol_usages){
+        if(usage.isDeclaration()){
             Symbol& sym = symbol_table.symbols[usage.var_id];
             if(sym.type == UNINITIALISED || sym.type == RECURSIVE_CYCLE){
                 sym.type = parse_tree.getType(usage.pn);
@@ -54,7 +54,7 @@ void StaticPass::resolve(){
         if(!symbol_table.symbols[i].is_used)
             warnings.push_back(Error(symbol_table.getSel(i), UNUSED_VAR));
 
-    for(const Usage& usage : symbol_table.usages){
+    for(const SymbolUsage& usage : symbol_table.symbol_usages){
         const Symbol& sym = symbol_table.symbols[usage.var_id];
 
         assert(parse_tree.getOp(usage.pn) != OP_IDENTIFIER ||
@@ -111,7 +111,7 @@ void StaticPass::resolve(){
     #endif
     #endif
 
-    for(const Usage& usage : symbol_table.usages){
+    for(const SymbolUsage& usage : symbol_table.symbol_usages){
         const Symbol& sym = symbol_table.symbols[usage.var_id];
 
         if(sym.type == StaticPass::NUMERIC && (sym.rows > 1 || sym.cols > 1)){
@@ -1746,12 +1746,11 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
     assert(parse_tree.getOp(field) == OP_IDENTIFIER);
     auto lookup = symbol_table.scoped_vars.find(SymbolTable::ScopedVarKey(sym_id, parse_tree.getSelection(field)));
     if(lookup != symbol_table.scoped_vars.end()){
-        size_t sym_id = lookup->second;
-        size_t usage_index = parse_tree.getFlag(field);
-        symbol_table.usages[usage_index].var_id = sym_id; //Patch the empty usage inserted earlier
+        SymbolIndex sym_index = lookup->second;
+        SymbolUsageIndex usage_index = parse_tree.getFlag(field);
+        symbol_table.resolveScopeReference(usage_index, sym_index);
 
-        Symbol& sym = symbol_table.symbols[sym_id];
-        parse_tree.setSymId(field, sym_id);
+        Symbol& sym = symbol_table.symbols[sym_index];
 
         if(write){
             if(sym.is_const){
@@ -1763,7 +1762,6 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
             sym.is_used = true;
         }
 
-        sym.is_closure_nested |= sym.declaration_closure_depth && (closureDepth() != sym.declaration_closure_depth);
         parse_tree.setType(field, sym.type);
         parse_tree.setRows(field, sym.rows);
         parse_tree.setCols(field, sym.cols);

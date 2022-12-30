@@ -54,7 +54,8 @@ SymbolLexicalPass::SymbolLexicalPass(ParseTree& parse_tree, Typeset::Model* mode
       model(model),
       symbol_table(parse_tree),
       symbols(symbol_table.symbols),
-      scope_segments(symbol_table.scope_segments) {}
+      scope_segments(symbol_table.scope_segments),
+      symbol_usages(symbol_table.symbol_usages) {}
 
 void SymbolLexicalPass::resolveSymbols() alloc_except {
     reset();
@@ -90,7 +91,7 @@ void SymbolLexicalPass::addScope(
     symbol_table.addScope(SCOPE_NAME(name) begin);
 
     size_t sze = symbols.size();
-    size_t n_usages = symbol_table.usages.size();
+    size_t n_usages = symbol_usages.size();
     scope_segments[active_scope_id].usage_end = n_usages;
     active_scope_id++;
     ScopeSegment& added_segment = scope_segments.back();
@@ -103,7 +104,7 @@ void SymbolLexicalPass::closeScope(const Typeset::Marker& end) noexcept{
     symbol_table.closeScope(end);
 
     size_t sze = symbols.size();
-    size_t n_usages = symbol_table.usages.size();
+    size_t n_usages = symbol_usages.size();
     scope_segments[active_scope_id].usage_end = n_usages;
     active_scope_id++;
     assert(active_scope_id < scope_segments.size());
@@ -227,7 +228,6 @@ void SymbolLexicalPass::resolveAssignmentId(ParseNode pn) alloc_except {
 
     auto result = lexical_map.insert({c, symbols.size()});
     if(result.second){
-        symbol_table.usages.push_back(Usage(symbols.size(), id, DECLARE));
         symbol_table.addSymbol(id, lexical_depth, closure_depth, NONE, false);
     }else{
         SymbolIndex index = result.first->second;
@@ -853,12 +853,13 @@ void SymbolLexicalPass::resolveNamespace(ParseNode pn) alloc_except {
     const auto lookup = lexical_map.find(parse_tree.getSelection(name));
     if(lookup != lexical_map.end()){
         const size_t sym_id = lookup->second;
-        const Symbol& candidate = symbols[sym_id];
+        Symbol& candidate = symbols[sym_id];
         if(candidate.declaration_lexical_depth == lexical_depth){
             //This namespace already exists - load the previous variables
             parse_tree.setSymId(name, sym_id);
             parse_tree.setFlag(pn, 1);
-            symbol_table.usages.push_back(Usage(sym_id, name, READ));
+            symbol_usages.push_back(SymbolUsage(candidate.last_usage_index, sym_id, name));
+            candidate.last_usage_index = symbol_usages.size()-1;
 
             loadScope(pn, sym_id);
             resolveBlock(body);
@@ -871,7 +872,7 @@ void SymbolLexicalPass::resolveNamespace(ParseNode pn) alloc_except {
     const size_t sym_id = symbols.size();
     defineLocalScope(name);
     if(!errors.empty()) return; //EVENTUALLY: more resiliency here
-    symbols[sym_id].scope_tail = NONE;
+    symbols[sym_id].previous_namespace_index = NONE;
     increaseLexicalDepth(SCOPE_NAME(parse_tree.str(name))  parse_tree.getLeft(body));
     resolveBlock(body);
     unloadScope(body, sym_id);
@@ -883,7 +884,7 @@ void SymbolLexicalPass::loadScope(ParseNode pn, size_t sym_id) noexcept {
     increaseLexicalDepth(SCOPE_NAME(scope.sel(parse_tree).str())  parse_tree.getLeft(pn));
 
     //Load the variables from the previous uses of the scope
-    ScopeSegmentIndex scope_index = scope.scope_tail;
+    ScopeSegmentIndex scope_index = scope.previous_namespace_index;
     while(scope_index != NONE){
         ScopeSegment& scope_segment = scope_segments[scope_index];
 
@@ -911,7 +912,7 @@ void SymbolLexicalPass::loadScope(ParseNode pn, size_t sym_id) noexcept {
 
 void SymbolLexicalPass::unloadScope(ParseNode body, size_t scope_sym_id) noexcept {
     Symbol& scope = symbols[scope_sym_id];
-    ScopeSegmentIndex scope_index = scope.scope_tail;
+    ScopeSegmentIndex scope_index = scope.previous_namespace_index;
     while(scope_index != NONE){
         ScopeSegment& scope_segment = scope_segments[scope_index];
 
@@ -945,8 +946,8 @@ void SymbolLexicalPass::unloadScope(ParseNode body, size_t scope_sym_id) noexcep
         //Update the scope linked list
         ScopeSegmentIndex prev_namespace_segment = scope_segment.prev_lexical_segment_index;
         if(prev_namespace_segment == NONE){
-            scope_segments[scope_index].prev_namespace_segment = scope.scope_tail;
-            scope.scope_tail = scope_segments.size()-2;
+            scope_segments[scope_index].prev_namespace_segment = scope.previous_namespace_index;
+            scope.previous_namespace_index = scope_segments.size()-2;
             break;
         }else{
             scope_segments[scope_index].prev_namespace_segment = prev_namespace_segment;
@@ -956,7 +957,7 @@ void SymbolLexicalPass::unloadScope(ParseNode body, size_t scope_sym_id) noexcep
 
     //The namespace scope runs together with the lexical scope for purposes of calculating the stack size
     //EVENTUALLY: it's a kludge that we accomodate later stack size calculations here
-    scope_segments[scope.scope_tail].is_end_of_scope = false;
+    scope_segments[scope.previous_namespace_index].is_end_of_scope = false;
     scope_segments[scope_index-1].is_end_of_scope = false;
 }
 
@@ -967,12 +968,14 @@ void SymbolLexicalPass::resolveScopeAccess(ParseNode pn) noexcept {
     switch (parse_tree.getOp(lhs)) {
         case OP_IDENTIFIER: resolveReference(lhs); break;
         case OP_SCOPE_ACCESS: resolveScopeAccess(lhs); break;
+        default: assert(false);
     }
 
-    //Patch this later
+    //Create a usage for the RHS which will be patched later
+    //DO THIS: could you add it from scratch later instead of patching?
     ParseNode rhs = parse_tree.arg<1>(pn);
-    parse_tree.setFlag(rhs, symbol_table.usages.size());
-    symbol_table.usages.push_back(Usage(NONE, rhs, READ));
+    parse_tree.setFlag(rhs, symbol_usages.size());
+    symbol_usages.push_back(SymbolUsage(NONE, NONE, rhs));
 }
 
 bool SymbolLexicalPass::defineLocalScope(ParseNode pn, bool immutable, bool warn_on_shadow) alloc_except {
@@ -990,7 +993,6 @@ bool SymbolLexicalPass::defineLocalScope(ParseNode pn, bool immutable, bool warn
 
     auto result = lexical_map.insert({c, symbols.size()});
     if(result.second){
-        symbol_table.usages.push_back(Usage(symbols.size(), pn, DECLARE));
         symbol_table.addSymbol(pn, lexical_depth, closure_depth, NONE, immutable);
     }else{
         const SymbolIndex index = result.first->second;
@@ -1081,12 +1083,14 @@ void SymbolLexicalPass::decreaseClosureDepth(const Typeset::Marker& end) alloc_e
     closure_depth--;
 
     //Find variables which are captured by reference in this closure, also modified by inner closures
-    for(size_t seg_index = scope_segments.size()-2; seg_index != NONE; seg_index = scope_segments[seg_index].prev_lexical_segment_index){
+    for(size_t seg_index = scope_segments.size()-2;
+        seg_index != NONE;
+        seg_index = scope_segments[seg_index].prev_lexical_segment_index){
         ScopeSegment& closed_seg = scope_segments[seg_index];
         for(size_t i = closed_seg.usage_begin; i < closed_seg.usage_end; i++){
-            const Usage& usage = symbol_table.usages[i];
+            const SymbolUsage& usage = symbol_usages[i];
             Symbol& sym = symbols[usage.var_id];
-            bool is_closed = (usage.type != UsageType::DECLARE) && sym.is_closure_nested &&
+            bool is_closed = (!usage.isDeclaration()) && sym.is_closure_nested &&
                     (!sym.is_captured_by_value || sym.declaration_closure_depth <= closure_depth);
             if(!is_closed) continue;
 
@@ -1126,14 +1130,12 @@ void SymbolLexicalPass::decreaseClosureDepth(const Typeset::Marker& end) alloc_e
 void SymbolLexicalPass::makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable) alloc_except {
     assert(lexical_map.find(c) == lexical_map.end());
     lexical_map[c] = symbols.size();
-    symbol_table.usages.push_back(Usage(symbols.size(), pn, DECLARE));
     symbol_table.addSymbol(pn, lexical_depth, closure_depth, NONE, immutable);
 }
 
 void SymbolLexicalPass::appendEntry(ParseNode pn, size_t& old_entry, bool immutable, bool warn_on_shadow) alloc_except {
     //EVENTUALLY: let the user control warnings, decide defaults
     if(warn_on_shadow) warnings.push_back(Error(parse_tree.getSelection(pn), SHADOWING_VAR));
-    symbol_table.usages.push_back(Usage(symbols.size(), pn, DECLARE));
     symbol_table.addSymbol(pn, lexical_depth, closure_depth, old_entry, immutable);
     old_entry = symbols.size()-1;
 }

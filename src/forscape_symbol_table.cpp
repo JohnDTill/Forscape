@@ -30,11 +30,11 @@ const Typeset::Selection& Symbol::sel(const ParseTree& parse_tree) const noexcep
     return parse_tree.getSelection(flag);
 }
 
-Usage::Usage() noexcept
-    : var_id(NONE), type(DECLARE) {}
+SymbolUsage::SymbolUsage() noexcept
+    : prev_usage_index(NONE), var_id(NONE) {}
 
-Usage::Usage(size_t var_id, ParseNode pn, UsageType type) noexcept
-    : var_id(var_id), pn(pn), type(type) {}
+SymbolUsage::SymbolUsage(SymbolUsageIndex prev_usage_index, size_t var_id, ParseNode pn) noexcept
+    : prev_usage_index(prev_usage_index), var_id(var_id), pn(pn) {}
 
 ScopeSegment::ScopeSegment(
         #ifdef FORSCAPE_USE_SCOPE_NAME
@@ -45,7 +45,7 @@ ScopeSegment::ScopeSegment(
       #ifdef FORSCAPE_USE_SCOPE_NAME
       name_start(name_start), name_size(name_size),
       #endif
-      start(start), fn(closure), parent_lexical_segment_index(parent), prev_lexical_segment_index(prev), first_sym_index(sym_begin), usage_begin(usage_begin) {}
+      start_of_selection(start), fn(closure), parent_lexical_segment_index(parent), prev_lexical_segment_index(prev), first_sym_index(sym_begin), usage_begin(usage_begin) {}
 
 bool ScopeSegment::isStartOfScope() const noexcept{
     return prev_lexical_segment_index == NONE;
@@ -57,11 +57,14 @@ void SymbolTable::addSymbol(size_t pn, size_t lexical_depth, size_t closure_dept
     parse_tree.setSymId(pn, symbols.size());
     symbols.push_back(Symbol(pn, lexical_depth, closure_depth, shadowed, is_const));
     symbols.back().comment = comment;
+    symbols.back().last_usage_index = symbol_usages.size();
+
+    symbol_usages.push_back(SymbolUsage(NONE, symbols.size()-1, pn));
 }
 
 size_t SymbolTable::containingScope(const Typeset::Marker& m) const noexcept{
     auto search_fn = [](const ScopeSegment& scope, const Typeset::Marker& m){
-        return scope.start.precedesInclusive(m);
+        return scope.start_of_selection.precedesInclusive(m);
     };
     auto lookup = std::lower_bound(scope_segments.begin(), scope_segments.end(), m, search_fn);
     return lookup - scope_segments.begin() - (lookup != scope_segments.begin());
@@ -129,31 +132,26 @@ const Typeset::Selection& SymbolTable::getSel(size_t sym_index) const noexcept{
 }
 
 void SymbolTable::getSymbolOccurences(size_t sym_id, std::vector<Typeset::Selection>& found) const {
-    for(const Usage& usage : usages)
-        if(usage.var_id == sym_id)
-            found.push_back(parse_tree.getSelection(usage.pn));
-}
-
-ScopeSegmentIndex SymbolTable::head(ScopeSegmentIndex index) const noexcept{
-    size_t prev = scope_segments[index].prev_lexical_segment_index;
-    while(prev != NONE){
-        index = prev;
-        prev = scope_segments[index].prev_lexical_segment_index;
+    const Symbol& sym = symbols[sym_id];
+    for(SymbolUsageIndex usage_index = sym.last_usage_index;
+        usage_index != NONE;
+        usage_index = symbol_usages[usage_index].prev_usage_index){
+        const SymbolUsage& usage = symbol_usages[usage_index];
+        found.push_back(parse_tree.getSelection(usage.pn));
     }
-    return index;
 }
 
 void SymbolTable::reset(const Typeset::Marker& doc_start) noexcept{
     scope_segments.clear();
     symbols.clear();
-    usages.clear();
+    symbol_usages.clear();
     scoped_vars.clear();
 
     #if !defined(NDEBUG) && !defined(FORSCAPE_TYPESET_HEADLESS)
     scope_names = "Global";
     #endif
 
-    scope_segments.push_back(ScopeSegment(SCOPE_NAME(0) SCOPE_NAME(scope_names.size()) doc_start, NONE, NONE, NONE, symbols.size(), usages.size()));
+    scope_segments.push_back(ScopeSegment(SCOPE_NAME(0) SCOPE_NAME(scope_names.size()) doc_start, NONE, NONE, NONE, symbols.size(), symbol_usages.size()));
 }
 
 void SymbolTable::addScope(
@@ -162,8 +160,8 @@ void SymbolTable::addScope(
         #endif
         const Typeset::Marker& start, ParseNode closure) alloc_except {
     ScopeSegment& active_scope = scope_segments.back();
-    active_scope.usage_end = usages.size();
-    scope_segments.push_back(ScopeSegment(SCOPE_NAME(scope_names.size()) SCOPE_NAME(name.size()) start, closure, scope_segments.size()-1, NONE, symbols.size(), usages.size()));
+    active_scope.usage_end = symbol_usages.size();
+    scope_segments.push_back(ScopeSegment(SCOPE_NAME(scope_names.size()) SCOPE_NAME(name.size()) start, closure, scope_segments.size()-1, NONE, symbols.size(), symbol_usages.size()));
     #ifdef FORSCAPE_USE_SCOPE_NAME
     scope_names += name;
     #endif
@@ -171,19 +169,19 @@ void SymbolTable::addScope(
 
 void SymbolTable::closeScope(const Typeset::Marker& stop) alloc_except {
     ScopeSegment& closed_scope = scope_segments.back();
-    closed_scope.usage_end = usages.size();
+    closed_scope.usage_end = symbol_usages.size();
     closed_scope.is_end_of_scope = true;
 
     size_t prev_index = closed_scope.parent_lexical_segment_index;
     ScopeSegment& prev_scope = scope_segments[prev_index];
 
-    scope_segments.push_back(ScopeSegment(SCOPE_NAME(prev_scope.name_start) SCOPE_NAME(prev_scope.name_size) stop, prev_scope.fn, prev_scope.parent_lexical_segment_index, prev_index, symbols.size(), usages.size()));
+    scope_segments.push_back(ScopeSegment(SCOPE_NAME(prev_scope.name_start) SCOPE_NAME(prev_scope.name_size) stop, prev_scope.fn, prev_scope.parent_lexical_segment_index, prev_index, symbols.size(), symbol_usages.size()));
 }
 
 void SymbolTable::finalize() noexcept {
     ScopeSegment& scope = scope_segments.back();
     scope.is_end_of_scope = true;
-    scope.usage_end = usages.size();
+    scope.usage_end = symbol_usages.size();
 }
 
 #ifndef NDEBUG
@@ -204,7 +202,21 @@ void SymbolTable::resolveReference(ParseNode pn, size_t sym_id, size_t closure_d
 
     sym.is_closure_nested |= sym.declaration_closure_depth && (closure_depth != sym.declaration_closure_depth);
 
-    usages.push_back(Usage(sym_id, pn, READ));
+    symbol_usages.push_back(SymbolUsage(sym.last_usage_index, sym_id, pn));
+    sym.last_usage_index = symbol_usages.size()-1;
+}
+
+void SymbolTable::resolveScopeReference(SymbolUsageIndex usage_index, SymbolIndex sym_index) noexcept {
+    SymbolUsage& usage = symbol_usages[usage_index];
+    Symbol& sym = symbols[sym_index];
+    ParseNode pn = usage.pn;
+
+    //Patch the empty usage inserted earlier
+    usage.var_id = sym_index;
+    parse_tree.setSymId(pn, sym_index);
+
+    usage.prev_usage_index = sym.last_usage_index;
+    sym.last_usage_index = usage_index;
 }
 
 }

@@ -43,12 +43,12 @@ void SymbolTableLinker::link() noexcept{
         }
 
         for(size_t i = scope_segment.usage_begin; i < scope_segment.usage_end; i++){
-            const Usage& usage = symbol_table.usages[i];
+            const SymbolUsage& usage = symbol_table.symbol_usages[i];
 
             Symbol& sym = symbol_table.symbols[usage.var_id];
             ParseNode pn = usage.pn;
 
-            if(usage.type == DECLARE){
+            if(usage.isDeclaration()){
                 if(sym.is_closure_nested && !sym.is_captured_by_value){
                     parse_tree.setOp(pn, OP_READ_UPVALUE);
                     parse_tree.setClosureIndex(pn, sym.flag);
