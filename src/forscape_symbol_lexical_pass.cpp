@@ -54,6 +54,7 @@ SymbolLexicalPass::SymbolLexicalPass(ParseTree& parse_tree, Typeset::Model* mode
       model(model),
       symbol_table(parse_tree),
       symbols(symbol_table.symbols),
+      lexical_map(symbol_table.lexical_map),
       scope_segments(symbol_table.scope_segments),
       symbol_usages(symbol_table.symbol_usages) {}
 

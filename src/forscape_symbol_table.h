@@ -95,6 +95,7 @@ struct SymbolUsage {
 class SymbolTable{
 public:
     std::vector<Symbol> symbols;
+    FORSCAPE_UNORDERED_MAP<Typeset::Selection, SymbolIndex> lexical_map;
     std::vector<ScopeSegment> scope_segments;
     std::vector<SymbolUsage> symbol_usages;
     ParseTree& parse_tree;

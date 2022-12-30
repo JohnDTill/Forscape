@@ -28,10 +28,10 @@ public:
 
 private:
     std::vector<Symbol>& symbols;
+    FORSCAPE_UNORDERED_MAP<Typeset::Selection, SymbolIndex>& lexical_map;
     std::vector<ScopeSegment>& scope_segments;
     std::vector<SymbolUsage>& symbol_usages;
     size_t active_scope_id;
-    FORSCAPE_UNORDERED_MAP<Typeset::Selection, SymbolIndex> lexical_map;
     static constexpr size_t GLOBAL_DEPTH = 0;
     uint16_t lexical_depth = GLOBAL_DEPTH;
     uint8_t closure_depth = 0;
