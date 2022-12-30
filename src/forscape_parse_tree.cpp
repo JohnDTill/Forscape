@@ -1,12 +1,13 @@
 #include "forscape_parse_tree.h"
 
 #include <code_parsenode_ops.h>
-#include <forscape_common.h>
-#include <forscape_static_pass.h>
+#include "forscape_common.h"
+#include "forscape_static_pass.h"
 #include "typeset_selection.h"
 
 #ifndef NDEBUG
 #include <code_parsenodegraphviz.h>
+#include "forscape_symbol_table.h"
 #include <iostream>
 #endif
 
@@ -129,12 +130,14 @@ size_t ParseTree::getSymId(ParseNode pn) const noexcept{
 void ParseTree::setSymbol(ParseNode pn, const Symbol* const symbol) noexcept {
     assert(isNode(pn));
     assert(getOp(pn) == OP_IDENTIFIER || getOp(pn) == OP_READ_UPVALUE);
+    assert(SymbolTable::isValidSymbolPtr(symbol));
     setFlag(pn, reinterpret_cast<size_t>(symbol));
 }
 
 Symbol* ParseTree::getSymbol(ParseNode pn) const noexcept {
     assert(isNode(pn));
     assert(getOp(pn) == OP_IDENTIFIER || getOp(pn) == OP_READ_UPVALUE);
+    assert(SymbolTable::isValidSymbolPtr(reinterpret_cast<Symbol*>(getFlag(pn))));
     return reinterpret_cast<Symbol*>(getFlag(pn));
 }
 

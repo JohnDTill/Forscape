@@ -15,6 +15,18 @@ namespace Forscape {
 
 namespace Code {
 
+#ifndef NDEBUG
+std::unordered_set<const Symbol*> SymbolTable::all_symbols;
+
+bool SymbolTable::isValidSymbolPtr(const Symbol* const ptr) noexcept {
+    return all_symbols.find(ptr) != all_symbols.cend();
+}
+
+SymbolTable::~SymbolTable() noexcept {
+    for(Symbol& sym : symbols) all_symbols.erase(&sym);
+}
+#endif
+
 Symbol::Symbol() noexcept
     : declaration_lexical_depth(0) {}
 
@@ -38,6 +50,14 @@ const Typeset::Selection& Symbol::firstOccurence() const noexcept {
     SymbolUsage* usage = lastUsage();
     while(SymbolUsage* prev = usage->prevUsage()) usage = prev;
     return usage->sel;
+}
+
+const Typeset::Selection& Symbol::sel() const noexcept {
+    return lastUsage()->sel;
+}
+
+std::string Symbol::str() const noexcept {
+    return sel().str();
 }
 
 void Symbol::getOccurences(std::vector<Typeset::Selection>& found) const {
@@ -153,6 +173,10 @@ const Typeset::Selection& SymbolTable::getSel(size_t sym_index) const noexcept{
 }
 
 void SymbolTable::reset(const Typeset::Marker& doc_start) noexcept{
+    #ifndef NDEBUG
+    for(Symbol& sym : symbols) all_symbols.erase(&sym);
+    #endif
+
     scope_segments.clear();
     symbols.clear();
     symbol_usages.clear();
@@ -194,6 +218,10 @@ void SymbolTable::finalize() noexcept {
     scope.is_end_of_scope = true;
     scope.usage_end = symbol_usages.size();
 
+    #ifndef NDEBUG
+    for(Symbol& sym : symbols) all_symbols.insert(&sym);
+    #endif
+
     const Symbol* const symbol_offset = symbols.data();
     const SymbolUsage* const usage_offset = symbol_usages.data();
     for(Symbol& sym : symbols){
@@ -209,7 +237,6 @@ void SymbolTable::finalize() noexcept {
             parse_tree.setSymbol(usage.pn, symbol_offset + usage.symbol_index);
     }
     for(auto& entry : lexical_map) entry.second = reinterpret_cast<SymbolIndex>(symbol_offset + entry.second);
-
 
     //DO THIS: concession to current namespace scheme
     FORSCAPE_UNORDERED_MAP<ScopedVarKey, SymbolIndex, HashScopedVarKey> scoped_vars;

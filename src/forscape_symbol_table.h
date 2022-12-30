@@ -54,6 +54,8 @@ public:
     Symbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed_var, bool is_const) noexcept;
     size_t closureIndex() const noexcept;
     const Typeset::Selection& firstOccurence() const noexcept;
+    const Typeset::Selection& sel() const noexcept;
+    std::string str() const noexcept;
     SymbolUsage* lastUsage() const noexcept { return reinterpret_cast<SymbolUsage*>(last_usage_index); }
     Symbol* shadowedVar() const noexcept { return reinterpret_cast<Symbol*>(index_of_shadowed_var); }
     void getOccurences(std::vector<Typeset::Selection>& found) const;
@@ -110,6 +112,12 @@ public:
     std::vector<ScopeSegment> scope_segments;
     std::vector<SymbolUsage> symbol_usages;
     ParseTree& parse_tree;
+
+    #ifndef NDEBUG
+    static std::unordered_set<const Symbol*> all_symbols;
+    static bool isValidSymbolPtr(const Symbol* const ptr) noexcept;
+    ~SymbolTable() noexcept;
+    #endif
 
     #ifdef FORSCAPE_USE_SCOPE_NAME
     std::string scope_names;
