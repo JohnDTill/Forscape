@@ -126,6 +126,24 @@ size_t ParseTree::getSymId(ParseNode pn) const noexcept{
     return getFlag(pn);
 }
 
+void ParseTree::setSymbol(ParseNode pn, const Symbol* const symbol) noexcept {
+    assert(isNode(pn));
+    assert(getOp(pn) == OP_IDENTIFIER);
+    setFlag(pn, reinterpret_cast<size_t>(symbol));
+}
+
+Symbol* ParseTree::getSymbol(ParseNode pn) const noexcept {
+    assert(isNode(pn));
+    assert(getOp(pn) == OP_IDENTIFIER);
+    return reinterpret_cast<Symbol*>(getFlag(pn));
+}
+
+Typeset::Model* ParseTree::getModel(ParseNode pn) const noexcept {
+    assert(isNode(pn));
+    assert(getOp(pn) == OP_FILE_REF);
+    return reinterpret_cast<Typeset::Model*>(getFlag(pn));
+}
+
 void ParseTree::setRefList(ParseNode fn, ParseNode list) noexcept {
     assert(getOp(fn) == OP_ALGORITHM || getOp(fn) == OP_DEFINE_PROTO || getOp(fn) == OP_LAMBDA);
     setArg<1>(fn, list);

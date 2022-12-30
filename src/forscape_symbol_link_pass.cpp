@@ -30,6 +30,7 @@ void SymbolTableLinker::link() noexcept{
 
                 for(size_t i = 0; i < parse_tree.getNumArgs(ref_list); i++){
                     ParseNode ref = parse_tree.arg(ref_list, i);
+                    //EVENTUALLY: might need to make these pointers
                     size_t var_id = parse_tree.getFlag(ref);
                     Symbol& sym = symbol_table.symbols[var_id];
                     old_flags.push_back(sym.flag);

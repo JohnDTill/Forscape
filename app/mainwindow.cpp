@@ -1110,6 +1110,7 @@ void MainWindow::checkForChanges(){
     if(active_file_path.isEmpty()) return;
 
     Forscape::Typeset::Model* model = editor->getModel();
+    //DO THIS: probably call last_write_time in a separate thread to avoid delay in GUI loop reading from disk
     const std::filesystem::file_time_type modified_time = std::filesystem::last_write_time(model->path);
     if(modified_time <= model->write_time) return;
     model->write_time = modified_time;

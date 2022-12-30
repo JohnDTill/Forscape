@@ -561,10 +561,8 @@ void View::updateHighlightingFromCursorLocation(){
 void View::populateHighlightWordsFromParseNode(ParseNode pn){
     const auto& parse_tree = model->parser.parse_tree;
     if(parse_tree.getOp(pn) != Code::OP_IDENTIFIER) return;
-    size_t sym_id = parse_tree.getFlag(pn);
-    const auto& symbol_table = model->symbol_builder.symbol_table;
-    const Code::Symbol& sym = symbol_table.symbols[sym_id];
-    sym.getOccurences(highlighted_words);
+    const Code::Symbol* const sym = parse_tree.getSymbol(pn);
+    sym->getOccurences(highlighted_words);
 }
 
 bool View::scrolledToBottom() const noexcept{
@@ -1493,8 +1491,7 @@ void Editor::rename(){
 
 void Editor::goToDef(){
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
-    auto& symbol_table = model->symbol_builder.symbol_table;
-    controller = symbol_table.getSel(model->parseTree().getSymId(contextNode));
+    controller = model->parseTree().getSymbol(contextNode)->firstOccurence();
     restartCursorBlink();
     ensureCursorVisible();
     update();
@@ -1504,17 +1501,16 @@ void Editor::findUsages(){
     assert(console);
 
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
-    auto& symbol_table = model->symbol_builder.symbol_table;
-    const size_t sym_id = model->parseTree().getSymId(contextNode);
     std::vector<Typeset::Selection> occurences;
-    const Code::Symbol& sym = symbol_table.symbols[sym_id];
-    sym.getOccurences(highlighted_words);
+    const Code::Symbol& sym = *model->parseTree().getSymbol(contextNode);
+    sym.getOccurences(occurences);
 
     Model* m = new Model();
     m->is_output = true;
     console->setModel(m);
     size_t last_handled = std::numeric_limits<size_t>::max();
-    for(const auto& entry : occurences){
+    for(auto it = occurences.crbegin(); it != occurences.crend(); it++){
+        const auto& entry = *it;
         Line* target_line = entry.getStartLine();
         if(target_line->id != last_handled){
             last_handled = target_line->id;
@@ -1529,7 +1525,7 @@ void Editor::findUsages(){
 
 void Editor::goToFile() {
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_FILE_REF);
-    Typeset::Model* referenced = reinterpret_cast<Typeset::Model*>(model->parseTree().getFlag(contextNode));
+    Typeset::Model* referenced = model->parseTree().getModel(contextNode);
     emit goToModel(referenced, 0);
 }
 
@@ -1540,16 +1536,14 @@ void Editor::showTooltipParseNode(){
     switch(parse_tree.getOp(hover_node)){
         case Code::OP_IDENTIFIER:{
             if(!model->errors.empty()) return; //EVENTUALLY: this is a bit strict. would rather have feedback
-            const auto& symbol_table = model->symbol_builder.symbol_table;
-            size_t sym_id = parse_tree.getFlag(hover_node);
-            const auto& symbol = symbol_table.symbols[sym_id];
+            const auto& symbol = *parse_tree.getSymbol(hover_node);
 
             tooltip->clear();
             tooltip->appendSerial(parse_tree.str(hover_node) + " ∈ " + model->static_pass.typeString(symbol));
 
             if(symbol.comment != NONE){
                 tooltip->appendSerial("\n");
-                tooltip->appendSerial(symbol_table.parse_tree.str(symbol.comment), SEM_COMMENT);
+                tooltip->appendSerial(parse_tree.str(symbol.comment), SEM_COMMENT);
             }
 
             tooltip->fitToContents();
@@ -1576,10 +1570,8 @@ void Editor::showTooltip(){
 
 void Editor::rename(const std::string& str){
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
-    auto& symbol_table = model->symbol_builder.symbol_table;
-    const size_t sym_id = model->parseTree().getSymId(contextNode);
     std::vector<Typeset::Selection> occurences;
-    const Code::Symbol& sym = symbol_table.symbols[sym_id];
+    const Code::Symbol& sym = *model->parseTree().getSymbol(contextNode);
     sym.getOccurences(highlighted_words);
 
     replaceAll(occurences, str);

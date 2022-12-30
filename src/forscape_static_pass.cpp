@@ -47,8 +47,6 @@ void StaticPass::resolve(){
     for(const SymbolUsage& usage : symbol_table.symbol_usages){
         const Symbol& sym = symbol_table.symbols[usage.symbol_index];
 
-        assert(usage.sel == sym.sel(parse_tree));
-
         SemanticType fmt = SEM_ID;
         if(sym.is_ewise_index){
             fmt = SEM_ID_EWISE_INDEX;
@@ -142,8 +140,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
         case OP_EQUAL:{
             ParseNode rhs = resolveExprTop(parse_tree.rhs(pn));
             parse_tree.setArg<1>(pn, rhs);
-            size_t sym_id = parse_tree.getFlag(parse_tree.lhs(pn));
-            Symbol& sym = symbol_table.symbols[sym_id];
+            Symbol& sym = *parse_tree.getSymbol(parse_tree.lhs(pn));
             sym.type = parse_tree.getType(rhs);
             sym.rows = parse_tree.getRows(rhs);
             sym.cols = parse_tree.getCols(rhs);
@@ -168,8 +165,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                 parse_tree.setType(pn, OP_REASSIGN_SUBSCRIPT);
                 return pn;
             }else{
-                size_t sym_id = parse_tree.getSymId(lhs);
-                Symbol& sym = symbol_table.symbols[sym_id];
+                Symbol& sym = *parse_tree.getSymbol(lhs);
 
                 ParseNode rhs = resolveExprTop(parse_tree.rhs(pn), sym.rows, sym.cols);
                 parse_tree.setArg<1>(pn, rhs);
@@ -235,8 +231,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             for(size_t i = 1; i < parse_tree.getNumArgs(lhs); i++){
                 ParseNode sub = parse_tree.arg(lhs, i);
                 if(parse_tree.getOp(sub) == OP_IDENTIFIER){
-                    size_t sym_id = parse_tree.getFlag(sub);
-                    Symbol& sym = symbol_table.symbols[sym_id];
+                    Symbol& sym = *parse_tree.getSymbol(sub);
                     sym.type = NUMERIC;
                 }else{
                     sub = resolveExprTop(sub);
@@ -292,8 +287,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                 default: return error(pn, iterable, TYPE_NOT_ITERABLE);
             }
 
-            size_t sym_id = parse_tree.getFlag(parse_tree.arg<0>(pn));
-            Symbol& sym = symbol_table.symbols[sym_id];
+            Symbol& sym = *parse_tree.getSymbol(parse_tree.arg<0>(pn));
             sym.type = parse_tree.getType(iterable);
             sym.rows = 1;
             sym.cols = 1;
@@ -318,8 +312,8 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             return resolveAlg(pn);
 
         case OP_PROTOTYPE_ALG:{
-            size_t sym_id = parse_tree.getFlag(parse_tree.arg(pn, 0));
-            symbol_table.symbols[sym_id].type = UNINITIALISED;
+            Symbol& sym = *parse_tree.getSymbol(parse_tree.arg<0>(pn));
+            sym.type = UNINITIALISED;
             return pn;
         }
 
@@ -375,7 +369,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
 
         case OP_NAMESPACE:
             //return resolveStmt(parse_tree.arg<1>(pn)); //TODO: this should be resolveBlock
-            symbol_table.symbols[parse_tree.getSymId(parse_tree.arg<0>(pn))].type = NAMESPACE;
+            parse_tree.getSymbol(parse_tree.arg<0>(pn))->type = NAMESPACE;
             parse_tree.setArg<1>(pn, resolveStmt(parse_tree.arg<1>(pn)));
             return pn; //TODO: not all symbols go to the stack!
 
@@ -433,8 +427,7 @@ Type StaticPass::fillDefaultsAndInstantiate(ParseNode call_node, StaticPass::Cal
         ParseNode param = parse_tree.arg(params, i);
         if(parse_tree.getOp(param) != OP_EQUAL) return errorType(call_node, TOO_FEW_ARGS);
         ParseNode default_var = parse_tree.lhs(param);
-        size_t sym_id = parse_tree.getFlag(default_var);
-        const Symbol& sym = symbol_table.symbols[sym_id];
+        const Symbol& sym = *parse_tree.getSymbol(default_var);
         Type t = sym.type;
         sig.push_back(t);
         if(t == NUMERIC){
@@ -546,8 +539,7 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
         case OP_IDENTIFIER:
         case OP_READ_GLOBAL:
         case OP_READ_UPVALUE:{
-            size_t sym_id = parse_tree.getSymId(pn);
-            Symbol& sym = symbol_table.symbols[sym_id];
+            Symbol& sym = *parse_tree.getSymbol(pn);
             parse_tree.setRows(pn, sym.rows);
             parse_tree.setCols(pn, sym.cols);
             parse_tree.setType(pn, sym.type);
@@ -860,7 +852,8 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
         case OP_PRODUCT:{
             ParseNode asgn = parse_tree.arg<0>(pn);
             assert(parse_tree.getOp(asgn) == OP_ASSIGN);
-            symbol_table.symbols[parse_tree.getFlag(parse_tree.lhs(asgn))].type = NUMERIC;
+            Symbol& sym = *parse_tree.getSymbol(parse_tree.lhs(asgn));
+            sym.type = NUMERIC;
             ParseNode initialiser = resolveExpr(parse_tree.rhs(asgn));
             parse_tree.setArg<1>(asgn, initialiser);
             if(parse_tree.getType(initialiser) != NUMERIC) return error(pn, initialiser);
@@ -1220,9 +1213,7 @@ ParseNode StaticPass::resolveAlg(ParseNode pn){
     size_t cap_list_size = parse_tree.valListSize(cap_list);
     for(size_t i = 0; i < cap_list_size; i++){
         ParseNode cap = parse_tree.arg(cap_list, i);
-        size_t inner_id = parse_tree.getFlag(cap);
-        assert(inner_id < symbol_table.symbols.size());
-        const Symbol& inner = symbol_table.symbols[inner_id];
+        const Symbol& inner = *parse_tree.getSymbol(cap);
         const Symbol& outer = *inner.shadowedVar();
         Type t = outer.type;
         sig.push_back(t);
@@ -1248,8 +1239,7 @@ ParseNode StaticPass::resolveAlg(ParseNode pn){
 
     Type t = makeFunctionSet(declare(sig));
 
-    size_t sym_id = parse_tree.getFlag(parse_tree.algName(pn));
-    symbol_table.symbols[sym_id].type = t;
+    parse_tree.getSymbol(parse_tree.algName(pn))->type = t;
     parse_tree.setType(pn, t);
 
     return pn;
@@ -1267,7 +1257,7 @@ ParseNode StaticPass::resolveDeriv(ParseNode pn){
     parse_tree.setArg<2>(pn, val);
     if(parse_tree.getType(val) != NUMERIC) return error(pn, wrt);
 
-    Symbol& wrt_sym = symbol_table.symbols[parse_tree.getFlag(wrt)];
+    Symbol& wrt_sym = *parse_tree.getSymbol(wrt);
     wrt_sym.type = NUMERIC;
     wrt_sym.rows = parse_tree.getRows(val);
     wrt_sym.cols = parse_tree.getCols(val);
@@ -1687,7 +1677,7 @@ ParseNode StaticPass::resolveLimit(ParseNode pn) {
     parse_tree.setType(id, NUMERIC);
     parse_tree.copyDims(id, lim);
 
-    Symbol& id_sym = symbol_table.symbols[parse_tree.getFlag(id)];
+    Symbol& id_sym = *parse_tree.getSymbol(id);
     id_sym.type = NUMERIC;
     id_sym.rows = parse_tree.getRows(id);
     id_sym.cols = parse_tree.getCols(id);
@@ -1713,7 +1703,7 @@ ParseNode StaticPass::resolveDefiniteIntegral(ParseNode pn) {
     ParseNode var = parse_tree.arg<0>(pn);
     parse_tree.setScalar(var);
 
-    Symbol& var_sym = symbol_table.symbols[parse_tree.getFlag(var)];
+    Symbol& var_sym = *parse_tree.getSymbol(var);
     var_sym.type = NUMERIC;
     var_sym.rows = 1;
     var_sym.cols = 1;
@@ -1735,11 +1725,9 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
     assert(parse_tree.getOp(field) == OP_IDENTIFIER);
     auto lookup = symbol_table.scoped_vars.find(SymbolTable::ScopedVarKey(sym_id, parse_tree.getSelection(field)));
     if(lookup != symbol_table.scoped_vars.end()){
-        SymbolIndex sym_index = lookup->second;
+        Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
         SymbolUsageIndex usage_index = parse_tree.getFlag(field);
-        symbol_table.resolveScopeReference(usage_index, sym_index);
-
-        Symbol& sym = symbol_table.symbols[sym_index];
+        symbol_table.resolveScopeReference(usage_index, sym);
 
         if(write){
             if(sym.is_const){
@@ -1933,8 +1921,7 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
     for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
         ParseNode param = parse_tree.arg(params, i);
         if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
-        size_t sym_id = parse_tree.getFlag(param);
-        Symbol& sym = symbol_table.symbols[sym_id];
+        Symbol& sym = *parse_tree.getSymbol(param);
         old_args.push_back(sym);
         sym.type = fn[1+type_index++];
         parse_tree.setType(param, sym.type);
@@ -2003,8 +1990,7 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
 
     for(size_t i = 0; i < N_vals; i++){
         ParseNode val = parse_tree.arg(val_list, i);
-        size_t sym_id = parse_tree.getFlag(val);
-        Symbol& sym = symbol_table.symbols[sym_id];
+        Symbol& sym = *parse_tree.getSymbol(val);
         old_val_cap[i+old_val_cap_index].restore(sym);
     }
     old_val_cap.resize(old_val_cap_index);
@@ -2023,8 +2009,7 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
     for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
         ParseNode param = parse_tree.arg(params, i);
         if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
-        size_t sym_id = parse_tree.getFlag(param);
-        Symbol& sym = symbol_table.symbols[sym_id];
+        Symbol& sym = *parse_tree.getSymbol(param);
         old_args[i+old_args_index].restore(sym);
     }
     old_args.resize(old_args_index);

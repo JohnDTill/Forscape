@@ -33,6 +33,7 @@ private: friend SymbolLexicalPass; friend SymbolTable; //Fields for the lexical 
     SymbolUsageIndex last_usage_index  DEBUG_INIT_UNITIALISED(SymbolUsageIndex);
     uint16_t declaration_lexical_depth  DEBUG_INIT_UNITIALISED(uint16_t);
     size_t previous_namespace_index = NONE;
+    const Typeset::Selection& sel(const ParseTree& parse_tree) const noexcept; //DO THIS: This is a smell
 
 public:
     uint8_t declaration_closure_depth  DEBUG_INIT_UNITIALISED(uint8_t);
@@ -52,7 +53,7 @@ public:
     Symbol() noexcept;
     Symbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed_var, bool is_const) noexcept;
     size_t closureIndex() const noexcept;
-    const Typeset::Selection& sel(const ParseTree& parse_tree) const noexcept;
+    const Typeset::Selection& firstOccurence() const noexcept;
     SymbolUsage* lastUsage() const noexcept { return reinterpret_cast<SymbolUsage*>(last_usage_index); }
     Symbol* shadowedVar() const noexcept { return reinterpret_cast<Symbol*>(index_of_shadowed_var); }
     void getOccurences(std::vector<Typeset::Selection>& found) const;
@@ -97,7 +98,7 @@ struct SymbolUsage {
     ParseNode pn  DEBUG_INIT_UNITIALISED(ParseNode); //DO THIS: I think this is not needed?
 
     SymbolUsage() noexcept;
-    SymbolUsage(SymbolUsageIndex prev_usage_index, size_t var_id, ParseNode pn, const Typeset::Selection& sel) noexcept;
+    SymbolUsage(SymbolUsageIndex prev_usage_index, SymbolIndex symbol_index, ParseNode pn, const Typeset::Selection& sel) noexcept;
     SymbolUsage* prevUsage() const noexcept { return reinterpret_cast<SymbolUsage*>(prev_usage_index); }
     bool isDeclaration() const noexcept { return prevUsage() == nullptr; }
 };
@@ -139,21 +140,21 @@ public:
     #endif
 
     struct ScopedVarKey {
-        ParseNode symbol_root;
+        SymbolIndex symbol_index;
         Typeset::Selection sel;
-        ScopedVarKey(ParseNode symbol_root, const Typeset::Selection& sel) noexcept : symbol_root(symbol_root), sel(sel) {}
+        ScopedVarKey(ParseNode symbol_root, const Typeset::Selection& sel) noexcept : symbol_index(symbol_root), sel(sel) {}
         bool operator==(const ScopedVarKey& other) const noexcept {
-            return symbol_root == other.symbol_root && sel == other.sel; }
+            return symbol_index == other.symbol_index && sel == other.sel; }
     };
     struct HashScopedVarKey {
         std::size_t operator()(const ScopedVarKey& s) const {
-            return s.symbol_root ^ std::hash<Typeset::Selection>()(s.sel);
+            return s.symbol_index ^ std::hash<Typeset::Selection>()(s.sel);
         }
     };
-    FORSCAPE_UNORDERED_MAP<ScopedVarKey, size_t, HashScopedVarKey> scoped_vars;
+    FORSCAPE_UNORDERED_MAP<ScopedVarKey, SymbolIndex, HashScopedVarKey> scoped_vars;
 
     void resolveReference(ParseNode pn, size_t sym_id, size_t closure_depth) alloc_except;
-    void resolveScopeReference(SymbolUsageIndex usage_index, SymbolIndex sym_index) alloc_except;
+    void resolveScopeReference(SymbolUsageIndex usage_index, Symbol& sym) alloc_except;
 };
 
 }

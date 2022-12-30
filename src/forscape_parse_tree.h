@@ -17,12 +17,14 @@ namespace Forscape {
 namespace Typeset {
 class Selection;
 struct Marker;
+class Model;
 }
 
 using Typeset::Selection; //EVENTUALLY: Selection may depend on environment, e.g. string_view
 
 namespace Code {
 
+struct Symbol;
 
 class ParseTree {
 public:
@@ -48,6 +50,9 @@ public:
     ParseNode refCapList(ParseNode pn) const noexcept;
     void setSymId(ParseNode pn, size_t sym_id) noexcept;
     size_t getSymId(ParseNode pn) const noexcept;
+    void setSymbol(ParseNode pn, const Symbol* const symbol) noexcept;
+    Symbol* getSymbol(ParseNode pn) const noexcept;
+    Typeset::Model* getModel(ParseNode pn) const noexcept;
     void setRefList(ParseNode fn, ParseNode list) noexcept;
     ParseNode paramList(ParseNode pn) const noexcept;
     ParseNode body(ParseNode pn) const noexcept;

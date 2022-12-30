@@ -30,6 +30,12 @@ const Typeset::Selection& Symbol::sel(const ParseTree& parse_tree) const noexcep
     return parse_tree.getSelection(flag);
 }
 
+const Typeset::Selection& Symbol::firstOccurence() const noexcept {
+    SymbolUsage* usage = lastUsage();
+    while(SymbolUsage* prev = usage->prevUsage()) usage = prev;
+    return usage->sel;
+}
+
 void Symbol::getOccurences( std::vector<Typeset::Selection>& found) const {
     for(SymbolUsage* usage = lastUsage(); usage != nullptr; usage = usage->prevUsage())
         found.push_back(usage->sel);
@@ -38,8 +44,12 @@ void Symbol::getOccurences( std::vector<Typeset::Selection>& found) const {
 SymbolUsage::SymbolUsage() noexcept
     : prev_usage_index(NONE), symbol_index(NONE) {}
 
-SymbolUsage::SymbolUsage(SymbolUsageIndex prev_usage_index, size_t var_id, ParseNode pn, const Typeset::Selection& sel) noexcept
-    : sel(sel), prev_usage_index(prev_usage_index), symbol_index(var_id), pn(pn) {}
+SymbolUsage::SymbolUsage(
+        SymbolUsageIndex prev_usage_index,
+        SymbolIndex symbol_index,
+        ParseNode pn,
+        const Typeset::Selection& sel) noexcept
+    : sel(sel), prev_usage_index(prev_usage_index), symbol_index(symbol_index), pn(pn) {}
 
 ScopeSegment::ScopeSegment(
         #ifdef FORSCAPE_USE_SCOPE_NAME
@@ -187,8 +197,22 @@ void SymbolTable::finalize() noexcept {
     for(SymbolUsage& usage : symbol_usages){
         if(usage.prev_usage_index == NONE) usage.prev_usage_index = reinterpret_cast<SymbolUsageIndex>(nullptr);
         else usage.prev_usage_index = reinterpret_cast<SymbolUsageIndex>(usage_offset + usage.prev_usage_index);
+
+        //EVENTUALLY: usage.symbol_index should be converted to a pointer also
+        if(usage.symbol_index != NONE) //DO THIS: concession to current namespace scheme
+            parse_tree.setSymbol(usage.pn, symbol_offset + usage.symbol_index);
     }
     for(auto& entry : lexical_map) entry.second = reinterpret_cast<SymbolIndex>(symbol_offset + entry.second);
+
+
+    //DO THIS: concession to current namespace scheme
+    FORSCAPE_UNORDERED_MAP<ScopedVarKey, SymbolIndex, HashScopedVarKey> scoped_vars;
+    for(const auto& entry : this->scoped_vars){
+        auto key = entry.first;
+        key.symbol_index = reinterpret_cast<SymbolIndex>(symbol_offset + key.symbol_index);
+        scoped_vars[key] = reinterpret_cast<SymbolIndex>(symbol_offset + entry.second);
+    }
+    this->scoped_vars = scoped_vars;
 }
 
 #ifndef NDEBUG
@@ -213,14 +237,13 @@ void SymbolTable::resolveReference(ParseNode pn, size_t sym_id, size_t closure_d
     sym.last_usage_index = symbol_usages.size()-1;
 }
 
-void SymbolTable::resolveScopeReference(SymbolUsageIndex usage_index, SymbolIndex sym_index) noexcept {
+void SymbolTable::resolveScopeReference(SymbolUsageIndex usage_index, Symbol& sym) noexcept {
     SymbolUsage& usage = symbol_usages[usage_index];
-    Symbol& sym = symbols[sym_index];
     ParseNode pn = usage.pn;
 
     //Patch the empty usage inserted earlier
-    usage.symbol_index = sym_index;
-    parse_tree.setSymId(pn, sym_index);
+    usage.symbol_index = &sym - symbols.data();
+    parse_tree.setSymbol(pn, &sym);
 
     usage.prev_usage_index = sym.last_usage_index;
     sym.last_usage_index = reinterpret_cast<SymbolUsageIndex>(symbol_usages.data() + usage_index);

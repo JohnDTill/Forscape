@@ -4,7 +4,7 @@
 
 #include <stack>
 
-using Forscape::NONE; //But there is
+using Forscape::NONE;
 
 SymbolTreeView::SymbolTreeView(const Forscape::Code::SymbolTable& symbol_table, const Forscape::Code::StaticPass& ts){
     setWindowTitle("Symbol Table");
