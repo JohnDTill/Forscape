@@ -122,19 +122,19 @@ void ParseTree::setSymId(ParseNode pn, size_t sym_id) noexcept {
 
 size_t ParseTree::getSymId(ParseNode pn) const noexcept{
     assert(isNode(pn));
-    assert(getOp(pn) == OP_IDENTIFIER);
+    assert(getOp(pn) == OP_IDENTIFIER || getOp(pn) == OP_READ_UPVALUE);
     return getFlag(pn);
 }
 
 void ParseTree::setSymbol(ParseNode pn, const Symbol* const symbol) noexcept {
     assert(isNode(pn));
-    assert(getOp(pn) == OP_IDENTIFIER);
+    assert(getOp(pn) == OP_IDENTIFIER || getOp(pn) == OP_READ_UPVALUE);
     setFlag(pn, reinterpret_cast<size_t>(symbol));
 }
 
 Symbol* ParseTree::getSymbol(ParseNode pn) const noexcept {
     assert(isNode(pn));
-    assert(getOp(pn) == OP_IDENTIFIER);
+    assert(getOp(pn) == OP_IDENTIFIER || getOp(pn) == OP_READ_UPVALUE);
     return reinterpret_cast<Symbol*>(getFlag(pn));
 }
 

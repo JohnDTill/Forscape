@@ -37,8 +37,9 @@ private:
     uint8_t closure_depth = 0;
     size_t cutoff = std::numeric_limits<size_t>::max();
 
-    std::vector<size_t> refs;
+    std::vector<SymbolIndex> refs;
     std::vector<size_t> ref_frames;
+    std::vector<ParseNode> processed_refs;
 
     std::vector<ParseNode> potential_loop_vars;
 

@@ -7,6 +7,10 @@
 #include <cassert>
 #include <unordered_set>
 
+#ifndef NDEBUG
+#include <iostream>
+#endif
+
 namespace Forscape {
 
 namespace Code {
@@ -36,9 +40,11 @@ const Typeset::Selection& Symbol::firstOccurence() const noexcept {
     return usage->sel;
 }
 
-void Symbol::getOccurences( std::vector<Typeset::Selection>& found) const {
-    for(SymbolUsage* usage = lastUsage(); usage != nullptr; usage = usage->prevUsage())
+void Symbol::getOccurences(std::vector<Typeset::Selection>& found) const {
+    for(SymbolUsage* usage = lastUsage(); usage != nullptr; usage = usage->prevUsage()){
+        std::cout << usage << std::endl;
         found.push_back(usage->sel);
+    }
 }
 
 SymbolUsage::SymbolUsage() noexcept

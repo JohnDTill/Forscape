@@ -67,6 +67,8 @@ void SymbolLexicalPass::resolveSymbols() alloc_except {
     }
 
     symbol_table.finalize();
+    //DO THIS: make closure vars use pointers
+    //for(ParseNode pn : processed_refs) parse_tree.setSymbol(pn, symbols.data() + parse_tree.getSymId(pn));
 }
 
 void SymbolLexicalPass::reset() noexcept {
@@ -74,6 +76,7 @@ void SymbolLexicalPass::reset() noexcept {
     //assert(map.empty()); //Not necessarily empty due to errors
     lexical_map.clear();
     assert(refs.empty());
+    processed_refs.clear();
     assert(ref_frames.empty());
     lexical_depth = GLOBAL_DEPTH;
     closure_depth = 0;
@@ -355,6 +358,7 @@ void SymbolLexicalPass::resolveReference(ParseNode pn) alloc_except {
             }
         }else{
             errors.push_back(Error(c, BAD_READ));
+            parse_tree.setOp(pn, OP_ERROR);
         }
     }else{
         resolveReference(pn, lookup->second);
@@ -381,6 +385,7 @@ void SymbolLexicalPass::resolveIdMult(ParseNode pn, Typeset::Marker left, Typese
         auto lookup = lexical_map.find(Typeset::Selection(left, m));
         if(lookup == lexical_map.end()){
             errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
+            parse_tree.setOp(pn, OP_ERROR);
             return;
         }
         implicit_mult_hits.push_back(lookup);
@@ -435,6 +440,7 @@ void SymbolLexicalPass::resolveScriptMult(ParseNode pn, Typeset::Marker left, Ty
     end.decrementGrapheme();
     if(left == end){
         errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
+        parse_tree.setOp(pn, OP_ERROR);
         return;
     }
 
@@ -444,6 +450,7 @@ void SymbolLexicalPass::resolveScriptMult(ParseNode pn, Typeset::Marker left, Ty
         auto lookup = lexical_map.find(Typeset::Selection(left, m));
         if(lookup == lexical_map.end()){
             errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
+            parse_tree.setOp(pn, OP_ERROR);
             return;
         }
         implicit_mult_hits.push_back(lookup);
@@ -1107,25 +1114,27 @@ void SymbolLexicalPass::decreaseClosureDepth(const Typeset::Marker& end) alloc_e
     ref_frames.pop_back();
     parse_tree.prepareNary();
     for(size_t i = cutoff; i < refs.size(); i++){
-        size_t sym_id = refs[i];
-        if(sym_id == NONE) continue; //Tombstone: this node was promoted and we'll see it later
-        Symbol& sym = symbols[sym_id];
+        SymbolIndex sym_index = refs[i];
+        if(sym_index == NONE) continue; //Tombstone: this node was promoted and we'll see it later
+        Symbol& sym = symbols[sym_index];
         Op op = sym.declaration_closure_depth <= closure_depth ? OP_READ_UPVALUE : OP_IDENTIFIER;
-        Typeset::Selection sel = symbol_table.getSel(sym_id);
+        Typeset::Selection sel = symbol_table.getSel(sym_index);
         assert(sel.left != sel.right);
         ParseNode n = parse_tree.addTerminal(op, sel);
         assert(parse_tree.getSelection(n) == sel);
-        parse_tree.setFlag(n, sym_id);
+        parse_tree.setFlag(n, sym_index);
         parse_tree.addNaryChild(n);
+        processed_refs.push_back(n);
 
         if(sym.declaration_closure_depth <= (closure_depth - sym.is_captured_by_value)){
-            refs[cutoff] = sym_id;
+            refs[cutoff] = sym_index;
             sym.type = cutoff++;
         }
     }
     Typeset::Selection sel = parse_tree.getSelection(fn);
     ParseNode list = parse_tree.finishNary(OP_LIST, sel);
     parse_tree.setRefList(fn, list);
+
     refs.resize(cutoff);
 }
 
