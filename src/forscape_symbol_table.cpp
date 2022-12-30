@@ -33,8 +33,8 @@ const Typeset::Selection& Symbol::sel(const ParseTree& parse_tree) const noexcep
 SymbolUsage::SymbolUsage() noexcept
     : prev_usage_index(NONE), var_id(NONE) {}
 
-SymbolUsage::SymbolUsage(SymbolUsageIndex prev_usage_index, size_t var_id, ParseNode pn) noexcept
-    : prev_usage_index(prev_usage_index), var_id(var_id), pn(pn) {}
+SymbolUsage::SymbolUsage(SymbolUsageIndex prev_usage_index, size_t var_id, ParseNode pn, const Typeset::Selection& sel) noexcept
+    : sel(sel), prev_usage_index(prev_usage_index), var_id(var_id), pn(pn) {}
 
 ScopeSegment::ScopeSegment(
         #ifdef FORSCAPE_USE_SCOPE_NAME
@@ -59,7 +59,7 @@ void SymbolTable::addSymbol(size_t pn, size_t lexical_depth, size_t closure_dept
     symbols.back().comment = comment;
     symbols.back().last_usage_index = symbol_usages.size();
 
-    symbol_usages.push_back(SymbolUsage(NONE, symbols.size()-1, pn));
+    symbol_usages.push_back(SymbolUsage(NONE, symbols.size()-1, pn, parse_tree.getSelection(pn)));
 }
 
 size_t SymbolTable::containingScope(const Typeset::Marker& m) const noexcept{
@@ -137,7 +137,7 @@ void SymbolTable::getSymbolOccurences(size_t sym_id, std::vector<Typeset::Select
         usage_index != NONE;
         usage_index = symbol_usages[usage_index].prev_usage_index){
         const SymbolUsage& usage = symbol_usages[usage_index];
-        found.push_back(parse_tree.getSelection(usage.pn));
+        found.push_back(usage.sel);
     }
 }
 
@@ -202,7 +202,7 @@ void SymbolTable::resolveReference(ParseNode pn, size_t sym_id, size_t closure_d
 
     sym.is_closure_nested |= sym.declaration_closure_depth && (closure_depth != sym.declaration_closure_depth);
 
-    symbol_usages.push_back(SymbolUsage(sym.last_usage_index, sym_id, pn));
+    symbol_usages.push_back(SymbolUsage(sym.last_usage_index, sym_id, pn, parse_tree.getSelection(pn)));
     sym.last_usage_index = symbol_usages.size()-1;
 }
 

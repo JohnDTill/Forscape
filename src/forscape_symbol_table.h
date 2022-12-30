@@ -82,12 +82,13 @@ struct ScopeSegment {
 };
 
 struct SymbolUsage {
+    const Typeset::Selection sel;
     SymbolUsageIndex prev_usage_index  DEBUG_INIT_UNITIALISED(SymbolUsageIndex);
     SymbolIndex var_id  DEBUG_INIT_UNITIALISED(SymbolIndex);
-    ParseNode pn  DEBUG_INIT_UNITIALISED(ParseNode);
+    ParseNode pn  DEBUG_INIT_UNITIALISED(ParseNode); //DO THIS: I think this is not needed?
 
     SymbolUsage() noexcept;
-    SymbolUsage(SymbolUsageIndex prev_usage_index, size_t var_id, ParseNode pn) noexcept;
+    SymbolUsage(SymbolUsageIndex prev_usage_index, size_t var_id, ParseNode pn, const Typeset::Selection& sel) noexcept;
     bool isDeclaration() const noexcept { return prev_usage_index == NONE; }
 };
 

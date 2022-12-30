@@ -850,7 +850,8 @@ void SymbolLexicalPass::resolveNamespace(ParseNode pn) alloc_except {
 
     if(!errors.empty()) return; //EVENTUALLY: more resiliency here
 
-    const auto lookup = lexical_map.find(parse_tree.getSelection(name));
+    const Typeset::Selection& sel = parse_tree.getSelection(name);
+    const auto lookup = lexical_map.find(sel);
     if(lookup != lexical_map.end()){
         const size_t sym_id = lookup->second;
         Symbol& candidate = symbols[sym_id];
@@ -858,7 +859,7 @@ void SymbolLexicalPass::resolveNamespace(ParseNode pn) alloc_except {
             //This namespace already exists - load the previous variables
             parse_tree.setSymId(name, sym_id);
             parse_tree.setFlag(pn, 1);
-            symbol_usages.push_back(SymbolUsage(candidate.last_usage_index, sym_id, name));
+            symbol_usages.push_back(SymbolUsage(candidate.last_usage_index, sym_id, name, sel));
             candidate.last_usage_index = symbol_usages.size()-1;
 
             loadScope(pn, sym_id);
@@ -975,7 +976,7 @@ void SymbolLexicalPass::resolveScopeAccess(ParseNode pn) noexcept {
     //DO THIS: could you add it from scratch later instead of patching?
     ParseNode rhs = parse_tree.arg<1>(pn);
     parse_tree.setFlag(rhs, symbol_usages.size());
-    symbol_usages.push_back(SymbolUsage(NONE, NONE, rhs));
+    symbol_usages.push_back(SymbolUsage(NONE, NONE, rhs, parse_tree.getSelection(rhs)));
 }
 
 bool SymbolLexicalPass::defineLocalScope(ParseNode pn, bool immutable, bool warn_on_shadow) alloc_except {

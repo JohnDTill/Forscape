@@ -39,16 +39,6 @@ void StaticPass::resolve(){
 
     //EVENTUALLY: replace this with something less janky
     parse_tree.patchClonedTypes();
-    for(const SymbolUsage& usage : symbol_table.symbol_usages){
-        if(usage.isDeclaration()){
-            Symbol& sym = symbol_table.symbols[usage.var_id];
-            if(sym.type == UNINITIALISED || sym.type == RECURSIVE_CYCLE){
-                sym.type = parse_tree.getType(usage.pn);
-                sym.rows = parse_tree.getRows(usage.pn);
-                sym.cols = parse_tree.getCols(usage.pn);
-            }
-        }
-    }
 
     for(size_t i = 0; i < symbol_table.symbols.size(); i++)
         if(!symbol_table.symbols[i].is_used)
@@ -57,8 +47,7 @@ void StaticPass::resolve(){
     for(const SymbolUsage& usage : symbol_table.symbol_usages){
         const Symbol& sym = symbol_table.symbols[usage.var_id];
 
-        assert(parse_tree.getOp(usage.pn) != OP_IDENTIFIER ||
-            symbol_table.getSel(parse_tree.getSymId(usage.pn)) == sym.sel(parse_tree));
+        assert(usage.sel == sym.sel(parse_tree));
 
         SemanticType fmt = SEM_ID;
         if(sym.is_ewise_index){
@@ -69,7 +58,7 @@ void StaticPass::resolve(){
             fmt = SEM_ID_FUN_IMPURE;
         }
 
-        parse_tree.getSelection(usage.pn).format(fmt);
+        usage.sel.format(fmt);
     }
 
     #ifndef NDEBUG
@@ -115,7 +104,7 @@ void StaticPass::resolve(){
         const Symbol& sym = symbol_table.symbols[usage.var_id];
 
         if(sym.type == StaticPass::NUMERIC && (sym.rows > 1 || sym.cols > 1)){
-            Typeset::Selection sel = parse_tree.getSelection(usage.pn);
+            const Typeset::Selection& sel = usage.sel;
             switch (sel.getFormat()) {
                 case SEM_ID: sel.format(SEM_ID_MAT); break;
                 case SEM_PREDEF: sel.format(SEM_PREDEFINEDMAT); break;
