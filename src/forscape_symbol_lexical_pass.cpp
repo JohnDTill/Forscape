@@ -53,7 +53,8 @@ SymbolLexicalPass::SymbolLexicalPass(ParseTree& parse_tree, Typeset::Model* mode
       parse_tree(parse_tree),
       model(model),
       symbol_table(parse_tree),
-      symbols(symbol_table.symbols) {}
+      symbols(symbol_table.symbols),
+      scope_segments(symbol_table.scope_segments) {}
 
 void SymbolLexicalPass::resolveSymbols() alloc_except {
     reset();
@@ -78,7 +79,7 @@ void SymbolLexicalPass::reset() noexcept {
 }
 
 ScopeSegment& SymbolLexicalPass::activeScope() noexcept{
-    return symbol_table.scope_segments[active_scope_id];
+    return scope_segments[active_scope_id];
 }
 
 void SymbolLexicalPass::addScope(
@@ -90,12 +91,12 @@ void SymbolLexicalPass::addScope(
 
     size_t sze = symbols.size();
     size_t n_usages = symbol_table.usages.size();
-    symbol_table.scope_segments[active_scope_id].exclusive_end_sym_index = sze;
-    symbol_table.scope_segments[active_scope_id].usage_end = n_usages;
+    scope_segments[active_scope_id].usage_end = n_usages;
     active_scope_id++;
-    symbol_table.scope_segments[active_scope_id].first_sym_index = sze;
-    symbol_table.scope_segments[active_scope_id].usage_begin = n_usages;
-    symbol_table.scope_segments[active_scope_id].fn = closure;
+    ScopeSegment& added_segment = scope_segments.back();
+    added_segment.first_sym_index = sze;
+    added_segment.usage_begin = n_usages;
+    added_segment.fn = closure;
 }
 
 void SymbolLexicalPass::closeScope(const Typeset::Marker& end) noexcept{
@@ -103,13 +104,12 @@ void SymbolLexicalPass::closeScope(const Typeset::Marker& end) noexcept{
 
     size_t sze = symbols.size();
     size_t n_usages = symbol_table.usages.size();
-    symbol_table.scope_segments[active_scope_id].exclusive_end_sym_index = sze;
-    symbol_table.scope_segments[active_scope_id].usage_end = n_usages;
+    scope_segments[active_scope_id].usage_end = n_usages;
     active_scope_id++;
-    if(active_scope_id < symbol_table.scope_segments.size()){
-        symbol_table.scope_segments[active_scope_id].first_sym_index = sze;
-        symbol_table.scope_segments[active_scope_id].usage_begin = n_usages;
-    }
+    assert(active_scope_id < scope_segments.size());
+    ScopeSegment& added_segment = scope_segments.back();
+    added_segment.first_sym_index = sze;
+    added_segment.usage_begin = n_usages;
 }
 
 Symbol& SymbolLexicalPass::lastDefinedSymbol() noexcept{
@@ -594,7 +594,7 @@ void SymbolLexicalPass::resolveAlgorithm(ParseNode pn) alloc_except {
 
     size_t val_cap_size = parse_tree.valListSize(val_cap);
     if(val_cap != NONE){
-        parse_tree.setFlag(val_cap, symbol_table.scope_segments.size());
+        parse_tree.setFlag(val_cap, scope_segments.size());
         for(size_t i = 0; i < val_cap_size; i++){
             ParseNode capture = parse_tree.arg(val_cap, i);
             resolveReference(capture);
@@ -885,10 +885,10 @@ void SymbolLexicalPass::loadScope(ParseNode pn, size_t sym_id) noexcept {
     //Load the variables from the previous uses of the scope
     ScopeSegmentIndex scope_index = scope.scope_tail;
     while(scope_index != NONE){
-        ScopeSegment& scope_segment = symbol_table.scope_segments[scope_index];
+        ScopeSegment& scope_segment = scope_segments[scope_index];
 
         //Put all the segment variables in the map
-        for(size_t sym_id = scope_segment.first_sym_index; sym_id < scope_segment.exclusive_end_sym_index; sym_id++){
+        for(size_t sym_id = scope_segment.first_sym_index; sym_id < scope_segments[scope_index+1].first_sym_index; sym_id++){
             Symbol& sym = symbols[sym_id];
             const Typeset::Selection& sel = sym.sel(parse_tree);
             auto result = lexical_map.insert({sel, sym_id});
@@ -913,11 +913,13 @@ void SymbolLexicalPass::unloadScope(ParseNode body, size_t scope_sym_id) noexcep
     Symbol& scope = symbols[scope_sym_id];
     ScopeSegmentIndex scope_index = scope.scope_tail;
     while(scope_index != NONE){
-        ScopeSegment& scope_segment = symbol_table.scope_segments[scope_index];
+        ScopeSegment& scope_segment = scope_segments[scope_index];
 
         //Remove all the previously defined scope variables from the lexical map
-        for(size_t sym_id = scope_segment.first_sym_index; sym_id < scope_segment.exclusive_end_sym_index; sym_id++){
-            Symbol& sym = symbols[sym_id];
+        const auto& begin = symbols.cbegin() + scope_segment.first_sym_index;
+        const auto& end = symbols.cbegin() + scope_segments[scope_index+1].first_sym_index;
+        for(auto it = begin; it < end; it++){
+            const Symbol& sym = *it;
             const Typeset::Selection& sel = sym.sel(parse_tree);
             assert(lexical_map.contains(sel));
             if(sym.index_of_shadowed_var == NONE) lexical_map.erase(sel);
@@ -927,14 +929,14 @@ void SymbolLexicalPass::unloadScope(ParseNode body, size_t scope_sym_id) noexcep
         scope_index = scope_segment.prev_namespace_segment;
     }
 
-    scope_index = symbol_table.scope_segments.size()-1;
+    scope_index = scope_segments.size()-1;
     decreaseLexicalDepth(parse_tree.getRight(body));
     while(scope_index != NONE){
-        ScopeSegment& scope_segment = symbol_table.scope_segments[scope_index];
+        ScopeSegment& scope_segment = scope_segments[scope_index];
 
         //Add all new scope variables to scope map
-        for(size_t sym_id = scope_segment.first_sym_index; sym_id < scope_segment.exclusive_end_sym_index; sym_id++){
-            Symbol& sym = symbols[sym_id];
+        for(size_t sym_id = scope_segment.first_sym_index; sym_id < scope_segments[scope_index+1].first_sym_index; sym_id++){
+            const Symbol& sym = symbols[sym_id];
             if(sym.declaration_lexical_depth != lexical_depth+1) continue;
             auto result = symbol_table.scoped_vars.insert({SymbolTable::ScopedVarKey(scope_sym_id, sym.sel(parse_tree)), sym_id});
             assert(result.second); //Failure to add the symbol is a bug
@@ -943,22 +945,19 @@ void SymbolLexicalPass::unloadScope(ParseNode body, size_t scope_sym_id) noexcep
         //Update the scope linked list
         ScopeSegmentIndex prev_namespace_segment = scope_segment.prev_lexical_segment_index;
         if(prev_namespace_segment == NONE){
-            symbol_table.scope_segments[scope_index].prev_namespace_segment = scope.scope_tail;
-            scope.scope_tail = symbol_table.scope_segments.size()-2;
+            scope_segments[scope_index].prev_namespace_segment = scope.scope_tail;
+            scope.scope_tail = scope_segments.size()-2;
             break;
         }else{
-            symbol_table.scope_segments[scope_index].prev_namespace_segment = prev_namespace_segment;
+            scope_segments[scope_index].prev_namespace_segment = prev_namespace_segment;
             scope_index = prev_namespace_segment;
         }
     }
 
     //The namespace scope runs together with the lexical scope for purposes of calculating the stack size
     //EVENTUALLY: it's a kludge that we accomodate later stack size calculations here
-    symbol_table.scope_segments[scope.scope_tail+1].prev_lexical_segment_index = scope.scope_tail;
-    symbol_table.scope_segments[scope.scope_tail].next_lexical_segment_index = scope.scope_tail+1;
-
-    symbol_table.scope_segments[scope_index].prev_lexical_segment_index = scope_index-1;
-    symbol_table.scope_segments[scope_index-1].next_lexical_segment_index = scope_index;
+    scope_segments[scope.scope_tail].is_end_of_scope = false;
+    scope_segments[scope_index-1].is_end_of_scope = false;
 }
 
 void SymbolLexicalPass::resolveScopeAccess(ParseNode pn) noexcept {
@@ -1046,11 +1045,11 @@ void SymbolLexicalPass::increaseLexicalDepth(
 void SymbolLexicalPass::decreaseLexicalDepth(const Typeset::Marker& end) alloc_except {
     closeScope(end);
 
-    for(size_t curr = active_scope_id-1; curr != NONE; curr = symbol_table.scope_segments[curr].prev_lexical_segment_index){
-        ScopeSegment& scope = symbol_table.scope_segments[curr];
-        for(size_t sym_id = scope.first_sym_index; sym_id < scope.exclusive_end_sym_index; sym_id++){
-            Symbol& sym = symbols[sym_id];
-            if(sym.declaration_lexical_depth > lexical_depth) continue;
+    for(size_t curr = active_scope_id-1; curr != NONE; curr = scope_segments[curr].prev_lexical_segment_index){
+        const auto& begin = symbols.cbegin() + scope_segments[curr].first_sym_index;
+        const auto& end = symbols.cbegin() + scope_segments[curr+1].first_sym_index;
+        for(auto it = begin; it < end; it++){
+            const Symbol& sym = *it;
             assert(sym.declaration_lexical_depth == lexical_depth);
 
             if(sym.index_of_shadowed_var == NONE)
@@ -1076,14 +1075,14 @@ void SymbolLexicalPass::increaseClosureDepth(
 }
 
 void SymbolLexicalPass::decreaseClosureDepth(const Typeset::Marker& end) alloc_except {
-    ParseNode fn = symbol_table.scope_segments.back().fn;
+    ParseNode fn = scope_segments.back().fn;
 
     decreaseLexicalDepth(end);
     closure_depth--;
 
     //Find variables which are captured by reference in this closure, also modified by inner closures
-    for(size_t seg_index = symbol_table.scope_segments.size()-2; seg_index != NONE; seg_index = symbol_table.scope_segments[seg_index].prev_lexical_segment_index){
-        ScopeSegment& closed_seg = symbol_table.scope_segments[seg_index];
+    for(size_t seg_index = scope_segments.size()-2; seg_index != NONE; seg_index = scope_segments[seg_index].prev_lexical_segment_index){
+        ScopeSegment& closed_seg = scope_segments[seg_index];
         for(size_t i = closed_seg.usage_begin; i < closed_seg.usage_end; i++){
             const Usage& usage = symbol_table.usages[i];
             Symbol& sym = symbols[usage.var_id];

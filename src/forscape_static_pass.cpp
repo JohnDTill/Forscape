@@ -1916,9 +1916,9 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
     size_t type_index = 0;
     if(val_list != NONE){
         size_t scope_index = parse_tree.getFlag(val_list);
-        const ScopeSegment& scope = symbol_table.scope_segments[scope_index];
+        const ScopeSegment& scope_segment = symbol_table.scope_segments[scope_index];
         for(size_t i = 0; i < N_vals; i++){
-            size_t sym_id = scope.first_sym_index + i;
+            size_t sym_id = scope_segment.first_sym_index + i;
             Symbol& sym = symbol_table.symbols[sym_id];
             old_val_cap.push_back(sym);
             sym.type = dec[1+type_index++];

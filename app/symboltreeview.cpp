@@ -15,17 +15,22 @@ SymbolTreeView::SymbolTreeView(const Forscape::Code::SymbolTable& symbol_table, 
     QTreeWidgetItem* last_added_item = nullptr;
 
     std::stack<QTreeWidgetItem*> items;
-    for(const Forscape::Code::ScopeSegment& scope : symbol_table.scope_segments){
-        if(scope.isStartOfScope()){
-            if(scope.parent_lexical_segment_index == NONE){
+    for(size_t scope_segment_index = 0; scope_segment_index < symbol_table.scope_segments.size(); scope_segment_index++){
+        const Forscape::Code::ScopeSegment& scope_segment = symbol_table.scope_segments[scope_segment_index];
+        const size_t sym_end = (&scope_segment == &symbol_table.scope_segments.back()) ?
+                               symbol_table.symbols.size() :
+                               symbol_table.scope_segments[scope_segment_index+1].first_sym_index;
+
+        if(scope_segment.isStartOfScope()){
+            if(scope_segment.parent_lexical_segment_index == NONE){
                 items.push(nullptr);
             }else{
-                Forscape::Code::ScopeSegmentIndex grandparent = symbol_table.scope_segments[scope.parent_lexical_segment_index].parent_lexical_segment_index;
+                Forscape::Code::ScopeSegmentIndex grandparent = symbol_table.scope_segments[scope_segment.parent_lexical_segment_index].parent_lexical_segment_index;
                 QTreeWidgetItem* scope_item = (grandparent == NONE) ?
                             new QTreeWidgetItem(this) :
                             new QTreeWidgetItem(items.top());
                 items.push(scope_item);
-                std::string_view name = symbol_table.getName(scope);
+                std::string_view name = symbol_table.getName(scope_segment);
                 scope_item->setText(NAME_COLUMN, QString::fromStdString(std::string(name)));
                 for(int i = 0; i < N_FIELDS; i++) scope_item->setBackground(i, QColor::fromRgb(200, 200, 255));
 
@@ -39,8 +44,8 @@ SymbolTreeView::SymbolTreeView(const Forscape::Code::SymbolTable& symbol_table, 
             }
         }
 
-        for(size_t i = scope.first_sym_index; i < scope.exclusive_end_sym_index; i++){
-            QTreeWidgetItem* item = (scope.parent_lexical_segment_index == NONE) ?
+        for(size_t i = scope_segment.first_sym_index; i < sym_end; i++){
+            QTreeWidgetItem* item = (scope_segment.parent_lexical_segment_index == NONE) ?
                         new QTreeWidgetItem(this) :
                         new QTreeWidgetItem(items.top());
             const auto& symbol = symbol_table.symbols[i];
@@ -54,7 +59,7 @@ SymbolTreeView::SymbolTreeView(const Forscape::Code::SymbolTable& symbol_table, 
             last_added_item = item;
         }
 
-        if(scope.isEndOfScope()) items.pop();
+        if(scope_segment.is_end_of_scope) items.pop();
     }
 }
 

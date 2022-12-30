@@ -14,15 +14,15 @@ Forscape::Code::SymbolTableLinker::SymbolTableLinker(SymbolTable& symbol_table, 
     : symbol_table(symbol_table), parse_tree(parse_tree) {}
 
 void SymbolTableLinker::link() noexcept{
-    for(ScopeSegment& scope : symbol_table.scope_segments){
-        if(scope.isStartOfScope()){
-            if(scope.fn != NONE){
-                ParseNode val_list = parse_tree.valCapList(scope.fn);
-                ParseNode ref_list = parse_tree.refCapList(scope.fn);
+    for(ScopeSegment& scope_segment : symbol_table.scope_segments){
+        if(scope_segment.isStartOfScope()){
+            if(scope_segment.fn != NONE){
+                ParseNode val_list = parse_tree.valCapList(scope_segment.fn);
+                ParseNode ref_list = parse_tree.refCapList(scope_segment.fn);
                 size_t N_cap = parse_tree.valListSize(val_list);
 
                 for(size_t i = 0; i < N_cap; i++){
-                    size_t var_id = scope.first_sym_index+i;
+                    size_t var_id = scope_segment.first_sym_index+i;
                     Symbol& sym = symbol_table.symbols[var_id];
                     old_flags.push_back(sym.flag);
                     sym.flag = i;
@@ -42,7 +42,7 @@ void SymbolTableLinker::link() noexcept{
             stack_frame.push_back(stack_size);
         }
 
-        for(size_t i = scope.usage_begin; i < scope.usage_end; i++){
+        for(size_t i = scope_segment.usage_begin; i < scope_segment.usage_end; i++){
             const Usage& usage = symbol_table.usages[i];
 
             Symbol& sym = symbol_table.symbols[usage.var_id];
@@ -68,9 +68,9 @@ void SymbolTableLinker::link() noexcept{
             }
         }
 
-        if(scope.isEndOfScope()){
-            if(scope.fn != NONE){
-                ParseNode fn = scope.fn;
+        if(scope_segment.is_end_of_scope){
+            if(scope_segment.fn != NONE){
+                ParseNode fn = scope_segment.fn;
                 ParseNode val_list = parse_tree.valCapList(fn);
                 ParseNode ref_list = parse_tree.refCapList(fn);
                 size_t N_val = parse_tree.valListSize(val_list);

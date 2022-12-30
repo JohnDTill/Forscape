@@ -63,10 +63,9 @@ struct Usage{
 
 struct ScopeSegment {
     SymbolIndex first_sym_index  DEBUG_INIT_UNITIALISED(SymbolIndex);
-    SymbolIndex exclusive_end_sym_index = NONE; //First symbol NOT included in the scope segment
     ScopeSegmentIndex parent_lexical_segment_index  DEBUG_INIT_UNITIALISED(ScopeSegmentIndex);
     ScopeSegmentIndex prev_lexical_segment_index  DEBUG_INIT_UNITIALISED(ScopeSegmentIndex);
-    ScopeSegmentIndex next_lexical_segment_index = NONE;
+    bool is_end_of_scope = false;
     Typeset::Marker start;
     ParseNode fn  DEBUG_INIT_UNITIALISED(ParseNode);
     size_t usage_begin  DEBUG_INIT_UNITIALISED(size_t);
@@ -92,7 +91,6 @@ struct ScopeSegment {
         ) noexcept;
 
     bool isStartOfScope() const noexcept;
-    bool isEndOfScope() const noexcept;
 };
 
 class SymbolTable{
