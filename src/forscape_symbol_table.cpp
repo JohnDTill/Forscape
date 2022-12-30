@@ -182,6 +182,7 @@ void SymbolTable::finalize() noexcept {
     const SymbolUsage* const usage_offset = symbol_usages.data();
     for(Symbol& sym : symbols){
         sym.last_usage_index = reinterpret_cast<SymbolUsageIndex>(usage_offset + sym.last_usage_index);
+        sym.index_of_shadowed_var = reinterpret_cast<SymbolIndex>(symbol_offset + sym.index_of_shadowed_var);
     }
     for(SymbolUsage& usage : symbol_usages){
         if(usage.prev_usage_index == NONE) usage.prev_usage_index = reinterpret_cast<SymbolUsageIndex>(nullptr);

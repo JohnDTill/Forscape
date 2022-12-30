@@ -23,19 +23,24 @@ class ParseTree;
 typedef size_t ScopeSegmentIndex;
 typedef size_t SymbolIndex;
 typedef size_t SymbolUsageIndex;
+class SymbolLexicalPass;
+class SymbolTable;
 struct SymbolUsage;
 
 struct Symbol {
-    uint16_t declaration_lexical_depth  DEBUG_INIT_UNITIALISED(uint16_t);
-    uint8_t declaration_closure_depth  DEBUG_INIT_UNITIALISED(uint8_t);
+private: friend SymbolLexicalPass; friend SymbolTable; //Fields for the lexical pass
     SymbolIndex index_of_shadowed_var  DEBUG_INIT_UNITIALISED(SymbolIndex);
     SymbolUsageIndex last_usage_index  DEBUG_INIT_UNITIALISED(SymbolUsageIndex);
+    uint16_t declaration_lexical_depth  DEBUG_INIT_UNITIALISED(uint16_t);
+    size_t previous_namespace_index = NONE;
+
+public:
+    uint8_t declaration_closure_depth  DEBUG_INIT_UNITIALISED(uint8_t);
     size_t flag  DEBUG_INIT_UNITIALISED(size_t);
     size_t type = NONE;
     size_t rows = UNKNOWN_SIZE;
     size_t cols = UNKNOWN_SIZE;
     ParseNode comment  DEBUG_INIT_UNITIALISED(ParseNode);
-    size_t previous_namespace_index = NONE;
     bool is_const;
     bool is_used = false;
     bool is_reassigned = false; //Used to determine if parameters are constant
@@ -49,6 +54,7 @@ struct Symbol {
     size_t closureIndex() const noexcept;
     const Typeset::Selection& sel(const ParseTree& parse_tree) const noexcept;
     SymbolUsage* lastUsage() const noexcept { return reinterpret_cast<SymbolUsage*>(last_usage_index); }
+    Symbol* shadowedVar() const noexcept { return reinterpret_cast<Symbol*>(index_of_shadowed_var); }
     void getOccurences(std::vector<Typeset::Selection>& found) const;
 };
 
