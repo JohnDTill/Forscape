@@ -49,7 +49,7 @@ SymbolTreeView::SymbolTreeView(const Forscape::Code::SymbolTable& symbol_table, 
                         new QTreeWidgetItem(this) :
                         new QTreeWidgetItem(items.top());
             const auto& symbol = symbol_table.symbols[i];
-            item->setText(NAME_COLUMN, QString::fromStdString(symbol_table.getSel(i).str()));
+            item->setText(NAME_COLUMN, QString::fromStdString(symbol.str()));
             item->setText(1, QString::fromStdString(ts.typeString(symbol)));
             item->setText(2, QChar('0' + symbol.is_const));
             if(symbol.comment != NONE){

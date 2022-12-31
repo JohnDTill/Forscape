@@ -665,10 +665,10 @@ void MainWindow::openProject(QString path){
         }
         files.sort();
 
-        static constexpr qsizetype NUM_PRINT = 7;
+        static constexpr int NUM_PRINT = 7;
 
         QString msg = files.front();
-        for(int i = 1; i < std::min(files.size(), NUM_PRINT); i++){
+        for(int i = 1; i < std::min<int>(files.size(), NUM_PRINT); i++){
             msg += '\n';
             msg += files[i];
         }
@@ -1046,10 +1046,10 @@ void MainWindow::closeEvent(QCloseEvent* event){
         }
         files.sort();
 
-        static constexpr qsizetype NUM_PRINT = 7;
+        static constexpr int NUM_PRINT = 7;
 
         QString msg = files.front();
-        for(int i = 1; i < std::min(files.size(), NUM_PRINT); i++){
+        for(int i = 1; i < std::min<int>(files.size(), NUM_PRINT); i++){
             msg += '\n';
             msg += files[i];
         }

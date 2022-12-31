@@ -88,8 +88,9 @@ void Program::clearPendingProjectBrowserUpdates() noexcept {
 }
 
 Program::ptr_or_code Program::openFromRelativePathSpecifiedExtension(std::filesystem::path rel_path){
-    for(const std::filesystem::path& path_entry : project_path){
-        std::filesystem::path abs_path = std::filesystem::weakly_canonical(path_entry / rel_path);
+    for( std::filesystem::path path_entry : project_path){
+        path_entry /= rel_path;
+        std::filesystem::path abs_path = std::filesystem::weakly_canonical(path_entry);
         if(Program::ptr_or_code model = openFromAbsolutePath(path_entry)) return model;
     }
 
