@@ -109,6 +109,9 @@ public:
     void patchClones() noexcept;
     void patchClonedTypes() noexcept;
 
+    size_t append(const ParseTree& other);
+    void shift(ParseNode pn, size_t offset);
+
 private:
     std::vector<size_t> data;
     std::vector<ParseNode> nary_construction_stack;

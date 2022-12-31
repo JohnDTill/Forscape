@@ -409,6 +409,28 @@ void ParseTree::patchClonedTypes() noexcept {
     }
 }
 
+size_t ParseTree::append(const ParseTree& other) {
+    const size_t offset = data.size();
+    data.insert(data.end(), other.data.cbegin(), other.data.cend());
+    const size_t copied_root = other.root + offset;
+    shift(copied_root, offset);
+
+    return copied_root;
+}
+
+void ParseTree::shift(ParseNode pn, size_t offset) {
+    #ifndef NDEBUG
+    created.insert(pn);
+    #endif
+    for(size_t i = getNumArgs(pn); i-->0;){
+        ParseNode old_arg = arg(pn, i);
+        if(old_arg == NONE) continue;
+        ParseNode new_arg = old_arg + offset;
+        setArg(pn, i, new_arg);
+        shift(new_arg, offset);
+    }
+}
+
 #ifndef NDEBUG
 bool ParseTree::isNode(ParseNode pn) const noexcept {
     return created.find(pn) != created.end();

@@ -2,7 +2,9 @@
 
 #include "forscape_error.h"
 #include "forscape_parse_tree.h"
+#include "forscape_program.h"
 #include "forscape_symbol_table.h"
+#include "typeset_model.h"
 
 namespace Forscape {
 
@@ -40,9 +42,9 @@ void StaticPass::resolve(){
     //EVENTUALLY: replace this with something less janky
     parse_tree.patchClonedTypes();
 
-    for(size_t i = 0; i < symbol_table.symbols.size(); i++)
-        if(!symbol_table.symbols[i].is_used)
-            warnings.push_back(Error(symbol_table.getSel(i), UNUSED_VAR));
+    for(Symbol& sym : symbol_table.symbols)
+        if(!sym.is_used)
+            warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
 
     for(const SymbolUsage& usage : symbol_table.symbol_usages){
         const Symbol& sym = *usage.symbol();
@@ -128,6 +130,10 @@ void StaticPass::reset() noexcept{
 
     for(Symbol& sym : symbol_table.symbols)
         sym.type = UNINITIALISED;
+
+    for(const auto& entry : Program::instance()->source_files)
+        if(entry.second)
+            entry.second->is_imported = false;
 }
 
 ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
@@ -364,8 +370,29 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
         }
 
         case OP_FROM_IMPORT:
-        case OP_IMPORT:
             return error(pn, pn, NOT_IMPLEMENTED); //EVENTUALLY: support imports
+
+        case OP_IMPORT:{
+            ParseNode var = parse_tree.getFlag(pn);
+            Symbol& sym = *parse_tree.getSymbol(var);
+            ParseNode file = parse_tree.child(pn);
+            Typeset::Model* model = parse_tree.getModel(file);
+            if(!model->is_imported){
+                model->is_imported = true;
+                model->postmutate();
+                const ParseTree& imported = model->parser.parse_tree;
+                const ParseNode root = parse_tree.append(imported);
+                resolveStmt(root);
+                parse_tree.setFlag(pn, root);
+            }else{
+                parse_tree.setFlag(pn, NONE);
+            }
+
+            sym.type = MODULE;
+            sym.flag = reinterpret_cast<size_t>(model);
+
+            return pn;
+        }
 
         case OP_NAMESPACE:
             //return resolveStmt(parse_tree.arg<1>(pn)); //TODO: this should be resolveBlock
@@ -1719,12 +1746,22 @@ ParseNode StaticPass::resolveDefiniteIntegral(ParseNode pn) {
 ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
     ParseNode lhs_lvalue = resolveLValue(parse_tree.lhs(pn));
     size_t sym_id = parse_tree.getSymId(lhs_lvalue);
+    Symbol& sym = *parse_tree.getSymbol(lhs_lvalue);
+
+
     ParseNode field = parse_tree.arg<1>(pn);
     assert(parse_tree.getOp(field) == OP_IDENTIFIER);
-    auto lookup = symbol_table.scoped_vars.find(SymbolTable::ScopedVarKey(sym_id, parse_tree.getSelection(field)));
-    if(lookup != symbol_table.scoped_vars.end()){
+
+    if(sym.type == MODULE){
+        Typeset::Model* model = reinterpret_cast<Typeset::Model*>(sym.flag);
+        const auto& lexical_map = model->symbol_builder.symbol_table.lexical_map;
+        auto lookup = lexical_map.find(parse_tree.getSelection(field));
+        if(lookup == lexical_map.end()) return error(pn, pn, BAD_READ);
+
         Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
         SymbolUsageIndex usage_index = parse_tree.getFlag(field);
+
+        //DO THIS: I think usage_index needs to be a pointer
         symbol_table.resolveScopeReference(usage_index, sym);
 
         if(write){
@@ -1742,7 +1779,32 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
         parse_tree.setCols(field, sym.cols);
         return field;
     }else{
-        return error(pn, pn, BAD_READ);
+        assert(sym.type == NAMESPACE);
+
+        auto lookup = symbol_table.scoped_vars.find(SymbolTable::ScopedVarKey(sym_id, parse_tree.getSelection(field)));
+        if(lookup != symbol_table.scoped_vars.end()){
+            Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
+            SymbolUsageIndex usage_index = parse_tree.getFlag(field);
+
+            symbol_table.resolveScopeReference(usage_index, sym);
+
+            if(write){
+                if(sym.is_const){
+                    return error(pn, field, REASSIGN_CONSTANT);
+                }else{
+                    sym.is_reassigned = true;
+                }
+            }else{
+                sym.is_used = true;
+            }
+
+            parse_tree.setType(field, sym.type);
+            parse_tree.setRows(field, sym.rows);
+            parse_tree.setCols(field, sym.cols);
+            return field;
+        }else{
+            return error(pn, pn, BAD_READ);
+        }
     }
 }
 
@@ -1832,7 +1894,7 @@ bool StaticPass::dimsDisagree(size_t a, size_t b) noexcept{
 }
 
 constexpr bool StaticPass::isAbstractFunctionGroup(size_t type) noexcept {
-    return type < NAMESPACE;
+    return type < ALIAS;
 }
 
 Type StaticPass::declare(const DeclareSignature& fn){
@@ -2026,6 +2088,8 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
 }
 
 static constexpr std::string_view type_strs[] = {
+    "Alias",
+    "Module",
     "Namespace",
     "Failure",
     "Recursive-Cycle",
@@ -2040,7 +2104,7 @@ std::string StaticPass::typeString(Type t) const{
     if(isAbstractFunctionGroup(t)){
         return abstractFunctionSetString(t);
     }else{
-        return std::string(type_strs[t - NAMESPACE]);
+        return std::string(type_strs[t - ALIAS]);
     }
 }
 

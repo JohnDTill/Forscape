@@ -94,7 +94,7 @@ struct ScopeSegment {
 };
 
 struct SymbolUsage {
-    const Typeset::Selection sel;
+    Typeset::Selection sel;
     SymbolUsageIndex prev_usage_index  DEBUG_INIT_UNITIALISED(SymbolUsageIndex);
     SymbolIndex symbol_index  DEBUG_INIT_UNITIALISED(SymbolIndex);
     ParseNode pn  DEBUG_INIT_UNITIALISED(ParseNode); //DO THIS: I think this is not needed?

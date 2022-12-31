@@ -87,9 +87,10 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_IF_ELSE: ifElseStmt(pn); break;
         case OP_FILE_REF: break; //EVENTUALLY: This shouldn't be in the interpreter stage
         case OP_IMPORT:{
-            if(parse_tree.getFlag(pn) != 1)
-            stack.push(static_cast<void*>(nullptr)
-                DEBUG_STACK_ARG("import-" + parse_tree.str(parse_tree.child(pn))));
+            //stack.push(static_cast<void*>(nullptr)
+            //    DEBUG_STACK_ARG("import-" + parse_tree.str(parse_tree.child(pn))));
+            ParseNode root = parse_tree.getFlag(pn);
+            if(root != NONE) interpretStmt(root); //DO THIS: linking doesn't work for imported files
             break; //EVENTUALLY: this shouldn't be in the interpreter
             // It's assumed every symbol has a role in the runtime, and that's a bad assumption for multiple reasons.
         }

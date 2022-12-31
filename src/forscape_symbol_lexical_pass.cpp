@@ -833,6 +833,8 @@ void SymbolLexicalPass::resolveImport(ParseNode pn) alloc_except {
 
         ParseNode id = parse_tree.addTerminal(OP_IDENTIFIER, id_sel);
         defineLocalScope(id);
+
+        parse_tree.setFlag(pn, id);
     }else{
         defineLocalScope(alias);
     }
