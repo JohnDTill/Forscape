@@ -344,30 +344,6 @@ void MainWindow::resizeHackToFixScrollbars(){
     setVSplitterDefaultHeight();
 }
 
-bool MainWindow::isSavedDeepComparison() const {
-    if(active_file_path.isEmpty()) return editor->getModel()->empty();
-
-    //Avoid a deep comparison if size from file meta data doesn't match
-    auto filename = active_file_path.toStdString();
-    auto path = std::filesystem::u8path(filename);
-    if(std::filesystem::file_size(path) != editor->getModel()->serialChars()) return false;
-
-    std::ifstream in(path);
-    if(!in.is_open()) std::cout << "Failed to open " << filename << std::endl;
-    assert(in.is_open());
-
-    std::stringstream buffer;
-    buffer << in.rdbuf();
-
-    std::string saved_src = buffer.str();
-    saved_src.erase( std::remove(saved_src.begin(), saved_src.end(), '\r'), saved_src.end() );
-
-    //MAYDO: no need to convert model to serial, but cost is probably negligible compared to I/O
-    std::string curr_src = editor->getModel()->toSerial();
-
-    return saved_src == curr_src;
-}
-
 void MainWindow::updateViewJumpPointElements() {
     assert(!viewing_chain.empty());
     bool can_go_forward = viewing_index < viewing_chain.size()-1;

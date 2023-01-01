@@ -364,7 +364,7 @@ bool Model::isSavedDeepComparison() const {
     if(path.empty()) return empty();
 
     //Avoid a deep comparison if size from file meta data doesn't match
-    if(std::filesystem::file_size(path) != serialChars()) return false;
+    //if(std::filesystem::file_size(path) != serialChars()) return false; //Disabled for line endings
 
     std::ifstream in(path);
     assert(in.is_open());

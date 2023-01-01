@@ -63,7 +63,6 @@ private:
     QAction* file_next;
     void loadGeometry();
     void resizeHackToFixScrollbars();
-    bool isSavedDeepComparison() const;
     void updateViewJumpPointElements();
     void resetViewJumpPointElements();
 
