@@ -620,7 +620,7 @@ bool MainWindow::saveAs(QString path, Forscape::Typeset::Model* saved_model) {
     }
     project_browser->sortItems(0, Qt::SortOrder::AscendingOrder);
 
-    saved_model->write_time = std::filesystem::last_write_time(saved_model->path);
+    saved_model->write_time = std::filesystem::file_time_type::clock::now();
 
     updateRecentProjectsFromCurrent();
 
@@ -741,7 +741,7 @@ void MainWindow::openProject(QString path){
     settings.setValue(PROJECT_ROOT_FILE, path);
     project_path = path;
     active_file_path = path;
-    model->write_time = std::filesystem::last_write_time(model->path);
+    model->write_time = std::filesystem::file_time_type::clock::now();
 
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
 
@@ -812,7 +812,7 @@ void MainWindow::addProjectEntry(Forscape::Typeset::Model* model) {
     tree_item->setIcon(0, file_icon);
     project_browser_entries[path] = tree_item;
 
-    model->write_time = std::filesystem::last_write_time(model->path);
+    model->write_time = std::filesystem::file_time_type::clock::now();
 
     linkFileToAncestor(tree_item, path);
 }
@@ -1086,7 +1086,7 @@ void MainWindow::checkForChanges(){
     if(active_file_path.isEmpty()) return;
 
     Forscape::Typeset::Model* model = editor->getModel();
-    //DO THIS: probably call last_write_time in a separate thread to avoid delay in GUI loop reading from disk
+    //last_write_time takes on the order of ~10us, so probably okay to run in main GUI thread every ~0.5s
     const std::filesystem::file_time_type modified_time = std::filesystem::last_write_time(model->path);
     if(modified_time <= model->write_time) return;
     model->write_time = modified_time;
