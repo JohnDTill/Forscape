@@ -843,14 +843,15 @@ void SymbolLexicalPass::resolveImport(ParseNode pn) alloc_except {
 }
 
 void SymbolLexicalPass::resolveFromImport(ParseNode pn) alloc_except {
-    for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++){
+    for(size_t i = 1; i < parse_tree.getNumArgs(pn); i+=2){
         ParseNode child = parse_tree.arg(pn, i);
-        ParseNode alias = parse_tree.getFlag(child);
+        ParseNode alias = parse_tree.arg(pn, i+1);
         if(alias == NONE){
             defineLocalScope(child);
         }else{
-            parse_tree.setOp(child, OP_UNDEFINED);
             defineLocalScope(alias);
+            parse_tree.setFlag(child, symbol_usages.size());
+            symbol_usages.push_back(SymbolUsage(NONE, NONE, child, parse_tree.getSelection(child)));
         }
     }
 }

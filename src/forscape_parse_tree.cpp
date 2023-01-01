@@ -351,7 +351,7 @@ void ParseTree::prepareNary() alloc_except {
 }
 
 void ParseTree::addNaryChild(ParseNode pn) alloc_except {
-    assert(isNode(pn));
+    assert(isNode(pn) || pn == NONE);
     nary_construction_stack.push_back(pn);
 }
 

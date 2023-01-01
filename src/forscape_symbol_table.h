@@ -60,6 +60,7 @@ public:
     SymbolUsage* lastUsage() const noexcept { return reinterpret_cast<SymbolUsage*>(last_usage_index); }
     SymbolUsage* last_external_usage;
     Symbol* shadowedVar() const noexcept { return reinterpret_cast<Symbol*>(index_of_shadowed_var); }
+    void setShadowedVar(Symbol* sym) noexcept { index_of_shadowed_var = reinterpret_cast<size_t>(sym); }
     void getLocalOccurences(std::vector<Typeset::Selection>& found) const;
     void getAllOccurences(std::vector<Typeset::Selection>& found) const;
 };

@@ -132,6 +132,10 @@ void StaticPass::reset() noexcept{
         sym.type = UNINITIALISED;
 
     Program::instance()->reset();
+
+    #ifndef NDEBUG
+    parse_tree.aliases.clear();
+    #endif
 }
 
 ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
@@ -362,9 +366,6 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             return pn;
         }
 
-        case OP_FROM_IMPORT:
-            return error(pn, pn, NOT_IMPLEMENTED); //EVENTUALLY: support imports
-
         case OP_IMPORT:{
             ParseNode var = parse_tree.getFlag(pn);
             Symbol& sym = *parse_tree.getSymbol(var);
@@ -384,6 +385,69 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
 
             sym.type = MODULE;
             sym.flag = reinterpret_cast<size_t>(model);
+
+            return pn;
+        }
+
+        case OP_FROM_IMPORT:{
+            ParseNode file = parse_tree.arg<0>(pn);
+            Typeset::Model* model = parse_tree.getModel(file);
+
+            if(!model->is_imported){
+                model->is_imported = true;
+                model->parse_node_offset = parse_tree.offset();
+                model->postmutate();
+                const ParseTree& imported = model->parser.parse_tree;
+                const ParseNode root = parse_tree.append(imported);
+                resolveStmt(root);
+                parse_tree.setFlag(pn, root);
+            }else{
+                parse_tree.setFlag(pn, NONE);
+            }
+
+            const auto& lexical_map = model->symbol_builder.symbol_table.lexical_map;
+
+            for(size_t i = 1; i < parse_tree.getNumArgs(pn); i+=2){
+                ParseNode imported_var = parse_tree.arg(pn, i);
+                ParseNode local_var = parse_tree.arg(pn, i+1);
+
+                auto lookup = lexical_map.find(parse_tree.getSelection(imported_var));
+                if(lookup == lexical_map.end()){
+                    parse_tree.setOp(imported_var, OP_ERROR);
+                    return error(pn, pn, BAD_READ);
+                }
+
+                Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
+
+                if(local_var == NONE){
+                    Symbol& carry_over = *parse_tree.getSymbol(imported_var);
+                    for(SymbolUsage* usage = carry_over.last_external_usage; usage != nullptr; usage = usage->prevUsage()){
+                        usage->symbol_index = reinterpret_cast<size_t>(&sym);
+                        parse_tree.setSymbol(usage->pn, &sym);
+
+                        if(usage->prevUsage() == nullptr){
+                            usage->prev_usage_index = reinterpret_cast<size_t>(sym.last_external_usage);
+                            break;
+                        }
+                    }
+                    sym.last_external_usage = carry_over.last_external_usage;
+                }else{
+                    SymbolUsage* carry_over_usage = reinterpret_cast<SymbolUsage*>(parse_tree.getFlag(imported_var));
+                    carry_over_usage->symbol_index = reinterpret_cast<size_t>(&sym);
+                    parse_tree.setSymbol(carry_over_usage->pn, &sym);
+                    carry_over_usage->prev_usage_index = reinterpret_cast<size_t>(sym.last_external_usage);
+                    sym.last_external_usage = carry_over_usage;
+
+                    Symbol& alias = *parse_tree.getSymbol(local_var);
+                    alias.type = ALIAS;
+                    alias.setShadowedVar(&sym);
+
+                    #ifndef NDEBUG
+                    auto result = parse_tree.aliases.insert({sym.str(), {alias.str()}});
+                    if(!result.second) result.first->second.insert(alias.str());
+                    #endif
+                }
+            }
 
             return pn;
         }
@@ -559,10 +623,11 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
         case OP_IDENTIFIER:
         case OP_READ_GLOBAL:
         case OP_READ_UPVALUE:{
-            Symbol& sym = *parse_tree.getSymbol(pn);
-            parse_tree.setRows(pn, sym.rows);
-            parse_tree.setCols(pn, sym.cols);
-            parse_tree.setType(pn, sym.type);
+            Symbol* sym = parse_tree.getSymbol(pn);
+            while(sym->type == ALIAS) sym = sym->shadowedVar();
+            parse_tree.setRows(pn, sym->rows);
+            parse_tree.setCols(pn, sym->cols);
+            parse_tree.setType(pn, sym->type);
 
             return pn;
         }

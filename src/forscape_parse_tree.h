@@ -30,6 +30,10 @@ class ParseTree {
 public:
     FORSCAPE_AST_FIELD_CODEGEN_DECLARATIONS
 
+    #ifndef NDEBUG
+    FORSCAPE_UNORDERED_MAP<std::string, std::unordered_set<std::string>> aliases;
+    #endif
+
     void clear() noexcept;
     bool empty() const noexcept;
     const Typeset::Marker& getLeft(ParseNode pn) const noexcept;

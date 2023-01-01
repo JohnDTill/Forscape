@@ -1,6 +1,7 @@
 #include "forscape_symbol_link_pass.h"
 
 #include "forscape_parse_tree.h"
+#include "forscape_static_pass.h"
 
 #ifndef NDEBUG
 #include <iostream>
@@ -28,6 +29,7 @@ void SymbolTableLinker::resolveStmt(ParseNode pn) noexcept {
         case OP_EQUAL: resolveAssignment(pn); break;
         case OP_EXPR_STMT: resolveExpr(pn); break;
         case OP_FOR: resolveFor(pn); break;
+        case OP_FROM_IMPORT: resolveImport(pn); break;
         case OP_IF: resolveIf(pn); break;
         case OP_IF_ELSE: resolveIfElse(pn); break;
         case OP_IMPORT: resolveImport(pn); break;
@@ -227,16 +229,17 @@ void SymbolTableLinker::resolveDeclaration(ParseNode pn) noexcept {
 void SymbolTableLinker::resolveReference(ParseNode pn) noexcept {
     assert(parse_tree.getOp(pn) == OP_IDENTIFIER);
 
-    Symbol& sym = *parse_tree.getSymbol(pn);
+    Symbol* sym = parse_tree.getSymbol(pn);
+    while(sym->type == StaticPass::ALIAS) sym = sym->shadowedVar();
 
-    if(sym.is_closure_nested){
+    if(sym->is_closure_nested){
         parse_tree.setOp(pn, OP_READ_UPVALUE);
-        parse_tree.setClosureIndex(pn, sym.flag);
-    }else if(sym.declaration_closure_depth == 0){
+        parse_tree.setClosureIndex(pn, sym->flag);
+    }else if(sym->declaration_closure_depth == 0){
         parse_tree.setOp(pn, OP_READ_GLOBAL);
-        parse_tree.setGlobalIndex(pn, sym.flag);
+        parse_tree.setGlobalIndex(pn, sym->flag);
     }else{
-        parse_tree.setStackOffset(pn, stack_size - 1 - sym.flag);
+        parse_tree.setStackOffset(pn, stack_size - 1 - sym->flag);
     }
 }
 

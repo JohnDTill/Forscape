@@ -21,7 +21,7 @@ void Program::clear() noexcept {
 }
 
 void Program::setProgramEntryPoint(std::filesystem::path path, Typeset::Model* model) {
-    assert(path == std::filesystem::canonical(path));
+    assert(path.empty() || path == std::filesystem::canonical(path));
     all_files.clear();
     all_files.push_back(model);
     source_files.clear();
