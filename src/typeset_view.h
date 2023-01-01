@@ -215,6 +215,12 @@ private:
 
 class Editor;
 
+class Tooltip : public Label {
+public:
+    Editor* editor;
+    virtual void leaveEvent(QEvent* event) override final;
+};
+
 class Recommender : public View {
 public:
     Recommender();
@@ -262,6 +268,7 @@ protected:
     void setTooltipError(const std::string& str);
     void setTooltipWarning(const std::string& str);
     void clearTooltip();
+    friend Tooltip;
 
 private slots:
     void rename();
@@ -281,7 +288,6 @@ private:
 
     ParseNode contextNode = NONE;
     static Recommender* recommender;
-    static Label* tooltip;
     QTimer* tooltip_timer;
     static constexpr int TOOLTIP_DELAY_MILLISECONDS = 750;
 

@@ -1343,11 +1343,11 @@ void Recommender::paintEvent(QPaintEvent* event){
 
 Recommender* Editor::recommender = nullptr;
 
-Label* Editor::tooltip = nullptr;
+static Tooltip* tooltip = nullptr;
 
 Editor::Editor(){
     if(tooltip == nullptr){
-        tooltip = new Label();
+        tooltip = new Tooltip();
         tooltip->setWindowFlags(Qt::ToolTip);
         tooltip->setDisabled(true);
         tooltip->setFocusPolicy(Qt::NoFocus);
@@ -1398,8 +1398,10 @@ void Editor::focusOutEvent(QFocusEvent* event){
 }
 
 void Editor::leaveEvent(QEvent* event){
+    tooltip->editor = this;
     View::leaveEvent(event);
-    clearTooltip();
+    if(tooltip->isHidden() || !tooltip->rect().contains(tooltip->mapFromGlobal(QCursor::pos())))
+        clearTooltip();
 }
 
 void Editor::resolveTooltip(double x, double y) noexcept {
@@ -1636,6 +1638,11 @@ void Editor::takeRecommendation(const std::string& str){
     qApp->processEvents();
 
     emit textChanged();
+}
+
+void Tooltip::leaveEvent(QEvent* event) {
+    if(!editor->rect().contains(editor->mapFromGlobal(QCursor::pos())))
+        editor->clearTooltip();
 }
 
 }
