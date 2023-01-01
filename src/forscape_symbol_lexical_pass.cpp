@@ -372,8 +372,6 @@ void SymbolLexicalPass::resolveReference(ParseNode pn, size_t sym_id) alloc_exce
 static std::vector<FORSCAPE_UNORDERED_MAP<Typeset::Selection, SymbolIndex>::iterator> implicit_mult_hits;
 
 void SymbolLexicalPass::resolveIdMult(ParseNode pn, Typeset::Marker left, Typeset::Marker right) alloc_except {
-    //DO THIS: this doesn't work for predefined variables. (Also revise the wiki when it does)
-
     Typeset::Marker m = left;
     size_t num_terms = 0;
     implicit_mult_hits.clear();
@@ -381,11 +379,24 @@ void SymbolLexicalPass::resolveIdMult(ParseNode pn, Typeset::Marker left, Typese
         m.incrementGrapheme();
         if(m.index == m.text->numChars()) m = right;
 
-        auto lookup = lexical_map.find(Typeset::Selection(left, m));
+        Typeset::Selection sel(left, m);
+        auto lookup = lexical_map.find(sel);
         if(lookup == lexical_map.end()){
-            errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
-            parse_tree.setOp(pn, OP_ERROR);
-            return;
+            if(!sel.isTextSelection()){
+                errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
+                parse_tree.setOp(pn, OP_ERROR);
+                return;
+            }
+
+            auto predef_lookup = predef.find(sel.strView());
+            if(predef_lookup == predef.end()){
+                errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
+                parse_tree.setOp(pn, OP_ERROR);
+                return;
+            }else{
+                lookup = lexical_map.end();
+                sel.format(SEM_PREDEF);
+            }
         }
         implicit_mult_hits.push_back(lookup);
         left = m;
@@ -420,7 +431,8 @@ void SymbolLexicalPass::resolveIdMult(ParseNode pn, Typeset::Marker left, Typese
             t->patchParseNode(index++, pn, left.index, m.index);
         }
         #endif
-        resolveReference(pn, lookup->second);
+        if(lookup != lexical_map.end()) resolveReference(pn, lookup->second);
+        else parse_tree.setOp(pn, predef.find(sel.strView())->second);
         parse_tree.addNaryChild(pn);
         left = m;
     }
@@ -437,7 +449,7 @@ void SymbolLexicalPass::resolveScriptMult(ParseNode pn, Typeset::Marker left, Ty
     Typeset::Marker end(m.text, m.text->numChars());
     Typeset::Marker new_right = end;
     end.decrementGrapheme();
-    if(left == end){
+    if(left == end || predef.find(Typeset::Selection(end, new_right).strView()) != predef.end()){
         errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
         parse_tree.setOp(pn, OP_ERROR);
         return;
@@ -446,11 +458,18 @@ void SymbolLexicalPass::resolveScriptMult(ParseNode pn, Typeset::Marker left, Ty
     implicit_mult_hits.clear();
     while(m != end){
         m.incrementGrapheme();
-        auto lookup = lexical_map.find(Typeset::Selection(left, m));
+        Typeset::Selection sel(left, m);
+        auto lookup = lexical_map.find(sel);
         if(lookup == lexical_map.end()){
-            errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
-            parse_tree.setOp(pn, OP_ERROR);
-            return;
+            auto predef_lookup = predef.find(sel.strView());
+            if(predef_lookup == predef.end()){
+                errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
+                parse_tree.setOp(pn, OP_ERROR);
+                return;
+            }else{
+                lookup = lexical_map.end();
+                sel.format(SEM_PREDEF);
+            }
         }
         implicit_mult_hits.push_back(lookup);
         left = m;
@@ -480,7 +499,8 @@ void SymbolLexicalPass::resolveScriptMult(ParseNode pn, Typeset::Marker left, Ty
         #ifndef FORSCAPE_TYPESET_HEADLESS
         t->tagParseNode(pn, left.index, m.index);
         #endif
-        resolveReference(pn, lookup->second);
+        if(lookup != lexical_map.end()) resolveReference(pn, lookup->second);
+        else parse_tree.setOp(pn, predef.find(sel.strView())->second);
         parse_tree.addNaryChild(pn);
         left = m;
     }

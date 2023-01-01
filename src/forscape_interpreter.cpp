@@ -23,8 +23,11 @@ void Interpreter::run(const ParseTree& parse_tree, SymbolTable* symbol_table, co
     assert(parse_tree.getOp(parse_tree.root) == OP_BLOCK);
     reset();
 
-    this->parse_tree = parse_tree;
+    #ifndef NDEBUG
     stack.aliases = parse_tree.aliases;
+    #endif
+
+    this->parse_tree = parse_tree;
     this->inst_lookup = inst_lookup;
     SymbolTableLinker linker(*symbol_table, this->parse_tree);
     linker.link();
