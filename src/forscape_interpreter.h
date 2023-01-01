@@ -63,6 +63,7 @@ private:
     void reset() noexcept;
     Value error(ErrorCode code, ParseNode pn) noexcept;
     void interpretStmt(ParseNode pn);
+    void interpretStmtIfNotNone(ParseNode pn);
     void printStmt(ParseNode pn);
     void assertStmt(ParseNode pn);
     void assignStmt(ParseNode pn);

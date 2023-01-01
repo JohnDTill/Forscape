@@ -66,7 +66,7 @@ using namespace Forscape;
 
 static QTimer* external_change_timer;
 
-static constexpr int CHANGE_CHECK_PERIOD_MS = 100;
+static constexpr int CHANGE_CHECK_PERIOD_MS = 500;
 
 static constexpr int FILE_BROWSER_WIDTH = 200;
 static bool program_control_of_hsplitter = false;

@@ -86,14 +86,7 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_IF: ifStmt(pn); break;
         case OP_IF_ELSE: ifElseStmt(pn); break;
         case OP_FILE_REF: break; //EVENTUALLY: This shouldn't be in the interpreter stage
-        case OP_IMPORT:{
-            //stack.push(static_cast<void*>(nullptr)
-            //    DEBUG_STACK_ARG("import-" + parse_tree.str(parse_tree.child(pn))));
-            ParseNode root = parse_tree.getFlag(pn);
-            if(root != NONE) interpretStmt(root); //DO THIS: linking doesn't work for imported files
-            break; //EVENTUALLY: this shouldn't be in the interpreter
-            // It's assumed every symbol has a role in the runtime, and that's a bad assumption for multiple reasons.
-        }
+        case OP_IMPORT: interpretStmtIfNotNone(parse_tree.getFlag(pn)); break;
         case OP_FROM_IMPORT:{
             for(size_t i = parse_tree.getNumArgs(pn)-1; i > 0; i--)
             stack.push(static_cast<void*>(nullptr)
@@ -101,14 +94,7 @@ void Interpreter::interpretStmt(ParseNode pn){
             break; //EVENTUALLY: this shouldn't be in the interpreter
             // It's assumed every symbol has a role in the runtime, and that's a bad assumption for multiple reasons.
         }
-        case OP_NAMESPACE:{
-            if(parse_tree.getFlag(pn) != 1)
-            stack.push(static_cast<void*>(nullptr)
-                DEBUG_STACK_ARG("namespace-" + parse_tree.str(parse_tree.lhs(pn))));
-            blockStmt(parse_tree.rhs(pn));
-            break; //EVENTUALLY: this shouldn't be in the interpreter
-            // It's assumed every symbol has a role in the runtime, and that's a bad assumption for multiple reasons.
-        }
+        case OP_NAMESPACE: blockStmt(parse_tree.rhs(pn)); break;
         case OP_PLOT: plotStmt(pn); break;
         case OP_PRINT: printStmt(pn); break;
         case OP_PROTOTYPE_ALG:
@@ -121,6 +107,10 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_WHILE: whileStmt(pn); break;
         default: error(UNRECOGNIZED_STMT, pn);
     }
+}
+
+void Interpreter::interpretStmtIfNotNone(ParseNode pn) {
+    if(pn != NONE) interpretStmt(pn);
 }
 
 void Interpreter::printStmt(ParseNode pn){
