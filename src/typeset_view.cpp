@@ -563,7 +563,7 @@ void View::populateHighlightWordsFromParseNode(ParseNode pn){
     const auto& parse_tree = model->parser.parse_tree;
     if(parse_tree.getOp(pn) != Code::OP_IDENTIFIER) return;
     const Code::Symbol* const sym = parse_tree.getSymbol(pn);
-    sym->getOccurences(highlighted_words);
+    sym->getLocalOccurences(highlighted_words);
 }
 
 bool View::scrolledToBottom() const noexcept{
@@ -1504,7 +1504,7 @@ void Editor::findUsages(){
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
     std::vector<Typeset::Selection> occurences;
     const Code::Symbol& sym = *model->parseTree().getSymbol(contextNode);
-    sym.getOccurences(occurences);
+    sym.getAllOccurences(occurences);
 
     std::map<std::string, std::vector<Typeset::Selection>> file_usages;
     for(auto it = occurences.crbegin(); it != occurences.crend(); it++){
@@ -1584,7 +1584,7 @@ void Editor::rename(const std::string& str){
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
     std::vector<Typeset::Selection> occurences;
     const Code::Symbol& sym = *model->parseTree().getSymbol(contextNode);
-    sym.getOccurences(occurences);
+    sym.getAllOccurences(occurences);
 
     replaceAll(occurences, str);
 

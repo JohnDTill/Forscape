@@ -109,6 +109,19 @@ void Program::clearPendingProjectBrowserUpdates() noexcept {
     pending_project_browser_updates.clear();
 }
 
+void Program::reset() noexcept {
+    for(const auto& entry : all_files){
+        entry->is_imported = false;
+
+        for(Code::Symbol& symbol : entry->symbol_builder.symbol_table.symbols)
+            symbol.last_external_usage = symbol.lastUsage();
+    }
+}
+
+void Program::runStaticPass() {
+    program_entry_point->static_pass.resolve();
+}
+
 Program::ptr_or_code Program::openFromRelativePathSpecifiedExtension(std::filesystem::path rel_path){
     for(const std::filesystem::path& path_entry : project_path){
         std::filesystem::path abs_path = (path_entry / rel_path).lexically_normal();

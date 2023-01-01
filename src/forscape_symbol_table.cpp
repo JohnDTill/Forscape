@@ -60,8 +60,13 @@ std::string Symbol::str() const noexcept {
     return sel().str();
 }
 
-void Symbol::getOccurences(std::vector<Typeset::Selection>& found) const {
+void Symbol::getLocalOccurences(std::vector<Typeset::Selection>& found) const {
     for(SymbolUsage* usage = lastUsage(); usage != nullptr; usage = usage->prevUsage())
+        found.push_back(usage->sel);
+}
+
+void Symbol::getAllOccurences(std::vector<Typeset::Selection>& found) const {
+    for(SymbolUsage* usage = last_external_usage; usage != nullptr; usage = usage->prevUsage())
         found.push_back(usage->sel);
 }
 
@@ -236,6 +241,8 @@ void SymbolTable::finalize() noexcept {
 
         if(usage.symbol())
             parse_tree.setSymbol(usage.pn, usage.symbol());
+        else
+            parse_tree.setFlag(usage.pn, reinterpret_cast<size_t>(&usage));
     }
     for(auto& entry : lexical_map) entry.second = reinterpret_cast<SymbolIndex>(symbol_offset + entry.second);
 

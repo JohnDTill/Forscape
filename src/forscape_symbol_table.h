@@ -57,8 +57,10 @@ public:
     const Typeset::Selection& sel() const noexcept;
     std::string str() const noexcept;
     SymbolUsage* lastUsage() const noexcept { return reinterpret_cast<SymbolUsage*>(last_usage_index); }
+    SymbolUsage* last_external_usage;
     Symbol* shadowedVar() const noexcept { return reinterpret_cast<Symbol*>(index_of_shadowed_var); }
-    void getOccurences(std::vector<Typeset::Selection>& found) const;
+    void getLocalOccurences(std::vector<Typeset::Selection>& found) const;
+    void getAllOccurences(std::vector<Typeset::Selection>& found) const;
 };
 
 struct ScopeSegment {

@@ -131,8 +131,7 @@ void StaticPass::reset() noexcept{
     for(Symbol& sym : symbol_table.symbols)
         sym.type = UNINITIALISED;
 
-    for(const auto& entry : Program::instance()->allFiles())
-        entry->is_imported = false;
+    Program::instance()->reset();
 }
 
 ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
@@ -1752,10 +1751,15 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
         if(lookup == lexical_map.end()) return error(pn, pn, BAD_READ);
 
         Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
-        SymbolUsageIndex usage_index = parse_tree.getFlag(field);
+        SymbolUsage& usage = *reinterpret_cast<SymbolUsage*>(parse_tree.getFlag(field));
 
-        //DO THIS: I think usage_index needs to be a pointer
-        symbol_table.resolveScopeReference(usage_index, sym);
+        ParseNode pn = usage.pn;
+
+        //Patch the empty usage inserted earlier
+        usage.symbol_index = reinterpret_cast<size_t>(&sym);
+        parse_tree.setSymbol(pn, &sym);
+        usage.prev_usage_index = reinterpret_cast<size_t>(sym.last_external_usage);
+        sym.last_external_usage = &usage;
 
         if(write){
             if(sym.is_const){

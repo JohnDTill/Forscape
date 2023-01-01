@@ -23,6 +23,8 @@ public:
     const std::vector<Typeset::Model*>& allFiles() const noexcept;
     const std::vector<Typeset::Model*>& getPendingProjectBrowserUpdates() const noexcept;
     void clearPendingProjectBrowserUpdates() noexcept;
+    void reset() noexcept;
+    void runStaticPass();
 
     FORSCAPE_UNORDERED_MAP<std::filesystem::path, Typeset::Model*> source_files; //May contain multiple entries per model
     std::vector<Code::Error> errors;
