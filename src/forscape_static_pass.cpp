@@ -131,9 +131,8 @@ void StaticPass::reset() noexcept{
     for(Symbol& sym : symbol_table.symbols)
         sym.type = UNINITIALISED;
 
-    for(const auto& entry : Program::instance()->source_files)
-        if(entry.second)
-            entry.second->is_imported = false;
+    for(const auto& entry : Program::instance()->allFiles())
+        entry->is_imported = false;
 }
 
 ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{

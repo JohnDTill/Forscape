@@ -316,8 +316,7 @@ MainWindow::~MainWindow(){
     delete preferences;
     delete ui;
 
-    for(const auto& entry : Forscape::Program::instance()->source_files)
-        delete entry.second;
+    Forscape::Program::instance()->freeFileMemory();
 
     #ifdef TYPESET_MEMORY_DEBUG
     assert(Typeset::Model::all.empty());
@@ -710,8 +709,7 @@ void MainWindow::openProject(QString path){
     Typeset::Model* model = Typeset::Model::fromSerial(src);
     std_path = std::filesystem::canonical(std_path);
     model->path = std_path;
-    for(const auto& entry : Forscape::Program::instance()->source_files)
-        delete entry.second;
+    Forscape::Program::instance()->freeFileMemory();
     Forscape::Program::instance()->setProgramEntryPoint(std_path, model);
     model->postmutate();
     editor->setModel(model);
