@@ -322,12 +322,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             return pn;
         }
 
-        case OP_BLOCK:
-            for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
-                ParseNode stmt = resolveStmt(parse_tree.arg(pn, i));
-                parse_tree.setArg(pn, i, stmt);
-            }
-            return pn;
+        case OP_BLOCK: return resolveBlock(pn);
 
         case OP_PRINT:
             for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
@@ -394,10 +389,9 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
         }
 
         case OP_NAMESPACE:
-            //return resolveStmt(parse_tree.arg<1>(pn)); //TODO: this should be resolveBlock
             parse_tree.getSymbol(parse_tree.arg<0>(pn))->type = NAMESPACE;
-            parse_tree.setArg<1>(pn, resolveStmt(parse_tree.arg<1>(pn)));
-            return pn; //TODO: not all symbols go to the stack!
+            parse_tree.setArg<1>(pn, resolveBlock(parse_tree.arg<1>(pn)));
+            return pn;
 
         case OP_CLASS:{
             ParseNode members = parse_tree.arg<2>(pn);
@@ -1805,6 +1799,14 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
             return error(pn, pn, BAD_READ);
         }
     }
+}
+
+ParseNode StaticPass::resolveBlock(ParseNode pn) {
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
+        ParseNode stmt = resolveStmt(parse_tree.arg(pn, i));
+        parse_tree.setArg(pn, i, stmt);
+    }
+    return pn;
 }
 
 ParseNode StaticPass::copyChildProperties(ParseNode pn) noexcept{

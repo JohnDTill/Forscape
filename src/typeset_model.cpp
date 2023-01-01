@@ -1,5 +1,6 @@
 #include "typeset_model.h"
 
+#include "forscape_program.h"
 #include "forscape_serial.h"
 #include "typeset_all_constructs.h"
 #include <typeset_command_list.h>
@@ -614,7 +615,7 @@ void Model::performSemanticFormatting(){
     scanner.scanAll();
     parser.parseAll();
     symbol_builder.resolveSymbols();
-    static_pass.resolve();
+    static_pass.resolve(); //DO THIS: the program entry point should run here
 }
 
 void Model::premutate() noexcept{

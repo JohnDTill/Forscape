@@ -280,6 +280,7 @@ private slots:
 
 signals:
     void goToModel(Forscape::Typeset::Model* model, size_t line);
+    void goToSelection(const Forscape::Typeset::Selection& sel);
 
 private:
     void rename(const std::string& str);

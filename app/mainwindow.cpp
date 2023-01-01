@@ -8,6 +8,7 @@
 #include <forscape_parser.h>
 #include <forscape_program.h>
 #include <forscape_symbol_lexical_pass.h>
+#include <typeset_line.h>
 #include <typeset_model.h>
 #include <typeset_painter.h>
 #include <typeset_view.h>
@@ -227,6 +228,9 @@ MainWindow::MainWindow(QWidget* parent)
 
     connect(editor, SIGNAL(goToModel(Forscape::Typeset::Model*, size_t)),
             this, SLOT(viewModel(Forscape::Typeset::Model*, size_t)));
+
+    connect(editor, SIGNAL(goToSelection(const Forscape::Typeset::Selection&)),
+            this, SLOT(viewSelection(const Forscape::Typeset::Selection&)));
 
     if(settings.contains(ACTION_TOOLBAR_VISIBLE)){
         bool visible = settings.value(ACTION_TOOLBAR_VISIBLE).toBool();
@@ -1261,6 +1265,11 @@ void MainWindow::viewModel(Forscape::Typeset::Model* model, size_t line) {
     model->postmutate();
     setEditorToModelAndLine(model, line);
     updateViewJumpPointElements();
+}
+
+void MainWindow::viewSelection(const Forscape::Typeset::Selection& sel) {
+    viewModel(sel.getModel(), sel.left.getLine()->id);
+    editor->getController() = sel;
 }
 
 bool MainWindow::on_actionSave_All_triggered() {

@@ -237,6 +237,7 @@ Model* View::getModel() const noexcept {
 }
 
 void View::setModel(Model* m) noexcept {
+    hover_node = NONE;
     highlighted_words.clear();
     model = m;
     controller = Controller(model);
@@ -815,7 +816,7 @@ void View::drawModel(double xL, double yT, double xR, double yB) {
             e.selection.paintError(painter);
 
     for(const Selection& c : highlighted_words)
-        if(c.overlapsY(yT, yB))
+        if(c.getModel() == model && c.overlapsY(yT, yB))
             c.paintHighlight(painter);
 
     #ifndef NDEBUG
@@ -1493,10 +1494,8 @@ void Editor::rename(){
 
 void Editor::goToDef(){
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
-    controller = model->parseTree().getSymbol(contextNode)->firstOccurence();
-    restartCursorBlink();
-    ensureCursorVisible();
-    update();
+    const Typeset::Selection& sel = model->parseTree().getSymbol(contextNode)->firstOccurence();
+    emit goToSelection(sel);
 }
 
 void Editor::findUsages(){
@@ -1507,18 +1506,29 @@ void Editor::findUsages(){
     const Code::Symbol& sym = *model->parseTree().getSymbol(contextNode);
     sym.getOccurences(occurences);
 
+    std::map<std::string, std::vector<Typeset::Selection>> file_usages;
+    for(auto it = occurences.crbegin(); it != occurences.crend(); it++){
+        const auto& sel = *it;
+        Model* m = sel.getModel();
+        auto result = file_usages.insert({m->path.filename().u8string(), {sel}});
+        if(!result.second) result.first->second.push_back(sel);
+    }
+
     Model* m = new Model();
     m->is_output = true;
     console->setModel(m);
     size_t last_handled = std::numeric_limits<size_t>::max();
-    for(auto it = occurences.crbegin(); it != occurences.crend(); it++){
-        const auto& entry = *it;
-        Line* target_line = entry.getStartLine();
-        if(target_line->id != last_handled){
-            last_handled = target_line->id;
-            m->lastLine()->appendConstruct(new Typeset::MarkerLink(target_line, this, getModel()));
-            std::string line_snippet = target_line->toString();
-            console->appendSerial("  " + line_snippet + "\n");
+    for(const auto& map_entry : file_usages){
+        console->appendSerial(map_entry.first + ":\n");
+        for(const auto& sel : map_entry.second){
+            Line* target_line = sel.getStartLine();
+            if(target_line->id != last_handled){
+                last_handled = target_line->id;
+                console->appendSerial("   ");
+                m->lastLine()->appendConstruct(new Typeset::MarkerLink(target_line, this, target_line->parent));
+                std::string line_snippet = target_line->toString();
+                console->appendSerial("  " + line_snippet + "\n");
+            }
         }
     }
 
@@ -1574,7 +1584,7 @@ void Editor::rename(const std::string& str){
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
     std::vector<Typeset::Selection> occurences;
     const Code::Symbol& sym = *model->parseTree().getSymbol(contextNode);
-    sym.getOccurences(highlighted_words);
+    sym.getOccurences(occurences);
 
     replaceAll(occurences, str);
 

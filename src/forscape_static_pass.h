@@ -153,6 +153,7 @@ private:
         ParseNode resolveLimit(ParseNode pn);
         ParseNode resolveDefiniteIntegral(ParseNode pn);
         ParseNode resolveScopeAccess(ParseNode pn, bool write = false);
+        ParseNode resolveBlock(ParseNode pn);
         ParseNode copyChildProperties(ParseNode pn) noexcept;
         ParseNode enforceScalar(ParseNode pn);
         ParseNode enforceZero(ParseNode pn);
