@@ -119,7 +119,12 @@ void Program::reset() noexcept {
 }
 
 void Program::runStaticPass() {
+    static bool running = false;
+    if(running) return;
+    running = true;
+    program_entry_point->postmutate();
     program_entry_point->static_pass.resolve();
+    running = false;
 }
 
 Program::ptr_or_code Program::openFromRelativePathSpecifiedExtension(std::filesystem::path rel_path){

@@ -833,8 +833,10 @@ void SymbolLexicalPass::resolveImport(ParseNode pn) alloc_except {
 
         ParseNode id = parse_tree.addTerminal(OP_IDENTIFIER, id_sel);
         defineLocalScope(id);
+        symbols.back().tied_to_file = true;
 
         parse_tree.setFlag(pn, id);
+        parse_tree.setCols(file, id);
     }else{
         defineLocalScope(alias);
     }
@@ -982,7 +984,6 @@ void SymbolLexicalPass::resolveScopeAccess(ParseNode pn) noexcept {
     }
 
     //Create a usage for the RHS which will be patched later
-    //DO THIS: could you add it from scratch later instead of patching?
     ParseNode rhs = parse_tree.arg<1>(pn);
     parse_tree.setFlag(rhs, symbol_usages.size());
     symbol_usages.push_back(SymbolUsage(NONE, NONE, rhs, parse_tree.getSelection(rhs)));

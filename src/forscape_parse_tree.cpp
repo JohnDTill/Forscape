@@ -431,6 +431,10 @@ void ParseTree::shift(ParseNode pn, size_t offset) {
     }
 }
 
+size_t ParseTree::offset() const noexcept {
+    return data.size();
+}
+
 #ifndef NDEBUG
 bool ParseTree::isNode(ParseNode pn) const noexcept {
     return created.find(pn) != created.end();

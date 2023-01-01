@@ -33,7 +33,7 @@ private: friend SymbolLexicalPass; friend SymbolTable; //Fields for the lexical 
     SymbolUsageIndex last_usage_index  DEBUG_INIT_UNITIALISED(SymbolUsageIndex);
     uint16_t declaration_lexical_depth  DEBUG_INIT_UNITIALISED(uint16_t);
     size_t previous_namespace_index = NONE;
-    const Typeset::Selection& sel(const ParseTree& parse_tree) const noexcept; //DO THIS: This is a smell
+    const Typeset::Selection& sel(const ParseTree& parse_tree) const noexcept;
 
 public:
     uint8_t declaration_closure_depth  DEBUG_INIT_UNITIALISED(uint8_t);
@@ -49,6 +49,7 @@ public:
     bool is_prototype = false;
     bool is_ewise_index = false;
     bool is_captured_by_value = false;
+    bool tied_to_file = false;
 
     Symbol() noexcept;
     Symbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed_var, bool is_const) noexcept;
@@ -99,7 +100,7 @@ struct SymbolUsage {
     Typeset::Selection sel;
     SymbolUsageIndex prev_usage_index  DEBUG_INIT_UNITIALISED(SymbolUsageIndex);
     SymbolIndex symbol_index  DEBUG_INIT_UNITIALISED(SymbolIndex);
-    ParseNode pn  DEBUG_INIT_UNITIALISED(ParseNode); //DO THIS: I think this is not needed?
+    ParseNode pn  DEBUG_INIT_UNITIALISED(ParseNode);
 
     SymbolUsage() noexcept;
     SymbolUsage(SymbolUsageIndex prev_usage_index, SymbolIndex symbol_index, ParseNode pn, const Typeset::Selection& sel) noexcept;
@@ -165,7 +166,7 @@ public:
     FORSCAPE_UNORDERED_MAP<ScopedVarKey, SymbolIndex, HashScopedVarKey> scoped_vars;
 
     void resolveReference(ParseNode pn, size_t sym_id, size_t closure_depth) alloc_except;
-    void resolveScopeReference(SymbolUsageIndex usage_index, Symbol& sym) alloc_except;
+    void resolveScopeReference(SymbolUsage& usage, Symbol& sym) alloc_except;
 };
 
 }

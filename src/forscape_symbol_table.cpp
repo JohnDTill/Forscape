@@ -132,7 +132,7 @@ std::vector<std::string> SymbolTable::getSuggestions(const Typeset::Marker& loc)
             const ScopeSegment& seg = scope_segments[j];
             const size_t end = (&seg == &scope_segments.back()) ? symbols.size() : scope_segments[j+1].first_sym_index;
             for(size_t k = seg.first_sym_index; k < end; k++){
-                const Typeset::Selection& candidate = parse_tree.getSelection(symbols[k].flag);
+                const Typeset::Selection& candidate = symbols[k].sel();
                 if(candidate.startsWith(typed) && candidate.right.precedesInclusive(loc) && candidate.right != loc)
                     suggestions.insert(candidate.str());
 
@@ -230,6 +230,7 @@ void SymbolTable::finalize() noexcept {
     for(Symbol& sym : symbols){
         sym.last_usage_index = reinterpret_cast<SymbolUsageIndex>(usage_offset + sym.last_usage_index);
         sym.index_of_shadowed_var = reinterpret_cast<SymbolIndex>(symbol_offset + sym.index_of_shadowed_var);
+        sym.last_external_usage = sym.lastUsage();
     }
     for(SymbolUsage& usage : symbol_usages){
         if(usage.prev_usage_index == NONE) usage.prev_usage_index = reinterpret_cast<SymbolUsageIndex>(nullptr);
@@ -246,7 +247,7 @@ void SymbolTable::finalize() noexcept {
     }
     for(auto& entry : lexical_map) entry.second = reinterpret_cast<SymbolIndex>(symbol_offset + entry.second);
 
-    //DO THIS: concession to current namespace scheme
+    //EVENTUALLY: concession to current namespace scheme, probably don't need this
     FORSCAPE_UNORDERED_MAP<ScopedVarKey, SymbolIndex, HashScopedVarKey> scoped_vars;
     for(const auto& entry : this->scoped_vars){
         auto key = entry.first;
@@ -278,16 +279,15 @@ void SymbolTable::resolveReference(ParseNode pn, size_t sym_id, size_t closure_d
     sym.last_usage_index = symbol_usages.size()-1;
 }
 
-void SymbolTable::resolveScopeReference(SymbolUsageIndex usage_index, Symbol& sym) noexcept {
-    SymbolUsage& usage = symbol_usages[usage_index];
+void SymbolTable::resolveScopeReference(SymbolUsage& usage, Symbol& sym) noexcept {
     ParseNode pn = usage.pn;
 
     //Patch the empty usage inserted earlier
     usage.symbol_index = reinterpret_cast<size_t>(&sym);
     parse_tree.setSymbol(pn, &sym);
 
-    usage.prev_usage_index = sym.last_usage_index;
-    sym.last_usage_index = reinterpret_cast<SymbolUsageIndex>(symbol_usages.data() + usage_index);
+    usage.prev_usage_index = reinterpret_cast<size_t>(sym.last_external_usage);
+    sym.last_external_usage = &usage;
 }
 
 }

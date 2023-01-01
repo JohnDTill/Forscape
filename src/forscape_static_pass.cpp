@@ -372,6 +372,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             Typeset::Model* model = parse_tree.getModel(file);
             if(!model->is_imported){
                 model->is_imported = true;
+                model->parse_node_offset = parse_tree.offset();
                 model->postmutate();
                 const ParseTree& imported = model->parser.parse_tree;
                 const ParseNode root = parse_tree.append(imported);
@@ -1737,18 +1738,24 @@ ParseNode StaticPass::resolveDefiniteIntegral(ParseNode pn) {
 
 ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
     ParseNode lhs_lvalue = resolveLValue(parse_tree.lhs(pn));
+    ParseNode field = parse_tree.arg<1>(pn);
+    if(parse_tree.getOp(lhs_lvalue) == OP_ERROR){
+        parse_tree.setOp(field, OP_ERROR);
+        return lhs_lvalue;
+    }
     size_t sym_id = parse_tree.getSymId(lhs_lvalue);
     Symbol& sym = *parse_tree.getSymbol(lhs_lvalue);
 
-
-    ParseNode field = parse_tree.arg<1>(pn);
     assert(parse_tree.getOp(field) == OP_IDENTIFIER);
 
     if(sym.type == MODULE){
         Typeset::Model* model = reinterpret_cast<Typeset::Model*>(sym.flag);
         const auto& lexical_map = model->symbol_builder.symbol_table.lexical_map;
         auto lookup = lexical_map.find(parse_tree.getSelection(field));
-        if(lookup == lexical_map.end()) return error(pn, pn, BAD_READ);
+        if(lookup == lexical_map.end()){
+            parse_tree.setOp(field, OP_ERROR);
+            return error(pn, pn, BAD_READ);
+        }
 
         Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
         SymbolUsage& usage = *reinterpret_cast<SymbolUsage*>(parse_tree.getFlag(field));
@@ -1781,9 +1788,9 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
         auto lookup = symbol_table.scoped_vars.find(SymbolTable::ScopedVarKey(sym_id, parse_tree.getSelection(field)));
         if(lookup != symbol_table.scoped_vars.end()){
             Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
-            SymbolUsageIndex usage_index = parse_tree.getFlag(field);
+            SymbolUsage& usage = *reinterpret_cast<SymbolUsage*>(parse_tree.getFlag(field));
 
-            symbol_table.resolveScopeReference(usage_index, sym);
+            symbol_table.resolveScopeReference(usage, sym);
 
             if(write){
                 if(sym.is_const){
@@ -1800,6 +1807,7 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
             parse_tree.setCols(field, sym.cols);
             return field;
         }else{
+            parse_tree.setOp(field, OP_ERROR);
             return error(pn, pn, BAD_READ);
         }
     }

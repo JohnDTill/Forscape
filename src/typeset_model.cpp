@@ -615,7 +615,7 @@ void Model::performSemanticFormatting(){
     scanner.scanAll();
     parser.parseAll();
     symbol_builder.resolveSymbols();
-    static_pass.resolve(); //DO THIS: the program entry point should run here
+    Program::instance()->runStaticPass();
 }
 
 void Model::premutate() noexcept{

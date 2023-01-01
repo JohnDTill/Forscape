@@ -1,2 +1,2 @@
-//import hello_world as hello //DO THIS: support import as
-//hello.helloWorld()
+import hello_world as hello
+hello.helloWorld()

@@ -1,5 +1,6 @@
 #include <typeset_view.h>
 
+#include "forscape_program.h"
 #include <typeset_command_pair.h>
 #include <typeset_construct.h>
 #include <typeset_integral_preference.h>
@@ -39,6 +40,14 @@ static constexpr auto THROTTLE_WINDOW = std::chrono::milliseconds(200);
 namespace Forscape {
 
 namespace Typeset {
+
+static Code::ParseTree& parseTree() noexcept {
+    return Program::instance()->program_entry_point->parser.parse_tree;
+}
+
+static Code::StaticPass& staticPass() noexcept {
+    return Program::instance()->program_entry_point->static_pass;
+}
 
 class View::VerticalScrollBar : public QScrollBar {
 private:
@@ -561,9 +570,14 @@ void View::updateHighlightingFromCursorLocation(){
 
 void View::populateHighlightWordsFromParseNode(ParseNode pn){
     const auto& parse_tree = model->parser.parse_tree;
-    if(parse_tree.getOp(pn) != Code::OP_IDENTIFIER) return;
+    if(parse_tree.getOp(pn) == Code::OP_FILE_REF){
+        ParseNode id = parse_tree.getCols(pn);
+        if(id == 0) return;
+        pn = id;
+    }
+    else if(parse_tree.getOp(pn) != Code::OP_IDENTIFIER) return;
     const Code::Symbol* const sym = parse_tree.getSymbol(pn);
-    sym->getLocalOccurences(highlighted_words);
+    sym->getAllOccurences(highlighted_words);
 }
 
 bool View::scrolledToBottom() const noexcept{
@@ -821,7 +835,7 @@ void View::drawModel(double xL, double yT, double xR, double yB) {
 
     #ifndef NDEBUG
     if(hover_node != NONE){
-        const Typeset::Selection& sel = model->parser.parse_tree.getSelection(hover_node);
+        const Typeset::Selection& sel = parseTree().getSelection(hover_node);
         sel.paintHighlight(painter);
     }
     #endif
@@ -1423,6 +1437,7 @@ void Editor::resolveTooltip(double x, double y) noexcept {
     }
 
     hover_node = model->parseNodeAt(x, y);
+    if(hover_node != NONE) hover_node += model->parse_node_offset;
     #ifndef NDEBUG
     if(hover_node == NONE) clearTooltip();
     #else
@@ -1440,12 +1455,14 @@ void Editor::populateContextMenuFromModel(QMenu& menu, double x, double y) {
     if(contextNode == NONE) return;
 
     switch (model->parseTree().getOp(contextNode)) {
-        case Code::OP_IDENTIFIER:
-            append("Rename", rename, true, true)
+        case Code::OP_IDENTIFIER:{
+            const Code::Symbol& sym = *parseTree().getSymbol(contextNode + model->parse_node_offset);
+            if(!sym.tied_to_file) append("Rename", rename, true, true)
             append("Go to definition", goToDef, true, true)
             append("Find usages", findUsages, true, true)
             menu.addSeparator();
             break;
+        }
         case Code::OP_FILE_REF:
             append("Go to file", goToFile, true, true)
             //append("Find usages", findUsages, true, true) //EVENTUALLY: figure out cross-file usages
@@ -1536,22 +1553,22 @@ void Editor::findUsages(){
 }
 
 void Editor::goToFile() {
-    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_FILE_REF);
-    Typeset::Model* referenced = model->parseTree().getModel(contextNode);
+    assert(contextNode != NONE && parseTree().getOp(contextNode) == Code::OP_FILE_REF);
+    Typeset::Model* referenced = parseTree().getModel(contextNode);
     emit goToModel(referenced, 0);
 }
 
 void Editor::showTooltipParseNode(){
     assert(hover_node != NONE);
 
-    const auto& parse_tree = model->parser.parse_tree;
+    const auto& parse_tree = parseTree();
     switch(parse_tree.getOp(hover_node)){
         case Code::OP_IDENTIFIER:{
             if(!model->errors.empty()) return; //EVENTUALLY: this is a bit strict. would rather have feedback
             const auto& symbol = *parse_tree.getSymbol(hover_node);
 
             tooltip->clear();
-            tooltip->appendSerial(parse_tree.str(hover_node) + " ∈ " + model->static_pass.typeString(symbol));
+            tooltip->appendSerial(parse_tree.str(hover_node) + " ∈ " + staticPass().typeString(symbol));
 
             if(symbol.comment != NONE){
                 tooltip->appendSerial("\n");

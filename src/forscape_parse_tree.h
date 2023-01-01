@@ -111,6 +111,7 @@ public:
 
     size_t append(const ParseTree& other);
     void shift(ParseNode pn, size_t offset);
+    size_t offset() const noexcept;
 
 private:
     std::vector<size_t> data;

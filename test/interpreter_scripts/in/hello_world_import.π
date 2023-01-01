@@ -1,3 +1,2 @@
 import hello_world
-hello_world.helloWorld() //DO THIS: clicking "helloWorld" should cause a highlight
-//DO THIS: should be able to edit the file without crashes
+hello_world.helloWorld()
