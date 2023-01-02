@@ -29,7 +29,7 @@ public:
     FORSCAPE_UNORDERED_MAP<std::filesystem::path, Typeset::Model*> source_files; //May contain multiple entries per model
     std::vector<Code::Error> errors;
     std::vector<Code::Error> warnings;
-    Typeset::Model* program_entry_point;
+    Typeset::Model* program_entry_point = nullptr;
 
 private:
     static Program* singleton_instance;

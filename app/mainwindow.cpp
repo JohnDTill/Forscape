@@ -454,6 +454,8 @@ void MainWindow::github(){
 void MainWindow::on_actionNew_triggered(){
     if(!editor->isEnabled()) return;
     Typeset::Model* model = Typeset::Model::fromSerial("");
+    if(Program::instance()->program_entry_point == nullptr)
+        Program::instance()->program_entry_point = model;
     setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
     active_file_path.clear();
 

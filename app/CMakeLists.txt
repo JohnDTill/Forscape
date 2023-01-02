@@ -1,5 +1,3 @@
-#DO THIS: make sure UTF8 handling works on linux
-
 cmake_minimum_required(VERSION 3.5)
 
 project(Forscape VERSION 0.0.2 LANGUAGES CXX)
