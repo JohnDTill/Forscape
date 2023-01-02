@@ -397,7 +397,7 @@ void MainWindow::stop(){
 }
 
 void MainWindow::pollInterpreterThread(){
-    auto& interpreter = editor->getModel()->interpreter;
+    auto& interpreter = Program::instance()->program_entry_point->interpreter;
 
     if(interpreter.status == Forscape::Code::Interpreter::FINISHED){
         checkOutput();
@@ -505,7 +505,7 @@ void MainWindow::on_actionExit_triggered(){
 }
 
 void MainWindow::checkOutput(){
-    auto& interpreter = editor->getModel()->interpreter;
+    auto& interpreter = Program::instance()->program_entry_point->interpreter;
     auto& message_queue = interpreter.message_queue;
 
     static std::string print_buffer;

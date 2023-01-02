@@ -835,7 +835,7 @@ void View::drawModel(double xL, double yT, double xR, double yB) {
 
     #ifndef NDEBUG
     if(hover_node != NONE){
-        const Typeset::Selection& sel = parseTree().getSelection(hover_node);
+        const Typeset::Selection& sel = model->parser.parse_tree.getSelection(hover_node);
         sel.paintHighlight(painter);
     }
     #endif
@@ -1386,7 +1386,7 @@ void Editor::runThread(){
     }else{
         is_running = true;
         allow_write = false;
-        model->runThread();
+        Program::instance()->program_entry_point->runThread();
     }
 }
 
@@ -1395,7 +1395,7 @@ bool Editor::isRunning() const noexcept{
 }
 
 void Editor::reenable() noexcept{
-    assert(model->interpreter.status == Code::Interpreter::FINISHED);
+    assert(Program::instance()->program_entry_point->interpreter.status == Code::Interpreter::FINISHED);
     is_running = false;
     allow_write = true;
 }
@@ -1437,7 +1437,6 @@ void Editor::resolveTooltip(double x, double y) noexcept {
     }
 
     hover_node = model->parseNodeAt(x, y);
-    if(hover_node != NONE) hover_node += model->parse_node_offset;
     #ifndef NDEBUG
     if(hover_node == NONE) clearTooltip();
     #else
@@ -1554,14 +1553,15 @@ void Editor::findUsages(){
 
 void Editor::goToFile() {
     assert(contextNode != NONE && parseTree().getOp(contextNode) == Code::OP_FILE_REF);
-    Typeset::Model* referenced = parseTree().getModel(contextNode);
+    Typeset::Model* referenced = parseTree().getModel(contextNode + model->parse_node_offset);
     emit goToModel(referenced, 0);
 }
 
 void Editor::showTooltipParseNode(){
-    assert(hover_node != NONE);
+    assert(this->hover_node != NONE);
 
     const auto& parse_tree = parseTree();
+    const ParseNode hover_node = this->hover_node + model->parse_node_offset;
     switch(parse_tree.getOp(hover_node)){
         case Code::OP_IDENTIFIER:{
             if(!model->errors.empty()) return; //EVENTUALLY: this is a bit strict. would rather have feedback
@@ -1572,7 +1572,7 @@ void Editor::showTooltipParseNode(){
 
             if(symbol.comment != NONE){
                 tooltip->appendSerial("\n");
-                tooltip->appendSerial(parse_tree.str(symbol.comment), SEM_COMMENT);
+                tooltip->appendSerial(model->parser.parse_tree.str(symbol.comment), SEM_COMMENT);
             }
 
             tooltip->fitToContents();
@@ -1615,7 +1615,8 @@ void Editor::rename(const std::string& str){
 }
 
 void Editor::recommend() {
-    auto suggestions = model->symbol_builder.symbol_table.getSuggestions(controller.active);
+    populateSuggestions();
+
     if(suggestions.empty()){
         recommender->hide();
         setFocus();
@@ -1646,12 +1647,67 @@ void Editor::recommend() {
     }
 }
 
+void Editor::populateSuggestions() {
+    recommend_without_hint = false;
+    filename_start = nullptr;
+    suggestions.clear();
+
+    for(const Code::Error& err : model->errors){
+        if(err.code == Code::EXPECTED_FILEPATH && err.selection.left == controller.anchor){
+            suggestFileNames(); return;
+        }else if(err.code == Code::FILE_NOT_FOUND && err.selection.right == controller.anchor){
+            suggestFileNames(err.selection); return;
+        }else if(err.code == Code::IMPORT_FIELD_NOT_FOUND && err.selection.right == controller.anchor){
+            suggestModuleFields(err.selection); return;
+        }
+    }
+
+    model->symbol_builder.symbol_table.getSuggestions(controller.active, suggestions);
+}
+
+void Editor::suggestFileNames() {
+    recommend_without_hint = true;
+    Program::instance()->getFileSuggestions(suggestions);
+    std::sort(suggestions.begin(), suggestions.end());
+    suggestions.erase(std::unique(suggestions.begin(), suggestions.end()), suggestions.end());
+}
+
+void Editor::suggestFileNames(const Selection& sel) {
+    if(!sel.isTextSelection()) return;
+    filename_start = &sel.left;
+    Program::instance()->getFileSuggestions(suggestions, sel.strView());
+    std::sort(suggestions.begin(), suggestions.end());
+    suggestions.erase(std::unique(suggestions.begin(), suggestions.end()), suggestions.end());
+}
+
+void Editor::suggestModuleFields(const Selection& sel) {
+    const Typeset::Marker& left = sel.left;
+    ParseNode err_node = left.text->parseNodeAtIndex(left.index);
+    size_t flag = parseTree().getFlag(err_node);
+    const auto& lexical_map = *reinterpret_cast<FORSCAPE_UNORDERED_MAP<Typeset::Selection, size_t>*>(flag);
+    for(const auto& entry : lexical_map)
+        if(entry.first.startsWith(sel))
+            suggestions.push_back(entry.first.str());
+    std::sort(suggestions.begin(), suggestions.end());
+}
+
 void Editor::takeRecommendation(const std::string& str){
-    controller.selectPrevWord();
-    if(str != controller.selectedText())
+    if(recommend_without_hint){
+        if(controller.charLeft() != ' ')
+            controller.insertSerial(' ' + str);
+        else
+            controller.insertSerial(str);
+    }else if(filename_start){
+        controller.anchor = *filename_start;
         controller.insertSerial(str);
-    else
-        controller.consolidateToAnchor();
+    }else{
+        controller.selectPrevWord();
+        if(str != controller.selectedText())
+            controller.insertSerial(str);
+        else
+            controller.consolidateToAnchor();
+    }
+
     model->performSemanticFormatting();
     updateXSetpoint();
     updateModel();

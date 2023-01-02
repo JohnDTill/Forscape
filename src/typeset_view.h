@@ -269,6 +269,8 @@ protected:
     void setTooltipWarning(const std::string& str);
     void clearTooltip();
     friend Tooltip;
+    bool recommend_without_hint = false;
+    const Typeset::Marker* filename_start = nullptr;
 
 private slots:
     void rename();
@@ -285,6 +287,10 @@ signals:
 private:
     void rename(const std::string& str);
     virtual void recommend() override final;
+    void populateSuggestions();
+    void suggestFileNames();
+    void suggestFileNames(const Typeset::Selection& sel);
+    void suggestModuleFields(const Typeset::Selection& sel);
     void takeRecommendation(const std::string& str);
 
     ParseNode contextNode = NONE;
@@ -293,6 +299,7 @@ private:
     static constexpr int TOOLTIP_DELAY_MILLISECONDS = 750;
 
     friend Recommender;
+    std::vector<std::string> suggestions;
 };
 
 }

@@ -114,12 +114,12 @@ size_t SymbolTable::containingScope(const Typeset::Marker& m) const noexcept{
     return lookup - scope_segments.begin() - (lookup != scope_segments.begin());
 }
 
-std::vector<std::string> SymbolTable::getSuggestions(const Typeset::Marker& loc) const{
-    FORSCAPE_UNORDERED_SET<std::string> suggestions;
+void SymbolTable::getSuggestions(const Typeset::Marker& loc, std::vector<std::string>& suggestions) const{
+    FORSCAPE_UNORDERED_SET<std::string> suggestion_set;
 
     Typeset::Marker left = loc;
     while(left.atTextStart()){
-        if(left.atFirstTextInPhrase()) return std::vector<std::string>();
+        if(left.atFirstTextInPhrase()) return;
         left.text = left.text->prevTextAsserted();
         left.index = left.text->numChars();
     }
@@ -134,7 +134,7 @@ std::vector<std::string> SymbolTable::getSuggestions(const Typeset::Marker& loc)
             for(size_t k = seg.first_sym_index; k < end; k++){
                 const Typeset::Selection& candidate = symbols[k].sel();
                 if(candidate.startsWith(typed) && candidate.right.precedesInclusive(loc) && candidate.right != loc)
-                    suggestions.insert(candidate.str());
+                    suggestion_set.insert(candidate.str());
 
                 //EVENTUALLY: filter suggestions based on type so suggestions are always context appropriate
                 //            don't use a trie or more specialised data structure unless necessary
@@ -148,27 +148,24 @@ std::vector<std::string> SymbolTable::getSuggestions(const Typeset::Marker& loc)
         for(const auto& entry : SymbolLexicalPass::predef){
             const auto& keyword = entry.first;
             if(keyword.size() >= typed_view.size() && std::string_view(keyword.data(), typed_view.size()) == typed_view)
-                suggestions.insert(std::string(keyword));
+                suggestion_set.insert(std::string(keyword));
         }
     }
 
-    std::vector<std::string> sorted;
-    sorted.insert(sorted.end(), suggestions.cbegin(), suggestions.cend());
-    std::sort(sorted.begin(), sorted.end());
+    suggestions.insert(suggestions.end(), suggestion_set.cbegin(), suggestion_set.cend());
+    std::sort(suggestions.begin(), suggestions.end());
 
     //Add matching keywords
     if(typed.isTextSelection()){
-        const size_t sorted_size_prior = sorted.size();
+        const size_t sorted_size_prior = suggestions.size();
         const std::string_view typed_view = typed.strView();
         for(const auto& entry : Scanner::keywords){
             const auto& keyword = entry.first;
             if(keyword.size() >= typed_view.size() && std::string_view(keyword.data(), typed_view.size()) == typed_view)
-                sorted.push_back(std::string(keyword));
+                suggestions.push_back(std::string(keyword));
         }
-        std::sort(sorted.begin()+sorted_size_prior, sorted.end());
+        std::sort(suggestions.begin()+sorted_size_prior, suggestions.end());
     }
-
-    return sorted;
 }
 
 const Typeset::Selection& SymbolTable::getSel(size_t sym_index) const noexcept{

@@ -25,6 +25,8 @@ public:
     void clearPendingProjectBrowserUpdates() noexcept;
     void reset() noexcept;
     void runStaticPass();
+    void getFileSuggestions(std::vector<std::string>& suggestions) const;
+    void getFileSuggestions(std::vector<std::string>& suggestions, std::string_view input) const;
 
     FORSCAPE_UNORDERED_MAP<std::filesystem::path, Typeset::Model*> source_files; //May contain multiple entries per model
     std::vector<Code::Error> errors;

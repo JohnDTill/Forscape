@@ -422,6 +422,18 @@ void ParseTree::shift(ParseNode pn, size_t offset) {
     #ifndef NDEBUG
     created.insert(pn);
     #endif
+
+    //EVENTUALLY: the adhoc flag wrangling comes back to haunt you
+    // (although it's haunting you during adhoc tree grafting)
+    // Anywhere a ParseNode is implicitly in the tree, you'll have a bad time
+    switch (getOp(pn)) {
+        case OP_SINGLE_CHAR_MULT_PROXY:
+        case OP_IMPORT:
+            setFlag(pn, getFlag(pn)+offset);
+            shift(getFlag(pn), offset);
+            break;
+    }
+
     for(size_t i = getNumArgs(pn); i-->0;){
         ParseNode old_arg = arg(pn, i);
         if(old_arg == NONE) continue;
