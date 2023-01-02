@@ -127,6 +127,40 @@ void Program::runStaticPass() {
     running = false;
 }
 
+void Program::getFileSuggestions(std::vector<std::string>& suggestions) const {
+    for(const std::filesystem::path& path_entry : project_path)
+        if(!path_entry.empty() && std::filesystem::exists(path_entry)) //DO THIS: this should be an assertion
+        for(auto const& dir_entry : std::filesystem::directory_iterator{path_entry}){
+            const std::filesystem::path candidate_path = dir_entry.path();
+            if(candidate_path.extension() != std::filesystem::u8path(".π")) continue;
+            suggestions.push_back(candidate_path.filename().u8string());
+        }
+}
+
+void Program::getFileSuggestions(std::vector<std::string>& suggestions, std::string_view base) const {
+    std::filesystem::path rel_path(base);
+
+    for(const std::filesystem::path& path_entry : project_path){
+        if(!std::filesystem::exists(path_entry)) continue; //DO THIS: this should be an assertion
+
+        const std::string path_str = path_entry.u8string();
+        std::filesystem::path abs_path = (path_entry / rel_path).lexically_normal();
+        const std::string abs_string = abs_path.u8string();
+        std::filesystem::path dir = abs_path.parent_path();
+        if(!std::filesystem::exists(dir)) continue;
+
+        for(auto const& dir_entry : std::filesystem::directory_iterator{dir}){
+            const std::filesystem::path candidate_path = dir_entry.path();
+            if(candidate_path.extension() != std::filesystem::u8path(".π")) continue;
+            const std::string candidate_str = candidate_path.u8string();
+            if(candidate_str.substr(0, abs_string.size()) == abs_string){
+                std::filesystem::path rel_path = std::filesystem::relative(candidate_path, path_entry);
+                suggestions.push_back(rel_path.u8string());
+            }
+        }
+    }
+}
+
 Program::ptr_or_code Program::openFromRelativePathSpecifiedExtension(std::filesystem::path rel_path){
     for(const std::filesystem::path& path_entry : project_path){
         std::filesystem::path abs_path = (path_entry / rel_path).lexically_normal();

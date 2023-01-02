@@ -1615,7 +1615,8 @@ void Editor::rename(const std::string& str){
 }
 
 void Editor::recommend() {
-    auto suggestions = model->symbol_builder.symbol_table.getSuggestions(controller.active);
+    populateSuggestions();
+
     if(suggestions.empty()){
         recommender->hide();
         setFocus();
@@ -1646,12 +1647,44 @@ void Editor::recommend() {
     }
 }
 
+void Editor::populateSuggestions() {
+    recommend_without_hint = false;
+    filename_start = nullptr;
+    suggestions.clear();
+
+    for(const Code::Error& err : model->errors){
+        if(err.code == Code::EXPECTED_FILEPATH && err.selection.left == controller.anchor){
+            recommend_without_hint = true;
+            Program::instance()->getFileSuggestions(suggestions);
+            return;
+        }else if(err.code == Code::FILE_NOT_FOUND && err.selection.right == controller.anchor){
+            if(!err.selection.isTextSelection()) return;
+            filename_start = &err.selection.left;
+            Program::instance()->getFileSuggestions(suggestions, err.selection.strView());
+            return;
+        }
+    }
+
+    suggestions = model->symbol_builder.symbol_table.getSuggestions(controller.active);
+}
+
 void Editor::takeRecommendation(const std::string& str){
-    controller.selectPrevWord();
-    if(str != controller.selectedText())
+    if(recommend_without_hint){
+        if(controller.charLeft() != ' ')
+            controller.insertSerial(' ' + str);
+        else
+            controller.insertSerial(str);
+    }else if(filename_start){
+        controller.anchor = *filename_start;
         controller.insertSerial(str);
-    else
-        controller.consolidateToAnchor();
+    }else{
+        controller.selectPrevWord();
+        if(str != controller.selectedText())
+            controller.insertSerial(str);
+        else
+            controller.consolidateToAnchor();
+    }
+
     model->performSemanticFormatting();
     updateXSetpoint();
     updateModel();
