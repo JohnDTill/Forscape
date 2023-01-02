@@ -1,10 +1,11 @@
 #include "report.h"
 #include "typeset.h"
+#include "forscape_interpreter.h"
+#include "forscape_parser.h"
+#include "forscape_program.h"
 #include "forscape_scanner.h"
 #include "forscape_serial.h"
-#include "forscape_parser.h"
 #include "forscape_symbol_lexical_pass.h"
-#include "forscape_interpreter.h"
 
 using namespace Forscape;
 using namespace Code;
@@ -45,6 +46,7 @@ void runBenchmark(){
     report("Load / delete", ITER_MODEL_LOAD_DELETE);
 
     Typeset::Model* m = Typeset::Model::fromSerial(src);
+    Program::instance()->setProgramEntryPoint(m->path, m);
     Code::Scanner scanner(m);
 
     startClock();
