@@ -127,36 +127,41 @@ void Program::runStaticPass() {
     running = false;
 }
 
-void Program::getFileSuggestions(std::vector<std::string>& suggestions) const {
-    for(const std::filesystem::path& path_entry : project_path)
-        if(!path_entry.empty() && std::filesystem::exists(path_entry)) //DO THIS: this should be an assertion
-        for(auto const& dir_entry : std::filesystem::directory_iterator{path_entry}){
-            const std::filesystem::path candidate_path = dir_entry.path();
-            if(candidate_path.extension() != std::filesystem::u8path(".π")) continue;
-            suggestions.push_back(candidate_path.filename().u8string());
-        }
+static bool notPiFile(const std::string& str) noexcept {
+    assert(str.size() >= 3);
+    return std::string_view(str.data() + str.size() - 3) != ".π";
 }
 
-void Program::getFileSuggestions(std::vector<std::string>& suggestions, std::string_view base) const {
-    std::filesystem::path rel_path(base);
+void Program::getFileSuggestions(std::vector<std::string>& suggestions) const {
+    for(const std::filesystem::path& path_entry : project_path){
+        if(std::filesystem::exists(path_entry)){
+            for(auto const& dir_entry : std::filesystem::directory_iterator{path_entry}){
+                const std::string candidate = dir_entry.path().filename().u8string();
+                if(notPiFile(candidate)) continue;
+                suggestions.push_back(candidate);
+            }
+        }
+    }
+}
+
+void Program::getFileSuggestions(std::vector<std::string>& suggestions, std::string_view input) const {
+    const std::filesystem::path input_as_path(input);
+    const std::string input_filename = input_as_path.filename().u8string();
 
     for(const std::filesystem::path& path_entry : project_path){
-        if(!std::filesystem::exists(path_entry)) continue; //DO THIS: this should be an assertion
+        const std::filesystem::path dir_of_input = (path_entry / input_as_path).parent_path();
+        if(!std::filesystem::exists(dir_of_input)) continue;
 
-        const std::string path_str = path_entry.u8string();
-        std::filesystem::path abs_path = (path_entry / rel_path).lexically_normal();
-        const std::string abs_string = abs_path.u8string();
-        std::filesystem::path dir = abs_path.parent_path();
-        if(!std::filesystem::exists(dir)) continue;
-
-        for(auto const& dir_entry : std::filesystem::directory_iterator{dir}){
+        for(const auto& dir_entry : std::filesystem::directory_iterator{dir_of_input}){
             const std::filesystem::path candidate_path = dir_entry.path();
-            if(candidate_path.extension() != std::filesystem::u8path(".π")) continue;
-            const std::string candidate_str = candidate_path.u8string();
-            if(candidate_str.substr(0, abs_string.size()) == abs_string){
-                std::filesystem::path rel_path = std::filesystem::relative(candidate_path, path_entry);
-                suggestions.push_back(rel_path.u8string());
-            }
+            const std::string candidate_filename = candidate_path.filename().u8string();
+
+            if(candidate_filename.size() < input_filename.size() ||
+               notPiFile(candidate_filename) ||
+               std::string_view(candidate_filename.data(), input_filename.size()) != input_filename) continue;
+
+            std::filesystem::path rel_path = std::filesystem::relative(candidate_path, path_entry);
+            suggestions.push_back(rel_path.u8string());
         }
     }
 }

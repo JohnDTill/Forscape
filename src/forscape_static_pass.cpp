@@ -371,20 +371,25 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             Symbol& sym = *parse_tree.getSymbol(var);
             ParseNode file = parse_tree.child(pn);
             Typeset::Model* model = parse_tree.getModel(file);
+            sym.type = MODULE;
+            sym.flag = reinterpret_cast<size_t>(model);
+
             if(!model->is_imported){
                 model->is_imported = true;
                 model->parse_node_offset = parse_tree.offset();
                 model->postmutate();
-                const ParseTree& imported = model->parser.parse_tree;
-                const ParseNode root = parse_tree.append(imported);
-                resolveStmt(root);
-                parse_tree.setFlag(pn, root);
+                if(model->errors.empty()){
+                    const ParseTree& imported = model->parser.parse_tree;
+                    const ParseNode root = parse_tree.append(imported);
+                    resolveStmt(root);
+                    parse_tree.setFlag(pn, root);
+                }else{
+                    parse_tree.setFlag(pn, NONE);
+                    return error(pn, file, ERROR_IN_LOADED_FILE);
+                }
             }else{
                 parse_tree.setFlag(pn, NONE);
             }
-
-            sym.type = MODULE;
-            sym.flag = reinterpret_cast<size_t>(model);
 
             return pn;
         }
@@ -397,10 +402,15 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                 model->is_imported = true;
                 model->parse_node_offset = parse_tree.offset();
                 model->postmutate();
-                const ParseTree& imported = model->parser.parse_tree;
-                const ParseNode root = parse_tree.append(imported);
-                resolveStmt(root);
-                parse_tree.setFlag(pn, root);
+                if(model->errors.empty()){
+                    const ParseTree& imported = model->parser.parse_tree;
+                    const ParseNode root = parse_tree.append(imported);
+                    resolveStmt(root);
+                    parse_tree.setFlag(pn, root);
+                }else{
+                    parse_tree.setFlag(pn, NONE);
+                    return error(pn, file, ERROR_IN_LOADED_FILE);
+                }
             }else{
                 parse_tree.setFlag(pn, NONE);
             }

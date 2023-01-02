@@ -288,6 +288,9 @@ private:
     void rename(const std::string& str);
     virtual void recommend() override final;
     void populateSuggestions();
+    void suggestFileNames();
+    void suggestFileNames(const Typeset::Selection& sel);
+    void suggestModuleFields(const Typeset::Selection& sel);
     void takeRecommendation(const std::string& str);
 
     ParseNode contextNode = NONE;
