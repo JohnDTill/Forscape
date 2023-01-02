@@ -1654,22 +1654,30 @@ void Editor::populateSuggestions() {
 
     for(const Code::Error& err : model->errors){
         if(err.code == Code::EXPECTED_FILEPATH && err.selection.left == controller.anchor){
+            //Just about to type a filename
             recommend_without_hint = true;
             Program::instance()->getFileSuggestions(suggestions);
+            std::sort(suggestions.begin(), suggestions.end());
+            suggestions.erase(std::unique(suggestions.begin(), suggestions.end()), suggestions.end());
             return;
         }else if(err.code == Code::FILE_NOT_FOUND && err.selection.right == controller.anchor){
+            //In the process of typing a filename
             if(!err.selection.isTextSelection()) return;
             filename_start = &err.selection.left;
             Program::instance()->getFileSuggestions(suggestions, err.selection.strView());
+            std::sort(suggestions.begin(), suggestions.end());
+            suggestions.erase(std::unique(suggestions.begin(), suggestions.end()), suggestions.end());
             return;
         }else if(err.code == Code::IMPORT_FIELD_NOT_FOUND && err.selection.right == controller.anchor){
+            //In the process of typing an external module variable
             const Typeset::Marker& left = err.selection.left;
             ParseNode err_node = left.text->parseNodeAtIndex(left.index);
             size_t flag = parseTree().getFlag(err_node);
-            const auto& map = *reinterpret_cast<FORSCAPE_UNORDERED_MAP<Typeset::Selection, size_t>*>(flag);
-            for(const auto& entry : map)
+            const auto& lexical_map = *reinterpret_cast<FORSCAPE_UNORDERED_MAP<Typeset::Selection, size_t>*>(flag);
+            for(const auto& entry : lexical_map)
                 if(entry.first.startsWith(err.selection))
                     suggestions.push_back(entry.first.str());
+            std::sort(suggestions.begin(), suggestions.end());
             return;
         }
     }
