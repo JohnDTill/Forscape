@@ -1,4 +1,5 @@
 #include <cassert>
+#include <forscape_program.h>
 #include "typeset.h"
 #include <string>
 #include "report.h"
@@ -9,6 +10,7 @@ inline bool testTypesetMutability(){
     bool passing = true;
 
     Typeset::Model* model = Typeset::Model::fromSerial("");
+    Forscape::Program::instance()->setProgramEntryPoint("", model);
     Typeset::Controller controller(model);
 
     controller.insertText("c");

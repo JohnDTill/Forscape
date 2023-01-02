@@ -395,7 +395,6 @@ void SymbolLexicalPass::resolveIdMult(ParseNode pn, Typeset::Marker left, Typese
                 return;
             }else{
                 lookup = lexical_map.end();
-                sel.format(SEM_PREDEF);
             }
         }
         implicit_mult_hits.push_back(lookup);
@@ -431,8 +430,12 @@ void SymbolLexicalPass::resolveIdMult(ParseNode pn, Typeset::Marker left, Typese
             t->patchParseNode(index++, pn, left.index, m.index);
         }
         #endif
-        if(lookup != lexical_map.end()) resolveReference(pn, lookup->second);
-        else parse_tree.setOp(pn, predef.find(sel.strView())->second);
+        if(lookup != lexical_map.end()){
+            resolveReference(pn, lookup->second);
+        }else{
+            parse_tree.setOp(pn, predef.find(sel.strView())->second);
+            sel.format(SEM_PREDEF);
+        }
         parse_tree.addNaryChild(pn);
         left = m;
     }
@@ -468,7 +471,6 @@ void SymbolLexicalPass::resolveScriptMult(ParseNode pn, Typeset::Marker left, Ty
                 return;
             }else{
                 lookup = lexical_map.end();
-                sel.format(SEM_PREDEF);
             }
         }
         implicit_mult_hits.push_back(lookup);
@@ -499,8 +501,12 @@ void SymbolLexicalPass::resolveScriptMult(ParseNode pn, Typeset::Marker left, Ty
         #ifndef FORSCAPE_TYPESET_HEADLESS
         t->tagParseNode(pn, left.index, m.index);
         #endif
-        if(lookup != lexical_map.end()) resolveReference(pn, lookup->second);
-        else parse_tree.setOp(pn, predef.find(sel.strView())->second);
+        if(lookup != lexical_map.end()){
+            resolveReference(pn, lookup->second);
+        }else{
+            parse_tree.setOp(pn, predef.find(sel.strView())->second);
+            sel.format(SEM_PREDEF);
+        }
         parse_tree.addNaryChild(pn);
         left = m;
     }
