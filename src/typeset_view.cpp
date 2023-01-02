@@ -1386,7 +1386,7 @@ void Editor::runThread(){
     }else{
         is_running = true;
         allow_write = false;
-        model->runThread();
+        Program::instance()->program_entry_point->runThread();
     }
 }
 
@@ -1395,7 +1395,7 @@ bool Editor::isRunning() const noexcept{
 }
 
 void Editor::reenable() noexcept{
-    assert(model->interpreter.status == Code::Interpreter::FINISHED);
+    assert(Program::instance()->program_entry_point->interpreter.status == Code::Interpreter::FINISHED);
     is_running = false;
     allow_write = true;
 }
