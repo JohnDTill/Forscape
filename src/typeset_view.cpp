@@ -1662,10 +1662,19 @@ void Editor::populateSuggestions() {
             filename_start = &err.selection.left;
             Program::instance()->getFileSuggestions(suggestions, err.selection.strView());
             return;
+        }else if(err.code == Code::IMPORT_FIELD_NOT_FOUND && err.selection.right == controller.anchor){
+            const Typeset::Marker& left = err.selection.left;
+            ParseNode err_node = left.text->parseNodeAtIndex(left.index);
+            size_t flag = parseTree().getFlag(err_node);
+            const auto& map = *reinterpret_cast<FORSCAPE_UNORDERED_MAP<Typeset::Selection, size_t>*>(flag);
+            for(const auto& entry : map)
+                if(entry.first.startsWith(err.selection))
+                    suggestions.push_back(entry.first.str());
+            return;
         }
     }
 
-    suggestions = model->symbol_builder.symbol_table.getSuggestions(controller.active);
+    model->symbol_builder.symbol_table.getSuggestions(controller.active, suggestions);
 }
 
 void Editor::takeRecommendation(const std::string& str){

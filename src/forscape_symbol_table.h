@@ -136,7 +136,7 @@ public:
 
     void addSymbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed, bool is_const) alloc_except;
     size_t containingScope(const Typeset::Marker& m) const noexcept;
-    std::vector<std::string> getSuggestions(const Typeset::Marker& loc) const;
+    void getSuggestions(const Typeset::Marker& loc, std::vector<std::string>& suggestions) const;
     const Typeset::Selection& getSel(size_t sym_index) const noexcept;
 
     void reset(const Typeset::Marker& doc_start) noexcept;

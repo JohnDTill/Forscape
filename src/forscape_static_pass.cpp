@@ -414,7 +414,8 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                 auto lookup = lexical_map.find(parse_tree.getSelection(imported_var));
                 if(lookup == lexical_map.end()){
                     parse_tree.setOp(imported_var, OP_ERROR);
-                    return error(pn, pn, BAD_READ);
+                    parse_tree.setFlag(imported_var, reinterpret_cast<size_t>(&lexical_map));
+                    return error(pn, imported_var, IMPORT_FIELD_NOT_FOUND);
                 }
 
                 Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
