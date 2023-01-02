@@ -425,6 +425,7 @@ void ParseTree::shift(ParseNode pn, size_t offset) {
 
     //EVENTUALLY: the adhoc flag wrangling comes back to haunt you
     // (although it's haunting you during adhoc tree grafting)
+    // Anywhere a ParseNode is implicitly in the tree, you'll have a bad time
     switch (getOp(pn)) {
         case OP_SINGLE_CHAR_MULT_PROXY:
         case OP_IMPORT:

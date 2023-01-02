@@ -835,7 +835,7 @@ void View::drawModel(double xL, double yT, double xR, double yB) {
 
     #ifndef NDEBUG
     if(hover_node != NONE){
-        const Typeset::Selection& sel = parseTree().getSelection(hover_node);
+        const Typeset::Selection& sel = model->parser.parse_tree.getSelection(hover_node);
         sel.paintHighlight(painter);
     }
     #endif
@@ -1437,7 +1437,6 @@ void Editor::resolveTooltip(double x, double y) noexcept {
     }
 
     hover_node = model->parseNodeAt(x, y);
-    if(hover_node != NONE) hover_node += model->parse_node_offset;
     #ifndef NDEBUG
     if(hover_node == NONE) clearTooltip();
     #else
@@ -1559,9 +1558,10 @@ void Editor::goToFile() {
 }
 
 void Editor::showTooltipParseNode(){
-    assert(hover_node != NONE);
+    assert(this->hover_node != NONE);
 
     const auto& parse_tree = parseTree();
+    const ParseNode hover_node = this->hover_node + model->parse_node_offset;
     switch(parse_tree.getOp(hover_node)){
         case Code::OP_IDENTIFIER:{
             if(!model->errors.empty()) return; //EVENTUALLY: this is a bit strict. would rather have feedback
