@@ -1,5 +1,6 @@
 #include "typeset_model.h"
 
+#include "forscape_program.h"
 #include "forscape_serial.h"
 #include "typeset_all_constructs.h"
 #include <typeset_command_list.h>
@@ -11,7 +12,7 @@
 #include "forscape_message.h"
 #include <forscape_scanner.h>
 #include <forscape_parser.h>
-#include <forscape_symbol_build_pass.h>
+#include <forscape_symbol_lexical_pass.h>
 #include <forscape_symbol_link_pass.h>
 #include <forscape_interpreter.h>
 #include <fstream>
@@ -92,7 +93,7 @@ std::string Model::toSerial() const {
 std::string Model::run(){
     assert(errors.empty());
 
-    interpreter.run(parser.parse_tree, symbol_builder.symbol_table, static_pass.instantiation_lookup);
+    interpreter.run(parser.parse_tree, &symbol_builder.symbol_table, static_pass.instantiation_lookup);
 
     std::string str;
 
@@ -364,7 +365,7 @@ bool Model::isSavedDeepComparison() const {
     if(path.empty()) return empty();
 
     //Avoid a deep comparison if size from file meta data doesn't match
-    if(std::filesystem::file_size(path) != serialChars()) return false;
+    //if(std::filesystem::file_size(path) != serialChars()) return false; //Disabled for line endings
 
     std::ifstream in(path);
     assert(in.is_open());
@@ -614,7 +615,7 @@ void Model::performSemanticFormatting(){
     scanner.scanAll();
     parser.parseAll();
     symbol_builder.resolveSymbols();
-    static_pass.resolve();
+    Program::instance()->runStaticPass();
 }
 
 void Model::premutate() noexcept{

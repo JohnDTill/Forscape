@@ -30,6 +30,7 @@ public:
 
 #ifndef NDEBUG
     void print();
+    FORSCAPE_UNORDERED_MAP<std::string, std::unordered_set<std::string>> aliases;
 
 private:
     std::vector<std::string> stack_names;

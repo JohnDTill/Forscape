@@ -21,7 +21,9 @@ void Program::clear() noexcept {
 }
 
 void Program::setProgramEntryPoint(std::filesystem::path path, Typeset::Model* model) {
-    assert(path == std::filesystem::canonical(path));
+    assert(path.empty() || path == std::filesystem::canonical(path));
+    all_files.clear();
+    all_files.push_back(model);
     source_files.clear();
     source_files[path] = model;
     projectDirectory() = path.parent_path();
@@ -38,7 +40,21 @@ Program::ptr_or_code Program::openFromAbsolutePath(const std::filesystem::path& 
     std::ifstream in(path);
     if(!in.is_open()) return FILE_NOT_FOUND;
 
-    assert(path == std::filesystem::weakly_canonical(path));
+    //The path is required to be lexically normal, which is the same as canonical except
+    //that symlinks are not resolved, which requires reading from disk. We only pay this
+    //cost after confirming the file is not loaded and does exist.
+    assert(path == path.lexically_normal());
+    std::filesystem::path canonical_path = std::filesystem::canonical(path);
+    auto canonical_result = result;
+    const bool followed_symlink = (canonical_path != path);
+    if(followed_symlink){
+        canonical_result = source_files.insert({canonical_path, FILE_NOT_FOUND_PTR});
+        if(!canonical_result.second){
+            //This file was already loaded
+            result.first->second = canonical_result.first->second;
+            return reinterpret_cast<ptr_or_code>(canonical_result.first->second);
+        }
+    }
 
     std::stringstream buffer;
     buffer << in.rdbuf();
@@ -52,8 +68,10 @@ Program::ptr_or_code Program::openFromAbsolutePath(const std::filesystem::path& 
     if(!Forscape::isValidSerial(src)) return FILE_CORRUPTED;
 
     Typeset::Model* model = Typeset::Model::fromSerial(src);
+    all_files.push_back(model);
     model->path = path;
     entry->second = model;
+    canonical_result.first->second = model;
     pending_project_browser_updates.push_back(model);
 
     return reinterpret_cast<size_t>(model);
@@ -74,9 +92,13 @@ Program::ptr_or_code Program::openFromRelativePath(std::string_view file_name){
 }
 
 void Program::freeFileMemory() noexcept {
-    for(auto& entry : source_files)
-        delete entry.second;
+    for(auto& entry : all_files) delete entry;
+    all_files.clear();
     source_files.clear();
+}
+
+const std::vector<Typeset::Model*>& Program::allFiles() const noexcept {
+    return all_files;
 }
 
 const std::vector<Typeset::Model*>& Program::getPendingProjectBrowserUpdates() const noexcept {
@@ -87,10 +109,28 @@ void Program::clearPendingProjectBrowserUpdates() noexcept {
     pending_project_browser_updates.clear();
 }
 
+void Program::reset() noexcept {
+    for(const auto& entry : all_files){
+        entry->is_imported = false;
+
+        for(Code::Symbol& symbol : entry->symbol_builder.symbol_table.symbols)
+            symbol.last_external_usage = symbol.lastUsage();
+    }
+}
+
+void Program::runStaticPass() {
+    static bool running = false;
+    if(running) return;
+    running = true;
+    program_entry_point->postmutate();
+    program_entry_point->static_pass.resolve();
+    running = false;
+}
+
 Program::ptr_or_code Program::openFromRelativePathSpecifiedExtension(std::filesystem::path rel_path){
     for(const std::filesystem::path& path_entry : project_path){
-        std::filesystem::path abs_path = std::filesystem::weakly_canonical(path_entry / rel_path);
-        if(Program::ptr_or_code model = openFromAbsolutePath(path_entry)) return model;
+        std::filesystem::path abs_path = (path_entry / rel_path).lexically_normal();
+        if(Program::ptr_or_code model = openFromAbsolutePath(abs_path)) return model;
     }
 
     return FILE_NOT_FOUND;
@@ -98,7 +138,7 @@ Program::ptr_or_code Program::openFromRelativePathSpecifiedExtension(std::filesy
 
 Program::ptr_or_code Program::openFromRelativePathAutoExtension(std::filesystem::path rel_path){
     for(const std::filesystem::path& path_entry : project_path){
-        std::filesystem::path abs_path = std::filesystem::weakly_canonical(path_entry / rel_path);
+        std::filesystem::path abs_path = (path_entry / rel_path).lexically_normal();
 
         //This seems like pointlessly much interaction
         for(const std::string_view& extension : extensions){

@@ -9,4 +9,10 @@ print(ab, "\n")
 x* = 2
 xr = 3
 print(abx*a, "\n")
-print(abxra)
+print(abxra, "\n")
+
+//With predefined variables
+print(ae/e, "\n")
+print(ea/e, "\n")
+print(aebx*ae/(ee), "\n")
+print(abexrae/(ee), "\n")

@@ -1,12 +1,13 @@
 #include "forscape_parse_tree.h"
 
 #include <code_parsenode_ops.h>
-#include <forscape_common.h>
-#include <forscape_static_pass.h>
+#include "forscape_common.h"
+#include "forscape_static_pass.h"
 #include "typeset_selection.h"
 
 #ifndef NDEBUG
 #include <code_parsenodegraphviz.h>
+#include "forscape_symbol_table.h"
 #include <iostream>
 #endif
 
@@ -122,8 +123,28 @@ void ParseTree::setSymId(ParseNode pn, size_t sym_id) noexcept {
 
 size_t ParseTree::getSymId(ParseNode pn) const noexcept{
     assert(isNode(pn));
-    assert(getOp(pn) == OP_IDENTIFIER);
+    assert(getOp(pn) == OP_IDENTIFIER || getOp(pn) == OP_READ_UPVALUE);
     return getFlag(pn);
+}
+
+void ParseTree::setSymbol(ParseNode pn, const Symbol* const symbol) noexcept {
+    assert(isNode(pn));
+    assert(getOp(pn) == OP_IDENTIFIER || getOp(pn) == OP_READ_UPVALUE);
+    assert(SymbolTable::isValidSymbolPtr(symbol));
+    setFlag(pn, reinterpret_cast<size_t>(symbol));
+}
+
+Symbol* ParseTree::getSymbol(ParseNode pn) const noexcept {
+    assert(isNode(pn));
+    assert(getOp(pn) == OP_IDENTIFIER || getOp(pn) == OP_READ_UPVALUE);
+    assert(SymbolTable::isValidSymbolPtr(reinterpret_cast<Symbol*>(getFlag(pn))));
+    return reinterpret_cast<Symbol*>(getFlag(pn));
+}
+
+Typeset::Model* ParseTree::getModel(ParseNode pn) const noexcept {
+    assert(isNode(pn));
+    assert(getOp(pn) == OP_FILE_REF);
+    return reinterpret_cast<Typeset::Model*>(getFlag(pn));
 }
 
 void ParseTree::setRefList(ParseNode fn, ParseNode list) noexcept {
@@ -330,7 +351,7 @@ void ParseTree::prepareNary() alloc_except {
 }
 
 void ParseTree::addNaryChild(ParseNode pn) alloc_except {
-    assert(isNode(pn));
+    assert(isNode(pn) || pn == NONE);
     nary_construction_stack.push_back(pn);
 }
 
@@ -386,6 +407,32 @@ void ParseTree::patchClonedTypes() noexcept {
         setRows(orig, getRows(clone));
         setCols(orig, getCols(clone));
     }
+}
+
+size_t ParseTree::append(const ParseTree& other) {
+    const size_t offset = data.size();
+    data.insert(data.end(), other.data.cbegin(), other.data.cend());
+    const size_t copied_root = other.root + offset;
+    shift(copied_root, offset);
+
+    return copied_root;
+}
+
+void ParseTree::shift(ParseNode pn, size_t offset) {
+    #ifndef NDEBUG
+    created.insert(pn);
+    #endif
+    for(size_t i = getNumArgs(pn); i-->0;){
+        ParseNode old_arg = arg(pn, i);
+        if(old_arg == NONE) continue;
+        ParseNode new_arg = old_arg + offset;
+        setArg(pn, i, new_arg);
+        shift(new_arg, offset);
+    }
+}
+
+size_t ParseTree::offset() const noexcept {
+    return data.size();
 }
 
 #ifndef NDEBUG

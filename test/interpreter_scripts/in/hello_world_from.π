@@ -1,2 +1,2 @@
-//from hello_world import helloWorld //EVENTUALLY: support from imports
-//helloWorld()
+from hello_world import helloWorld
+helloWorld()

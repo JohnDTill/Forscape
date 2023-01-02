@@ -1,5 +1,6 @@
 #include <typeset_view.h>
 
+#include "forscape_program.h"
 #include <typeset_command_pair.h>
 #include <typeset_construct.h>
 #include <typeset_integral_preference.h>
@@ -39,6 +40,14 @@ static constexpr auto THROTTLE_WINDOW = std::chrono::milliseconds(200);
 namespace Forscape {
 
 namespace Typeset {
+
+static Code::ParseTree& parseTree() noexcept {
+    return Program::instance()->program_entry_point->parser.parse_tree;
+}
+
+static Code::StaticPass& staticPass() noexcept {
+    return Program::instance()->program_entry_point->static_pass;
+}
 
 class View::VerticalScrollBar : public QScrollBar {
 private:
@@ -237,6 +246,7 @@ Model* View::getModel() const noexcept {
 }
 
 void View::setModel(Model* m) noexcept {
+    hover_node = NONE;
     highlighted_words.clear();
     model = m;
     controller = Controller(model);
@@ -560,10 +570,14 @@ void View::updateHighlightingFromCursorLocation(){
 
 void View::populateHighlightWordsFromParseNode(ParseNode pn){
     const auto& parse_tree = model->parser.parse_tree;
-    if(parse_tree.getOp(pn) != Code::OP_IDENTIFIER) return;
-    size_t sym_id = parse_tree.getFlag(pn);
-    const auto& symbol_table = model->symbol_builder.symbol_table;
-    symbol_table.getSymbolOccurences(sym_id, highlighted_words);
+    if(parse_tree.getOp(pn) == Code::OP_FILE_REF){
+        ParseNode id = parse_tree.getCols(pn);
+        if(id == 0) return;
+        pn = id;
+    }
+    else if(parse_tree.getOp(pn) != Code::OP_IDENTIFIER) return;
+    const Code::Symbol* const sym = parse_tree.getSymbol(pn);
+    sym->getAllOccurences(highlighted_words);
 }
 
 bool View::scrolledToBottom() const noexcept{
@@ -816,12 +830,12 @@ void View::drawModel(double xL, double yT, double xR, double yB) {
             e.selection.paintError(painter);
 
     for(const Selection& c : highlighted_words)
-        if(c.overlapsY(yT, yB))
+        if(c.getModel() == model && c.overlapsY(yT, yB))
             c.paintHighlight(painter);
 
     #ifndef NDEBUG
     if(hover_node != NONE){
-        const Typeset::Selection& sel = model->parser.parse_tree.getSelection(hover_node);
+        const Typeset::Selection& sel = parseTree().getSelection(hover_node);
         sel.paintHighlight(painter);
     }
     #endif
@@ -1344,11 +1358,11 @@ void Recommender::paintEvent(QPaintEvent* event){
 
 Recommender* Editor::recommender = nullptr;
 
-Label* Editor::tooltip = nullptr;
+static Tooltip* tooltip = nullptr;
 
 Editor::Editor(){
     if(tooltip == nullptr){
-        tooltip = new Label();
+        tooltip = new Tooltip();
         tooltip->setWindowFlags(Qt::ToolTip);
         tooltip->setDisabled(true);
         tooltip->setFocusPolicy(Qt::NoFocus);
@@ -1399,8 +1413,10 @@ void Editor::focusOutEvent(QFocusEvent* event){
 }
 
 void Editor::leaveEvent(QEvent* event){
+    tooltip->editor = this;
     View::leaveEvent(event);
-    clearTooltip();
+    if(tooltip->isHidden() || !tooltip->rect().contains(tooltip->mapFromGlobal(QCursor::pos())))
+        clearTooltip();
 }
 
 void Editor::resolveTooltip(double x, double y) noexcept {
@@ -1421,6 +1437,7 @@ void Editor::resolveTooltip(double x, double y) noexcept {
     }
 
     hover_node = model->parseNodeAt(x, y);
+    if(hover_node != NONE) hover_node += model->parse_node_offset;
     #ifndef NDEBUG
     if(hover_node == NONE) clearTooltip();
     #else
@@ -1438,12 +1455,14 @@ void Editor::populateContextMenuFromModel(QMenu& menu, double x, double y) {
     if(contextNode == NONE) return;
 
     switch (model->parseTree().getOp(contextNode)) {
-        case Code::OP_IDENTIFIER:
-            append("Rename", rename, true, true)
+        case Code::OP_IDENTIFIER:{
+            const Code::Symbol& sym = *parseTree().getSymbol(contextNode + model->parse_node_offset);
+            if(!sym.tied_to_file) append("Rename", rename, true, true)
             append("Go to definition", goToDef, true, true)
             append("Find usages", findUsages, true, true)
             menu.addSeparator();
             break;
+        }
         case Code::OP_FILE_REF:
             append("Go to file", goToFile, true, true)
             //append("Find usages", findUsages, true, true) //EVENTUALLY: figure out cross-file usages
@@ -1492,32 +1511,41 @@ void Editor::rename(){
 
 void Editor::goToDef(){
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
-    auto& symbol_table = model->symbol_builder.symbol_table;
-    controller = symbol_table.getSel(model->parseTree().getSymId(contextNode));
-    restartCursorBlink();
-    ensureCursorVisible();
-    update();
+    const Typeset::Selection& sel = model->parseTree().getSymbol(contextNode)->firstOccurence();
+    emit goToSelection(sel);
 }
 
 void Editor::findUsages(){
     assert(console);
 
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
-    auto& symbol_table = model->symbol_builder.symbol_table;
     std::vector<Typeset::Selection> occurences;
-    symbol_table.getSymbolOccurences(model->parseTree().getSymId(contextNode), occurences);
+    const Code::Symbol& sym = *model->parseTree().getSymbol(contextNode);
+    sym.getAllOccurences(occurences);
+
+    std::map<std::string, std::vector<Typeset::Selection>> file_usages;
+    for(auto it = occurences.crbegin(); it != occurences.crend(); it++){
+        const auto& sel = *it;
+        Model* m = sel.getModel();
+        auto result = file_usages.insert({m->path.filename().u8string(), {sel}});
+        if(!result.second) result.first->second.push_back(sel);
+    }
 
     Model* m = new Model();
     m->is_output = true;
     console->setModel(m);
     size_t last_handled = std::numeric_limits<size_t>::max();
-    for(const auto& entry : occurences){
-        Line* target_line = entry.getStartLine();
-        if(target_line->id != last_handled){
-            last_handled = target_line->id;
-            m->lastLine()->appendConstruct(new Typeset::MarkerLink(target_line, this, getModel()));
-            std::string line_snippet = target_line->toString();
-            console->appendSerial("  " + line_snippet + "\n");
+    for(const auto& map_entry : file_usages){
+        console->appendSerial(map_entry.first + ":\n");
+        for(const auto& sel : map_entry.second){
+            Line* target_line = sel.getStartLine();
+            if(target_line->id != last_handled){
+                last_handled = target_line->id;
+                console->appendSerial("   ");
+                m->lastLine()->appendConstruct(new Typeset::MarkerLink(target_line, this, target_line->parent));
+                std::string line_snippet = target_line->toString();
+                console->appendSerial("  " + line_snippet + "\n");
+            }
         }
     }
 
@@ -1525,28 +1553,26 @@ void Editor::findUsages(){
 }
 
 void Editor::goToFile() {
-    assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_FILE_REF);
-    Typeset::Model* referenced = reinterpret_cast<Typeset::Model*>(model->parseTree().getFlag(contextNode));
+    assert(contextNode != NONE && parseTree().getOp(contextNode) == Code::OP_FILE_REF);
+    Typeset::Model* referenced = parseTree().getModel(contextNode);
     emit goToModel(referenced, 0);
 }
 
 void Editor::showTooltipParseNode(){
     assert(hover_node != NONE);
 
-    const auto& parse_tree = model->parser.parse_tree;
+    const auto& parse_tree = parseTree();
     switch(parse_tree.getOp(hover_node)){
         case Code::OP_IDENTIFIER:{
             if(!model->errors.empty()) return; //EVENTUALLY: this is a bit strict. would rather have feedback
-            const auto& symbol_table = model->symbol_builder.symbol_table;
-            size_t sym_id = parse_tree.getFlag(hover_node);
-            const auto& symbol = symbol_table.symbols[sym_id];
+            const auto& symbol = *parse_tree.getSymbol(hover_node);
 
             tooltip->clear();
-            tooltip->appendSerial(parse_tree.str(hover_node) + " ∈ " + model->static_pass.typeString(symbol));
+            tooltip->appendSerial(parse_tree.str(hover_node) + " ∈ " + staticPass().typeString(symbol));
 
             if(symbol.comment != NONE){
                 tooltip->appendSerial("\n");
-                tooltip->appendSerial(symbol_table.parse_tree.str(symbol.comment), SEM_COMMENT);
+                tooltip->appendSerial(parse_tree.str(symbol.comment), SEM_COMMENT);
             }
 
             tooltip->fitToContents();
@@ -1573,9 +1599,9 @@ void Editor::showTooltip(){
 
 void Editor::rename(const std::string& str){
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
-    auto& symbol_table = model->symbol_builder.symbol_table;
     std::vector<Typeset::Selection> occurences;
-    symbol_table.getSymbolOccurences(model->parseTree().getSymId(contextNode), occurences);
+    const Code::Symbol& sym = *model->parseTree().getSymbol(contextNode);
+    sym.getAllOccurences(occurences);
 
     replaceAll(occurences, str);
 
@@ -1639,6 +1665,11 @@ void Editor::takeRecommendation(const std::string& str){
     qApp->processEvents();
 
     emit textChanged();
+}
+
+void Tooltip::leaveEvent(QEvent* event) {
+    if(!editor->rect().contains(editor->mapFromGlobal(QCursor::pos())))
+        editor->clearTooltip();
 }
 
 }

@@ -20,19 +20,28 @@ namespace Code {
 
 class ParseTree;
 
-typedef size_t ScopeId;
-typedef size_t SymbolId;
+typedef size_t ScopeSegmentIndex;
+typedef size_t SymbolIndex;
+typedef size_t SymbolUsageIndex;
+class SymbolLexicalPass;
+class SymbolTable;
+struct SymbolUsage;
 
 struct Symbol {
-    size_t declaration_lexical_depth  DEBUG_INIT_UNITIALISED;
-    size_t declaration_closure_depth  DEBUG_INIT_UNITIALISED;
-    size_t flag  DEBUG_INIT_UNITIALISED;
+private: friend SymbolLexicalPass; friend SymbolTable; //Fields for the lexical pass
+    SymbolIndex index_of_shadowed_var  DEBUG_INIT_UNITIALISED(SymbolIndex);
+    SymbolUsageIndex last_usage_index  DEBUG_INIT_UNITIALISED(SymbolUsageIndex);
+    uint16_t declaration_lexical_depth  DEBUG_INIT_UNITIALISED(uint16_t);
+    size_t previous_namespace_index = NONE;
+    const Typeset::Selection& sel(const ParseTree& parse_tree) const noexcept;
+
+public:
+    uint8_t declaration_closure_depth  DEBUG_INIT_UNITIALISED(uint8_t);
+    size_t flag  DEBUG_INIT_UNITIALISED(size_t);
     size_t type = NONE;
     size_t rows = UNKNOWN_SIZE;
     size_t cols = UNKNOWN_SIZE;
-    size_t shadowed_var  DEBUG_INIT_UNITIALISED;
-    size_t comment  DEBUG_INIT_UNITIALISED;
-    size_t scope_tail = NONE;
+    ParseNode comment  DEBUG_INIT_UNITIALISED(ParseNode);
     bool is_const;
     bool is_used = false;
     bool is_reassigned = false; //Used to determine if parameters are constant
@@ -40,42 +49,37 @@ struct Symbol {
     bool is_prototype = false;
     bool is_ewise_index = false;
     bool is_captured_by_value = false;
+    bool tied_to_file = false;
 
     Symbol() noexcept;
     Symbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed_var, bool is_const) noexcept;
     size_t closureIndex() const noexcept;
-    const Typeset::Selection& sel(const ParseTree& parse_tree) const noexcept;
+    const Typeset::Selection& firstOccurence() const noexcept;
+    const Typeset::Selection& sel() const noexcept;
+    std::string str() const noexcept;
+    SymbolUsage* lastUsage() const noexcept { return reinterpret_cast<SymbolUsage*>(last_usage_index); }
+    SymbolUsage* last_external_usage;
+    Symbol* shadowedVar() const noexcept { return reinterpret_cast<Symbol*>(index_of_shadowed_var); }
+    void setShadowedVar(Symbol* sym) noexcept { index_of_shadowed_var = reinterpret_cast<size_t>(sym); }
+    void getLocalOccurences(std::vector<Typeset::Selection>& found) const;
+    void getAllOccurences(std::vector<Typeset::Selection>& found) const;
 };
 
-enum UsageType{
-    DECLARE,
-    READ,
-};
+struct ScopeSegment {
+    SymbolIndex first_sym_index  DEBUG_INIT_UNITIALISED(SymbolIndex);
+    ScopeSegmentIndex parent_lexical_segment_index  DEBUG_INIT_UNITIALISED(ScopeSegmentIndex);
+    ScopeSegmentIndex prev_lexical_segment_index  DEBUG_INIT_UNITIALISED(ScopeSegmentIndex);
+    bool is_end_of_scope = false;
+    Typeset::Marker start_of_selection;
+    ParseNode fn  DEBUG_INIT_UNITIALISED(ParseNode);
+    size_t usage_begin  DEBUG_INIT_UNITIALISED(size_t);
+    ScopeSegmentIndex prev_namespace_segment  DEBUG_INIT_UNITIALISED(ScopeSegmentIndex);
+    size_t usage_end = NONE;
 
-struct Usage{
-    size_t var_id  DEBUG_INIT_UNITIALISED;
-    ParseNode pn  DEBUG_INIT_UNITIALISED;
-    UsageType type;
-
-    Usage() noexcept;
-    Usage(size_t var_id, ParseNode pn, UsageType type) noexcept;
-};
-
-struct ScopeSegment{
     #ifdef FORSCAPE_USE_SCOPE_NAME
     size_t name_start;
     size_t name_size;
     #endif
-    Typeset::Marker start;
-    ParseNode fn  DEBUG_INIT_UNITIALISED;
-    ScopeId parent  DEBUG_INIT_UNITIALISED;
-    ScopeId prev_lexical_segment  DEBUG_INIT_UNITIALISED;
-    SymbolId sym_begin  DEBUG_INIT_UNITIALISED;
-    size_t usage_begin  DEBUG_INIT_UNITIALISED;
-    ScopeId next_lexical_segment = NONE;
-    ScopeId prev_namespace_segment  DEBUG_INIT_UNITIALISED;
-    SymbolId sym_end = NONE;
-    size_t usage_end = NONE;
 
     ScopeSegment(
         #if !defined(NDEBUG) && !defined(FORSCAPE_TYPESET_HEADLESS)
@@ -84,22 +88,41 @@ struct ScopeSegment{
         #endif
         const Typeset::Marker& start,
         ParseNode closure,
-        ScopeId parent,
-        ScopeId prev,
-        SymbolId sym_begin,
+        ScopeSegmentIndex parent,
+        ScopeSegmentIndex prev,
+        SymbolIndex sym_begin,
         size_t usage_begin
         ) noexcept;
 
     bool isStartOfScope() const noexcept;
-    bool isEndOfScope() const noexcept;
+};
+
+struct SymbolUsage {
+    Typeset::Selection sel;
+    SymbolUsageIndex prev_usage_index  DEBUG_INIT_UNITIALISED(SymbolUsageIndex);
+    SymbolIndex symbol_index  DEBUG_INIT_UNITIALISED(SymbolIndex);
+    ParseNode pn  DEBUG_INIT_UNITIALISED(ParseNode);
+
+    SymbolUsage() noexcept;
+    SymbolUsage(SymbolUsageIndex prev_usage_index, SymbolIndex symbol_index, ParseNode pn, const Typeset::Selection& sel) noexcept;
+    SymbolUsage* prevUsage() const noexcept { return reinterpret_cast<SymbolUsage*>(prev_usage_index); }
+    Symbol* symbol() const noexcept { return reinterpret_cast<Symbol*>(symbol_index); }
+    bool isDeclaration() const noexcept { return prevUsage() == nullptr; }
 };
 
 class SymbolTable{
 public:
-    std::vector<ScopeSegment> scopes;
     std::vector<Symbol> symbols;
-    std::vector<Usage> usages;
+    FORSCAPE_UNORDERED_MAP<Typeset::Selection, SymbolIndex> lexical_map;
+    std::vector<ScopeSegment> scope_segments;
+    std::vector<SymbolUsage> symbol_usages;
     ParseTree& parse_tree;
+
+    #ifndef NDEBUG
+    static std::unordered_set<const Symbol*> all_symbols;
+    static bool isValidSymbolPtr(const Symbol* const ptr) noexcept;
+    ~SymbolTable() noexcept;
+    #endif
 
     #ifdef FORSCAPE_USE_SCOPE_NAME
     std::string scope_names;
@@ -115,9 +138,7 @@ public:
     size_t containingScope(const Typeset::Marker& m) const noexcept;
     std::vector<std::string> getSuggestions(const Typeset::Marker& loc) const;
     const Typeset::Selection& getSel(size_t sym_index) const noexcept;
-    void getSymbolOccurences(size_t sym_id, std::vector<Typeset::Selection>& found) const;
 
-    ScopeId head(ScopeId index) const noexcept;
     void reset(const Typeset::Marker& doc_start) noexcept;
     void addScope(
         #ifdef FORSCAPE_USE_SCOPE_NAME
@@ -132,20 +153,21 @@ public:
     #endif
 
     struct ScopedVarKey {
-        ParseNode symbol_root;
+        SymbolIndex symbol_index;
         Typeset::Selection sel;
-        ScopedVarKey(ParseNode symbol_root, const Typeset::Selection& sel) noexcept : symbol_root(symbol_root), sel(sel) {}
+        ScopedVarKey(ParseNode symbol_root, const Typeset::Selection& sel) noexcept : symbol_index(symbol_root), sel(sel) {}
         bool operator==(const ScopedVarKey& other) const noexcept {
-            return symbol_root == other.symbol_root && sel == other.sel; }
+            return symbol_index == other.symbol_index && sel == other.sel; }
     };
     struct HashScopedVarKey {
         std::size_t operator()(const ScopedVarKey& s) const {
-            return s.symbol_root ^ std::hash<Typeset::Selection>()(s.sel);
+            return s.symbol_index ^ std::hash<Typeset::Selection>()(s.sel);
         }
     };
-    FORSCAPE_UNORDERED_MAP<ScopedVarKey, size_t, HashScopedVarKey> scoped_vars;
+    FORSCAPE_UNORDERED_MAP<ScopedVarKey, SymbolIndex, HashScopedVarKey> scoped_vars;
 
     void resolveReference(ParseNode pn, size_t sym_id, size_t closure_depth) alloc_except;
+    void resolveScopeReference(SymbolUsage& usage, Symbol& sym) alloc_except;
 };
 
 }

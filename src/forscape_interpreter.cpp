@@ -19,13 +19,17 @@ namespace Code {
 Interpreter::Interpreter() noexcept
     : error_node(NONE){}
 
-void Interpreter::run(const ParseTree& parse_tree, SymbolTable symbol_table, const InstantiationLookup& inst_lookup){
+void Interpreter::run(const ParseTree& parse_tree, SymbolTable* symbol_table, const InstantiationLookup& inst_lookup){
     assert(parse_tree.getOp(parse_tree.root) == OP_BLOCK);
     reset();
 
+    #ifndef NDEBUG
+    stack.aliases = parse_tree.aliases;
+    #endif
+
     this->parse_tree = parse_tree;
     this->inst_lookup = inst_lookup;
-    SymbolTableLinker linker(symbol_table, this->parse_tree);
+    SymbolTableLinker linker(*symbol_table, this->parse_tree);
     linker.link();
     this->parse_tree.patchClones();
 
@@ -33,9 +37,13 @@ void Interpreter::run(const ParseTree& parse_tree, SymbolTable symbol_table, con
     status = FINISHED;
 }
 
-void Interpreter::runThread(const ParseTree& parse_tree, SymbolTable symbol_table, const InstantiationLookup& inst_lookup){
+void Interpreter::runThread(const ParseTree& parse_tree, SymbolTable& symbol_table, const InstantiationLookup& inst_lookup){
     status = NORMAL;
-    std::thread(&Interpreter::run, this, parse_tree, symbol_table, inst_lookup).detach();
+    std::thread(&Interpreter::run, this, parse_tree, &symbol_table, inst_lookup).detach();
+
+    //EVENTUALLY: linking in a threaded call with the original symbol_table means a crash will happen
+    //            if the symbol_table is invalidated before the linker finishes running.
+    //            Not worth fixing now since the static and linking passes need a total overhaul
 }
 
 void Interpreter::stop(){
@@ -82,28 +90,9 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_IF: ifStmt(pn); break;
         case OP_IF_ELSE: ifElseStmt(pn); break;
         case OP_FILE_REF: break; //EVENTUALLY: This shouldn't be in the interpreter stage
-        case OP_IMPORT:{
-            if(parse_tree.getFlag(pn) != 1)
-            stack.push(static_cast<void*>(nullptr)
-                DEBUG_STACK_ARG("import-" + parse_tree.str(parse_tree.child(pn))));
-            break; //EVENTUALLY: this shouldn't be in the interpreter
-            // It's assumed every symbol has a role in the runtime, and that's a bad assumption for multiple reasons.
-        }
-        case OP_FROM_IMPORT:{
-            for(size_t i = parse_tree.getNumArgs(pn)-1; i > 0; i--)
-            stack.push(static_cast<void*>(nullptr)
-                DEBUG_STACK_ARG("from_import-" + parse_tree.str(parse_tree.child(pn))));
-            break; //EVENTUALLY: this shouldn't be in the interpreter
-            // It's assumed every symbol has a role in the runtime, and that's a bad assumption for multiple reasons.
-        }
-        case OP_NAMESPACE:{
-            if(parse_tree.getFlag(pn) != 1)
-            stack.push(static_cast<void*>(nullptr)
-                DEBUG_STACK_ARG("namespace-" + parse_tree.str(parse_tree.lhs(pn))));
-            blockStmt(parse_tree.rhs(pn));
-            break; //EVENTUALLY: this shouldn't be in the interpreter
-            // It's assumed every symbol has a role in the runtime, and that's a bad assumption for multiple reasons.
-        }
+        case OP_IMPORT: interpretStmtIfNotNone(parse_tree.getFlag(pn)); break;
+        case OP_FROM_IMPORT: interpretStmtIfNotNone(parse_tree.getFlag(pn)); break;
+        case OP_NAMESPACE: blockStmt(parse_tree.rhs(pn)); break;
         case OP_PLOT: plotStmt(pn); break;
         case OP_PRINT: printStmt(pn); break;
         case OP_PROTOTYPE_ALG:
@@ -116,6 +105,10 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_WHILE: whileStmt(pn); break;
         default: error(UNRECOGNIZED_STMT, pn);
     }
+}
+
+void Interpreter::interpretStmtIfNotNone(ParseNode pn) {
+    if(pn != NONE) interpretStmt(pn);
 }
 
 void Interpreter::printStmt(ParseNode pn){

@@ -20,7 +20,6 @@ void Stack::clear() noexcept{
     #endif
 }
 
-
 void Stack::push(const Value& value   DEBUG_STACK_NAME){
     std::vector<Value>::push_back(value);
     #ifndef NDEBUG
@@ -41,11 +40,14 @@ Value& Stack::read(size_t offset   DEBUG_STACK_NAME) noexcept{
     #ifndef NDEBUG
     const std::string& actual = stack_names[offset];
     if(name != actual){
-        std::cout << "Tried to read " << name << ", but read "
-                  << actual << '\n' << std::endl;
-        print();
+        auto lookup = aliases.find(actual);
+        if(lookup == aliases.end() || lookup->second.find(name) == lookup->second.end()){
+            std::cout << "Tried to read " << name << ", but read "
+                      << actual << '\n' << std::endl;
+            print();
+            assert(false);
+        }
     }
-    assert(name == actual);
     #endif
 
     return std::vector<Value>::operator[](offset);

@@ -1,16 +1,17 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 
-#include <typeset_model.h>
-#include <typeset_painter.h>
-#include <typeset_view.h>
+#include <forscape_message.h>
 #include <forscape_scanner.h>
 #include <forscape_serial.h>
 #include <forscape_serial_unicode.h>
 #include <forscape_parser.h>
 #include <forscape_program.h>
-#include <forscape_symbol_build_pass.h>
-#include <forscape_message.h>
+#include <forscape_symbol_lexical_pass.h>
+#include <typeset_line.h>
+#include <typeset_model.h>
+#include <typeset_painter.h>
+#include <typeset_view.h>
 #include <QBuffer>
 #include <QClipboard>
 #include <QCloseEvent>
@@ -66,7 +67,7 @@ using namespace Forscape;
 
 static QTimer* external_change_timer;
 
-static constexpr int CHANGE_CHECK_PERIOD_MS = 100;
+static constexpr int CHANGE_CHECK_PERIOD_MS = 500;
 
 static constexpr int FILE_BROWSER_WIDTH = 200;
 static bool program_control_of_hsplitter = false;
@@ -228,6 +229,9 @@ MainWindow::MainWindow(QWidget* parent)
     connect(editor, SIGNAL(goToModel(Forscape::Typeset::Model*, size_t)),
             this, SLOT(viewModel(Forscape::Typeset::Model*, size_t)));
 
+    connect(editor, SIGNAL(goToSelection(const Forscape::Typeset::Selection&)),
+            this, SLOT(viewSelection(const Forscape::Typeset::Selection&)));
+
     if(settings.contains(ACTION_TOOLBAR_VISIBLE)){
         bool visible = settings.value(ACTION_TOOLBAR_VISIBLE).toBool();
         if(!visible){
@@ -316,8 +320,7 @@ MainWindow::~MainWindow(){
     delete preferences;
     delete ui;
 
-    for(const auto& entry : Forscape::Program::instance()->source_files)
-        delete entry.second;
+    Forscape::Program::instance()->freeFileMemory();
 
     #ifdef TYPESET_MEMORY_DEBUG
     assert(Typeset::Model::all.empty());
@@ -342,30 +345,6 @@ void MainWindow::resizeHackToFixScrollbars(){
     resize(width()-1, height()-1);
 
     setVSplitterDefaultHeight();
-}
-
-bool MainWindow::isSavedDeepComparison() const {
-    if(active_file_path.isEmpty()) return editor->getModel()->empty();
-
-    //Avoid a deep comparison if size from file meta data doesn't match
-    auto filename = active_file_path.toStdString();
-    auto path = std::filesystem::u8path(filename);
-    if(std::filesystem::file_size(path) != editor->getModel()->serialChars()) return false;
-
-    std::ifstream in(path);
-    if(!in.is_open()) std::cout << "Failed to open " << filename << std::endl;
-    assert(in.is_open());
-
-    std::stringstream buffer;
-    buffer << in.rdbuf();
-
-    std::string saved_src = buffer.str();
-    saved_src.erase( std::remove(saved_src.begin(), saved_src.end(), '\r'), saved_src.end() );
-
-    //MAYDO: no need to convert model to serial, but cost is probably negligible compared to I/O
-    std::string curr_src = editor->getModel()->toSerial();
-
-    return saved_src == curr_src;
 }
 
 void MainWindow::updateViewJumpPointElements() {
@@ -475,6 +454,8 @@ void MainWindow::github(){
 void MainWindow::on_actionNew_triggered(){
     if(!editor->isEnabled()) return;
     Typeset::Model* model = Typeset::Model::fromSerial("");
+    if(Program::instance()->program_entry_point == nullptr)
+        Program::instance()->program_entry_point = model;
     setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
     active_file_path.clear();
 
@@ -644,7 +625,7 @@ bool MainWindow::saveAs(QString path, Forscape::Typeset::Model* saved_model) {
     }
     project_browser->sortItems(0, Qt::SortOrder::AscendingOrder);
 
-    saved_model->write_time = std::filesystem::last_write_time(saved_model->path);
+    saved_model->write_time = std::filesystem::file_time_type::clock::now();
 
     updateRecentProjectsFromCurrent();
 
@@ -668,7 +649,7 @@ void MainWindow::openProject(QString path){
         static constexpr int NUM_PRINT = 7;
 
         QString msg = files.front();
-        for(int i = 1; i < std::min(files.size(), NUM_PRINT); i++){
+        for(int i = 1; i < std::min<int>(files.size(), NUM_PRINT); i++){
             msg += '\n';
             msg += files[i];
         }
@@ -734,8 +715,7 @@ void MainWindow::openProject(QString path){
     Typeset::Model* model = Typeset::Model::fromSerial(src);
     std_path = std::filesystem::canonical(std_path);
     model->path = std_path;
-    for(const auto& entry : Forscape::Program::instance()->source_files)
-        delete entry.second;
+    Forscape::Program::instance()->freeFileMemory();
     Forscape::Program::instance()->setProgramEntryPoint(std_path, model);
     model->postmutate();
     editor->setModel(model);
@@ -765,7 +745,7 @@ void MainWindow::openProject(QString path){
     settings.setValue(PROJECT_ROOT_FILE, path);
     project_path = path;
     active_file_path = path;
-    model->write_time = std::filesystem::last_write_time(model->path);
+    model->write_time = std::filesystem::file_time_type::clock::now();
 
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
 
@@ -836,7 +816,7 @@ void MainWindow::addProjectEntry(Forscape::Typeset::Model* model) {
     tree_item->setIcon(0, file_icon);
     project_browser_entries[path] = tree_item;
 
-    model->write_time = std::filesystem::last_write_time(model->path);
+    model->write_time = std::filesystem::file_time_type::clock::now();
 
     linkFileToAncestor(tree_item, path);
 }
@@ -1049,7 +1029,7 @@ void MainWindow::closeEvent(QCloseEvent* event){
         static constexpr int NUM_PRINT = 7;
 
         QString msg = files.front();
-        for(int i = 1; i < std::min(files.size(), NUM_PRINT); i++){
+        for(int i = 1; i < std::min<int>(files.size(), NUM_PRINT); i++){
             msg += '\n';
             msg += files[i];
         }
@@ -1110,6 +1090,7 @@ void MainWindow::checkForChanges(){
     if(active_file_path.isEmpty()) return;
 
     Forscape::Typeset::Model* model = editor->getModel();
+    //last_write_time takes on the order of ~10us, so probably okay to run in main GUI thread every ~0.5s
     const std::filesystem::file_time_type modified_time = std::filesystem::last_write_time(model->path);
     if(modified_time <= model->write_time) return;
     model->write_time = modified_time;
@@ -1286,6 +1267,11 @@ void MainWindow::viewModel(Forscape::Typeset::Model* model, size_t line) {
     model->postmutate();
     setEditorToModelAndLine(model, line);
     updateViewJumpPointElements();
+}
+
+void MainWindow::viewSelection(const Forscape::Typeset::Selection& sel) {
+    viewModel(sel.getModel(), sel.left.getLine()->id);
+    editor->getController() = sel;
 }
 
 bool MainWindow::on_actionSave_All_triggered() {

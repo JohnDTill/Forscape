@@ -17,16 +17,22 @@ namespace Forscape {
 namespace Typeset {
 class Selection;
 struct Marker;
+class Model;
 }
 
 using Typeset::Selection; //EVENTUALLY: Selection may depend on environment, e.g. string_view
 
 namespace Code {
 
+struct Symbol;
 
 class ParseTree {
 public:
     FORSCAPE_AST_FIELD_CODEGEN_DECLARATIONS
+
+    #ifndef NDEBUG
+    FORSCAPE_UNORDERED_MAP<std::string, std::unordered_set<std::string>> aliases;
+    #endif
 
     void clear() noexcept;
     bool empty() const noexcept;
@@ -48,6 +54,9 @@ public:
     ParseNode refCapList(ParseNode pn) const noexcept;
     void setSymId(ParseNode pn, size_t sym_id) noexcept;
     size_t getSymId(ParseNode pn) const noexcept;
+    void setSymbol(ParseNode pn, const Symbol* const symbol) noexcept;
+    Symbol* getSymbol(ParseNode pn) const noexcept;
+    Typeset::Model* getModel(ParseNode pn) const noexcept;
     void setRefList(ParseNode fn, ParseNode list) noexcept;
     ParseNode paramList(ParseNode pn) const noexcept;
     ParseNode body(ParseNode pn) const noexcept;
@@ -103,6 +112,10 @@ public:
 
     void patchClones() noexcept;
     void patchClonedTypes() noexcept;
+
+    size_t append(const ParseTree& other);
+    void shift(ParseNode pn, size_t offset);
+    size_t offset() const noexcept;
 
 private:
     std::vector<size_t> data;

@@ -330,8 +330,8 @@ ParseNode Parser::fromStatement() noexcept {
     do {
         ParseNode component = isolatedIdentifier();
         ParseNode alias = match(AS) ? isolatedIdentifier() : NONE;
-        parse_tree.setFlag(component, alias);
         parse_tree.addNaryChild(component);
+        parse_tree.addNaryChild(alias);
     } while(match(COMMA));
 
     return parse_tree.finishNary(OP_FROM_IMPORT, Typeset::Selection(left, rMarkPrev()));

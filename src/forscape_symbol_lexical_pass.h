@@ -1,5 +1,5 @@
-#ifndef FORSCAPE_SYMBOL_BUILD_PASS_H
-#define FORSCAPE_SYMBOL_BUILD_PASS_H
+#ifndef FORSCAPE_SYMBOL_LEXICAL_PASS_H
+#define FORSCAPE_SYMBOL_LEXICAL_PASS_H
 
 #include "forscape_common.h"
 #include "forscape_error.h"
@@ -13,7 +13,7 @@ namespace Code {
 
 class ParseTree;
 
-class SymbolTableBuilder {
+class SymbolLexicalPass {
 private:
     std::vector<Error>& errors;
     std::vector<Error>& warnings;
@@ -21,21 +21,25 @@ private:
     Typeset::Model* model;
 
 public:
-    SymbolTableBuilder(ParseTree& parse_tree, Typeset::Model* model) noexcept;
+    SymbolLexicalPass(ParseTree& parse_tree, Typeset::Model* model) noexcept;
     void resolveSymbols() alloc_except;
     SymbolTable symbol_table;
     static FORSCAPE_STATIC_MAP<std::string_view, Op> predef;
 
 private:
+    std::vector<Symbol>& symbols;
+    FORSCAPE_UNORDERED_MAP<Typeset::Selection, SymbolIndex>& lexical_map;
+    std::vector<ScopeSegment>& scope_segments;
+    std::vector<SymbolUsage>& symbol_usages;
     size_t active_scope_id;
-    FORSCAPE_UNORDERED_MAP<Typeset::Selection, SymbolId> map;
     static constexpr size_t GLOBAL_DEPTH = 0;
-    size_t lexical_depth = GLOBAL_DEPTH;
-    size_t closure_depth = 0;
+    uint16_t lexical_depth = GLOBAL_DEPTH;
+    uint8_t closure_depth = 0;
     size_t cutoff = std::numeric_limits<size_t>::max();
 
-    std::vector<size_t> refs;
+    std::vector<SymbolIndex> refs;
     std::vector<size_t> ref_frames;
+    std::vector<ParseNode> processed_refs;
 
     std::vector<ParseNode> potential_loop_vars;
 
@@ -61,7 +65,6 @@ private:
         #endif
         const Typeset::Marker& begin, ParseNode pn) alloc_except;
     void decreaseClosureDepth(const Typeset::Marker& end) alloc_except;
-    void addStoredScope(ParseNode pn);
     void makeEntry(const Typeset::Selection& c, ParseNode pn, bool immutable) alloc_except;
     void appendEntry(ParseNode pn, size_t& old_entry, bool immutable, bool warn_on_shadow = true) alloc_except;
     void resolveStmt(ParseNode pn) alloc_except;
@@ -109,7 +112,6 @@ private:
     void unloadScope(ParseNode body, size_t sym_id) alloc_except;
     void resolveScopeAccess(ParseNode pn) alloc_except;
     bool defineLocalScope(ParseNode pn, bool immutable = true, bool warn_on_shadow = true) alloc_except;
-    ParseNode defineOrAccessLocalScope(ParseNode pn, bool immutable = true, bool warn_on_shadow = true) alloc_except;
     bool declared(ParseNode pn) const noexcept;
     size_t symIndex(ParseNode pn) const noexcept;
 
@@ -122,4 +124,4 @@ private:
 
 }
 
-#endif // FORSCAPE_SYMBOL_BUILD_PASS_H
+#endif // FORSCAPE_SYMBOL_LEXICAL_PASS_H

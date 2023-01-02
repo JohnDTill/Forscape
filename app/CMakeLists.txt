@@ -149,8 +149,8 @@ set(PROJECT_SOURCES
     ${SRC}/forscape_stack.h
     ${SRC}/forscape_static_pass.cpp
     ${SRC}/forscape_static_pass.h
-    ${SRC}/forscape_symbol_build_pass.cpp
-    ${SRC}/forscape_symbol_build_pass.h
+    ${SRC}/forscape_symbol_lexical_pass.cpp
+    ${SRC}/forscape_symbol_lexical_pass.h
     ${SRC}/forscape_symbol_link_pass.cpp
     ${SRC}/forscape_symbol_link_pass.h
     ${SRC}/forscape_symbol_table.cpp

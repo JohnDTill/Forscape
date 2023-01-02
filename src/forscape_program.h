@@ -20,13 +20,16 @@ public:
     ptr_or_code openFromRelativePath(std::string_view file_name, std::filesystem::path dir);
     ptr_or_code openFromRelativePath(std::string_view file_name);
     void freeFileMemory() noexcept;
+    const std::vector<Typeset::Model*>& allFiles() const noexcept;
     const std::vector<Typeset::Model*>& getPendingProjectBrowserUpdates() const noexcept;
     void clearPendingProjectBrowserUpdates() noexcept;
+    void reset() noexcept;
+    void runStaticPass();
 
+    FORSCAPE_UNORDERED_MAP<std::filesystem::path, Typeset::Model*> source_files; //May contain multiple entries per model
     std::vector<Code::Error> errors;
     std::vector<Code::Error> warnings;
-    FORSCAPE_UNORDERED_MAP<std::filesystem::path, Typeset::Model*> source_files;
-    Typeset::Model* program_entry_point;
+    Typeset::Model* program_entry_point = nullptr;
 
 private:
     static Program* singleton_instance;
@@ -34,6 +37,7 @@ private:
     ptr_or_code openFromRelativePathSpecifiedExtension(std::filesystem::path file_name);
     ptr_or_code openFromRelativePathAutoExtension(std::filesystem::path file_name);
 
+    std::vector<Typeset::Model*> all_files;
     std::vector<Typeset::Model*> pending_project_browser_updates;
     std::vector<std::filesystem::path> project_path = {
         std::filesystem::path(), //Placeholder for searching file's directory

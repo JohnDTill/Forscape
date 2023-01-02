@@ -13,7 +13,7 @@ namespace Forscape {
 namespace Code {
 class Parser;
 class Scanner;
-class SymbolTableBuilder;
+class SymbolLexicalPass;
 class Interpreter;
 }
 
@@ -180,7 +180,7 @@ private:
 
     friend Code::Scanner;
     friend Code::Parser;
-    friend Code::SymbolTableBuilder;
+    friend Code::SymbolLexicalPass;
     friend Code::Interpreter;
     friend CommandLine;
     friend CommandPhrase;

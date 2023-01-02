@@ -21,6 +21,7 @@ using namespace Code;
 
 inline bool testExpression(const std::string& in, const std::string& expect){
     Typeset::Model* input = Typeset::Model::fromSerial("print(" + in + ")");
+    Forscape::Program::instance()->setProgramEntryPoint("", input);
     input->postmutate();
     std::string str = input->run();
 

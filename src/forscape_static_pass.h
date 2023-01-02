@@ -45,6 +45,8 @@ public:
     static constexpr Type RECURSIVE_CYCLE = UNINITIALISED-5;
     static constexpr Type FAILURE = UNINITIALISED-6;
     static constexpr Type NAMESPACE = UNINITIALISED-7;
+    static constexpr Type MODULE = UNINITIALISED-8;
+    static constexpr Type ALIAS = UNINITIALISED-9;
     static constexpr bool isAbstractFunctionGroup(size_t type) noexcept;
     bool retry_at_recursion = false;
     bool first_attempt = true;
@@ -151,6 +153,7 @@ private:
         ParseNode resolveLimit(ParseNode pn);
         ParseNode resolveDefiniteIntegral(ParseNode pn);
         ParseNode resolveScopeAccess(ParseNode pn, bool write = false);
+        ParseNode resolveBlock(ParseNode pn);
         ParseNode copyChildProperties(ParseNode pn) noexcept;
         ParseNode enforceScalar(ParseNode pn);
         ParseNode enforceZero(ParseNode pn);

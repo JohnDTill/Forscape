@@ -63,7 +63,6 @@ private:
     QAction* file_next;
     void loadGeometry();
     void resizeHackToFixScrollbars();
-    bool isSavedDeepComparison() const;
     void updateViewJumpPointElements();
     void resetViewJumpPointElements();
 
@@ -129,6 +128,7 @@ private slots:
     void on_actionGoBack_triggered();
     void on_actionGoForward_triggered();
     void viewModel(Forscape::Typeset::Model* model, size_t line);
+    void viewSelection(const Forscape::Typeset::Selection& sel);
     bool on_actionSave_All_triggered();
     void on_actionReload_triggered();
     void onForcedExit();
