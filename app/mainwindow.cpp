@@ -49,6 +49,18 @@
 #include "qgraphvizcall.h"
 #endif
 
+#ifdef linux
+#define FORSCAPE_WORKAROUND_QT_LINUX_FILETYPE_FILTER_BUG
+#endif
+
+#ifdef FORSCAPE_WORKAROUND_QT_LINUX_FILETYPE_FILTER_BUG
+#include <QSortFilterProxyModel>
+#include <QFileSystemModel>
+#define FORSCAPE_FILE_TYPE_DESC "Forscape script (*)"
+#else
+#define FORSCAPE_FILE_TYPE_DESC "Forscape script (*.π)"
+#endif
+
 #define PROJECT_ROOT_FILE "project_root_file"
 #define ZOOM_EDITOR "editor_zoom"
 #define ZOOM_CONSOLE "console_zoom"
@@ -60,7 +72,6 @@
 #define PROJECT_BROWSER_VISIBLE "project_tb_visible"
 #define WINDOW_STATE "win_state"
 #define LAST_DIRECTORY "last_dir"
-#define FORSCAPE_FILE_TYPE_DESC "Forscape script (*.π)"
 #define RECENT_PROJECTS "recent"
 
 using namespace Forscape;
@@ -469,11 +480,47 @@ void MainWindow::on_actionNew_triggered(){
     viewModel(model, 0);
 }
 
+#ifdef FORSCAPE_WORKAROUND_QT_LINUX_FILETYPE_FILTER_BUG
+class FileFilterProxyModel : public QSortFilterProxyModel {
+protected:
+    virtual bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const override {
+        QModelIndex index0 = sourceModel()->index(source_row, 0, source_parent);
+        QFileSystemModel* fileModel = qobject_cast<QFileSystemModel*>(sourceModel());
+        QString filename = fileModel->fileName(index0);
+        if(!fileModel->isDir(index0)) return filename.endsWith(".π");
+        else return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
+    }
+};
+
+class IconProvider : public QAbstractFileIconProvider {
+    virtual QIcon icon(const QFileInfo& info) const override {
+        if(info.fileName().endsWith(".π")) return QIcon(":/lambda.ico");
+        else return QAbstractFileIconProvider::icon(info);
+    }
+};
+#endif
+
 void MainWindow::on_actionOpen_triggered(){
     if(!editor->isEnabled()) return;
 
+    #ifdef FORSCAPE_WORKAROUND_QT_LINUX_FILETYPE_FILTER_BUG
+    QFileDialog dialog(this);
+    dialog.setOption(QFileDialog::DontUseNativeDialog);
+    dialog.setFileMode(QFileDialog::FileMode::ExistingFile);
+    dialog.setNameFilter(tr(FORSCAPE_FILE_TYPE_DESC));
+    dialog.setWindowTitle(tr("Open Project"));
+    dialog.setDefaultSuffix("*.π");
+    dialog.setViewMode(QFileDialog::Detail);
+    dialog.setDirectory(getLastDir());
+    dialog.setProxyModel(new FileFilterProxyModel);
+    dialog.setIconProvider(new IconProvider);
+    if(!dialog.exec()) return;
+    QStringList files = dialog.selectedFiles();
+    QString path = files.front();
+    #else
     QString path = QFileDialog::getOpenFileName(nullptr, tr("Open Project"), getLastDir(), tr(FORSCAPE_FILE_TYPE_DESC));
     if(path.isEmpty()) return;
+    #endif
 
     openProject(path);
 }
@@ -544,10 +591,25 @@ void MainWindow::checkOutput(){
 bool MainWindow::savePrompt(){
     if(!editor->isEnabled()) return false;
 
+    #ifdef FORSCAPE_WORKAROUND_QT_LINUX_FILETYPE_FILTER_BUG
+    QFileDialog dialog(this);
+    dialog.setOption(QFileDialog::DontUseNativeDialog);
+    dialog.setAcceptMode(QFileDialog::AcceptSave);
+    dialog.setFileMode(QFileDialog::FileMode::AnyFile);
+    dialog.setNameFilter(tr(FORSCAPE_FILE_TYPE_DESC));
+    dialog.setWindowTitle(tr("Save File"));
+    dialog.setDefaultSuffix("*.π");
+    dialog.setViewMode(QFileDialog::Detail);
+    dialog.selectFile(active_file_path.isEmpty() ? getLastDir() + "/untitled.π" : active_file_path);
+    dialog.setProxyModel(new FileFilterProxyModel);
+    dialog.setIconProvider(new IconProvider);
+    if(!dialog.exec()) return false;
+    QStringList files = dialog.selectedFiles();
+    QString file_name = files.front();
+    #else
     QString prompt_name = active_file_path.isEmpty() ? getLastDir() + "/untitled.π" : active_file_path;
-    QString file_name = QFileDialog::getSaveFileName(nullptr, tr("Save File"),
-                                prompt_name,
-                                tr(FORSCAPE_FILE_TYPE_DESC));
+    QString file_name = QFileDialog::getSaveFileName(nullptr, tr("Save File"), prompt_name, tr(FORSCAPE_FILE_TYPE_DESC));
+    #endif
 
     if(!file_name.isEmpty()) return saveAs(file_name);
     return false;
