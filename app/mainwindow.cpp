@@ -54,8 +54,9 @@
 #endif
 
 #ifdef FORSCAPE_WORKAROUND_QT_LINUX_FILETYPE_FILTER_BUG
-#include <QSortFilterProxyModel>
+#include <QAbstractFileIconProvider>
 #include <QFileSystemModel>
+#include <QSortFilterProxyModel>
 #define FORSCAPE_FILE_TYPE_DESC "Forscape script (*)"
 #else
 #define FORSCAPE_FILE_TYPE_DESC "Forscape script (*.π)"
