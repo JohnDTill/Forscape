@@ -71,6 +71,8 @@ struct Marker{
     std::pair<ParseNode, ParseNode> parseNodesAround() const noexcept;
     ParseNode parseNodeLeft() const noexcept;
     ParseNode parseNodeRight() const noexcept;
+    size_t absoluteIndexInPhrase() const noexcept;
+    static Marker fromAbsoluteIndex(const Phrase& p, size_t absolute_index) noexcept;
 
     //Scanner / Parser
     uint32_t advance() noexcept;

@@ -62,6 +62,7 @@ public:
     Symbol* shadowedVar() const noexcept { return reinterpret_cast<Symbol*>(index_of_shadowed_var); }
     void setShadowedVar(Symbol* sym) noexcept { index_of_shadowed_var = reinterpret_cast<size_t>(sym); }
     void getLocalOccurences(std::vector<Typeset::Selection>& found) const;
+    void getExternalOccurences(std::vector<Typeset::Selection>& found) const;
     void getAllOccurences(std::vector<Typeset::Selection>& found) const;
 };
 

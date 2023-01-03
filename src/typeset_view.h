@@ -109,6 +109,10 @@ protected:
     bool mock_focus = false;
     ParseNode hover_node = NONE;
 
+    #ifndef NDEBUG
+    size_t model_undo_stack_size = 0;
+    #endif
+
 //Qt specific code
 protected:
     QPainter qpainter;
@@ -262,6 +266,7 @@ public:
 protected:
     virtual void focusOutEvent(QFocusEvent* event) override;
     virtual void leaveEvent(QEvent* event) override;
+    virtual void wheelEvent(QWheelEvent* e) override;
     virtual std::string_view logPrefix() const noexcept override { return "editor->"; }
     virtual void resolveTooltip(double x, double y) noexcept override;
     virtual void populateContextMenuFromModel(QMenu& menu, double x, double y) override;

@@ -267,6 +267,21 @@ ParseNode Marker::parseNodeRight() const noexcept{
     else if(const Construct* c = text->nextConstructInPhrase()) return c->pn;
     else return NONE;
 }
+
+size_t Marker::absoluteIndexInPhrase() const noexcept {
+    size_t absolute_index = index;
+    for(size_t i = text->id; i-->0;) absolute_index += phrase()->text(i)->numChars();
+    return absolute_index;
+}
+
+Marker Marker::fromAbsoluteIndex(const Phrase& p, size_t absolute_index) noexcept {
+    Text* t = p.front();
+    for(size_t num_chars = t->numChars(); absolute_index > num_chars; num_chars = t->numChars()){
+        absolute_index -= num_chars;
+        t = t->nextTextAsserted();
+    }
+    return Marker(t, absolute_index);
+}
 #endif
 
 uint32_t Marker::advance() noexcept{

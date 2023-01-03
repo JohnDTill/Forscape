@@ -634,7 +634,9 @@ void Model::postmutate(){
 
 void Model::rename(const std::vector<Selection>& targets, const std::string& name, Controller& c){
     CommandList* lst = new CommandList();
-    for(auto it = targets.rbegin(); it != targets.rend(); it++){
+    for(auto it = targets.begin(); it != targets.end(); it++){
+        assert(it->getModel() == this);
+        assert(it+1 == targets.end() || (it+1)->right.precedesInclusive(it->left)); //Right-to-left maintains valid state
         Controller c(*it);
         lst->cmds.push_back( c.deleteSelection() );
         c.consolidateLeft();
