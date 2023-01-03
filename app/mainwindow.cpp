@@ -54,7 +54,6 @@
 #endif
 
 #ifdef FORSCAPE_WORKAROUND_QT_LINUX_FILETYPE_FILTER_BUG
-#include <QAbstractFileIconProvider>
 #include <QFileSystemModel>
 #include <QSortFilterProxyModel>
 #define FORSCAPE_FILE_TYPE_DESC "Forscape script (*)"
@@ -493,10 +492,10 @@ protected:
     }
 };
 
-class IconProvider : public QAbstractFileIconProvider {
+class IconProvider : public QFileIconProvider {
     virtual QIcon icon(const QFileInfo& info) const override {
         if(info.fileName().endsWith(".π")) return QIcon(":/lambda.ico");
-        else return QAbstractFileIconProvider::icon(info);
+        else return QFileIconProvider::icon(info);
     }
 };
 #endif
