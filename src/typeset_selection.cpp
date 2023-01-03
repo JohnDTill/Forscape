@@ -269,6 +269,20 @@ SemanticType Selection::getFormat() const noexcept{
     return tL->getTypeLeftOf(iL);
 }
 
+bool Selection::containsInclusive(const Marker& other) const noexcept {
+    return left.precedesInclusive(other) && other.precedesInclusive(right);
+}
+
+size_t Selection::topLevelChars() const noexcept {
+    if(isTextSelection()){
+        return right.index - left.index;
+    }else{
+        assert(isPhraseSelection());
+        assert(left.text->nextTextAsserted() == right.text);
+        return right.index + (left.text->numChars() - left.index);
+    }
+}
+
 #ifdef QT_CORE_LIB
 QImage Selection::toPng() const{
     constexpr double UPSCALE = 4;

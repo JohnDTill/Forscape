@@ -65,6 +65,11 @@ void Symbol::getLocalOccurences(std::vector<Typeset::Selection>& found) const {
         found.push_back(usage->sel);
 }
 
+void Symbol::getExternalOccurences(std::vector<Typeset::Selection>& found) const {
+    for(SymbolUsage* usage = last_external_usage; usage != lastUsage(); usage = usage->prevUsage())
+        found.push_back(usage->sel);
+}
+
 void Symbol::getAllOccurences(std::vector<Typeset::Selection>& found) const {
     for(SymbolUsage* usage = last_external_usage; usage != nullptr; usage = usage->prevUsage())
         found.push_back(usage->sel);

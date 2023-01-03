@@ -55,6 +55,8 @@ public:
     void format(SemanticType type) const noexcept;
     void formatSimple(SemanticType type) const noexcept;
     SemanticType getFormat() const noexcept;
+    bool containsInclusive(const Typeset::Marker& other) const noexcept;
+    size_t topLevelChars() const noexcept;
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     bool contains(double x, double y) const noexcept;

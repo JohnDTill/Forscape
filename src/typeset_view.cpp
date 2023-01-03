@@ -834,7 +834,10 @@ void View::drawModel(double xL, double yT, double xR, double yB) {
             c.paintHighlight(painter);
 
     #ifndef NDEBUG
-    if(hover_node != NONE){
+    if(model_undo_stack_size != model->undo_stack.size()){
+        model_undo_stack_size = model->undo_stack.size();
+        hover_node = NONE;
+    }else if(hover_node != NONE){
         const Typeset::Selection& sel = model->parser.parse_tree.getSelection(hover_node);
         sel.paintHighlight(painter);
     }
@@ -1419,6 +1422,15 @@ void Editor::leaveEvent(QEvent* event){
         clearTooltip();
 }
 
+void Forscape::Typeset::Editor::wheelEvent(QWheelEvent* e) {
+    auto v_scroll_val = v_scroll->value();
+    auto old_zoom = zoom;
+    View::wheelEvent(e);
+    if(v_scroll_val == v_scroll->value() && old_zoom == zoom) return;
+    hover_node = NONE;
+    clearTooltip();
+}
+
 void Editor::resolveTooltip(double x, double y) noexcept {
     for(const Code::Error& err : model->errors){
         if(err.selection.containsWithEmptyMargin(x, y)){
@@ -1601,10 +1613,51 @@ void Editor::rename(const std::string& str){
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
     std::vector<Typeset::Selection> occurences;
     const Code::Symbol& sym = *model->parseTree().getSymbol(contextNode);
+
+    //EVENTUALLY: could optimise for single-file case
+    //sym.getLocalOccurences(occurences);
+    //Model* m = occurences.front().getModel();
+    //Controller c(m);
+    //m->rename(occurences, str, c);
+    //occurences.clear();
+
     sym.getAllOccurences(occurences);
 
-    replaceAll(occurences, str);
+    //Ugly heroics to make sure the final cursor is in the replaced word and valid
+    int final_absolute_index_in_phrase = 0;
+    int num_chars_added_in_replacement = (int)str.size() - (int)occurences.front().topLevelChars();
+    Phrase* p = nullptr;
 
+    if(!occurences.empty()){
+        FORSCAPE_UNORDERED_MAP<Model*, std::vector<Typeset::Selection>> map;
+        for(const Typeset::Selection& sel : occurences){
+            auto result = map.insert({sel.getModel(), {sel}});
+            if(!result.second) result.first->second.push_back(sel);
+        }
+
+        for(auto& entry : map){
+            Model* m = entry.first;
+
+            if(m == model){
+                for(const auto& sel : entry.second) if(sel.containsInclusive(controller.anchor) && p==nullptr){
+                    final_absolute_index_in_phrase += sel.right.absoluteIndexInPhrase();
+                    p = sel.left.phrase();
+                }
+                for(const auto& sel : entry.second) if(sel.left.phrase() == p && sel.left.precedesInclusive(controller.anchor))
+                    final_absolute_index_in_phrase += num_chars_added_in_replacement;
+            }
+
+            Controller c(m);
+            m->rename(entry.second, str, c);
+        }
+    }
+
+    assert(p != nullptr);
+    Marker m = Marker::fromAbsoluteIndex(*p, final_absolute_index_in_phrase);
+    controller.anchor = controller.active = m;
+    hover_node = NONE;
+
+    restartCursorBlink();
     ensureCursorVisible();
     updateHighlightingFromCursorLocation();
     update();
