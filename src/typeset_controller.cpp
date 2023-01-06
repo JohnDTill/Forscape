@@ -18,6 +18,7 @@
 #include <typeset_insert_chars.h>
 #include <typeset_remove_chars.h>
 #include <typeset_markerlink.h>
+#include "typeset_syntax.h"
 #include <cassert>
 
 #ifndef NDEBUG
@@ -445,7 +446,7 @@ void Controller::detab() noexcept{
 }
 
 void Controller::keystroke(const std::string& str){
-    if(str.front() == user_cmd){
+    if(str.front() == syntax_cmd){
         insertText(str);
         //DO THIS: show hints
     }else if(hasSelection() || (active.index==0)){

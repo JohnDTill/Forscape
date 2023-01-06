@@ -49,10 +49,6 @@ public:
     #endif
 };
 
-template<size_t type> const std::vector<Construct::ContextAction> BigIntegralSuper0<type>::actions {
-    ContextAction("Add subscript", modifyFirstScript),
-};
-
 template<size_t type>
 class BigIntegralSuper1 final : public Construct {
 public:
@@ -113,15 +109,6 @@ public:
     }
     #endif
 };
-
-template<size_t type> const std::vector<Construct::ContextAction> BigIntegralSuper1<type>::actions  =
-    (type == INTEGRAL1 || type == INTEGRALCONV1) ?
-std::vector<Construct::ContextAction>({
-    ContextAction("Add superscript", modifySecondScript),
-    ContextAction("Remove subscript", modifyFirstScript),
-}) : std::vector<Construct::ContextAction>({
-    ContextAction("Remove subscript", modifyFirstScript),
-});
 
 template<size_t type>
 class BigIntegralSuper2 final : public Construct {
@@ -196,10 +183,6 @@ public:
     #endif
 };
 
-template<size_t type> const std::vector<Construct::ContextAction> BigIntegralSuper2<type>::actions {
-    ContextAction("Remove superscript", modifySecondScript),
-};
-
 typedef BigIntegralSuper0<DOUBLEINTEGRALCONV0> DoubleIntegralConv0;
 typedef BigIntegralSuper0<DOUBLEINTEGRAL0> DoubleIntegral0;
 typedef BigIntegralSuper0<INTEGRALCONV0> IntegralConv0;
@@ -217,6 +200,24 @@ typedef BigIntegralSuper1<TRIPLEINTEGRAL1> TripleIntegral1;
 typedef BigIntegralSuper2<INTEGRALCONV2> IntegralConv2;
 typedef BigIntegralSuper2<INTEGRAL2> Integral2;
 
+#ifndef FORSCAPE_TYPESET_HEADLESS
+template<size_t type> const std::vector<Construct::ContextAction> BigIntegralSuper0<type>::actions {
+    ContextAction("Add subscript", modifyFirstScript),
+};
+
+template<size_t type> const std::vector<Construct::ContextAction> BigIntegralSuper1<type>::actions  =
+    (type == INTEGRAL1 || type == INTEGRALCONV1) ?
+std::vector<Construct::ContextAction>({
+    ContextAction("Add superscript", modifySecondScript),
+    ContextAction("Remove subscript", modifyFirstScript),
+}) : std::vector<Construct::ContextAction>({
+    ContextAction("Remove subscript", modifyFirstScript),
+});
+
+template<size_t type> const std::vector<Construct::ContextAction> BigIntegralSuper2<type>::actions {
+    ContextAction("Remove superscript", modifySecondScript),
+};
+
 template<size_t type> void BigIntegralSuper0<type>::modifyFirstScript(Construct* con, Controller& c, Subphrase*){
     BigIntegralSuper0<type>* m = debug_cast<BigIntegralSuper0<type>*>(con);
     Command* cmd = new ReplaceConstruct<BigIntegralSuper0<type>, BigIntegralSuper1<type-(INTEGRAL0-INTEGRAL1)>>(m);
@@ -228,6 +229,7 @@ template<size_t type> void BigIntegralSuper1<type>::modifySecondScript(Construct
     Command* cmd = new ReplaceConstruct1vs2<BigIntegralSuper1<type>, BigIntegralSuper2<type-(INTEGRAL1-INTEGRAL2)>, true>(m);
     c.getModel()->mutate(cmd, c);
 }
+#endif
 
 }
 

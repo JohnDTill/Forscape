@@ -80,6 +80,7 @@ public:
     #endif
 };
 
+#ifndef FORSCAPE_TYPESET_HEADLESS
 const std::vector<Construct::ContextAction> Sqrt::actions {
     ContextAction("Add nth root script", modifySecondScript),
 };
@@ -89,6 +90,7 @@ void Sqrt::modifySecondScript(Construct* con, Controller& c, Subphrase*){
     Command* cmd = new ReplaceConstruct1vs2<Sqrt, Nrt, true>(m);
     c.getModel()->mutate(cmd, c);
 }
+#endif
 
 }
 

@@ -5,6 +5,7 @@
 #include "typeset_line.h"
 #include "typeset_selection.h"
 #include "typeset_subphrase.h"
+#include "typeset_syntax.h"
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
 #include "typeset_painter.h"
@@ -141,7 +142,7 @@ size_t Text::leadingSpaces() const noexcept{
 }
 
 std::string_view Text::checkKeyword(size_t iR) const noexcept{
-    auto slash = str.rfind(user_cmd, iR);
+    auto slash = str.rfind(syntax_cmd, iR);
     return slash == std::string::npos ?
            std::string_view() :
                 std::string_view(str.data()+slash+1, iR-(slash+1));

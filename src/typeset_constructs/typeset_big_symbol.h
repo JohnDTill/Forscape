@@ -47,10 +47,6 @@ public:
     #endif
 };
 
-template<size_t type> const std::vector<Construct::ContextAction> BigSymbol0<type>::actions {
-    ContextAction("Add subscript", modifyFirstScript),
-};
-
 template<size_t type>
 class BigSymbol1 final : public Construct {
 public:
@@ -95,11 +91,6 @@ public:
         return actions;
     }
     #endif
-};
-
-template<size_t type> const std::vector<Construct::ContextAction> BigSymbol1<type>::actions {
-    ContextAction("Add superscript", modifySecondScript),
-    ContextAction("Remove subscript", modifyFirstScript),
 };
 
 template<size_t type>
@@ -156,10 +147,6 @@ public:
     #endif
 };
 
-template<size_t type> const std::vector<Construct::ContextAction> BigSymbol2<type>::actions {
-    ContextAction("Remove superscript", modifySecondScript),
-};
-
 typedef BigSymbol0<BIGCOPROD0> BigCoProd0;
 typedef BigSymbol0<BIGINTERSECTION0> BigIntersection0;
 typedef BigSymbol0<BIGPROD0> BigProd0;
@@ -178,6 +165,20 @@ typedef BigSymbol2<BIGPROD2> BigProd2;
 typedef BigSymbol2<BIGSUM2> BigSum2;
 typedef BigSymbol2<BIGUNION2> BigUnion2;
 
+#ifndef FORSCAPE_TYPESET_HEADLESS
+template<size_t type> const std::vector<Construct::ContextAction> BigSymbol0<type>::actions {
+    ContextAction("Add subscript", modifyFirstScript),
+};
+
+template<size_t type> const std::vector<Construct::ContextAction> BigSymbol1<type>::actions {
+    ContextAction("Add superscript", modifySecondScript),
+    ContextAction("Remove subscript", modifyFirstScript),
+};
+
+template<size_t type> const std::vector<Construct::ContextAction> BigSymbol2<type>::actions {
+    ContextAction("Remove superscript", modifySecondScript),
+};
+
 template<size_t type> void BigSymbol0<type>::modifyFirstScript(Construct* con, Controller& c, Subphrase*){
     BigSymbol0<type>* m = debug_cast<BigSymbol0<type>*>(con);
     Command* cmd = new ReplaceConstruct<BigSymbol0<type>, BigSymbol1<type-(BIGSUM0-BIGSUM1)>>(m);
@@ -189,6 +190,7 @@ template<size_t type> void BigSymbol1<type>::modifySecondScript(Construct* con, 
     Command* cmd = new ReplaceConstruct1vs2<BigSymbol1<type>, BigSymbol2<type-(BIGSUM1-BIGSUM2)>, true>(m);
     c.getModel()->mutate(cmd, c);
 }
+#endif
 
 }
 

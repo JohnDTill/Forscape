@@ -99,9 +99,11 @@ public:
     #endif
 };
 
+#ifndef FORSCAPE_TYPESET_HEADLESS
 const std::vector<Construct::ContextAction> Nrt::actions {
     ContextAction("Remove nth root script", modifySecondScript),
 };
+#endif
 
 }
 

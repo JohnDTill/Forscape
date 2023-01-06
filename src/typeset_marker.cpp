@@ -7,6 +7,7 @@
 #include "typeset_phrase.h"
 #include "typeset_subphrase.h"
 #include "typeset_text.h"
+#include "typeset_syntax.h"
 #include <unicode_zerowidth.h>
 #include <cassert>
 
@@ -240,14 +241,14 @@ bool Marker::goToCommandStart() noexcept {
             index = text->numChars();
         }else{
             switch (text->charAt(--index)) {
-                case user_close:
-                    if(index == 0 || text->charAt(index-1) != user_cmd) open_args++;
+                case syntax_close:
+                    if(index == 0 || text->charAt(index-1) != syntax_cmd) open_args++;
                     break;
-                case user_open:
-                    if((index == 0 || text->charAt(index-1) != user_cmd) && open_args-- == 0) return false;
+                case syntax_open:
+                    if((index == 0 || text->charAt(index-1) != syntax_cmd) && open_args-- == 0) return false;
                     break;
-                case user_cmd: {
-                    const bool escaped = (index > 0 && text->charAt(index-1) == user_cmd);
+                case syntax_cmd: {
+                    const bool escaped = (index > 0 && text->charAt(index-1) == syntax_cmd);
                     found_command |= !escaped;
                     index -= escaped;
                     break;

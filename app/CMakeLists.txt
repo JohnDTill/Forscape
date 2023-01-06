@@ -179,6 +179,7 @@ set(PROJECT_SOURCES
     ${SRC}/typeset_selection.h
     ${SRC}/typeset_subphrase.cpp
     ${SRC}/typeset_subphrase.h
+    ${SRC}/typeset_syntax.h
     ${SRC}/typeset_text.cpp
     ${SRC}/typeset_text.h
     ${SRC}/typeset_view.cpp
