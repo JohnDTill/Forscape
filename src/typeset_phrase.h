@@ -91,9 +91,9 @@ public:
     #endif
     #endif
 
+    std::vector<Construct*> constructs; //DO THIS: make private again
 private:
     std::vector<Text*> texts;
-    std::vector<Construct*> constructs;
 };
 
 }

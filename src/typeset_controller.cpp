@@ -445,10 +445,15 @@ void Controller::detab() noexcept{
 }
 
 void Controller::keystroke(const std::string& str){
-    if(hasSelection() | (active.index==0)){
+    if(str.front() == user_cmd){
         insertText(str);
-        return;
-    }else if(str == " "){
+        //DO THIS: show hints
+    }else if(hasSelection() || (active.index==0)){
+        insertText(str);
+    }else if(str.front() == ' '){
+        if(anchor.goToCommandStart()) anchor = active; //DO THIS
+        else anchor = active;
+
         std::string_view word = active.checkKeyword();
         const std::string& sub = Keywords::lookup(std::string(word));
         insertText(str);
@@ -464,33 +469,36 @@ void Controller::keystroke(const std::string& str){
             getModel()->mutate(replace, *this);
         }
     }else{
-        assert(str.size() == 1);
-        uint32_t second = static_cast<uint8_t>(str[0]);
-        uint32_t first = active.codepointLeft();
-        const std::string& sub = Shorthand::lookup(first, second);
+        //DO THIS: give hints if typing command
 
-        if(!sub.empty()){
-            insertText(str);
-            anchor.index--;
-            anchor.decrementCodepoint();
-            Command* rm = CommandText::remove(active.text, anchor.index, active.index-anchor.index);
-            rm->redo(*this);
-            active.index = anchor.index;
-            Command* ins = insertSerialNoSelection(sub);
-            rm->undo(*this);
-            Command* replace = new CommandPair(rm, ins);
-            getModel()->mutate(replace, *this);
-            return;
-        }else if(CloseSymbol::isClosing(str[0])){
-            if(active.onlySpacesLeft()){
-                Line* active_line = activeLine();
-                if(Line* l = active_line->prev()){
-                    if(l->scope_depth){
-                        anchor.setToFrontOf(active_line);
-                        std::string indented(INDENT_SIZE*(l->scope_depth-1)+1, ' ');
-                        indented.back() = str[0];
-                        insertText(indented);
-                        return;
+        if(str.size() == 1){
+            uint32_t second = static_cast<uint8_t>(str[0]);
+            uint32_t first = active.codepointLeft();
+            const std::string& sub = Shorthand::lookup(first, second);
+
+            if(!sub.empty()){
+                insertText(str);
+                anchor.index--;
+                anchor.decrementCodepoint();
+                Command* rm = CommandText::remove(active.text, anchor.index, active.index-anchor.index);
+                rm->redo(*this);
+                active.index = anchor.index;
+                Command* ins = insertSerialNoSelection(sub);
+                rm->undo(*this);
+                Command* replace = new CommandPair(rm, ins);
+                getModel()->mutate(replace, *this);
+                return;
+            }else if(CloseSymbol::isClosing(str[0])){
+                if(active.onlySpacesLeft()){
+                    Line* active_line = activeLine();
+                    if(Line* l = active_line->prev()){
+                        if(l->scope_depth){
+                            anchor.setToFrontOf(active_line);
+                            std::string indented(INDENT_SIZE*(l->scope_depth-1)+1, ' ');
+                            indented.back() = str[0];
+                            insertText(indented);
+                            return;
+                        }
                     }
                 }
             }
@@ -681,6 +689,8 @@ void Controller::deleteChar(){
         deleteAdditionalChar(undo_stack.back());
     else
         deleteFirstChar();
+
+    hackScriptPrecedence();
 }
 
 void Controller::deleteAdditionalChar(Command* cmd){
@@ -784,6 +794,24 @@ Command* Controller::insertSerialNoSelection(const std::string& str){
         delete lines[0];
         return CommandText::insert(active.text, active.index, str);
     }
+}
+
+void Controller::hackScriptPrecedence(){
+    if(active.index != 0
+       || !active.text->empty()
+       || active.text->id == 0
+       || active.phrase()->back() == active.text
+       || active.text->prevConstructAsserted()->constructCode() != SUPERSCRIPT
+       || active.text->nextConstructAsserted()->constructCode() != SUPERSCRIPT)
+        return;
+
+    //DO THIS: get this working
+
+    selectNextWord();
+    std::string str = selection().str();
+    deleteSelection();
+    moveToPrevChar();
+    //insertSerialNoSelection(str);
 }
 
 #ifndef FORSCAPE_TYPESET_HEADLESS

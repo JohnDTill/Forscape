@@ -107,6 +107,8 @@ public:
 
     Subphrase* arg(size_t index) const noexcept;
 
+    std::vector<Subphrase*> args; //DO THIS: make private again
+
 protected:
     void setupUnaryArg();
     void setupBinaryArgs();
@@ -122,8 +124,6 @@ protected:
     virtual void invalidateY() noexcept;
     virtual void invalidatePos() noexcept;
     #endif
-
-    std::vector<Subphrase*> args;
 
     bool hasSmallChild() const noexcept;
 

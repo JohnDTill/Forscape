@@ -160,6 +160,7 @@ set(SOURCES
     ${COMMAND}/typeset_command_pair.h
     ${COMMAND}/typeset_command_phrase.cpp
     ${COMMAND}/typeset_command_phrase.h
+    ${COMMAND}/typeset_command_replace_construct.h
     ${COMMAND}/typeset_command_text.cpp
     ${COMMAND}/typeset_command_text.h
     ${COMMAND}/typeset_insert_chars.cpp

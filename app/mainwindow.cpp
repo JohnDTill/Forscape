@@ -287,6 +287,8 @@ MainWindow::MainWindow(QWidget* parent)
 
     preferences = new Preferences(settings);
     connect(preferences, SIGNAL(colourChanged()), this, SLOT(onColourChanged()));
+    connect(editor, SIGNAL(integralPreferenceChanged(bool)), preferences, SLOT(on_integralCheckBox_toggled(bool)));
+    connect(editor, SIGNAL(setCommasInLargeNumbers(bool)), preferences, SLOT(on_numberCommaCheckBox_toggled(bool)));
     onColourChanged();
 
     search = new SearchDialog(this, editor, console, settings);
@@ -817,6 +819,7 @@ void MainWindow::openProject(QString path){
     ui->actionSave_All->setEnabled(false);
 
     updateRecentProjectsFromCurrent();
+    console->clearModel();
 
     onTextChanged();
 }
@@ -1299,6 +1302,7 @@ void MainWindow::onFileRightClicked(const QPoint& pos) {
 
 void MainWindow::setHSplitterDefaultWidth() {
     horizontal_splitter->setSizes({FILE_BROWSER_WIDTH, width()-FILE_BROWSER_WIDTH});
+    ui->actionShow_project_browser->setChecked(true);
 }
 
 void MainWindow::setVSplitterDefaultHeight() {

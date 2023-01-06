@@ -400,14 +400,37 @@ void View::resolveRightClick(double x, double y, int xScreen, int yScreen){
             connect(
                 q_action,
                 &QAction::triggered,
-                [=]() { action.takeAction(con, controller, child); }
+                [=]() { action.takeAction(con, controller, child); emit textChanged(); }
             );
 
             q_action->setEnabled( action.enabled );
         }
+
+        switch (con->constructCode()) {
+            case INTEGRAL1:
+            case INTEGRAL2:
+            case INTEGRALCONV1:
+            case INTEGRALCONV2:
+            case DOUBLEINTEGRAL1:
+            case DOUBLEINTEGRALCONV1:
+            case TRIPLEINTEGRAL1:
+            case TRIPLEINTEGRALCONV1:
+                connect(
+                    menu.addAction(
+                        integral_bounds_vertical ? "Show integral scripts to side" : "Show integral scripts vertically"),
+                    &QAction::triggered,
+                    this,
+                    &Editor::changeIntegralPreference);
+                break;
+            default: break;
+        }
+
+        menu.addSeparator();
     }
 
     populateContextMenuFromModel(menu, x, y);
+
+    menu.addSeparator();
 
     append("Undo", undo, model->undoAvailable(), allow_write)
     append("Redo", redo, model->redoAvailable(), allow_write)
@@ -799,6 +822,8 @@ void View::setCursorAppearance(double x, double y) {
 }
 
 void View::drawModel(double xL, double yT, double xR, double yB) {
+    //DO THIS: only update size information when painting, if the model has changed
+
     Painter painter(qpainter, xL, yT, xR, yB);
     painter.setZoom(zoom);
     painter.setOffset(xOrigin(), yOrigin());
@@ -972,6 +997,10 @@ void View::redo(){
 
 void View::selectAll() noexcept{
     controller.selectAll();
+}
+
+void View::changeIntegralPreference() noexcept {
+    emit integralPreferenceChanged(!integral_bounds_vertical);
 }
 
 void View::handleKey(int key, int modifiers, const std::string& str){
@@ -1415,11 +1444,24 @@ void Editor::focusOutEvent(QFocusEvent* event){
     }
 }
 
+void Editor::keyPressEvent(QKeyEvent* e) {
+    auto v_scroll_val = v_scroll->value();
+    View::keyPressEvent(e);
+    if(v_scroll_val == v_scroll->value()) return;
+    hover_node = NONE;
+    clearTooltip();
+}
+
 void Editor::leaveEvent(QEvent* event){
     tooltip->editor = this;
     View::leaveEvent(event);
     if(tooltip->isHidden() || !tooltip->rect().contains(tooltip->mapFromGlobal(QCursor::pos())))
         clearTooltip();
+}
+
+void Editor::mousePressEvent(QMouseEvent* e){
+    clearTooltip();
+    View::mousePressEvent(e);
 }
 
 void Forscape::Typeset::Editor::wheelEvent(QWheelEvent* e) {
@@ -1477,6 +1519,20 @@ void Editor::populateContextMenuFromModel(QMenu& menu, double x, double y) {
         case Code::OP_FILE_REF:
             append("Go to file", goToFile, true, true)
             //append("Find usages", findUsages, true, true) //EVENTUALLY: figure out cross-file usages
+            menu.addSeparator();
+            break;
+        case Code::OP_INTEGER_LITERAL:
+            if(model->parseTree().getSelection(contextNode).strView().size() < 4) break;
+            append(
+                display_commas_in_numbers ? "Don't show commas" : "Show commas in numbers",
+                showCommasInLargeNumbers, true, true);
+            menu.addSeparator();
+            break;
+        case Code::OP_DECIMAL_LITERAL:
+            if(model->parseTree().getSelection(contextNode).strView().find('.') < 4) break;
+            append(
+                display_commas_in_numbers ? "Don't show commas" : "Show commas in numbers",
+                showCommasInLargeNumbers, true, true);
             menu.addSeparator();
             break;
     }
@@ -1607,6 +1663,10 @@ void Editor::showTooltip(){
 
     tooltip->move(QCursor::pos());
     tooltip->show();
+}
+
+void Editor::showCommasInLargeNumbers() {
+    emit setCommasInLargeNumbers(!display_commas_in_numbers);
 }
 
 void Editor::rename(const std::string& str){
@@ -1779,6 +1839,12 @@ void Editor::takeRecommendation(const std::string& str){
 void Tooltip::leaveEvent(QEvent* event) {
     if(!editor->rect().contains(editor->mapFromGlobal(QCursor::pos())))
         editor->clearTooltip();
+}
+
+void View::clearModel() noexcept {
+    model->clear();
+    controller = Controller(model);
+    updateModel();
 }
 
 }

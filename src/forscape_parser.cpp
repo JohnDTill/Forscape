@@ -1269,6 +1269,7 @@ ParseNode Parser::integer() alloc_except {
        rMark().index - left.index > 1) return error(LEADING_ZEROES);
 
     ParseNode n = terminalAndAdvance(OP_INTEGER_LITERAL);
+
     switch (currentType()) {
         case TOKEN_SUBSCRIPT:{
             sel.format(SEM_PREDEFINEDMATNUM);
@@ -1286,6 +1287,9 @@ ParseNode Parser::integer() alloc_except {
             sel.formatNumber();
             ParseNode decimal = terminalAndAdvance(OP_INTEGER_LITERAL);
             ParseNode pn = parse_tree.addNode<2>(OP_DECIMAL_LITERAL, sel, {n, decimal});
+            registerParseNodeRegion(pn, index-3);
+            registerParseNodeRegion(pn, index-2);
+            registerParseNodeRegion(pn, index-1);
             double val = stod(parse_tree.str(pn));
             parse_tree.setDouble(pn, val);
             parse_tree.setRows(pn, 1);
@@ -1300,6 +1304,7 @@ ParseNode Parser::integer() alloc_except {
             parse_tree.setCols(n, 1);
             parse_tree.setValue(n, val);
             model->registerCommaSeparatedNumber(sel);
+            registerParseNodeRegion(n, index-1);
             sel.formatNumber();
             return n;
     }

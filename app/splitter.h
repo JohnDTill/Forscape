@@ -9,6 +9,8 @@ public:
 
 protected:
     virtual void mouseDoubleClickEvent(QMouseEvent* e) override final;
+    virtual void mouseMoveEvent(QMouseEvent* e) override final;
+    virtual void mouseReleaseEvent(QMouseEvent* e) override final;
 };
 
 class Splitter : public QSplitter {
@@ -18,12 +20,12 @@ public:
     Splitter(Qt::Orientation orientation, QWidget* parent = nullptr) noexcept;
 
 signals:
-    void splitterDoubleClicked(int index) const;
+    void splitterDoubleClicked(int index);
 
 protected:
     QSplitterHandle* createHandle() override final;
     friend SplitterHandle;
-    void emitDoubleClicked(QSplitterHandle* sender) const;
+    void emitDoubleClicked(QSplitterHandle* sender);
 };
 
 #endif // SPLITTER_H

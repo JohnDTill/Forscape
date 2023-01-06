@@ -141,7 +141,7 @@ size_t Text::leadingSpaces() const noexcept{
 }
 
 std::string_view Text::checkKeyword(size_t iR) const noexcept{
-    auto slash = str.rfind('\\', iR);
+    auto slash = str.rfind(user_cmd, iR);
     return slash == std::string::npos ?
            std::string_view() :
                 std::string_view(str.data()+slash+1, iR-(slash+1));

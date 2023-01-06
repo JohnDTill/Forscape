@@ -137,6 +137,10 @@ class Text {
         std::string str;
 };
 
+inline constexpr char user_close = '}';
+inline constexpr char user_open = '{';
+inline constexpr char user_cmd = '\\';
+
 }
 
 }

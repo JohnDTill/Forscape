@@ -229,6 +229,35 @@ Model* Marker::getModel() const noexcept{
     return text->getModel();
 }
 
+bool Marker::goToCommandStart() noexcept {
+    assert(index > 0);
+    size_t open_args = 0;
+    bool found_command = false;
+    for(;;){
+        if(index == 0){
+            if(text->id == 0) return found_command;
+            text = text->prevTextAsserted();
+            index = text->numChars();
+        }else{
+            switch (text->charAt(--index)) {
+                case user_close:
+                    if(index == 0 || text->charAt(index-1) != user_cmd) open_args++;
+                    break;
+                case user_open:
+                    if((index == 0 || text->charAt(index-1) != user_cmd) && open_args-- == 0) return false;
+                    break;
+                case user_cmd: {
+                    const bool escaped = (index > 0 && text->charAt(index-1) == user_cmd);
+                    found_command |= !escaped;
+                    index -= escaped;
+                    break;
+                }
+                case ' ': if(open_args == 0) return found_command;
+            }
+        }
+    }
+}
+
 #ifndef FORSCAPE_TYPESET_HEADLESS
 double Marker::x() const{
     return text->xGlobal(index);

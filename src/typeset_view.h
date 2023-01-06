@@ -45,6 +45,7 @@ public:
     size_t numLines() const noexcept;
     size_t currentLine() const noexcept;
     void goToLine(size_t line_num);
+    void clearModel() noexcept;
 
     std::vector<Typeset::Selection> highlighted_words;
     void updateBackgroundColour() noexcept;
@@ -146,6 +147,7 @@ protected:
 
 signals:
     void textChanged();
+    void integralPreferenceChanged(bool align_vertically);
 
 public slots:
     void undo();
@@ -155,6 +157,7 @@ public slots:
     void paste();
     void del();
     void selectAll() noexcept;
+    void changeIntegralPreference() noexcept;
 
 private:
     void handleKey(int key, int modifiers, const std::string& str);
@@ -265,7 +268,9 @@ public:
     //EVENTUALLY: define hierarchy
 protected:
     virtual void focusOutEvent(QFocusEvent* event) override;
+    virtual void keyPressEvent(QKeyEvent* e) override final;
     virtual void leaveEvent(QEvent* event) override;
+    virtual void mousePressEvent(QMouseEvent* e) override;
     virtual void wheelEvent(QWheelEvent* e) override;
     virtual std::string_view logPrefix() const noexcept override { return "editor->"; }
     virtual void resolveTooltip(double x, double y) noexcept override;
@@ -284,10 +289,12 @@ private slots:
     void goToFile();
     void showTooltipParseNode();
     void showTooltip();
+    void showCommasInLargeNumbers();
 
 signals:
     void goToModel(Forscape::Typeset::Model* model, size_t line);
     void goToSelection(const Forscape::Typeset::Selection& sel);
+    void setCommasInLargeNumbers(bool show);
 
 private:
     void rename(const std::string& str);

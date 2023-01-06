@@ -4,9 +4,15 @@
 #include "typeset_construct.h"
 #include "typeset_subphrase.h"
 
+#include "typeset_command.h"
+#include "typeset_controller.h"
+#include "typeset_model.h"
+
 namespace Forscape {
 
 namespace Typeset {
+
+class Sqrt;
 
 class Nrt final : public Construct {
 private:
@@ -78,7 +84,23 @@ public:
         pts.push_back( std::make_pair(a,b) );
         painter.drawPath(pts);
     }
+
+    static void modifySecondScript(Construct* con, Controller& c, Subphrase*){
+        Nrt* m = debug_cast<Nrt*>(con);
+        Command* cmd = new ReplaceConstruct1vs2<Sqrt, Nrt, false>(m);
+        c.getModel()->mutate(cmd, c);
+    }
+
+    static const std::vector<Construct::ContextAction> actions;
+
+    virtual const std::vector<ContextAction>& getContextActions(Subphrase*) const noexcept override {
+        return actions;
+    }
     #endif
+};
+
+const std::vector<Construct::ContextAction> Nrt::actions {
+    ContextAction("Remove nth root script", modifySecondScript),
 };
 
 }

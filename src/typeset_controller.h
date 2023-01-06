@@ -145,6 +145,7 @@ private:
     Command* insertFirstChar(const std::string& str);
     Command* getInsertSerial(const std::string& str);
     Command* insertSerialNoSelection(const std::string& str);
+    void hackScriptPrecedence();
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     void clickTo(const Phrase* p, double x, double y) noexcept;

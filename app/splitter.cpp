@@ -1,13 +1,26 @@
 #include "splitter.h"
 
+#include <QCoreApplication>
 #include <QVariant>
 
 SplitterHandle::SplitterHandle(Qt::Orientation orientation, QSplitter* parent)
     : QSplitterHandle(orientation, parent) {}
 
+static bool allow_drag = true;
+
 void SplitterHandle::mouseDoubleClickEvent(QMouseEvent* e) {
-    QSplitterHandle::mouseDoubleClickEvent(e);
     static_cast<Splitter*>(splitter())->emitDoubleClicked(static_cast<QSplitterHandle*>(this));
+    allow_drag = false;
+    QWidget::setCursor(Qt::ArrowCursor);
+}
+
+void SplitterHandle::mouseMoveEvent(QMouseEvent* e) {
+    if(allow_drag) QSplitterHandle::mouseMoveEvent(e);
+}
+
+void SplitterHandle::mouseReleaseEvent(QMouseEvent* e) {
+    allow_drag = true;
+    QWidget::setCursor(orientation() == Qt::Horizontal ? Qt::SplitHCursor : Qt::SplitVCursor);
 }
 
 Splitter::Splitter(Qt::Orientation orientation, QWidget* parent) noexcept
@@ -22,6 +35,6 @@ QSplitterHandle* Splitter::createHandle() {
     return handle;
 }
 
-void Splitter::emitDoubleClicked(QSplitterHandle* sender) const {
+void Splitter::emitDoubleClicked(QSplitterHandle* sender) {
     emit splitterDoubleClicked(sender->toolTipDuration());
 }

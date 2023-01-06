@@ -41,7 +41,7 @@ include_directories(${CONSTRUCT})
 include_directories(${GEN})
 include_directories(${COMMAND})
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
+find_package(QT NAMES Qt5 Qt6 COMPONENTS Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR}Svg REQUIRED)
 
@@ -193,6 +193,7 @@ set(PROJECT_SOURCES
     ${COMMAND}/typeset_command_pair.h
     ${COMMAND}/typeset_command_phrase.cpp
     ${COMMAND}/typeset_command_phrase.h
+    ${COMMAND}/typeset_command_replace_construct.h
     ${COMMAND}/typeset_command_text.cpp
     ${COMMAND}/typeset_command_text.h
     ${COMMAND}/typeset_insert_chars.cpp
