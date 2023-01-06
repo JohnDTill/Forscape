@@ -4,6 +4,7 @@
 #include <typeset_command_pair.h>
 #include <typeset_construct.h>
 #include <typeset_integral_preference.h>
+#include <typeset_keywords.h>
 #include <typeset_line.h>
 #include <typeset_markerlink.h>
 #include <typeset_model.h>
@@ -1094,11 +1095,12 @@ void View::handleKey(int key, int modifiers, const std::string& str){
             if(!allow_write || alt_or_ctrl_pressed || str.empty()) return;
 
             if(insert_mode) controller.selectNextChar();
-            controller.keystroke(str);
+            std::string_view typeset_cmd = controller.keystroke(str);
             updateXSetpoint();
             restartCursorBlink();
 
-            recommend();
+            if(typeset_cmd.empty()) recommend();
+            else recommendTypeset(typeset_cmd.substr(1));
     }
 
     ensureCursorVisible();
@@ -1299,7 +1301,16 @@ void Recommender::moveUp() noexcept {
 }
 
 void Recommender::take() noexcept{
-    editor->takeRecommendation(controller.selectedText());
+    if(recommend_typeset_phrase_size){
+        std::string str = controller.selectedText();
+        auto lookup = Keywords::lookup(str);
+        editor->getController().anchor.index -= recommend_typeset_phrase_size;
+        editor->insertSerial(lookup);
+        editor->updateModel();
+    }else{
+        editor->takeRecommendation(controller.selectedText());
+    }
+
     hide();
 }
 
@@ -1757,6 +1768,49 @@ void Editor::recommend() {
         recommender->show();
         mock_focus = true;
         recommender->setFocus();
+
+        recommender->recommend_typeset_phrase_size = 0;
+    }
+}
+
+void Editor::recommendTypeset(std::string_view phrase) {
+    suggestions.clear();
+    for(const auto& entry : Keywords::map){
+        const std::string& candidate = entry.first;
+        if(candidate.size() >= phrase.size() && std::string_view(candidate.data(), phrase.size()) == phrase)
+            suggestions.push_back(candidate);
+    }
+    std::sort(suggestions.begin(), suggestions.end());
+
+    if(suggestions.empty()){
+        recommender->hide();
+        setFocus();
+    }else{
+        recommender->clear();
+        std::string str = suggestions.front();
+        for(size_t i = 1; i < suggestions.size(); i++) str += '\n' + suggestions[i];
+        recommender->setFromSerial(str, true);
+        recommender->getController().moveToStartOfDocument();
+        recommender->getController().selectEndOfLine();
+
+        recommender->editor = this;
+        recommender->setParent(this);
+        recommender->setWindowFlags(Qt::Popup);
+
+        double x = xScreen(controller.xActive());
+        double y = yScreen(controller.active.y() + controller.active.text->height());
+        recommender->move(x, y);
+        QPointF global = mapToGlobal(pos());
+        recommender->move(global.x() + x, global.y() + y);
+
+        recommender->updateModel();
+        recommender->sizeToFit();
+
+        recommender->show();
+        mock_focus = true;
+        recommender->setFocus();
+
+        recommender->recommend_typeset_phrase_size = phrase.size() + 1;
     }
 }
 

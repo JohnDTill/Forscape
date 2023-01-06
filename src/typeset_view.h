@@ -140,6 +140,7 @@ protected:
     void scrollUp();
     void scrollDown();
     virtual void recommend(){}
+    virtual void recommendTypeset(std::string_view phrase){}
 
     class VerticalScrollBar;
     VerticalScrollBar* v_scroll;
@@ -240,6 +241,7 @@ public:
     virtual std::string_view logPrefix() const noexcept override { return "recommender->"; }
 
     Editor* editor = nullptr;
+    size_t recommend_typeset_phrase_size = 0;
 
     void sizeToFit();
 
@@ -299,6 +301,7 @@ signals:
 private:
     void rename(const std::string& str);
     virtual void recommend() override final;
+    virtual void recommendTypeset(std::string_view phrase) override final;
     void populateSuggestions();
     void suggestFileNames();
     void suggestFileNames(const Typeset::Selection& sel);

@@ -445,15 +445,16 @@ void Controller::detab() noexcept{
     }
 }
 
-void Controller::keystroke(const std::string& str){
+std::string_view Controller::keystroke(const std::string& str){
     if(str.front() == syntax_cmd){
         insertText(str);
-        //DO THIS: show hints
     }else if(hasSelection() || (active.index==0)){
         insertText(str);
     }else if(str.front() == ' '){
-        if(anchor.goToCommandStart()) anchor = active; //DO THIS
-        else anchor = active;
+        if(anchor.goToCommandStart()){
+            //DO THIS: create a parser
+        }
+        anchor = active;
 
         std::string_view word = active.checkKeyword();
         const std::string& sub = Keywords::lookup(std::string(word));
@@ -470,8 +471,6 @@ void Controller::keystroke(const std::string& str){
             getModel()->mutate(replace, *this);
         }
     }else{
-        //DO THIS: give hints if typing command
-
         if(str.size() == 1){
             uint32_t second = static_cast<uint8_t>(str[0]);
             uint32_t first = active.codepointLeft();
@@ -488,7 +487,7 @@ void Controller::keystroke(const std::string& str){
                 rm->undo(*this);
                 Command* replace = new CommandPair(rm, ins);
                 getModel()->mutate(replace, *this);
-                return;
+                return "";
             }else if(CloseSymbol::isClosing(str[0])){
                 if(active.onlySpacesLeft()){
                     Line* active_line = activeLine();
@@ -498,7 +497,7 @@ void Controller::keystroke(const std::string& str){
                             std::string indented(INDENT_SIZE*(l->scope_depth-1)+1, ' ');
                             indented.back() = str[0];
                             insertText(indented);
-                            return;
+                            return "";
                         }
                     }
                 }
@@ -507,6 +506,12 @@ void Controller::keystroke(const std::string& str){
 
         insertText(str);
     }
+
+    const std::string& modified_string = active.text->getString();
+    for(size_t i = active.index; i-- > 0 && modified_string[i] != ' ';)
+        if(modified_string[i] == syntax_cmd)
+            return std::string_view(modified_string.data()+i, active.index-i);
+    return "";
 }
 
 void Controller::insertText(const std::string& str){
