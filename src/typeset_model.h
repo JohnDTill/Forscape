@@ -49,6 +49,7 @@ public:
     std::filesystem::file_time_type write_time;
     #endif
     bool is_imported = false;
+    bool needs_update = true;
     size_t parse_node_offset = 0;
 
     Model();

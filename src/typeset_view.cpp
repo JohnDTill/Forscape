@@ -663,7 +663,6 @@ void View::ensureCursorVisible() noexcept{
 }
 
 void View::updateModel() noexcept{
-    model->calculateSizes();
     model->updateLayout();
     handleResize();
     update();
@@ -823,7 +822,7 @@ void View::setCursorAppearance(double x, double y) {
 }
 
 void View::drawModel(double xL, double yT, double xR, double yB) {
-    //DO THIS: only update size information when painting, if the model has changed
+    model->updateLayout();
 
     Painter painter(qpainter, xL, yT, xR, yB);
     painter.setZoom(zoom);
@@ -1423,8 +1422,6 @@ void Editor::runThread(){
 
     if(!model->errors.empty()){
         Model* result = Code::Error::writeErrors(model->errors, this);
-        result->calculateSizes();
-        result->updateLayout();
         console->setModel(result);
     }else{
         is_running = true;
