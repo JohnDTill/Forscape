@@ -94,6 +94,7 @@ set(SOURCES
     ${TEST}/forscape_benchmark.h
     ${TEST}/report.h
     ${TEST}/serial.h
+    ${TEST}/test_keywords.h
     ${TEST}/typeset.h
     ${TEST}/typeset_control.h
     ${TEST}/typeset_loadsave.h

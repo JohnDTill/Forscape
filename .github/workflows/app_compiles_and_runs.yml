@@ -1,8 +1,10 @@
 name: Forscape App Compiles (ubuntu-latest gcc)
-on:
-  pull_request:
-  push:
-    branches: main
+on: push
+#DO THIS: change back
+#on:
+#  pull_request:
+#  push:
+#    branches: main
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -20,3 +22,5 @@ jobs:
         run: cd ${GITHUB_WORKSPACE}/app && cmake -B../build -S.
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build && make
+      - id: launch
+        run: timeout 10 ./Forscape

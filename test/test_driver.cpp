@@ -3,6 +3,7 @@
 #include "code_parser.h"
 #include "code_scanner.h"
 #include "serial.h"
+#include "test_keywords.h"
 #include "typeset_control.h"
 #include "typeset_loadsave.h"
 #include "typeset_mutability.h"
@@ -33,6 +34,7 @@ int main(int argc, char* argv[]){
     passing &= testSerial();
     passing &= testTypesetLoadSave();
     passing &= testTypesetController();
+    passing &= testKeywords();
     passing &= testScanner();
     passing &= testParser();
     passing &= testInterpreter();
