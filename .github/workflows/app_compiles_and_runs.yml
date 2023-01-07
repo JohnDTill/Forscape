@@ -23,4 +23,6 @@ jobs:
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build && make
       - id: launch
-        run: timeout 10 ./Forscape
+        run: cd ${GITHUB_WORKSPACE}/build && timeout 10 ./Forscape
+      - id: launch_with_file
+        run: cd ${GITHUB_WORKSPACE}/build && timeout 5 ./Forscape ../test/interpreter_scripts/in/root_finding_terse.π

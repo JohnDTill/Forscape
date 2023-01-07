@@ -1669,6 +1669,7 @@ void Editor::showTooltipParseNode(){
 void Editor::showTooltip(){
     if(tooltip->isVisible()) return;
 
+    tooltip->updateModel();
     tooltip->move(QCursor::pos());
     tooltip->show();
 }
@@ -1832,7 +1833,7 @@ void Editor::populateSuggestions() {
 
 void Editor::suggestFileNames() {
     recommend_without_hint = true;
-    Program::instance()->getFileSuggestions(suggestions);
+    Program::instance()->getFileSuggestions(suggestions, model);
     std::sort(suggestions.begin(), suggestions.end());
     suggestions.erase(std::unique(suggestions.begin(), suggestions.end()), suggestions.end());
 }
@@ -1840,7 +1841,7 @@ void Editor::suggestFileNames() {
 void Editor::suggestFileNames(const Selection& sel) {
     if(!sel.isTextSelection()) return;
     filename_start = &sel.left;
-    Program::instance()->getFileSuggestions(suggestions, sel.strView());
+    Program::instance()->getFileSuggestions(suggestions, sel.strView(), model);
     std::sort(suggestions.begin(), suggestions.end());
     suggestions.erase(std::unique(suggestions.begin(), suggestions.end()), suggestions.end());
 }
