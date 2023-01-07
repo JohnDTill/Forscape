@@ -1,4 +1,4 @@
-name: Forscape App Compiles (ubuntu-latest gcc)
+name: Forscape App Compiles And Runs (ubuntu-latest gcc)
 on: push
 #DO THIS: change back
 #on:
@@ -23,6 +23,6 @@ jobs:
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build && make
       - id: launch
-        run: cd ${GITHUB_WORKSPACE}/build && timeout 10 ./Forscape
+        run: cd ${GITHUB_WORKSPACE}/build && timeout 10 ./Forscape -platform offscreen
       - id: launch_with_file
-        run: cd ${GITHUB_WORKSPACE}/build && timeout 5 ./Forscape ../test/interpreter_scripts/in/root_finding_terse.π
+        run: cd ${GITHUB_WORKSPACE}/build && timeout 5 ./Forscape ../test/interpreter_scripts/in/root_finding_terse.π -platform offscreen

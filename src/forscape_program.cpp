@@ -165,7 +165,7 @@ void Program::getFileSuggestions(std::vector<std::string>& suggestions, std::str
                std::string_view(candidate_filename.data(), input_filename.size()) != input_filename) continue;
 
             std::filesystem::path rel_path = std::filesystem::relative(candidate_path, path_entry);
-            if(rel_path != model_rel_path) suggestions.push_back(rel_path.u8string()); //DO THIS: verify self import not suggested
+            if(rel_path != model_rel_path) suggestions.push_back(rel_path.u8string());
         }
     }
 }

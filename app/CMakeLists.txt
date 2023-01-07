@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
+#DO THIS: verify typesetting syntax isn't messed up on unix
+
 project(Forscape VERSION 0.0.2 LANGUAGES CXX)
 set(EXE_NAME "Forscape")
 
