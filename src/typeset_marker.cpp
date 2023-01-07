@@ -231,6 +231,7 @@ Model* Marker::getModel() const noexcept{
 }
 
 bool Marker::goToCommandStart() noexcept {
+    index--;
     assert(index > 0);
     size_t open_args = 0;
     bool found_command = false;

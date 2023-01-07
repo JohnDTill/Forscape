@@ -1538,7 +1538,19 @@ ParseNode Parser::superscript(ParseNode lhs) alloc_except{
             n = parse_tree.addUnary(OP_COMPLEMENT, c, lhs);
             break;
         }
-        default: n = parse_tree.addNode<2>(OP_POWER, c, {lhs, expression()});
+        default:
+            static constexpr size_t TYPESET_RATHER_THAN_CARET = 1;
+            if(parse_tree.getOp(lhs) == OP_POWER && parse_tree.getFlag(lhs) == TYPESET_RATHER_THAN_CARET){
+                //Due to typesetting the precedence of adjacent scritps x^{a}^{b} would parse incorrectly
+                //as (x^{a})^{b}, except that we patch it here
+                index--;
+                ParseNode new_power = superscript(parse_tree.rhs(lhs));
+                parse_tree.setArg<1>(lhs, new_power);
+                parse_tree.setRight(lhs, right);
+                return lhs;
+            }
+            n = parse_tree.addNode<2>(OP_POWER, c, {lhs, expression()});
+            parse_tree.setFlag(n, TYPESET_RATHER_THAN_CARET);
     }
 
     consume(ARGCLOSE);

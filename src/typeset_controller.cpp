@@ -6,12 +6,14 @@
 #include "typeset_keywords.h"
 #include "typeset_line.h"
 #include "typeset_model.h"
+#include "typeset_parser.h"
 #include "typeset_shorthand.h"
 #include "typeset_subphrase.h"
 #include "typeset_text.h"
 #include "typeset_themes.h"
 #include <typeset_command_indent.h>
 #include <typeset_command_line.h>
+#include <typeset_command_list.h>
 #include <typeset_command_pair.h>
 #include <typeset_command_phrase.h>
 #include <typeset_command_text.h>
@@ -451,25 +453,15 @@ std::string_view Controller::keystroke(const std::string& str){
     }else if(hasSelection() || (active.index==0)){
         insertText(str);
     }else if(str.front() == ' '){
+        insertText(str);
         if(anchor.goToCommandStart()){
-            //DO THIS: create a parser
+            const std::string& replaced = getSubstitution(selectedText());
+            if(!replaced.empty()){
+                insertSerial(replaced);
+                return "";
+            }
         }
         anchor = active;
-
-        std::string_view word = active.checkKeyword();
-        const std::string& sub = Keywords::lookup(std::string(word));
-        insertText(str);
-
-        if(!sub.empty()){
-            anchor.index -= (word.size()+2);
-            Command* rm = CommandText::remove(active.text, anchor.index, active.index-anchor.index);
-            rm->redo(*this);
-            active.index = anchor.index;
-            Command* ins = insertSerialNoSelection(sub);
-            rm->undo(*this);
-            Command* replace = new CommandPair(rm, ins);
-            getModel()->mutate(replace, *this);
-        }
     }else{
         if(str.size() == 1){
             uint32_t second = static_cast<uint8_t>(str[0]);
@@ -695,8 +687,6 @@ void Controller::deleteChar(){
         deleteAdditionalChar(undo_stack.back());
     else
         deleteFirstChar();
-
-    hackScriptPrecedence();
 }
 
 void Controller::deleteAdditionalChar(Command* cmd){
@@ -800,24 +790,6 @@ Command* Controller::insertSerialNoSelection(const std::string& str){
         delete lines[0];
         return CommandText::insert(active.text, active.index, str);
     }
-}
-
-void Controller::hackScriptPrecedence(){
-    if(active.index != 0
-       || !active.text->empty()
-       || active.text->id == 0
-       || active.phrase()->back() == active.text
-       || active.text->prevConstructAsserted()->constructCode() != SUPERSCRIPT
-       || active.text->nextConstructAsserted()->constructCode() != SUPERSCRIPT)
-        return;
-
-    //DO THIS: get this working
-
-    selectNextWord();
-    std::string str = selection().str();
-    deleteSelection();
-    moveToPrevChar();
-    //insertSerialNoSelection(str);
 }
 
 #ifndef FORSCAPE_TYPESET_HEADLESS

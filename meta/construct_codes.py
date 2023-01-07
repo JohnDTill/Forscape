@@ -13,12 +13,25 @@ def main():
         name="construct_codes",
     )
 
-    header_writer.write("constexpr char OPEN = 2;\n"
-                        "constexpr char CLOSE = 3;\n\n")
+    open_code = 2
+    close_code = 3
+
+    header_writer.write(f"constexpr char OPEN = {open_code};\n"
+                        f"constexpr char CLOSE = {close_code};\n"
+                        f'#define OPEN_STR "{chr(open_code)}"\n'
+                        f'#define CLOSE_STR "{chr(close_code)}"\n'
+                        "\n")
 
     curr = 1
     for con in constructs:
         header_writer.write(f"constexpr char {con.name.upper()} = {curr};\n")
+        ch = chr(curr)
+        if ch == '"':
+            ch = '\\"'
+        elif ch == '\n':
+            ch = '\\n'
+        if curr != 26:
+            header_writer.write(f'#define {con.name.upper()}_STR "{ch}"\n')
         curr += 1
     header_writer.write("\n")
 

@@ -173,6 +173,8 @@ set(PROJECT_SOURCES
     ${SRC}/typeset_model.h
     ${SRC}/typeset_painter.h
     ${SRC}/typeset_painter_qt.cpp
+    ${SRC}/typeset_parser.cpp
+    ${SRC}/typeset_parser.h
     ${SRC}/typeset_phrase.cpp
     ${SRC}/typeset_phrase.h
     ${SRC}/typeset_selection.cpp

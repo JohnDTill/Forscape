@@ -67,7 +67,7 @@ void MathToolbar::setupSymbolTable(){
     connect( symbol_table, SIGNAL(itemClicked(QTableWidgetItem*)),
              this, SLOT(symbolTableTriggered(QTableWidgetItem*)) );
 
-    std::pair<QString, QString> keywords[] = FORSCAPE_KEYWORD_LIST;
+    std::pair<QString, QString> keywords[] = {FORSCAPE_KEYWORD_LIST};
     for(auto pair : keywords){
         if(col >= symbol_table_cols){
             row++;
@@ -97,9 +97,9 @@ void MathToolbar::setupSymbolTable(){
 }
 
 void MathToolbar::setupScripts(){
-    addAction(new TypesetAction("A", SYNTAX_CMD "_", "", this));
-    addAction(new TypesetAction("B", SYNTAX_CMD "^", "", this));
-    addAction(new TypesetAction("C", SYNTAX_CMD "^_", "", this));
+    addAction(new TypesetAction("A", SYNTAX_CMD "_", OPEN_STR SUBSCRIPT_STR CLOSE_STR, this));
+    addAction(new TypesetAction("B", SYNTAX_CMD "^", OPEN_STR SUPERSCRIPT_STR CLOSE_STR, this));
+    addAction(new TypesetAction("C", SYNTAX_CMD "^_", OPEN_STR DUALSCRIPT_STR CLOSE_STR CLOSE_STR, this));
 }
 
 void MathToolbar::setupAccents(){
@@ -109,7 +109,7 @@ void MathToolbar::setupAccents(){
     addWidget(accents);
 
     //accents->addAction(new EnclosedTypesetAction("J", SYNTAX_CMD "vec", "⁜→⏴", "", this));
-    accents->addAction(new EnclosedTypesetAction("K", SYNTAX_CMD "bar", "/", "", this));
+    accents->addAction(new EnclosedTypesetAction("K", SYNTAX_CMD "bar", OPEN_STR ACCENTBAR_STR, CLOSE_STR, this));
     accents->addAction(new EnclosedTypesetAction("L", SYNTAX_CMD "breve", "0", "", this));
     accents->addAction(new EnclosedTypesetAction("M", SYNTAX_CMD "dot", "1", "", this));
     accents->addAction(new EnclosedTypesetAction("N", SYNTAX_CMD "ddot", "2", "", this));
@@ -121,11 +121,11 @@ void MathToolbar::setupAccents(){
 }
 
 void MathToolbar::setupMisc(){
-    addAction(new EnclosedTypesetAction("D", SYNTAX_CMD "frac", "", "", this));
+    addAction(new EnclosedTypesetAction("D", SYNTAX_CMD "frac", OPEN_STR FRACTION_STR, CLOSE_STR CLOSE_STR, this));
     addAction(new TypesetAction("E", SYNTAX_CMD "mat", "", this));
     addAction(new TypesetAction("F", SYNTAX_CMD "cases", "", this));
     addAction(new TypesetAction("G", SYNTAX_CMD "binom", "nk", this));
-    addAction(new EnclosedTypesetAction("I", SYNTAX_CMD "sqrt", "", "", this));
+    addAction(new EnclosedTypesetAction("I", SYNTAX_CMD "sqrt", "", CLOSE_STR, this));
 
     QToolButton* words = new QToolButton(this);
     words->setPopupMode(QToolButton::MenuButtonPopup);
