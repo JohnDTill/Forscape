@@ -7,6 +7,15 @@
 #include "typeset_model.h"
 #include "typeset_subphrase.h"
 
+#ifndef FORSCAPE_TYPESET_HEADLESS
+#include <QApplication>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QFormLayout>
+#include <QIntValidator>
+#include <QLineEdit>
+#endif
+
 #ifndef NDEBUG
 #include <iostream>
 #endif
@@ -320,6 +329,80 @@ public:
         }
     };
 
+    class SetSize : public Command {
+    private:
+        bool enacted;
+        Matrix& mat;
+        std::vector<Subphrase*> original_data;
+        std::vector<Subphrase*> modified_data;
+        std::vector<Subphrase*> original_data_not_shared;
+        std::vector<Subphrase*> modified_data_not_shared;
+        const size_t original_rows;
+        const size_t original_cols;
+        const size_t modified_rows;
+        const size_t modified_cols;
+
+    public:
+        SetSize(Matrix& mat, size_t rows, size_t cols)
+            : mat(mat), original_rows(mat.rows), original_cols(mat.cols), modified_rows(rows), modified_cols(cols) {
+            original_data = mat.args;
+
+            modified_data.reserve(modified_rows*modified_cols);
+            for(size_t i = 0; i < modified_rows; i++){
+                for(size_t j = 0; j < modified_cols; j++){
+                    if(i < original_rows && j < original_cols){
+                        modified_data.push_back(original_data[i*original_cols+j]);
+                    }else{
+                        Subphrase* p = new Subphrase;
+                        p->setParent(&mat);
+                        modified_data.push_back(p);
+                        modified_data_not_shared.push_back(p);
+                    }
+                }
+                for(size_t j = modified_cols; j < original_cols; j++)
+                    original_data_not_shared.push_back(original_data[i*original_cols+j]);
+            }
+            if(original_rows > modified_rows){
+                const size_t start_index = modified_rows*original_cols;
+                original_data_not_shared.insert(
+                    original_data_not_shared.end(), original_data.cbegin() + start_index, original_data.cend());
+            }
+        }
+
+        ~SetSize(){
+            for(Subphrase* p : (enacted ? original_data_not_shared : modified_data_not_shared)) delete p;
+        }
+
+    protected:
+        virtual void redo(Controller& c) override final{
+            enacted = true;
+            mat.rows = modified_rows;
+            mat.cols = modified_cols;
+            mat.args = modified_data;
+            for(size_t i = mat.rows*mat.cols; i-->0;) mat.arg(i)->id = i;
+
+            mat.W.resize(mat.cols);
+            mat.U.resize(mat.rows);
+            mat.D.resize(mat.rows);
+
+            c.setBothToFrontOf(mat.next());
+        }
+
+        virtual void undo(Controller& c) override final{
+            enacted = false;
+            mat.rows = original_rows;
+            mat.cols = original_cols;
+            mat.args = original_data;
+            for(size_t i = mat.rows*mat.cols; i-->0;) mat.arg(i)->id = i;
+
+            mat.W.resize(mat.cols);
+            mat.U.resize(mat.rows);
+            mat.D.resize(mat.rows);
+
+            c.setBothToFrontOf(mat.next());
+        }
+    };
+
     template<bool insert, bool offset>
     static void rowCmd(Construct* con, Controller& c, Subphrase* child){
         assert(dynamic_cast<Matrix*>(con));
@@ -339,6 +422,51 @@ public:
         Command* cmd = new CmdCol<insert>(*m, clicked_col+offset);
         c.getModel()->mutate(cmd, c);
     }
+
+    static void promptSize(Construct* con, Controller& c, Subphrase*){
+        assert(dynamic_cast<Matrix*>(con));
+        Matrix* m = static_cast<Matrix*>(con);
+
+        QDialog dialog(QApplication::focusWidget());
+        dialog.setWindowTitle("Matrix size");
+        dialog.setWindowFlags(dialog.windowFlags() & ~Qt::WindowContextHelpButtonHint);
+        QFormLayout form(&dialog);
+
+        QLineEdit* rowEdit = new QLineEdit(&dialog);
+        rowEdit->setText(QString::number(m->rows));
+        rowEdit->setValidator(new QIntValidator(1, 255, rowEdit));
+        form.addRow("Rows", rowEdit);
+
+        QLineEdit* colEdit = new QLineEdit(&dialog);
+        colEdit->setText(QString::number(m->cols));
+        colEdit->setValidator(new QIntValidator(1, 255, colEdit));
+        form.addRow("Cols", colEdit);
+
+        QDialogButtonBox buttonBox(QDialogButtonBox::StandardButton::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, &dialog);
+        form.addRow(&buttonBox);
+
+        QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
+        QObject::connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
+
+        const auto code = dialog.exec();
+        switch (code) {
+            case QDialogButtonBox::Cancel:
+            case QDialogButtonBox::StandardButton::NoButton:
+                return;
+            case 1: break;
+            default: assert(false);
+        }
+
+        bool success;
+        uint rows = rowEdit->text().toUInt(&success);
+        if(!success || rows == 0 || rows > 255) return;
+        uint cols = colEdit->text().toUInt(&success);
+        if(!success || cols == 0 || cols > 255) return;
+        if(rows == m->rows && cols ==m->cols) return;
+
+        Command* cmd = new SetSize(*m, rows, cols);
+        c.getModel()->mutate(cmd, c);
+    }
     #endif
 };
 
@@ -350,6 +478,7 @@ inline std::vector<Construct::ContextAction> Matrix::actions {
     ContextAction("Create col left", colCmd<true, false>),
     ContextAction("Delete row", rowCmd<false, false>),
     ContextAction("Delete col", colCmd<false, false>),
+    ContextAction("Set size...", promptSize),
 };
 #endif
 

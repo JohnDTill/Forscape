@@ -59,6 +59,7 @@ struct Marker{
     bool compareRight(const Marker& other) const noexcept;
     bool compareLeft(const Marker& other) const noexcept;
     Model* getModel() const noexcept;
+    bool goToCommandStart() noexcept;
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     double x() const;

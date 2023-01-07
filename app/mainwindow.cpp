@@ -284,9 +284,13 @@ MainWindow::MainWindow(QWidget* parent)
 
     connect(&interpreter_poll_timer, SIGNAL(timeout()), this, SLOT(pollInterpreterThread()));
     connect(editor, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
+    connect(editor, SIGNAL(modelChanged(Forscape::Typeset::Model*)),
+            this, SLOT(onModelChanged(Forscape::Typeset::Model*)));
 
     preferences = new Preferences(settings);
     connect(preferences, SIGNAL(colourChanged()), this, SLOT(onColourChanged()));
+    connect(editor, SIGNAL(integralPreferenceChanged(bool)), preferences, SLOT(on_integralCheckBox_toggled(bool)));
+    connect(editor, SIGNAL(setCommasInLargeNumbers(bool)), preferences, SLOT(on_numberCommaCheckBox_toggled(bool)));
     onColourChanged();
 
     search = new SearchDialog(this, editor, console, settings);
@@ -779,7 +783,7 @@ void MainWindow::openProject(QString path){
     model->path = std_path;
     Forscape::Program::instance()->freeFileMemory();
     Forscape::Program::instance()->setProgramEntryPoint(std_path, model);
-    model->postmutate();
+    model->performSemanticFormatting();
     editor->setModel(model);
 
     modified_files.clear();
@@ -817,6 +821,7 @@ void MainWindow::openProject(QString path){
     ui->actionSave_All->setEnabled(false);
 
     updateRecentProjectsFromCurrent();
+    console->clearModel();
 
     onTextChanged();
 }
@@ -1072,6 +1077,13 @@ void MainWindow::onTextChanged(){
     }
 }
 
+void MainWindow::onModelChanged(Forscape::Typeset::Model* model) {
+    const bool changed_from_save = !model->isSavedDeepComparison();
+    if(changed_from_save) modified_files.insert(model);
+    else modified_files.erase(model);
+    ui->actionSave_All->setDisabled(modified_files.empty());
+}
+
 int seconds_to_shutdown = -1;
 
 void MainWindow::closeEvent(QCloseEvent* event){
@@ -1299,6 +1311,7 @@ void MainWindow::onFileRightClicked(const QPoint& pos) {
 
 void MainWindow::setHSplitterDefaultWidth() {
     horizontal_splitter->setSizes({FILE_BROWSER_WIDTH, width()-FILE_BROWSER_WIDTH});
+    ui->actionShow_project_browser->setChecked(true);
 }
 
 void MainWindow::setVSplitterDefaultHeight() {
@@ -1326,7 +1339,6 @@ void MainWindow::viewModel(Forscape::Typeset::Model* model, size_t line) {
     viewing_chain.push_back(JumpPoint(editor->getModel(), editor->currentLine()));
     viewing_chain.push_back(JumpPoint(model, line));
     viewing_index = viewing_chain.size()-1;
-    model->postmutate();
     setEditorToModelAndLine(model, line);
     updateViewJumpPointElements();
 }

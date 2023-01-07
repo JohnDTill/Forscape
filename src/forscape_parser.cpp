@@ -1269,6 +1269,7 @@ ParseNode Parser::integer() alloc_except {
        rMark().index - left.index > 1) return error(LEADING_ZEROES);
 
     ParseNode n = terminalAndAdvance(OP_INTEGER_LITERAL);
+
     switch (currentType()) {
         case TOKEN_SUBSCRIPT:{
             sel.format(SEM_PREDEFINEDMATNUM);
@@ -1286,6 +1287,9 @@ ParseNode Parser::integer() alloc_except {
             sel.formatNumber();
             ParseNode decimal = terminalAndAdvance(OP_INTEGER_LITERAL);
             ParseNode pn = parse_tree.addNode<2>(OP_DECIMAL_LITERAL, sel, {n, decimal});
+            registerParseNodeRegion(pn, index-3);
+            registerParseNodeRegion(pn, index-2);
+            registerParseNodeRegion(pn, index-1);
             double val = stod(parse_tree.str(pn));
             parse_tree.setDouble(pn, val);
             parse_tree.setRows(pn, 1);
@@ -1300,6 +1304,7 @@ ParseNode Parser::integer() alloc_except {
             parse_tree.setCols(n, 1);
             parse_tree.setValue(n, val);
             model->registerCommaSeparatedNumber(sel);
+            registerParseNodeRegion(n, index-1);
             sel.formatNumber();
             return n;
     }
@@ -1533,7 +1538,19 @@ ParseNode Parser::superscript(ParseNode lhs) alloc_except{
             n = parse_tree.addUnary(OP_COMPLEMENT, c, lhs);
             break;
         }
-        default: n = parse_tree.addNode<2>(OP_POWER, c, {lhs, expression()});
+        default:
+            static constexpr size_t TYPESET_RATHER_THAN_CARET = 1;
+            if(parse_tree.getOp(lhs) == OP_POWER && parse_tree.getFlag(lhs) == TYPESET_RATHER_THAN_CARET){
+                //Due to typesetting the precedence of adjacent scritps x^{a}^{b} would parse incorrectly
+                //as (x^{a})^{b}, except that we patch it here
+                index--;
+                ParseNode new_power = superscript(parse_tree.rhs(lhs));
+                parse_tree.setArg<1>(lhs, new_power);
+                parse_tree.setRight(lhs, right);
+                return lhs;
+            }
+            n = parse_tree.addNode<2>(OP_POWER, c, {lhs, expression()});
+            parse_tree.setFlag(n, TYPESET_RATHER_THAN_CARET);
     }
 
     consume(ARGCLOSE);

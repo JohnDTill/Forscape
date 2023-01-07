@@ -106,6 +106,7 @@ public:
     #endif
 
     Subphrase* arg(size_t index) const noexcept;
+    void setArg(size_t index, Subphrase* p) noexcept;
 
 protected:
     void setupUnaryArg();
@@ -123,9 +124,9 @@ protected:
     virtual void invalidatePos() noexcept;
     #endif
 
-    std::vector<Subphrase*> args;
-
     bool hasSmallChild() const noexcept;
+
+    std::vector<Subphrase*> args;
 
 private:
     size_t getSubphraseIndex(const Subphrase* s) const noexcept;

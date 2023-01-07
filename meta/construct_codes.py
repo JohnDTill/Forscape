@@ -3,6 +3,14 @@ from utils import cpp, table_reader
 import glob
 
 
+def char_str(num):
+    assert num < 100
+    if num >= 10:
+        return f'"\\x{num}"'
+    else:
+        return f'"\\x0{num}"'
+
+
 def main():
     constructs = table_reader.csv_to_list_of_tuples(
         csv_filepath="construct_codes.csv",
@@ -13,12 +21,19 @@ def main():
         name="construct_codes",
     )
 
-    header_writer.write("constexpr char OPEN = 2;\n"
-                        "constexpr char CLOSE = 3;\n\n")
+    open_code = 2
+    close_code = 3
+
+    header_writer.write(f"constexpr char OPEN = {open_code};\n"
+                        f"constexpr char CLOSE = {close_code};\n"
+                        f'#define OPEN_STR {char_str(open_code)}\n'
+                        f'#define CLOSE_STR {char_str(close_code)}\n'
+                        "\n")
 
     curr = 1
     for con in constructs:
         header_writer.write(f"constexpr char {con.name.upper()} = {curr};\n")
+        header_writer.write(f'#define {con.name.upper()}_STR {char_str(curr)}\n')
         curr += 1
     header_writer.write("\n")
 

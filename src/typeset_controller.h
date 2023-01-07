@@ -34,6 +34,7 @@ class Subphrase;
 class Text;
 class View;
 class Editor;
+class Recommender;
 
 class Controller {
 public:
@@ -76,7 +77,7 @@ public:
     void newline() noexcept;
     void tab();
     void detab() noexcept;
-    void keystroke(const std::string& str);
+    std::string_view keystroke(const std::string& str);
     void insertText(const std::string& str);
     void insertSerial(const std::string& src);
     void setBothToFrontOf(Text* t) noexcept;
@@ -190,6 +191,7 @@ private:
     friend RemoveChars;
     friend View;
     friend Editor;
+    friend Recommender;
 };
 
 }

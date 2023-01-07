@@ -41,7 +41,7 @@ include_directories(${CONSTRUCT})
 include_directories(${GEN})
 include_directories(${COMMAND})
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
+find_package(QT NAMES Qt5 Qt6 COMPONENTS Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR}Svg REQUIRED)
 
@@ -173,12 +173,15 @@ set(PROJECT_SOURCES
     ${SRC}/typeset_model.h
     ${SRC}/typeset_painter.h
     ${SRC}/typeset_painter_qt.cpp
+    ${SRC}/typeset_parser.cpp
+    ${SRC}/typeset_parser.h
     ${SRC}/typeset_phrase.cpp
     ${SRC}/typeset_phrase.h
     ${SRC}/typeset_selection.cpp
     ${SRC}/typeset_selection.h
     ${SRC}/typeset_subphrase.cpp
     ${SRC}/typeset_subphrase.h
+    ${SRC}/typeset_syntax.h
     ${SRC}/typeset_text.cpp
     ${SRC}/typeset_text.h
     ${SRC}/typeset_view.cpp
@@ -193,6 +196,7 @@ set(PROJECT_SOURCES
     ${COMMAND}/typeset_command_pair.h
     ${COMMAND}/typeset_command_phrase.cpp
     ${COMMAND}/typeset_command_phrase.h
+    ${COMMAND}/typeset_command_replace_construct.h
     ${COMMAND}/typeset_command_text.cpp
     ${COMMAND}/typeset_command_text.h
     ${COMMAND}/typeset_insert_chars.cpp

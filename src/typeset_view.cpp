@@ -4,6 +4,7 @@
 #include <typeset_command_pair.h>
 #include <typeset_construct.h>
 #include <typeset_integral_preference.h>
+#include <typeset_keywords.h>
 #include <typeset_line.h>
 #include <typeset_markerlink.h>
 #include <typeset_model.h>
@@ -400,14 +401,37 @@ void View::resolveRightClick(double x, double y, int xScreen, int yScreen){
             connect(
                 q_action,
                 &QAction::triggered,
-                [=]() { action.takeAction(con, controller, child); }
+                [=]() { action.takeAction(con, controller, child); emit textChanged(); }
             );
 
             q_action->setEnabled( action.enabled );
         }
+
+        switch (con->constructCode()) {
+            case INTEGRAL1:
+            case INTEGRAL2:
+            case INTEGRALCONV1:
+            case INTEGRALCONV2:
+            case DOUBLEINTEGRAL1:
+            case DOUBLEINTEGRALCONV1:
+            case TRIPLEINTEGRAL1:
+            case TRIPLEINTEGRALCONV1:
+                connect(
+                    menu.addAction(
+                        integral_bounds_vertical ? "Show integral scripts to side" : "Show integral scripts vertically"),
+                    &QAction::triggered,
+                    this,
+                    &Editor::changeIntegralPreference);
+                break;
+            default: break;
+        }
+
+        menu.addSeparator();
     }
 
     populateContextMenuFromModel(menu, x, y);
+
+    menu.addSeparator();
 
     append("Undo", undo, model->undoAvailable(), allow_write)
     append("Redo", redo, model->redoAvailable(), allow_write)
@@ -639,7 +663,6 @@ void View::ensureCursorVisible() noexcept{
 }
 
 void View::updateModel() noexcept{
-    model->calculateSizes();
     model->updateLayout();
     handleResize();
     update();
@@ -799,6 +822,8 @@ void View::setCursorAppearance(double x, double y) {
 }
 
 void View::drawModel(double xL, double yT, double xR, double yB) {
+    model->updateLayout();
+
     Painter painter(qpainter, xL, yT, xR, yB);
     painter.setZoom(zoom);
     painter.setOffset(xOrigin(), yOrigin());
@@ -974,6 +999,10 @@ void View::selectAll() noexcept{
     controller.selectAll();
 }
 
+void View::changeIntegralPreference() noexcept {
+    emit integralPreferenceChanged(!integral_bounds_vertical);
+}
+
 void View::handleKey(int key, int modifiers, const std::string& str){
     constexpr int Ctrl = Qt::ControlModifier;
     constexpr int Shift = Qt::ShiftModifier;
@@ -1065,11 +1094,12 @@ void View::handleKey(int key, int modifiers, const std::string& str){
             if(!allow_write || alt_or_ctrl_pressed || str.empty()) return;
 
             if(insert_mode) controller.selectNextChar();
-            controller.keystroke(str);
+            std::string_view typeset_cmd = controller.keystroke(str);
             updateXSetpoint();
             restartCursorBlink();
 
-            recommend();
+            if(typeset_cmd.empty()) recommend();
+            else recommendTypeset(typeset_cmd.substr(1));
     }
 
     ensureCursorVisible();
@@ -1270,7 +1300,16 @@ void Recommender::moveUp() noexcept {
 }
 
 void Recommender::take() noexcept{
-    editor->takeRecommendation(controller.selectedText());
+    if(recommend_typeset_phrase_size){
+        std::string str = controller.selectedText();
+        auto lookup = Keywords::lookup(str);
+        editor->getController().anchor.index -= recommend_typeset_phrase_size;
+        editor->insertSerial(lookup);
+        editor->updateModel();
+    }else{
+        editor->takeRecommendation(controller.selectedText());
+    }
+
     hide();
 }
 
@@ -1383,8 +1422,6 @@ void Editor::runThread(){
 
     if(!model->errors.empty()){
         Model* result = Code::Error::writeErrors(model->errors, this);
-        result->calculateSizes();
-        result->updateLayout();
         console->setModel(result);
     }else{
         is_running = true;
@@ -1415,11 +1452,24 @@ void Editor::focusOutEvent(QFocusEvent* event){
     }
 }
 
+void Editor::keyPressEvent(QKeyEvent* e) {
+    auto v_scroll_val = v_scroll->value();
+    View::keyPressEvent(e);
+    if(v_scroll_val == v_scroll->value()) return;
+    hover_node = NONE;
+    clearTooltip();
+}
+
 void Editor::leaveEvent(QEvent* event){
     tooltip->editor = this;
     View::leaveEvent(event);
     if(tooltip->isHidden() || !tooltip->rect().contains(tooltip->mapFromGlobal(QCursor::pos())))
         clearTooltip();
+}
+
+void Editor::mousePressEvent(QMouseEvent* e){
+    clearTooltip();
+    View::mousePressEvent(e);
 }
 
 void Forscape::Typeset::Editor::wheelEvent(QWheelEvent* e) {
@@ -1477,6 +1527,20 @@ void Editor::populateContextMenuFromModel(QMenu& menu, double x, double y) {
         case Code::OP_FILE_REF:
             append("Go to file", goToFile, true, true)
             //append("Find usages", findUsages, true, true) //EVENTUALLY: figure out cross-file usages
+            menu.addSeparator();
+            break;
+        case Code::OP_INTEGER_LITERAL:
+            if(model->parseTree().getSelection(contextNode).strView().size() < 4) break;
+            append(
+                display_commas_in_numbers ? "Don't show commas" : "Show commas in numbers",
+                showCommasInLargeNumbers, true, true);
+            menu.addSeparator();
+            break;
+        case Code::OP_DECIMAL_LITERAL:
+            if(model->parseTree().getSelection(contextNode).strView().find('.') < 4) break;
+            append(
+                display_commas_in_numbers ? "Don't show commas" : "Show commas in numbers",
+                showCommasInLargeNumbers, true, true);
             menu.addSeparator();
             break;
     }
@@ -1609,6 +1673,10 @@ void Editor::showTooltip(){
     tooltip->show();
 }
 
+void Editor::showCommasInLargeNumbers() {
+    emit setCommasInLargeNumbers(!display_commas_in_numbers);
+}
+
 void Editor::rename(const std::string& str){
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
     std::vector<Typeset::Selection> occurences;
@@ -1649,6 +1717,7 @@ void Editor::rename(const std::string& str){
 
             Controller c(m);
             m->rename(entry.second, str, c);
+            emit modelChanged(m);
         }
     }
 
@@ -1697,6 +1766,49 @@ void Editor::recommend() {
         recommender->show();
         mock_focus = true;
         recommender->setFocus();
+
+        recommender->recommend_typeset_phrase_size = 0;
+    }
+}
+
+void Editor::recommendTypeset(std::string_view phrase) {
+    suggestions.clear();
+    for(const auto& entry : Keywords::map){
+        const std::string& candidate = entry.first;
+        if(candidate.size() >= phrase.size() && std::string_view(candidate.data(), phrase.size()) == phrase)
+            suggestions.push_back(candidate);
+    }
+    std::sort(suggestions.begin(), suggestions.end());
+
+    if(suggestions.empty()){
+        recommender->hide();
+        setFocus();
+    }else{
+        recommender->clear();
+        std::string str = suggestions.front();
+        for(size_t i = 1; i < suggestions.size(); i++) str += '\n' + suggestions[i];
+        recommender->setFromSerial(str, true);
+        recommender->getController().moveToStartOfDocument();
+        recommender->getController().selectEndOfLine();
+
+        recommender->editor = this;
+        recommender->setParent(this);
+        recommender->setWindowFlags(Qt::Popup);
+
+        double x = xScreen(controller.xActive());
+        double y = yScreen(controller.active.y() + controller.active.text->height());
+        recommender->move(x, y);
+        QPointF global = mapToGlobal(pos());
+        recommender->move(global.x() + x, global.y() + y);
+
+        recommender->updateModel();
+        recommender->sizeToFit();
+
+        recommender->show();
+        mock_focus = true;
+        recommender->setFocus();
+
+        recommender->recommend_typeset_phrase_size = phrase.size() + 1;
     }
 }
 
@@ -1779,6 +1891,12 @@ void Editor::takeRecommendation(const std::string& str){
 void Tooltip::leaveEvent(QEvent* event) {
     if(!editor->rect().contains(editor->mapFromGlobal(QCursor::pos())))
         editor->clearTooltip();
+}
+
+void View::clearModel() noexcept {
+    model->clear();
+    controller = Controller(model);
+    updateModel();
 }
 
 }

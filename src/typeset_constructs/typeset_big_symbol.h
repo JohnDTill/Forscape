@@ -2,6 +2,8 @@
 #define TYPESET_BIG_SYMBOL_H
 
 #include "typeset_construct.h"
+
+#include "typeset_command_replace_construct.h"
 #include "typeset_subphrase.h"
 
 namespace Forscape {
@@ -34,6 +36,14 @@ public:
     virtual void paintSpecific(Painter& painter) const override {
         painter.drawSymbol(x, y, getBigSymbolString(type));
     }
+
+    static void modifyFirstScript(Construct* con, Controller& c, Subphrase*);
+
+    static const std::vector<Construct::ContextAction> actions;
+
+    virtual const std::vector<ContextAction>& getContextActions(Subphrase*) const noexcept override {
+        return actions;
+    }
     #endif
 };
 
@@ -65,6 +75,20 @@ public:
     virtual void paintSpecific(Painter& painter) const override {
         double symbol_x = x + (width - symbol_width) / 2;
         painter.drawSymbol(symbol_x, y, getBigSymbolString(type));
+    }
+
+    static void modifyFirstScript(Construct* con, Controller& c, Subphrase*){
+        BigSymbol1<type>* m = debug_cast<BigSymbol1<type>*>(con);
+        Command* cmd = new ReplaceConstruct<BigSymbol1<type>, BigSymbol0<type+(BIGSUM0-BIGSUM1)>>(m);
+        c.getModel()->mutate(cmd, c);
+    }
+
+    static void modifySecondScript(Construct* con, Controller& c, Subphrase*);
+
+    static const std::vector<Construct::ContextAction> actions;
+
+    virtual const std::vector<ContextAction>& getContextActions(Subphrase*) const noexcept override {
+        return actions;
     }
     #endif
 };
@@ -108,6 +132,18 @@ public:
         double symbol_x = x + (width - symbol_width) / 2;
         painter.drawSymbol(symbol_x, y + second()->height(), getBigSymbolString(type));
     }
+
+    static void modifySecondScript(Construct* con, Controller& c, Subphrase*){
+        BigSymbol2<type>* m = debug_cast<BigSymbol2<type>*>(con);
+        Command* cmd = new ReplaceConstruct1vs2<BigSymbol1<type+(BIGSUM1-BIGSUM2)>, BigSymbol2<type>, false>(m);
+        c.getModel()->mutate(cmd, c);
+    }
+
+    static const std::vector<Construct::ContextAction> actions;
+
+    virtual const std::vector<ContextAction>& getContextActions(Subphrase*) const noexcept override {
+        return actions;
+    }
     #endif
 };
 
@@ -128,6 +164,33 @@ typedef BigSymbol2<BIGINTERSECTION2> BigIntersection2;
 typedef BigSymbol2<BIGPROD2> BigProd2;
 typedef BigSymbol2<BIGSUM2> BigSum2;
 typedef BigSymbol2<BIGUNION2> BigUnion2;
+
+#ifndef FORSCAPE_TYPESET_HEADLESS
+template<size_t type> const std::vector<Construct::ContextAction> BigSymbol0<type>::actions {
+    ContextAction("Add subscript", modifyFirstScript),
+};
+
+template<size_t type> const std::vector<Construct::ContextAction> BigSymbol1<type>::actions {
+    ContextAction("Add superscript", modifySecondScript),
+    ContextAction("Remove subscript", modifyFirstScript),
+};
+
+template<size_t type> const std::vector<Construct::ContextAction> BigSymbol2<type>::actions {
+    ContextAction("Remove superscript", modifySecondScript),
+};
+
+template<size_t type> void BigSymbol0<type>::modifyFirstScript(Construct* con, Controller& c, Subphrase*){
+    BigSymbol0<type>* m = debug_cast<BigSymbol0<type>*>(con);
+    Command* cmd = new ReplaceConstruct<BigSymbol0<type>, BigSymbol1<type-(BIGSUM0-BIGSUM1)>>(m);
+    c.getModel()->mutate(cmd, c);
+}
+
+template<size_t type> void BigSymbol1<type>::modifySecondScript(Construct* con, Controller& c, Subphrase*){
+    BigSymbol1<type>* m = debug_cast<BigSymbol1<type>*>(con);
+    Command* cmd = new ReplaceConstruct1vs2<BigSymbol1<type>, BigSymbol2<type-(BIGSUM1-BIGSUM2)>, true>(m);
+    c.getModel()->mutate(cmd, c);
+}
+#endif
 
 }
 

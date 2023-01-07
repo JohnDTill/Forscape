@@ -377,7 +377,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             if(!model->is_imported){
                 model->is_imported = true;
                 model->parse_node_offset = parse_tree.offset();
-                model->postmutate();
+                model->performSemanticFormatting();
                 if(model->errors.empty()){
                     const ParseTree& imported = model->parser.parse_tree;
                     const ParseNode root = parse_tree.append(imported);
@@ -401,7 +401,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             if(!model->is_imported){
                 model->is_imported = true;
                 model->parse_node_offset = parse_tree.offset();
-                model->postmutate();
+                model->performSemanticFormatting();
                 if(model->errors.empty()){
                     const ParseTree& imported = model->parser.parse_tree;
                     const ParseNode root = parse_tree.append(imported);
@@ -1113,8 +1113,8 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
         case OP_SCOPE_ACCESS: return resolveScopeAccess(pn);
 
         default:
-            assert(false);
-            return pn;
+            //assert(false);
+            return error(pn, pn, NOT_IMPLEMENTED);
     }
 }
 
@@ -1813,7 +1813,8 @@ ParseNode StaticPass::resolveDefiniteIntegral(ParseNode pn) {
 }
 
 ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
-    ParseNode lhs_lvalue = resolveLValue(parse_tree.lhs(pn));
+    ParseNode lhs = parse_tree.lhs(pn);
+    ParseNode lhs_lvalue = resolveLValue(lhs);
     ParseNode field = parse_tree.arg<1>(pn);
     if(parse_tree.getOp(lhs_lvalue) == OP_ERROR){
         parse_tree.setOp(field, OP_ERROR);
@@ -1858,9 +1859,7 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
         parse_tree.setRows(field, sym.rows);
         parse_tree.setCols(field, sym.cols);
         return field;
-    }else{
-        assert(sym.type == NAMESPACE);
-
+    }else if(sym.type == NAMESPACE){
         auto lookup = symbol_table.scoped_vars.find(SymbolTable::ScopedVarKey(sym_id, parse_tree.getSelection(field)));
         if(lookup != symbol_table.scoped_vars.end()){
             Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
@@ -1886,6 +1885,8 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
             parse_tree.setOp(field, OP_ERROR);
             return error(pn, pn, BAD_READ);
         }
+    }else{
+        return error(pn, lhs, NOT_A_SCOPE);
     }
 }
 

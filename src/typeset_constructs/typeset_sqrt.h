@@ -2,6 +2,8 @@
 #define TYPESET_SQRT_H
 
 #include "typeset_construct.h"
+
+#include "typeset_command_replace_construct.h"
 #include "typeset_subphrase.h"
 
 #ifndef NDEBUG
@@ -11,6 +13,8 @@
 namespace Forscape {
 
 namespace Typeset {
+
+class Nrt;
 
 class Sqrt final : public Construct {
 private:
@@ -65,8 +69,28 @@ public:
         pts.push_back( std::make_pair(a,b) );
         painter.drawPath(pts);
     }
+
+    static void modifySecondScript(Construct* con, Controller& c, Subphrase*);
+
+    static const std::vector<Construct::ContextAction> actions;
+
+    virtual const std::vector<ContextAction>& getContextActions(Subphrase*) const noexcept override {
+        return actions;
+    }
     #endif
 };
+
+#ifndef FORSCAPE_TYPESET_HEADLESS
+const std::vector<Construct::ContextAction> Sqrt::actions {
+    ContextAction("Add nth root script", modifySecondScript),
+};
+
+void Sqrt::modifySecondScript(Construct* con, Controller& c, Subphrase*){
+    Sqrt* m = debug_cast<Sqrt*>(con);
+    Command* cmd = new ReplaceConstruct1vs2<Sqrt, Nrt, true>(m);
+    c.getModel()->mutate(cmd, c);
+}
+#endif
 
 }
 

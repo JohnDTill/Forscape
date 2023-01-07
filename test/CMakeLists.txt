@@ -142,12 +142,15 @@ set(SOURCES
     ${SRC}/typeset_marker.h
     ${SRC}/typeset_model.cpp
     ${SRC}/typeset_model.h
+    ${SRC}/typeset_parser.cpp
+    ${SRC}/typeset_parser.h
     ${SRC}/typeset_phrase.cpp
     ${SRC}/typeset_phrase.h
     ${SRC}/typeset_selection.cpp
     ${SRC}/typeset_selection.h
     ${SRC}/typeset_subphrase.cpp
     ${SRC}/typeset_subphrase.h
+    ${SRC}/typeset_syntax.h
     ${SRC}/typeset_text.cpp
     ${SRC}/typeset_text.h
     ${COMMAND}/typeset_command_indent.cpp
@@ -160,6 +163,7 @@ set(SOURCES
     ${COMMAND}/typeset_command_pair.h
     ${COMMAND}/typeset_command_phrase.cpp
     ${COMMAND}/typeset_command_phrase.h
+    ${COMMAND}/typeset_command_replace_construct.h
     ${COMMAND}/typeset_command_text.cpp
     ${COMMAND}/typeset_command_text.h
     ${COMMAND}/typeset_insert_chars.cpp

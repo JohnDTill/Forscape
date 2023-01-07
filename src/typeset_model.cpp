@@ -142,7 +142,6 @@ Model::Model(const std::string& src, bool is_output)
     }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
-    calculateSizes();
     updateLayout();
     #endif
 }
@@ -226,6 +225,7 @@ Line* Model::appendLine(){
     Line* l = new Line(this);
     l->id = lines.size();
     lines.push_back(l);
+    needs_update = true;
     return l;
 }
 
@@ -356,8 +356,7 @@ void Model::appendSerialToOutput(const std::string& src){
     }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
-    calculateSizes();
-    updateLayout();
+    needs_update = true;
     #endif
 }
 
@@ -401,12 +400,7 @@ void Model::undo(Controller& controller){
         undo_stack.pop_back();
         cmd->undo(controller);
         redo_stack.push_back(cmd);
-        performSemanticFormatting();
-
-        #ifndef FORSCAPE_TYPESET_HEADLESS
-        calculateSizes();
-        updateLayout();
-        #endif
+        postmutate();
     }
 }
 
@@ -417,12 +411,7 @@ void Model::redo(Controller& controller){
         redo_stack.pop_back();
         cmd->redo(controller);
         undo_stack.push_back(cmd);
-        performSemanticFormatting();
-
-        #ifndef FORSCAPE_TYPESET_HEADLESS
-        calculateSizes();
-        updateLayout();
-        #endif
+        postmutate();
     }
 }
 
@@ -463,6 +452,11 @@ void Model::calculateSizes(){
 }
 
 void Model::updateLayout(){
+    if(!needs_update) return;
+    needs_update = false;
+
+    calculateSizes();
+
     double y = 0;
 
     for(Line* l : lines){
@@ -611,6 +605,8 @@ void Model::clearFormatting() noexcept{
 void Model::performSemanticFormatting(){
     if(is_output) return;
 
+    //EVENTUALLY: this should only run when a change has been made, like the layout calculations
+
     clearFormatting();
     scanner.scanAll();
     parser.parseAll();
@@ -625,11 +621,7 @@ void Model::premutate() noexcept{
 
 void Model::postmutate(){
     performSemanticFormatting();
-
-    #ifndef FORSCAPE_TYPESET_HEADLESS
-    calculateSizes();
-    updateLayout();
-    #endif
+    needs_update = true;
 }
 
 void Model::rename(const std::vector<Selection>& targets, const std::string& name, Controller& c){

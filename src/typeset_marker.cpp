@@ -7,6 +7,7 @@
 #include "typeset_phrase.h"
 #include "typeset_subphrase.h"
 #include "typeset_text.h"
+#include "typeset_syntax.h"
 #include <unicode_zerowidth.h>
 #include <cassert>
 
@@ -227,6 +228,36 @@ bool Marker::compareLeft(const Marker& other) const noexcept{
 
 Model* Marker::getModel() const noexcept{
     return text->getModel();
+}
+
+bool Marker::goToCommandStart() noexcept {
+    index--;
+    assert(index > 0);
+    size_t open_args = 0;
+    bool found_command = false;
+    for(;;){
+        if(index == 0){
+            if(text->id == 0) return found_command;
+            text = text->prevTextAsserted();
+            index = text->numChars();
+        }else{
+            switch (text->charAt(--index)) {
+                case syntax_close:
+                    if(index == 0 || text->charAt(index-1) != syntax_cmd) open_args++;
+                    break;
+                case syntax_open:
+                    if((index == 0 || text->charAt(index-1) != syntax_cmd) && open_args-- == 0) return false;
+                    break;
+                case syntax_cmd: {
+                    const bool escaped = (index > 0 && text->charAt(index-1) == syntax_cmd);
+                    found_command |= !escaped;
+                    index -= escaped;
+                    break;
+                }
+                case ' ': if(open_args == 0) return found_command;
+            }
+        }
+    }
 }
 
 #ifndef FORSCAPE_TYPESET_HEADLESS

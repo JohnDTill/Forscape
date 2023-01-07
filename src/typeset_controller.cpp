@@ -6,18 +6,21 @@
 #include "typeset_keywords.h"
 #include "typeset_line.h"
 #include "typeset_model.h"
+#include "typeset_parser.h"
 #include "typeset_shorthand.h"
 #include "typeset_subphrase.h"
 #include "typeset_text.h"
 #include "typeset_themes.h"
 #include <typeset_command_indent.h>
 #include <typeset_command_line.h>
+#include <typeset_command_list.h>
 #include <typeset_command_pair.h>
 #include <typeset_command_phrase.h>
 #include <typeset_command_text.h>
 #include <typeset_insert_chars.h>
 #include <typeset_remove_chars.h>
 #include <typeset_markerlink.h>
+#include "typeset_syntax.h"
 #include <cassert>
 
 #ifndef NDEBUG
@@ -444,53 +447,50 @@ void Controller::detab() noexcept{
     }
 }
 
-void Controller::keystroke(const std::string& str){
-    if(hasSelection() | (active.index==0)){
+std::string_view Controller::keystroke(const std::string& str){
+    if(str.front() == syntax_cmd){
         insertText(str);
-        return;
-    }else if(str == " "){
-        std::string_view word = active.checkKeyword();
-        const std::string& sub = Keywords::lookup(std::string(word));
+    }else if(hasSelection() || (active.index==0)){
         insertText(str);
-
-        if(!sub.empty()){
-            anchor.index -= (word.size()+2);
-            Command* rm = CommandText::remove(active.text, anchor.index, active.index-anchor.index);
-            rm->redo(*this);
-            active.index = anchor.index;
-            Command* ins = insertSerialNoSelection(sub);
-            rm->undo(*this);
-            Command* replace = new CommandPair(rm, ins);
-            getModel()->mutate(replace, *this);
+    }else if(str.front() == ' '){
+        insertText(str);
+        if(anchor.goToCommandStart()){
+            const std::string& replaced = getSubstitution(selectedText());
+            if(!replaced.empty()){
+                insertSerial(replaced);
+                return "";
+            }
         }
+        anchor = active;
     }else{
-        assert(str.size() == 1);
-        uint32_t second = static_cast<uint8_t>(str[0]);
-        uint32_t first = active.codepointLeft();
-        const std::string& sub = Shorthand::lookup(first, second);
+        if(str.size() == 1){
+            uint32_t second = static_cast<uint8_t>(str[0]);
+            uint32_t first = active.codepointLeft();
+            const std::string& sub = Shorthand::lookup(first, second);
 
-        if(!sub.empty()){
-            insertText(str);
-            anchor.index--;
-            anchor.decrementCodepoint();
-            Command* rm = CommandText::remove(active.text, anchor.index, active.index-anchor.index);
-            rm->redo(*this);
-            active.index = anchor.index;
-            Command* ins = insertSerialNoSelection(sub);
-            rm->undo(*this);
-            Command* replace = new CommandPair(rm, ins);
-            getModel()->mutate(replace, *this);
-            return;
-        }else if(CloseSymbol::isClosing(str[0])){
-            if(active.onlySpacesLeft()){
-                Line* active_line = activeLine();
-                if(Line* l = active_line->prev()){
-                    if(l->scope_depth){
-                        anchor.setToFrontOf(active_line);
-                        std::string indented(INDENT_SIZE*(l->scope_depth-1)+1, ' ');
-                        indented.back() = str[0];
-                        insertText(indented);
-                        return;
+            if(!sub.empty()){
+                insertText(str);
+                anchor.index--;
+                anchor.decrementCodepoint();
+                Command* rm = CommandText::remove(active.text, anchor.index, active.index-anchor.index);
+                rm->redo(*this);
+                active.index = anchor.index;
+                Command* ins = insertSerialNoSelection(sub);
+                rm->undo(*this);
+                Command* replace = new CommandPair(rm, ins);
+                getModel()->mutate(replace, *this);
+                return "";
+            }else if(CloseSymbol::isClosing(str[0])){
+                if(active.onlySpacesLeft()){
+                    Line* active_line = activeLine();
+                    if(Line* l = active_line->prev()){
+                        if(l->scope_depth){
+                            anchor.setToFrontOf(active_line);
+                            std::string indented(INDENT_SIZE*(l->scope_depth-1)+1, ' ');
+                            indented.back() = str[0];
+                            insertText(indented);
+                            return "";
+                        }
                     }
                 }
             }
@@ -498,6 +498,12 @@ void Controller::keystroke(const std::string& str){
 
         insertText(str);
     }
+
+    const std::string& modified_string = active.text->getString();
+    for(size_t i = active.index; i-- > 0 && modified_string[i] != ' ';)
+        if(modified_string[i] == syntax_cmd)
+            return std::string_view(modified_string.data()+i, active.index-i);
+    return "";
 }
 
 void Controller::insertText(const std::string& str){

@@ -16,6 +16,9 @@ class Selection;
 class Subphrase;
 class Text;
 
+template<typename Before, typename After> class ReplaceConstruct;
+template<typename Con1, typename Con2, bool to2> class ReplaceConstruct1vs2;
+
 class Phrase {
 public:
     Phrase();
@@ -90,6 +93,9 @@ public:
     void populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept;
     #endif
     #endif
+
+    template<typename Before, typename After> friend class ReplaceConstruct;
+    template<typename Con1, typename Con2, bool to2> friend class ReplaceConstruct1vs2;
 
 private:
     std::vector<Text*> texts;

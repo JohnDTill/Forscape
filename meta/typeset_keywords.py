@@ -30,15 +30,6 @@ def main():
                         "\n"
                         "private:\n"
                         "    static const FORSCAPE_UNORDERED_MAP<std::string, std::string> defaults;\n"
-                        "    static const std::string con(size_t code, size_t arity, std::vector<size_t> args){\n"
-                        "        std::string str;\n"
-                        "        str.reserve(2+arity+args.size());\n"
-                        "        str += static_cast<char>(OPEN);\n"
-                        "        str += static_cast<char>(code);\n"
-                        "        for(const size_t arg : args) str += static_cast<char>(arg);\n"
-                        "        for(size_t i = 0; i < arity; i++) str += static_cast<char>(CLOSE);\n"
-                        "        return str;\n"
-                        "    }\n"
                         "public:\n"
                         "    static void reset() { map = defaults; }\n"
                         "};\n\n"
@@ -46,10 +37,14 @@ def main():
 
     header_writer.write(f"#define FORSCAPE_NUM_KEYWORDS {len(keywords)}\n\n")
 
-    header_writer.write("#define FORSCAPE_KEYWORD_LIST {\\\n")
+    header_writer.write("#define FORSCAPE_KEYWORD_LIST")
+    first = True
     for keyword in keywords:
-        header_writer.write(f"    {{\"{keyword.keyword}\", \"{keyword.symbol}\"}},\\\n")
-    header_writer.write("}\n\n")
+        if not first:
+            header_writer.write(",")
+        first = False
+        header_writer.write(f"\\\n    {{\"{keyword.keyword}\", \"{keyword.symbol}\"}}")
+    header_writer.write("\n\n")
 
     header_writer.finalize()
 
@@ -61,28 +56,17 @@ def main():
 
         codegen_file.write("const std::string Keywords::NONE = \"\";\n\n")
 
-        codegen_file.write("const FORSCAPE_UNORDERED_MAP<std::string, std::string> Keywords::defaults{\n")
-        for keyword in keywords:
-            codegen_file.write(f"    {{\"{keyword.keyword}\", \"{keyword.symbol}\"}},\n")
+        codegen_file.write("const FORSCAPE_UNORDERED_MAP<std::string, std::string> Keywords::defaults {\n"
+                           "    FORSCAPE_KEYWORD_LIST,\n")
         for c in constructs:
-            if c.keyword != "":
-                if c.arity == "nxm":
-                    n = int(c.default_args[0])
-                    m = int(c.default_args[1])
-                    arity = n * m
-                elif c.arity == "2xn":
-                    arity = 2*int(c.default_args)
-                else:
-                    arity = c.arity
-
-                args = "{"
-                if c.default_args != "":
-                    args += c.default_args[0]
-                    for i in range(1,len(c.default_args)):
-                        args += ", " + c.default_args[i]
-                args += "}"
-
-                codegen_file.write(f"    {{\"{c.keyword}\", Keywords::con({c.name.upper()}, {arity}, {args})}},\n")
+            if c.arity != "0" or not c.keyword:
+                continue
+            codegen_file.write(f"    {{\"{c.keyword}\", OPEN_STR {c.name.upper()}_STR}},\n")
+        codegen_file.write('    {"^T", OPEN_STR SUPERSCRIPT_STR "⊤" CLOSE_STR},\n')
+        codegen_file.write('    {"^+", OPEN_STR SUPERSCRIPT_STR "+" CLOSE_STR},\n')
+        codegen_file.write('    {"^*", OPEN_STR SUPERSCRIPT_STR "*" CLOSE_STR},\n')
+        codegen_file.write('    {"^-1", OPEN_STR SUPERSCRIPT_STR "-1" CLOSE_STR},\n')
+        codegen_file.write('    {"^dag", OPEN_STR SUPERSCRIPT_STR "†" CLOSE_STR},\n')
         codegen_file.write("};\n\n")
 
         codegen_file.write("FORSCAPE_UNORDERED_MAP<std::string, std::string> Keywords::map = defaults;\n\n"

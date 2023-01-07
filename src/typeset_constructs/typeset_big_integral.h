@@ -2,8 +2,10 @@
 #define TYPESET_BIG_INTEGRAL_H
 
 #include "typeset_construct.h"
-#include "typeset_subphrase.h"
+
+#include "typeset_command_replace_construct.h"
 #include "typeset_integral_preference.h"
+#include "typeset_subphrase.h"
 
 namespace Forscape {
 
@@ -35,6 +37,14 @@ public:
 
     virtual void paintSpecific(Painter& painter) const override {
         painter.drawSymbol(x, y, getBigIntegralString(type));
+    }
+
+    static void modifyFirstScript(Construct* con, Controller& c, Subphrase*);
+
+    static const std::vector<Construct::ContextAction> actions;
+
+    virtual const std::vector<ContextAction>& getContextActions(Subphrase*) const noexcept override {
+        return actions;
     }
     #endif
 };
@@ -78,10 +88,24 @@ public:
     virtual void paintSpecific(Painter& painter) const override {
         if(integral_bounds_vertical){
             double symbol_x = x + (width - symbol_width) / 2;
-            painter.drawSymbol(symbol_x, y + second()->height(), getBigIntegralString(type));
+            painter.drawSymbol(symbol_x, y, getBigIntegralString(type));
         }else{
             painter.drawSymbol(x, y, getBigIntegralString(type));
         }
+    }
+
+    static void modifyFirstScript(Construct* con, Controller& c, Subphrase*){
+        BigIntegralSuper1<type>* m = debug_cast<BigIntegralSuper1<type>*>(con);
+        Command* cmd = new ReplaceConstruct<BigIntegralSuper1<type>, BigIntegralSuper0<type+(INTEGRAL0-INTEGRAL1)>>(m);
+        c.getModel()->mutate(cmd, c);
+    }
+
+    static void modifySecondScript(Construct* con, Controller& c, Subphrase*);
+
+    static const std::vector<Construct::ContextAction> actions;
+
+    virtual const std::vector<ContextAction>& getContextActions(Subphrase*) const noexcept override {
+        return actions;
     }
     #endif
 };
@@ -144,6 +168,18 @@ public:
             painter.drawSymbol(x, symbol_y, getBigIntegralString(type));
         }
     }
+
+    static void modifySecondScript(Construct* con, Controller& c, Subphrase*){
+        BigIntegralSuper2<type>* m = debug_cast<BigIntegralSuper2<type>*>(con);
+        Command* cmd = new ReplaceConstruct1vs2<BigIntegralSuper1<type+(INTEGRAL1-INTEGRAL2)>, BigIntegralSuper2<type>, false>(m);
+        c.getModel()->mutate(cmd, c);
+    }
+
+    static const std::vector<Construct::ContextAction> actions;
+
+    virtual const std::vector<ContextAction>& getContextActions(Subphrase*) const noexcept override {
+        return actions;
+    }
     #endif
 };
 
@@ -163,6 +199,37 @@ typedef BigIntegralSuper1<TRIPLEINTEGRAL1> TripleIntegral1;
 
 typedef BigIntegralSuper2<INTEGRALCONV2> IntegralConv2;
 typedef BigIntegralSuper2<INTEGRAL2> Integral2;
+
+#ifndef FORSCAPE_TYPESET_HEADLESS
+template<size_t type> const std::vector<Construct::ContextAction> BigIntegralSuper0<type>::actions {
+    ContextAction("Add subscript", modifyFirstScript),
+};
+
+template<size_t type> const std::vector<Construct::ContextAction> BigIntegralSuper1<type>::actions  =
+    (type == INTEGRAL1 || type == INTEGRALCONV1) ?
+std::vector<Construct::ContextAction>({
+    ContextAction("Add superscript", modifySecondScript),
+    ContextAction("Remove subscript", modifyFirstScript),
+}) : std::vector<Construct::ContextAction>({
+    ContextAction("Remove subscript", modifyFirstScript),
+});
+
+template<size_t type> const std::vector<Construct::ContextAction> BigIntegralSuper2<type>::actions {
+    ContextAction("Remove superscript", modifySecondScript),
+};
+
+template<size_t type> void BigIntegralSuper0<type>::modifyFirstScript(Construct* con, Controller& c, Subphrase*){
+    BigIntegralSuper0<type>* m = debug_cast<BigIntegralSuper0<type>*>(con);
+    Command* cmd = new ReplaceConstruct<BigIntegralSuper0<type>, BigIntegralSuper1<type-(INTEGRAL0-INTEGRAL1)>>(m);
+    c.getModel()->mutate(cmd, c);
+}
+
+template<size_t type> void BigIntegralSuper1<type>::modifySecondScript(Construct* con, Controller& c, Subphrase*){
+    BigIntegralSuper1<type>* m = debug_cast<BigIntegralSuper1<type>*>(con);
+    Command* cmd = new ReplaceConstruct1vs2<BigIntegralSuper1<type>, BigIntegralSuper2<type-(INTEGRAL1-INTEGRAL2)>, true>(m);
+    c.getModel()->mutate(cmd, c);
+}
+#endif
 
 }
 
