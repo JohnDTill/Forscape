@@ -16,16 +16,16 @@ def main():
     open_code = 2
     close_code = 3
 
-    header_writer.write(f"constexpr char OPEN = {open_code};\n"
-                        f"constexpr char CLOSE = {close_code};\n"
-                        f'#define OPEN_STR "\\{hex(open_code)}"\n'
-                        f'#define CLOSE_STR "\\{hex(close_code)}"\n'
+    header_writer.write(f"inline constexpr char OPEN = {open_code};\n"
+                        f"inline constexpr char CLOSE = {close_code};\n"
+                        f'#define OPEN_STR "\\{hex(open_code)[1:]}"\n'
+                        f'#define CLOSE_STR "\\{hex(close_code)[1:]}"\n'
                         "\n")
 
     curr = 1
     for con in constructs:
-        header_writer.write(f"constexpr char {con.name.upper()} = {curr};\n")
-        header_writer.write(f'#define {con.name.upper()}_STR "\\{hex(curr)}"\n')
+        header_writer.write(f"inline constexpr char {con.name.upper()} = {curr};\n")
+        header_writer.write(f'#define {con.name.upper()}_STR "\\{hex(curr)[1:]}"\n')
         curr += 1
     header_writer.write("\n")
 

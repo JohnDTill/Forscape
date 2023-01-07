@@ -22,7 +22,9 @@ jobs:
         run: cd ${GITHUB_WORKSPACE}/app && cmake -B../build -S.
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build && make
-      - id: launch
-        run: cd ${GITHUB_WORKSPACE}/build && timeout 10 ./Forscape -platform offscreen
+      - id: launch_fresh
+        run: cd ${GITHUB_WORKSPACE}/build && timeout 5 ./Forscape -platform offscreen && test $? -eq 124
       - id: launch_with_file
-        run: cd ${GITHUB_WORKSPACE}/build && timeout 5 ./Forscape ../test/interpreter_scripts/in/root_finding_terse.π -platform offscreen
+        run: cd ${GITHUB_WORKSPACE}/build && timeout 5 ./Forscape ../test/interpreter_scripts/in/root_finding_terse.π -platform offscreen && test $? -eq 124
+      - id: launch_with_cache
+        run: cd ${GITHUB_WORKSPACE}/build && timeout 5 ./Forscape -platform offscreen && test $? -eq 124
