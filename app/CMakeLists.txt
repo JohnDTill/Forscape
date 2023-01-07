@@ -188,6 +188,7 @@ set(PROJECT_SOURCES
     ${SRC}/typeset_text.h
     ${SRC}/typeset_view.cpp
     ${SRC}/typeset_view.h
+    ${SRC}/qt_compatability.h
     ${COMMAND}/typeset_command_indent.cpp
     ${COMMAND}/typeset_command_indent.h
     ${COMMAND}/typeset_command_line.cpp

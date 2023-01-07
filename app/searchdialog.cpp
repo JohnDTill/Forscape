@@ -7,6 +7,7 @@
 #include <typeset_phrase.h>
 #include <typeset_text.h>
 #include <typeset_view.h>
+#include <qt_compatability.h>
 #include <QBitArray>
 
 #ifndef NDEBUG
@@ -186,11 +187,11 @@ void SearchDialog::on_findAllButton_clicked(){
 }
 
 std::string SearchDialog::searchStr() const{
-    return ui->findEdit->text().toStdString();
+    return toCppString(ui->findEdit->text());
 }
 
 std::string SearchDialog::replaceStr() const{
-    return ui->replaceEdit->text().toStdString();
+    return toCppString(ui->replaceEdit->text());
 }
 
 void SearchDialog::goToNext(){

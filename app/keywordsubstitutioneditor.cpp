@@ -3,6 +3,7 @@
 #include <forscape_common.h>
 #include <typeset_keywords.h>
 #include <typeset_view.h>
+#include <qt_compatability.h>
 #include <cassert>
 #include <QFormLayout>
 #include <QLineEdit>
@@ -42,8 +43,8 @@ KeywordSubstitutionEditor::KeywordSubstitutionEditor(QSettings& settings, QWidge
 KeywordSubstitutionEditor::~KeywordSubstitutionEditor(){
     QList<QVariant> list;
     for(const auto& entry : Keywords::map){
-        list.append(QString::fromStdString(entry.first));
-        list.append(QString::fromStdString(entry.second));
+        list.append(toQString(entry.first));
+        list.append(toQString(entry.second));
     }
     settings.setValue("KEYWORD_SHORTCUTS", list);
 }
@@ -110,8 +111,8 @@ void KeywordSubstitutionEditor::load(){
 
     Keywords::map.clear();
     for(int i = 0; i < loaded.size(); i += 2){
-        std::string keyword = loaded[i].toString().toStdString();
-        std::string result = loaded[i+1].toString().toStdString();
+        std::string keyword = toCppString(loaded[i].toString());
+        std::string result = toCppString(loaded[i+1].toString());
 
         auto op = Keywords::map.insert({keyword, result});
         assert(op.second); //Should not have saved with duplicates

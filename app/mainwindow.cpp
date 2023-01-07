@@ -12,6 +12,7 @@
 #include <typeset_model.h>
 #include <typeset_painter.h>
 #include <typeset_view.h>
+#include <qt_compatability.h>
 #include <QBuffer>
 #include <QClipboard>
 #include <QCloseEvent>
@@ -371,8 +372,7 @@ void MainWindow::updateViewJumpPointElements() {
     ui->actionGoBack->setEnabled(can_go_backward);
     file_back->setEnabled(can_go_backward);
 
-    std::string path_str = editor->getModel()->path.generic_u8string();
-    active_file_path = QString::fromUtf8(path_str.data(), path_str.size());
+    active_file_path = toQString(editor->getModel()->path);
     onTextChanged();
 }
 
@@ -448,7 +448,7 @@ void MainWindow::pollInterpreterThread(){
 
 void MainWindow::parseTree(){
     #ifndef NDEBUG
-    QString dot_src = QString::fromStdString(editor->getModel()->parseTreeDot());
+    QString dot_src = toQString(editor->getModel()->parseTreeDot());
     dot_src.replace("\\n", "\\\\n");
     QGraphvizCall::show(dot_src);
     #endif
@@ -653,8 +653,7 @@ bool MainWindow::saveAs(QString path, Forscape::Typeset::Model* saved_model) {
 
     //Re-jig the project browser
     std::filesystem::path old_path = saved_model->path;
-    std::filesystem::path std_path =
-        std::filesystem::canonical(std::filesystem::u8path(active_file_path.toStdString()));
+    std::filesystem::path std_path = std::filesystem::canonical(toCppPath(active_file_path));
     const bool create_new_file = old_path.empty();
     const bool rename_file = saved_model->path != std_path && !create_new_file;
 
@@ -668,8 +667,7 @@ bool MainWindow::saveAs(QString path, Forscape::Typeset::Model* saved_model) {
     if(create_new_file || rename_file){
         saved_model->path = std_path;
         QTreeWidgetItem* item = saved_model->project_browser_entry;
-        auto filename = std_path.filename().u8string();
-        item->setText(0, QString::fromUtf8(filename.data(), filename.size()));
+        item->setText(0, toQString(std_path.filename()));
         auto result = project_browser_entries.insert({std_path, item});
         if(!result.second){
             //Saving over existing project file
@@ -706,8 +704,7 @@ void MainWindow::openProject(QString path){
 
         QList<QString> files;
         for(Forscape::Typeset::Model* model : modified_files){
-            auto path = model->path.filename().u8string();
-            QString qpath = QString::fromUtf8(path.data(), path.size());
+            QString qpath = toQString(model->path.filename());
             files.push_back(qpath);
         }
         files.sort();
@@ -752,7 +749,7 @@ void MainWindow::openProject(QString path){
         }
     }
 
-    std::filesystem::path std_path = std::filesystem::u8path(path.toStdString());
+    std::filesystem::path std_path = toCppPath(path);
     std::ifstream in(std_path);
     if(!in.is_open()){
         QMessageBox messageBox;
@@ -791,16 +788,14 @@ void MainWindow::openProject(QString path){
     project_browser_entries.clear();
     QTreeWidgetItem* root = project_browser->invisibleRootItem();
     QTreeWidgetItem* main_file = new QTreeWidgetItem(root);
-    auto file_name = std_path.filename().u8string();
-    main_file->setText(0, QString::fromUtf8(file_name.data(), file_name.size()));
+    main_file->setText(0, toQString(std_path.filename()));
     main_file->setIcon(0, main_icon);
     main_file->setData(0, Qt::UserRole, QVariant::fromValue(model));
     model->project_browser_entry = main_file;
     project_browser_entries[std_path] = main_file;
     std_path = std_path.parent_path();
     project_browser_entries[std_path] = root;
-    auto parent_path = std_path.u8string();
-    root->setData(0, Qt::UserRole, QString::fromUtf8(parent_path.data(), parent_path.size()));
+    root->setData(0, Qt::UserRole, toQString(std_path));
     project_browser_active_item = main_file;
     QFont normal_font = project_browser->font();
     QFont bold_font = normal_font;
@@ -841,7 +836,7 @@ void MainWindow::addSeries(const std::vector<std::pair<double, double>>& data) c
 QString MainWindow::getLastDir(){
     if(settings.contains(LAST_DIRECTORY)){
         QString last_dir = settings.value(LAST_DIRECTORY).toString();
-        if(std::filesystem::is_directory(last_dir.toStdString())) return last_dir;
+        if(std::filesystem::is_directory(toCppString(last_dir))) return last_dir;
     }
 
     return QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
@@ -878,8 +873,7 @@ void MainWindow::addProjectEntry(Forscape::Typeset::Model* model) {
     QTreeWidgetItem* tree_item = new QTreeWidgetItem;
     model->project_browser_entry = tree_item;
     tree_item->setData(0, Qt::UserRole, QVariant::fromValue(model));
-    auto file_name = path.filename().u8string();
-    tree_item->setText(0, QString::fromUtf8(file_name.data(), file_name.size()));
+    tree_item->setText(0, toQString(path.filename()));
     tree_item->setIcon(0, file_icon);
     project_browser_entries[path] = tree_item;
 
@@ -894,7 +888,7 @@ void MainWindow::on_actionFind_Replace_triggered(){
     search->updateSelection();
     Typeset::Controller& c = editor->getController();
     std::string simple_word = c.isTextSelection() ? c.selectedText() : "";
-    search->setWord(QString::fromStdString(simple_word));
+    search->setWord(toQString(simple_word));
     search->show();
 }
 
@@ -976,10 +970,10 @@ void MainWindow::on_actionShow_line_numbers_toggled(bool checked){
     editor->setLineNumbersVisible(checked);
 }
 
-void MainWindow::insertFlatText(const QString &str){
+void MainWindow::insertFlatText(const QString& str){
     if(!editor->isEnabled()) return;
 
-    editor->insertText(str.toStdString());
+    editor->insertText(toCppString(str));
     editor->update();
 
     onTextChanged();
@@ -988,7 +982,7 @@ void MainWindow::insertFlatText(const QString &str){
 void MainWindow::insertSerial(const QString& str){
     if(!editor->isEnabled()) return;
 
-    editor->insertSerial(str.toStdString());
+    editor->insertSerial(toCppString(str));
     editor->update();
 
     onTextChanged();
@@ -998,7 +992,7 @@ void MainWindow::insertSerialSelection(const QString& A, const QString& B){
     if(!editor->isEnabled()) return;
 
     Typeset::Controller& c = editor->getController();
-    editor->insertSerial(A.toStdString() + c.selectedText() + B.toStdString());
+    editor->insertSerial(toCppString(A) + c.selectedText() + toCppString(B));
     editor->update();
 
     onTextChanged();
@@ -1024,7 +1018,7 @@ void MainWindow::on_actionSVG_Image_triggered(){
     QSvgGenerator generator;
     static constexpr double QSVG_SCALING_CORRECTION_FACTOR = 1.25;
     generator.setResolution(QSVG_SCALING_CORRECTION_FACTOR*generator.resolution());
-    generator.setDescription(QString::fromStdString(c.selectedText()));
+    generator.setDescription(toQString(c.selectedText()));
     generator.setTitle("ForscapeSvg");
     generator.setOutputDevice(&b);
     c.selection().toSvg(generator);
@@ -1041,7 +1035,7 @@ void MainWindow::on_actionUnicode_triggered(){
     std::string str = editor->getController().selectedText();
     if(UnicodeConverter::canConvert(str)){
         std::string uni = UnicodeConverter::convert(str);
-        QApplication::clipboard()->setText(QString::fromStdString(uni));
+        QApplication::clipboard()->setText(toQString(uni));
     }else{
         QMessageBox messageBox;
         messageBox.warning(nullptr, "Warning", "Selected text cannot be converted to unicode.");
@@ -1094,8 +1088,7 @@ void MainWindow::closeEvent(QCloseEvent* event){
 
         QList<QString> files;
         for(Forscape::Typeset::Model* model : modified_files){
-            auto path = model->path.filename().u8string();
-            QString qpath = QString::fromUtf8(path.data(), path.size());
+            QString qpath = toQString(model->path.filename());
             files.push_back(qpath);
         }
         files.sort();
@@ -1264,9 +1257,7 @@ void MainWindow::onShowInExplorer() {
     if(item->childCount() == 0){
         assert(isSavedToDisk(item));
         auto m = model(item);
-        auto path = m->path.u8string();
-        QString q_path = QString::fromUtf8(path.data(), path.size());
-        args << "/select," << QDir::toNativeSeparators(q_path);
+        args << "/select," << QDir::toNativeSeparators(toQString(m->path));
     }else{
         QString q_path = item->data(0, Qt::UserRole).toString();
         args << QDir::toNativeSeparators(q_path);
@@ -1352,9 +1343,7 @@ bool MainWindow::on_actionSave_All_triggered() {
     static std::vector<Forscape::Typeset::Model*> failed;
 
     for(Forscape::Typeset::Model* model : modified_files){
-        auto path = model->path.u8string();
-        QString qpath = QString::fromUtf8(path.data(), path.size());
-        bool success = saveAs(qpath, model);
+        bool success = saveAs(toQString(model->path), model);
         if(!success) failed.push_back(model);
     }
 
@@ -1376,8 +1365,7 @@ void MainWindow::on_actionReload_triggered() {
     std::ifstream in(model->path);
     if(!in.is_open()){
         QMessageBox messageBox;
-        auto path_str = model->path.u8string();
-        QString str = QString::fromUtf8(path_str.data(), path_str.size());
+        QString str = toQString(model->path);
         messageBox.critical(nullptr, "Error", "Could not open \"" + str + "\" to read.");
         messageBox.setFixedSize(500,200);
         return;
@@ -1395,8 +1383,7 @@ void MainWindow::on_actionReload_triggered() {
     assert(Forscape::isValidSerial(src));
     if(!Forscape::isValidSerial(src)){
         QMessageBox messageBox;
-        auto path_str = model->path.u8string();
-        QString str = QString::fromUtf8(path_str.data(), path_str.size());
+        QString str = toQString(model->path);
         messageBox.critical(nullptr, "Error", "\"" + str + "\" is corrupted.");
         messageBox.setFixedSize(500,200);
         return;
@@ -1503,7 +1490,7 @@ void MainWindow::linkFileToAncestor(QTreeWidgetItem* file_item, const std::files
 
     QTreeWidgetItem* root = project_browser->invisibleRootItem();
     QString stale_root_path_str = root->data(0, Qt::UserRole).toString();
-    std::filesystem::path stale_root_path = std::filesystem::u8path(stale_root_path_str.toStdString());
+    std::filesystem::path stale_root_path = toCppPath(stale_root_path_str);
     std::filesystem::path folder_path = file_path.parent_path();
 
     //Link the file to it's folder
@@ -1549,8 +1536,7 @@ void MainWindow::linkFileToAncestor(QTreeWidgetItem* file_item, const std::files
             taken_children = root->takeChildren();
             project_browser_entries.erase(stale_root_path);
             project_browser_entries[new_root_path] = root;
-            auto new_root_path_str = new_root_path.u8string();
-            root->setData(0, Qt::UserRole, QString::fromUtf8(new_root_path_str.data(), new_root_path_str.size()));
+            root->setData(0, Qt::UserRole, toQString(new_root_path));
         }
     }
 
@@ -1572,10 +1558,8 @@ void MainWindow::linkItemToExistingAncestor(QTreeWidgetItem* item, std::filesyst
         QTreeWidgetItem* new_item = new QTreeWidgetItem;
         new_item->addChild(item);
         item = new_item;
-        auto file_name = path.filename().u8string();
-        auto path_str = path.u8string();
-        item->setText(0, QString::fromUtf8(file_name.data(), file_name.size()));
-        item->setData(0, Qt::UserRole, QString::fromUtf8(path_str.data(), path_str.size()));
+        item->setText(0, toQString(path.filename()));
+        item->setData(0, Qt::UserRole, toQString(path));
         item->setIcon(0, folder_icon);
         item->setExpanded(true);
         parent_result.first->second = item;
@@ -1586,8 +1570,7 @@ void MainWindow::linkItemToExistingAncestor(QTreeWidgetItem* item, std::filesyst
             parent_result = project_browser_entries.insert({path, nullptr});
         }else{
             project_browser->invisibleRootItem()->addChild(item);
-            auto drive = path.begin()->u8string();
-            item->setText(0, QString::fromUtf8(drive.data(), drive.size()));
+            item->setText(0, toQString(*path.begin()));
             return;
         }
     }

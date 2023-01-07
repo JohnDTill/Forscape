@@ -189,6 +189,7 @@ if (${TEST_QT})
         ${SRC}/typeset_painter_qt.cpp
         ${SRC}/typeset_view.cpp
         ${SRC}/typeset_view.h
+        ${SRC}/qt_compatability.h
         ${APP}/symboltreeview.cpp
         ${APP}/symboltreeview.h
     )
