@@ -605,6 +605,8 @@ void Model::clearFormatting() noexcept{
 void Model::performSemanticFormatting(){
     if(is_output) return;
 
+    //EVENTUALLY: this should only run when a change has been made, like the layout calculations
+
     clearFormatting();
     scanner.scanAll();
     parser.parseAll();

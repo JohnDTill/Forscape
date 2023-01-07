@@ -1717,6 +1717,7 @@ void Editor::rename(const std::string& str){
 
             Controller c(m);
             m->rename(entry.second, str, c);
+            emit modelChanged(m);
         }
     }
 

@@ -297,6 +297,7 @@ signals:
     void goToModel(Forscape::Typeset::Model* model, size_t line);
     void goToSelection(const Forscape::Typeset::Selection& sel);
     void setCommasInLargeNumbers(bool show);
+    void modelChanged(Forscape::Typeset::Model* model);
 
 private:
     void rename(const std::string& str);

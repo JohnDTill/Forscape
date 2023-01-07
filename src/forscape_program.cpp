@@ -122,7 +122,7 @@ void Program::runStaticPass() {
     static bool running = false;
     if(running) return;
     running = true;
-    program_entry_point->postmutate();
+    program_entry_point->performSemanticFormatting();
     program_entry_point->static_pass.resolve();
     running = false;
 }

@@ -16,6 +16,9 @@ class Selection;
 class Subphrase;
 class Text;
 
+template<typename Before, typename After> class ReplaceConstruct;
+template<typename Con1, typename Con2, bool to2> class ReplaceConstruct1vs2;
+
 class Phrase {
 public:
     Phrase();
@@ -91,9 +94,12 @@ public:
     #endif
     #endif
 
-    std::vector<Construct*> constructs; //DO THIS: make private again
+    template<typename Before, typename After> friend class ReplaceConstruct;
+    template<typename Con1, typename Con2, bool to2> friend class ReplaceConstruct1vs2;
+
 private:
     std::vector<Text*> texts;
+    std::vector<Construct*> constructs;
 };
 
 }

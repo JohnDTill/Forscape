@@ -4,7 +4,7 @@
 #include "typeset_keywords.h"
 #include "typeset_syntax.h"
 
-//DO THIS: write a test for the keyword parser
+//EVENTUALLY: write a test for the keyword parser
 
 namespace Forscape {
 
@@ -49,6 +49,7 @@ void parseTwo(const std::string& src){
         index++;
         parseArg<false>(src);
         parseArg<true>(src);
+        assert(index < src.size());
     }else{
         substitution.push_back(CLOSE);
         substitution.push_back(CLOSE);
@@ -92,6 +93,7 @@ void parseCases(const std::string& src){
             index++;
             parseArg<false>(src);
             parseArg<true>(src);
+            assert(index < src.size());
         } while(src[index] == syntax_open);
 
         substitution[patch] = nargs;
@@ -120,6 +122,7 @@ void parseMatrix(const std::string& src){
             cols++;
             parseText<true, true>(src);
             substitution.push_back(CLOSE);
+            assert(index < src.size());
         } while(src[index-1] == ',');
 
         while(src[index-1] == ';'){
@@ -129,6 +132,7 @@ void parseMatrix(const std::string& src){
                 cols_here++;
                 parseText<true, true>(src);
                 substitution.push_back(CLOSE);
+                assert(index < src.size());
             } while(src[index-1] == ',');
             failed |= (cols_here != cols);
         }

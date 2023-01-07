@@ -109,6 +109,7 @@ public:
     Line* nearestLine(double y) const noexcept;
     void registerCommaSeparatedNumber(const Typeset::Selection& sel) alloc_except;
     void postmutate();
+    void performSemanticFormatting();
 
     static constexpr double LINE_VERTICAL_PADDING = 5;
 
@@ -141,7 +142,6 @@ private:
     std::vector<Command*> redo_stack;
 
     Selection find(const std::string& str) noexcept;
-    void performSemanticFormatting();
     void premutate() noexcept;
 
     void rename(const std::vector<Selection>& targets, const std::string& name, Controller& c);

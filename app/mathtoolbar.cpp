@@ -47,8 +47,8 @@ void MathToolbar::setupSymbolTable(){
 
     static constexpr int ENTRY_WIDTH = 24;
 
-    //DO THIS: the symbol table should react to changes in the map
-    //         the codegenned keywords and size would then be unnecessary
+    //EVENTUALLY: the symbol table should react to changes in the map
+    //            the codegenned keywords and size would then be unnecessary
 
     //Set properties
     symbol_table = new QTableWidget((FORSCAPE_NUM_KEYWORDS-1)/symbol_table_cols+1, symbol_table_cols, this);

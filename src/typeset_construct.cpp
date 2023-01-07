@@ -355,6 +355,10 @@ Subphrase* Construct::arg(size_t index) const noexcept{
     return args[index];
 }
 
+void Construct::setArg(size_t index, Subphrase* p) noexcept {
+    args[index] = p;
+}
+
 size_t Construct::getSubphraseIndex(const Subphrase* s) const noexcept{
     auto in_vec = std::find(args.begin(), args.end(), s);
     assert(in_vec != args.end());

@@ -377,7 +377,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             if(!model->is_imported){
                 model->is_imported = true;
                 model->parse_node_offset = parse_tree.offset();
-                model->postmutate();
+                model->performSemanticFormatting();
                 if(model->errors.empty()){
                     const ParseTree& imported = model->parser.parse_tree;
                     const ParseNode root = parse_tree.append(imported);
@@ -401,7 +401,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             if(!model->is_imported){
                 model->is_imported = true;
                 model->parse_node_offset = parse_tree.offset();
-                model->postmutate();
+                model->performSemanticFormatting();
                 if(model->errors.empty()){
                     const ParseTree& imported = model->parser.parse_tree;
                     const ParseNode root = parse_tree.append(imported);

@@ -58,8 +58,8 @@ public:
         con2->parent = con1->parent;
         con2->id = con1->id;
 
-        moved = con1->args[0];
-        fake = con2->args[1];
+        con1->setArg(0, moved);
+        con2->setArg(1, fake);
 
         assert(con1->numArgs() == 1);
         assert(con2->numArgs() == 2);
@@ -72,8 +72,8 @@ public:
         con1->parent = con2->parent;
         con1->id = con2->id;
 
-        moved = con2->args[1];
-        fake = con1->args[0];
+        con2->setArg(1, moved);
+        con1->setArg(0, fake);
 
         assert(con1->numArgs() == 1);
         assert(con2->numArgs() == 2);
@@ -85,8 +85,8 @@ protected:
     void setFirst(Controller& c) noexcept {
         own2 = false;
         con1->parent->constructs[con1->id] = con1;
-        con1->args[0] = moved;
-        con2->args[1] = fake;
+        con1->setArg(0, moved);
+        con2->setArg(1, fake);
         moved->id = 0;
         fake->id = 1;
         moved->setParent(con1);
@@ -97,8 +97,8 @@ protected:
     void setSecond(Controller& c) noexcept {
         own2 = true;
         con2->parent->constructs[con2->id] = con2;
-        con2->args[1] = moved;
-        con1->args[0] = fake;
+        con2->setArg(1, moved);
+        con1->setArg(0, fake);
         moved->id = 1;
         fake->id = 0;
         moved->setParent(con2);

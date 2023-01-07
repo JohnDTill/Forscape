@@ -111,6 +111,7 @@ private slots:
     void on_actionTeX_triggered();
     void on_actionUnicode_triggered();
     void onTextChanged();
+    void onModelChanged(Forscape::Typeset::Model* model);
     void on_actionShow_action_toolbar_toggled(bool show);
     void on_actionShow_typesetting_toolbar_toggled(bool show);
     void on_actionShow_project_browser_toggled(bool show);
