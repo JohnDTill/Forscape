@@ -22,9 +22,5 @@ jobs:
         run: cd ${GITHUB_WORKSPACE}/app && cmake -B../build -S.
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build && make
-      - id: launch_fresh
-        run: cd ${GITHUB_WORKSPACE}/build && timeout 5 ./Forscape -platform offscreen && test $? -eq 124
-      - id: launch_with_file
-        run: cd ${GITHUB_WORKSPACE}/build && timeout 5 ./Forscape ../test/interpreter_scripts/in/root_finding_terse.π -platform offscreen && test $? -eq 124
-      - id: launch_with_cache
-        run: cd ${GITHUB_WORKSPACE}/build && timeout 5 ./Forscape -platform offscreen && test $? -eq 124
+      - id: launch
+        run: cd ${GITHUB_WORKSPACE}/build && ${GITHUB_WORKSPACE}/.github/workflows/app_run_and_check_exit_code.sh
