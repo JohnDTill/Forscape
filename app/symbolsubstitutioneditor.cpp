@@ -2,6 +2,7 @@
 
 #include <forscape_unicode.h>
 #include <typeset_shorthand.h>
+#include <qt_compatability.h>
 #include <QCoreApplication>
 #include <QHeaderView>
 #include <QScrollBar>
@@ -109,7 +110,7 @@ void SymbolSubstitutionEditor::load(){
         assert(success);
         QString result = list[i+2].toString();
         assert(Shorthand::map.find(std::make_pair(first, second)) == Shorthand::map.end());
-        Shorthand::map[std::make_pair(first, second)] = result.toStdString();
+        Shorthand::map[std::make_pair(first, second)] = toCppString(result);
     }
 }
 
@@ -121,19 +122,19 @@ void SymbolSubstitutionEditor::populateFromMap(){
         first_item->setTextAlignment(Qt::AlignCenter);
         uint32_t first = entry.first.first;
         first_item->setData(Qt::UserRole, first);
-        first_item->setText(QString::fromStdString(Forscape::fromCodepointBytes(first)));
+        first_item->setText(toQString(Forscape::fromCodepointBytes(first)));
         setItem(row, FIRST_COL, first_item);
 
         QTableWidgetItem* second_item = new QTableWidgetItem();
         second_item->setTextAlignment(Qt::AlignCenter);
         uint32_t second = entry.first.second;
         second_item->setData(Qt::UserRole, second);
-        second_item->setText(QString::fromStdString(Forscape::fromCodepointBytes(second)));
+        second_item->setText(toQString(Forscape::fromCodepointBytes(second)));
         setItem(row, SECOND_COL, second_item);
 
         QTableWidgetItem* final_item = new QTableWidgetItem();
         final_item->setTextAlignment(Qt::AlignCenter);
-        QString result = QString::fromStdString(entry.second);
+        QString result = toQString(entry.second);
         final_item->setData(Qt::UserRole, result);
         final_item->setText(result);
         setItem(row, RESULT_COL, final_item);
@@ -213,7 +214,7 @@ uint32_t SymbolSubstitutionEditor::getCode(int row, int col) const {
     assert(col == FIRST_COL || col == SECOND_COL);
     assert(row < rowCount());
 
-    std::string str = item(row, col)->text().toStdString();
+    std::string str = toCppString(item(row, col)->text());
     if(!Forscape::isSingleCodepoint(str) || str[0] == ' ') return 0;
     return Forscape::codepointInt(str);
 }

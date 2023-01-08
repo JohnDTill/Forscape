@@ -12,7 +12,7 @@ int wmain(int argc, wchar_t* argv[]){
 #else
 int main(int argc, char* argv[]){
 #endif
-    const bool file_supplied = (argc == 2);
+    const bool file_supplied = (argc == 2) && argv[1][0] != '-';
 
     QCoreApplication::setApplicationName("Forscape");
     QCoreApplication::setOrganizationName("AutoMath");
@@ -20,7 +20,18 @@ int main(int argc, char* argv[]){
 
     QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
-    QApplication a(argc, nullptr);
+    #ifdef _MSC_VER
+    std::vector<std::string> args_str;
+    std::vector<char*> args;
+    for(size_t i = 0; i < argc; i++){
+        args_str.push_back(QString::fromWCharArray(argv[i]).toStdString());
+        args.push_back(args_str.back().data());
+    }
+
+    QApplication a(argc, args.data());
+    #else
+    QApplication a(argc, argv);
+    #endif
 
     //EVENTUALLY: get translations working
     QTranslator translator;

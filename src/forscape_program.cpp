@@ -132,25 +132,29 @@ static bool notPiFile(const std::string& str) noexcept {
     return std::string_view(str.data() + str.size() - 3) != ".π";
 }
 
-void Program::getFileSuggestions(std::vector<std::string>& suggestions) const {
+void Program::getFileSuggestions(std::vector<std::string>& suggestions, Typeset::Model* active) const {
+    const std::string model_filename = active->path.filename().u8string();
+
     for(const std::filesystem::path& path_entry : project_path){
         if(std::filesystem::exists(path_entry)){
             for(auto const& dir_entry : std::filesystem::directory_iterator{path_entry}){
                 const std::string candidate = dir_entry.path().filename().u8string();
-                if(notPiFile(candidate)) continue;
+                if(notPiFile(candidate) && candidate != model_filename) continue;
                 suggestions.push_back(candidate);
             }
         }
     }
 }
 
-void Program::getFileSuggestions(std::vector<std::string>& suggestions, std::string_view input) const {
+void Program::getFileSuggestions(std::vector<std::string>& suggestions, std::string_view input, Typeset::Model* active) const {
     const std::filesystem::path input_as_path(input);
     const std::string input_filename = input_as_path.filename().u8string();
 
     for(const std::filesystem::path& path_entry : project_path){
         const std::filesystem::path dir_of_input = (path_entry / input_as_path).parent_path();
         if(!std::filesystem::exists(dir_of_input)) continue;
+
+        const std::filesystem::path model_rel_path = std::filesystem::relative(active->path, path_entry);
 
         for(const auto& dir_entry : std::filesystem::directory_iterator{dir_of_input}){
             const std::filesystem::path candidate_path = dir_entry.path();
@@ -161,7 +165,7 @@ void Program::getFileSuggestions(std::vector<std::string>& suggestions, std::str
                std::string_view(candidate_filename.data(), input_filename.size()) != input_filename) continue;
 
             std::filesystem::path rel_path = std::filesystem::relative(candidate_path, path_entry);
-            suggestions.push_back(rel_path.u8string());
+            if(rel_path != model_rel_path) suggestions.push_back(rel_path.u8string());
         }
     }
 }

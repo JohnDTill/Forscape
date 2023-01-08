@@ -86,3 +86,4 @@ NOT_IMPLEMENTED,,This parse rule is not fully supported yet
 IMPORT_FIELD_NOT_FOUND,y,Variable does not exist in global scope of file
 ERROR_IN_LOADED_FILE,,Imported file contains an error
 NOT_A_SCOPE,,Scope does not exist
+EXPECT_GROUPING_CLOSE,,Expected grouping close

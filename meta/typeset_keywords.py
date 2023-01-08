@@ -59,14 +59,24 @@ def main():
         codegen_file.write("const FORSCAPE_UNORDERED_MAP<std::string, std::string> Keywords::defaults {\n"
                            "    FORSCAPE_KEYWORD_LIST,\n")
         for c in constructs:
-            if c.arity != "0" or not c.keyword:
-                continue
-            codegen_file.write(f"    {{\"{c.keyword}\", OPEN_STR {c.name.upper()}_STR}},\n")
+            if c.keyword != "":
+                if not c.keyword:
+                    continue
+                if c.arity == "0":
+                    codegen_file.write(f"    {{\"{c.keyword}\", OPEN_STR {c.name.upper()}_STR}},\n")
+                elif c.arity == "1":
+                    codegen_file.write(f"    {{\"{c.keyword}\", OPEN_STR {c.name.upper()}_STR CLOSE_STR}},\n")
+                elif c.arity == "2":
+                    codegen_file.write(f"    {{\"{c.keyword}\", OPEN_STR {c.name.upper()}_STR CLOSE_STR CLOSE_STR}},\n")
         codegen_file.write('    {"^T", OPEN_STR SUPERSCRIPT_STR "⊤" CLOSE_STR},\n')
         codegen_file.write('    {"^+", OPEN_STR SUPERSCRIPT_STR "+" CLOSE_STR},\n')
         codegen_file.write('    {"^*", OPEN_STR SUPERSCRIPT_STR "*" CLOSE_STR},\n')
         codegen_file.write('    {"^-1", OPEN_STR SUPERSCRIPT_STR "-1" CLOSE_STR},\n')
         codegen_file.write('    {"^dag", OPEN_STR SUPERSCRIPT_STR "†" CLOSE_STR},\n')
+        codegen_file.write(
+            f'   {{"cases", OPEN_STR CASES_STR "\\{hex(2)[1:]}" CLOSE_STR CLOSE_STR CLOSE_STR CLOSE_STR}},\n')
+        codegen_file.write(
+            f'   {{"mat", OPEN_STR MATRIX_STR "\\{hex(2)[1:]}\\{hex(2)[1:]}" CLOSE_STR CLOSE_STR CLOSE_STR CLOSE_STR}},\n')
         codegen_file.write("};\n\n")
 
         codegen_file.write("FORSCAPE_UNORDERED_MAP<std::string, std::string> Keywords::map = defaults;\n\n"

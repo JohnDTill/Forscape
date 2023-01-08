@@ -388,6 +388,12 @@ ParseNode ParseTree::finishNary(Op type) alloc_except {
                           getLeft(nary_construction_stack[nary_start.back()]), getRight(nary_construction_stack.back())));
 }
 
+void ParseTree::cancelNary() noexcept {
+    assert(!nary_start.empty());
+    nary_construction_stack.resize(nary_start.back());
+    nary_start.pop_back();
+}
+
 void ParseTree::patchClones() noexcept {
     for(const auto& entry : cloned_vars){
         ParseNode orig = entry.first;
@@ -445,6 +451,22 @@ void ParseTree::shift(ParseNode pn, size_t offset) {
 
 size_t ParseTree::offset() const noexcept {
     return data.size();
+}
+
+bool ParseTree::hasChild(ParseNode pn, ParseNode child) const noexcept {
+    switch (getOp(pn)) {
+        case OP_SINGLE_CHAR_MULT_PROXY:
+        case OP_IMPORT:
+            if(hasChild(getFlag(pn), child)) return true;
+            break;
+    }
+
+    for(size_t i = getNumArgs(pn); i-->0;){
+        ParseNode a = arg(pn, i);
+        if(a != NONE && hasChild(a, child)) return true;
+    }
+
+    return false;
 }
 
 #ifndef NDEBUG

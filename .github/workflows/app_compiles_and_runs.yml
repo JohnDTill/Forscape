@@ -1,4 +1,4 @@
-name: Forscape App Compiles (ubuntu-latest gcc)
+name: Forscape App Compiles And Runs (ubuntu-latest gcc)
 on:
   pull_request:
   push:
@@ -20,3 +20,5 @@ jobs:
         run: cd ${GITHUB_WORKSPACE}/app && cmake -B../build -S.
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build && make
+      - id: launch
+        run: cd ${GITHUB_WORKSPACE}/build && ${GITHUB_WORKSPACE}/.github/workflows/app_run_and_check_exit_code.sh

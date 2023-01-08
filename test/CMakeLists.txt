@@ -94,6 +94,7 @@ set(SOURCES
     ${TEST}/forscape_benchmark.h
     ${TEST}/report.h
     ${TEST}/serial.h
+    ${TEST}/test_keywords.h
     ${TEST}/typeset.h
     ${TEST}/typeset_control.h
     ${TEST}/typeset_loadsave.h
@@ -188,6 +189,7 @@ if (${TEST_QT})
         ${SRC}/typeset_painter_qt.cpp
         ${SRC}/typeset_view.cpp
         ${SRC}/typeset_view.h
+        ${SRC}/qt_compatability.h
         ${APP}/symboltreeview.cpp
         ${APP}/symboltreeview.h
     )

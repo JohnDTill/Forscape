@@ -19,7 +19,7 @@ namespace Code {
 std::unordered_set<const Symbol*> SymbolTable::all_symbols;
 
 bool SymbolTable::isValidSymbolPtr(const Symbol* const ptr) noexcept {
-    return all_symbols.find(ptr) != all_symbols.cend();
+    return all_symbols.find(ptr) != all_symbols.cend() || ptr == nullptr;
 }
 
 SymbolTable::~SymbolTable() noexcept {
