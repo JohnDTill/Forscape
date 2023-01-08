@@ -1099,7 +1099,7 @@ ParseNode Parser::grouping(size_t type, ForscapeTokenType close) alloc_except {
         registerGrouping(sel);
         return parse_tree.addUnary(type, sel, nested);
     }else{
-        return error_node;
+        return error(EXPECT_GROUPING_CLOSE);
     }
 }
 
