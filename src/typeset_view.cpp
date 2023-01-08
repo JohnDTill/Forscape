@@ -600,8 +600,9 @@ void View::populateHighlightWordsFromParseNode(ParseNode pn){
         pn = id;
     }
     else if(parse_tree.getOp(pn) != Code::OP_IDENTIFIER) return;
+
     const Code::Symbol* const sym = parse_tree.getSymbol(pn);
-    sym->getAllOccurences(highlighted_words);
+    if(sym) sym->getAllOccurences(highlighted_words);
 }
 
 bool View::scrolledToBottom() const noexcept{
@@ -664,7 +665,6 @@ void View::ensureCursorVisible() noexcept{
 
 void View::updateModel() noexcept{
     model->updateLayout();
-    handleResize();
     update();
 }
 
@@ -1102,6 +1102,7 @@ void View::handleKey(int key, int modifiers, const std::string& str){
             else recommendTypeset(typeset_cmd.substr(1));
     }
 
+    model->updateLayout();
     ensureCursorVisible();
     updateHighlightingFromCursorLocation();
     update();
@@ -1517,7 +1518,9 @@ void Editor::populateContextMenuFromModel(QMenu& menu, double x, double y) {
 
     switch (model->parseTree().getOp(contextNode)) {
         case Code::OP_IDENTIFIER:{
-            const Code::Symbol& sym = *parseTree().getSymbol(contextNode + model->parse_node_offset);
+            auto sym_ptr = parseTree().getSymbol(contextNode + model->parse_node_offset);
+            if(!sym_ptr) return;
+            const Code::Symbol& sym = *sym_ptr;
             if(!sym.tied_to_file) append("Rename", rename, true, true)
             append("Go to definition", goToDef, true, true)
             append("Find usages", findUsages, true, true)
@@ -1547,6 +1550,9 @@ void Editor::populateContextMenuFromModel(QMenu& menu, double x, double y) {
 }
 
 void Editor::setTooltipError(const std::string& str){
+    //EVENTUALLY: this is silly, there should be a better check
+    if(tooltip->toSerial() == "Error\n"+str) return;
+
     tooltip->clear();
     tooltip->appendSerial("Error\n");
     tooltip->appendSerial(str, SEM_ERROR);
@@ -1554,6 +1560,9 @@ void Editor::setTooltipError(const std::string& str){
 }
 
 void Editor::setTooltipWarning(const std::string& str){
+    //EVENTUALLY: this is silly, there should be a better check
+    if(tooltip->toSerial() == "Warning\n"+str) return;
+
     tooltip->clear();
     tooltip->appendSerial("Warning\n");
     tooltip->appendSerial(str, SEM_WARNING);
@@ -1634,21 +1643,21 @@ void Editor::goToFile() {
 }
 
 void Editor::showTooltipParseNode(){
-    assert(this->hover_node != NONE);
+    if(this->hover_node == NONE) return;
 
     const auto& parse_tree = parseTree();
     const ParseNode hover_node = this->hover_node + model->parse_node_offset;
     switch(parse_tree.getOp(hover_node)){
         case Code::OP_IDENTIFIER:{
-            if(!model->errors.empty()) return; //EVENTUALLY: this is a bit strict. would rather have feedback
-            const auto& symbol = *parse_tree.getSymbol(hover_node);
+            const auto symbol = parse_tree.getSymbol(hover_node);
+            if(!symbol) return;
 
             tooltip->clear();
-            tooltip->appendSerial(parse_tree.str(hover_node) + " ∈ " + staticPass().typeString(symbol));
+            tooltip->appendSerial(parse_tree.str(hover_node) + " ∈ " + staticPass().typeString(*symbol));
 
-            if(symbol.comment != NONE){
+            if(symbol->comment != NONE){
                 tooltip->appendSerial("\n");
-                tooltip->appendSerial(model->parser.parse_tree.str(symbol.comment), SEM_COMMENT);
+                tooltip->appendSerial(model->parser.parse_tree.str(symbol->comment), SEM_COMMENT);
             }
 
             tooltip->fitToContents();
@@ -1670,6 +1679,7 @@ void Editor::showTooltip(){
     if(tooltip->isVisible()) return;
 
     tooltip->updateModel();
+    tooltip->fitToContents();
     tooltip->move(QCursor::pos());
     tooltip->show();
 }

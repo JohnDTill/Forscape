@@ -719,7 +719,10 @@ ParseNode Parser::collectImplicitMult(ParseNode n) alloc_except {
     parse_tree.addNaryChild(n);
 
     for(;;){
-        if(!noErrors()) return error_node;
+        if(!noErrors()){
+            parse_tree.cancelNary();
+            return error_node;
+        }
 
         switch (currentType()) {
             FORSCAPE_IMPLICIT_MULT_TOKENS
@@ -1092,10 +1095,12 @@ ParseNode Parser::grouping(size_t type, ForscapeTokenType close) alloc_except {
     advance();
     ParseNode nested = disjunction();
     Typeset::Selection sel(left, rMark());
-    consume(close);
-    if(noErrors()) registerGrouping(sel);
-
-    return parse_tree.addUnary(type, sel, nested);
+    if(match(close)){
+        registerGrouping(sel);
+        return parse_tree.addUnary(type, sel, nested);
+    }else{
+        return error_node;
+    }
 }
 
 ParseNode Parser::set() noexcept {

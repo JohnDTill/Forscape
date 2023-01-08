@@ -98,6 +98,7 @@ public:
     ParseNode popNaryChild() noexcept;
     ParseNode finishNary(Op type, const Selection& sel) alloc_except;
     ParseNode finishNary(Op type) alloc_except;
+    void cancelNary() noexcept;
 
     #ifndef NDEBUG
     bool isNode(ParseNode pn) const noexcept;
@@ -116,6 +117,7 @@ public:
     size_t append(const ParseTree& other);
     void shift(ParseNode pn, size_t offset);
     size_t offset() const noexcept;
+    bool hasChild(ParseNode pn, ParseNode child) const noexcept;
 
 private:
     std::vector<size_t> data;
