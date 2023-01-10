@@ -32,6 +32,7 @@ inline bool ideCase(const std::filesystem::path& path){
     input->postmutate();
 
     Typeset::Controller& controller = view->getController();
+    controller.moveToStartOfDocument();
     while(!controller.atEnd()){ view->handleKey(Qt::Key_Right, Qt::NoModifier, ""); QCoreApplication::processEvents(); }
     while(!controller.atStart()){ view->handleKey(Qt::Key_Left, Qt::NoModifier, ""); QCoreApplication::processEvents(); }
     while(!controller.atEnd()){ view->handleKey(Qt::Key_Right, Qt::ShiftModifier, ""); QCoreApplication::processEvents(); }
