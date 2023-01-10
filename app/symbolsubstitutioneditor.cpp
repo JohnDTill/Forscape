@@ -1,5 +1,6 @@
 #include "symbolsubstitutioneditor.h"
 
+#include <forscape_serial.h>
 #include <forscape_unicode.h>
 #include <typeset_shorthand.h>
 #include <qt_compatability.h>
@@ -35,7 +36,7 @@ SymbolSubstitutionEditor::~SymbolSubstitutionEditor(){
     for(const auto& entry : Shorthand::map){
         list.append(entry.first.first);
         list.append(entry.first.second);
-        list.append(QString::fromStdString(entry.second));
+        list.append(toQString(entry.second));
     }
 
     settings.setValue(FIELD_NAME, list);
@@ -171,9 +172,19 @@ void SymbolSubstitutionEditor::updateRow(int row) {
         item(row, SECOND_COL)->setToolTip(QString());
     }
 
+    const std::string result_str = toCppString(result);
     if(result.isEmpty()){
         item(row, RESULT_COL)->setBackground(BAD_BRUSH);
         item(row, RESULT_COL)->setToolTip("Result cannot be empty");
+        return;
+    }else if(Forscape::isIllFormedUtf8(result_str)){
+        item(row, RESULT_COL)->setBackground(BAD_BRUSH);
+        item(row, RESULT_COL)->setToolTip("Invalid UTF-8");
+        return;
+    }else if(!Forscape::isValidSerial(result_str)){
+        item(row, RESULT_COL)->setBackground(BAD_BRUSH);
+        item(row, RESULT_COL)->setToolTip("Invalid Forscape typesetting characters");
+        return;
     }else{
         item(row, RESULT_COL)->setBackground(GOOD_BRUSH);
         item(row, RESULT_COL)->setToolTip(QString());
@@ -188,12 +199,12 @@ void SymbolSubstitutionEditor::updateRow(int row) {
 
     if(key_unchanged){
         if(result == old_result || result.isEmpty()) return;
-        Shorthand::map[std::make_pair(first, second)] = result.toStdString();
+        Shorthand::map[std::make_pair(first, second)] = result_str;
         blockSignals(true);
         item(row, RESULT_COL)->setData(Qt::UserRole, result);
         blockSignals(false);
     }else if(!result.isEmpty()){
-        auto in = Shorthand::map.insert({std::make_pair(first, second), result.toStdString()});
+        auto in = Shorthand::map.insert({std::make_pair(first, second), result_str});
         if(in.second){
             Shorthand::map.erase(std::make_pair(old_first, old_second));
             blockSignals(true);

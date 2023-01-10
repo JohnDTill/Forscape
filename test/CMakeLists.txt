@@ -95,6 +95,7 @@ set(SOURCES
     ${TEST}/report.h
     ${TEST}/serial.h
     ${TEST}/test_keywords.h
+    ${TEST}/test_unicode.h
     ${TEST}/typeset.h
     ${TEST}/typeset_control.h
     ${TEST}/typeset_loadsave.h

@@ -35,6 +35,7 @@ private slots:
     void on_findPrevButton_clicked();
     void on_replaceButton_clicked();
     void on_findEdit_textChanged(const QString& arg1);
+    void on_replaceEdit_textChanged(const QString&);
     void on_findAllButton_clicked();
     void on_caseBox_stateChanged(int);
     void on_wordBox_stateChanged(int);

@@ -7,9 +7,15 @@
 #include <limits>
 #include <string>
 
+#ifndef NDEBUG
+#include "forscape_unicode.h"
+#endif
+
 namespace Forscape {
 
-inline bool isValidSerial(const std::string& src) noexcept{
+inline bool isValidSerial(const std::string& src) noexcept {
+    assert(!isIllFormedUtf8(src));
+
     uint32_t depth = 0;
     size_t index = 0;
     while(index < src.size()){

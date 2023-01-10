@@ -1,6 +1,9 @@
 #include <typeset_view.h>
 
 #include "forscape_program.h"
+#include "forscape_serial.h"
+#include "forscape_unicode.h"
+#include "qt_compatability.h"
 #include <typeset_command_pair.h>
 #include <typeset_construct.h>
 #include <typeset_integral_preference.h>
@@ -17,6 +20,7 @@
 #include <QInputDialog>
 #include <QKeyEvent>
 #include <QMenu>
+#include <QMessageBox>
 #include <QPaintEvent>
 #include <QScrollBar>
 #include <QStyle>
@@ -702,7 +706,7 @@ double View::getLineboxWidth() const noexcept {
 }
 
 void View::keyPressEvent(QKeyEvent* e){
-    handleKey(e->key(), e->modifiers(), e->text().toStdString());
+    handleKey(e->key(), e->modifiers(), toCppString(e->text()));
 }
 
 void View::mousePressEvent(QMouseEvent* e){
@@ -775,13 +779,13 @@ void View::onBlink() noexcept{
 void View::copy() const{
     if(!controller.hasSelection()) return;
     std::string str = controller.selectedText();
-    QGuiApplication::clipboard()->setText(QString::fromStdString(str));
+    QGuiApplication::clipboard()->setText(toQString(str));
 }
 
 void View::cut(){
     if(!controller.hasSelection()) return;
     std::string str = controller.selectedText();
-    QGuiApplication::clipboard()->setText(QString::fromStdString(str));
+    QGuiApplication::clipboard()->setText(toQString(str));
     controller.del();
 
     ensureCursorVisible();
@@ -794,7 +798,22 @@ void View::cut(){
 }
 
 void View::paste(){
-    std::string str = QGuiApplication::clipboard()->text().toStdString();
+    std::string str = toCppString(QGuiApplication::clipboard()->text());
+
+    if(isIllFormedUtf8(str)){
+        QMessageBox messageBox;
+        messageBox.critical(nullptr, "Error", "Clipboard content is not UTF-8 encoded.");
+        messageBox.setFixedSize(500,200);
+        return;
+    }
+
+    if(!Forscape::isValidSerial(str)){
+        QMessageBox messageBox;
+        messageBox.critical(nullptr, "Error", "Clipboard content does not conform to Forscape encoding.");
+        messageBox.setFixedSize(500,200);
+        return;
+    }
+
     paste(str);
 }
 
@@ -1092,6 +1111,7 @@ void View::handleKey(int key, int modifiers, const std::string& str){
         default:
             bool alt_or_ctrl_pressed = (Alt|Ctrl) & modifiers;
             if(!allow_write || alt_or_ctrl_pressed || str.empty()) return;
+            assert(isValidSerial(str)); //Shouldn't be able to enter invalid input via the keyboard
 
             if(insert_mode) controller.selectNextChar();
             std::string_view typeset_cmd = controller.keystroke(str);
@@ -1113,6 +1133,8 @@ void View::handleKey(int key, int modifiers, const std::string& str){
 }
 
 void View::paste(const std::string& str){
+    assert(isValidSerial(str));
+
     model->mutate(controller.getInsertSerial(str), controller);
 
     ensureCursorVisible();
@@ -1589,7 +1611,22 @@ void Editor::rename(){
 
     if(!ok) return;
 
-    std::string name = text.toStdString();
+    std::string name = toCppString(text);
+
+    if(isIllFormedUtf8(name)){
+        QMessageBox messageBox;
+        messageBox.critical(nullptr, "Error", "Name is not UTF-8 encoded.");
+        messageBox.setFixedSize(500,200);
+        return;
+    }
+
+    if(!Forscape::isValidSerial(name)){
+        QMessageBox messageBox;
+        messageBox.critical(nullptr, "Error", "Name does not conform to Forscape encoding.");
+        messageBox.setFixedSize(500,200);
+        return;
+    }
+
     rename(name);
 }
 
@@ -1689,6 +1726,7 @@ void Editor::showCommasInLargeNumbers() {
 }
 
 void Editor::rename(const std::string& str){
+    assert(isValidSerial(str));
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
     std::vector<Typeset::Selection> occurences;
     const Code::Symbol& sym = *model->parseTree().getSymbol(contextNode);
