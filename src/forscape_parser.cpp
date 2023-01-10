@@ -800,11 +800,8 @@ ParseNode Parser::rightUnary(ParseNode n) alloc_except {
                 return pn;
             }
             case CARET:{
-                startPatch();
-                registerParseNodeRegionToPatch(index);
                 advance();
                 ParseNode pn = parse_tree.addNode<2>(OP_POWER, {n, implicitMult()});
-                finishPatch(pn);
                 return pn;
             }
             case TOKEN_SUPERSCRIPT: n = superscript(n); break;
@@ -1317,6 +1314,7 @@ ParseNode Parser::integer() alloc_except {
 
 ParseNode Parser::identifier() alloc_except{
     ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
+    parse_tree.setSymbol(id, nullptr);
     registerParseNodeRegion(id, index-1);
     return identifierFollowOn(id);
 }
@@ -1390,6 +1388,7 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
 ParseNode Parser::isolatedIdentifier() alloc_except{
     if(!peek(IDENTIFIER)) return error(UNRECOGNIZED_SYMBOL);
     ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
+    parse_tree.setSymbol(id, nullptr);
     registerParseNodeRegion(id, index-1);
     switch (currentType()) {
         case TOKEN_SUBSCRIPT:

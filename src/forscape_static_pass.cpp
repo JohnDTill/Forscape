@@ -1823,16 +1823,14 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
     size_t sym_id = parse_tree.getSymId(lhs_lvalue);
     Symbol& sym = *parse_tree.getSymbol(lhs_lvalue);
 
-    assert(parse_tree.getOp(field) == OP_IDENTIFIER);
+    assert(parse_tree.getOp(field) == OP_ERROR);
 
     if(sym.type == MODULE){
         Typeset::Model* model = reinterpret_cast<Typeset::Model*>(sym.flag);
         const auto& lexical_map = model->symbol_builder.symbol_table.lexical_map;
         auto lookup = lexical_map.find(parse_tree.getSelection(field));
-        if(lookup == lexical_map.end()){
-            parse_tree.setOp(field, OP_ERROR);
-            return error(pn, pn, BAD_READ);
-        }
+        if(lookup == lexical_map.end()) return error(pn, pn, BAD_READ);
+        parse_tree.setOp(field, OP_IDENTIFIER);
 
         Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
         SymbolUsage& usage = *reinterpret_cast<SymbolUsage*>(parse_tree.getFlag(field));
@@ -1862,6 +1860,7 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
     }else if(sym.type == NAMESPACE){
         auto lookup = symbol_table.scoped_vars.find(SymbolTable::ScopedVarKey(sym_id, parse_tree.getSelection(field)));
         if(lookup != symbol_table.scoped_vars.end()){
+            parse_tree.setOp(field, OP_IDENTIFIER);
             Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
             SymbolUsage& usage = *reinterpret_cast<SymbolUsage*>(parse_tree.getFlag(field));
 
@@ -1882,7 +1881,6 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
             parse_tree.setCols(field, sym.cols);
             return field;
         }else{
-            parse_tree.setOp(field, OP_ERROR);
             return error(pn, pn, BAD_READ);
         }
     }else{

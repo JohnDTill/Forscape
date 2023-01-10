@@ -1013,6 +1013,7 @@ void SymbolLexicalPass::resolveScopeAccess(ParseNode pn) noexcept {
     //Create a usage for the RHS which will be patched later
     ParseNode rhs = parse_tree.arg<1>(pn);
     parse_tree.setFlag(rhs, symbol_usages.size());
+    parse_tree.setOp(rhs, OP_ERROR); //Proxy to prevent attempting to read this before it is validated
     symbol_usages.push_back(SymbolUsage(NONE, NONE, rhs, parse_tree.getSelection(rhs)));
 }
 

@@ -239,8 +239,6 @@ const std::string& getSubstitution(const std::string& src) {
     return substitution;
 }
 
-
-
 }
 
 }

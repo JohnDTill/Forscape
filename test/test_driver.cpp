@@ -12,6 +12,7 @@
 #include <typeset_themes.h>
 
 #ifdef TEST_QT
+#include "test_ide_interaction.h"
 #include <QApplication>
 #endif
 
@@ -42,6 +43,9 @@ int main(int argc, char* argv[]){
     passing &= testInterpreter();
     passing &= testIllFormedPrograms();
     passing &= testTypesetMutability();
+    #ifdef TEST_QT
+    passing &= testIdeInteraction();
+    #endif
 
     if(passing) printf("\nAll passing\n\n");
     else printf("\nTEST(S) FAILED\n\n");
