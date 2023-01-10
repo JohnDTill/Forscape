@@ -65,7 +65,7 @@ void KeywordSubstitutionEditor::addSlot(){
 
 void KeywordSubstitutionEditor::remove(){
     KeywordSubstitutionLabel* label = getButtonLabel();
-    Keywords::map.erase(label->backup.toStdString());
+    Keywords::map.erase(toCppString(label->backup));
     form->removeRow(label);
 }
 
@@ -73,7 +73,7 @@ void KeywordSubstitutionEditor::updateKeyword(){
     KeywordSubstitutionLabel* label = focused_label;
     ModifiedLineEdit* edit = label->edit;
     const QString& new_keyword = edit->text();
-    std::string keyword = new_keyword.toStdString();
+    std::string keyword = toCppString(new_keyword);
 
     if(keyword.empty()){
         QMessageBox::warning(this, "Keyword rejected", "Keyword cannot be empty");
@@ -86,7 +86,7 @@ void KeywordSubstitutionEditor::updateKeyword(){
     }else{
         auto result = form->itemAt(form->indexOf(label) + 1);
         Keywords::map[keyword] = debug_cast<Forscape::Typeset::LineEdit*>(result->widget())->toSerial();
-        Keywords::map.erase(label->backup.toStdString());
+        Keywords::map.erase(toCppString(label->backup));
         label->backup = new_keyword;
     }
 }
@@ -96,7 +96,7 @@ void KeywordSubstitutionEditor::updateResult(){
     auto result_edit = debug_cast<Forscape::Typeset::LineEdit*>(sender);
     auto upcast_label = form->labelForField(sender);
     KeywordSubstitutionLabel* label = debug_cast<KeywordSubstitutionLabel*>(upcast_label);
-    Keywords::map[label->backup.toStdString()] = result_edit->toSerial();
+    Keywords::map[toCppString(label->backup)] = result_edit->toSerial();
 }
 
 void KeywordSubstitutionEditor::populateWidgetFromMap(){
@@ -161,7 +161,7 @@ KeywordSubstitutionEditor::KeywordSubstitutionLabel::KeywordSubstitutionLabel(
     edit = new ModifiedLineEdit(this);
     edit->setValidator(parent->validator);
     edit->setToolTip("Keyword");
-    backup = QString::fromStdString(label);
+    backup = toQString(label);
     edit->setText(backup);
     connect(edit, SIGNAL(editingFinished()), parent, SLOT(updateKeyword()));
     layout->addWidget(edit);

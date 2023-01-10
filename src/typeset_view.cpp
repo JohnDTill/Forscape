@@ -3,6 +3,7 @@
 #include "forscape_program.h"
 #include "forscape_serial.h"
 #include "forscape_unicode.h"
+#include "qt_compatability.h"
 #include <typeset_command_pair.h>
 #include <typeset_construct.h>
 #include <typeset_integral_preference.h>
@@ -705,7 +706,7 @@ double View::getLineboxWidth() const noexcept {
 }
 
 void View::keyPressEvent(QKeyEvent* e){
-    handleKey(e->key(), e->modifiers(), e->text().toStdString());
+    handleKey(e->key(), e->modifiers(), toCppString(e->text()));
 }
 
 void View::mousePressEvent(QMouseEvent* e){
@@ -778,13 +779,13 @@ void View::onBlink() noexcept{
 void View::copy() const{
     if(!controller.hasSelection()) return;
     std::string str = controller.selectedText();
-    QGuiApplication::clipboard()->setText(QString::fromStdString(str));
+    QGuiApplication::clipboard()->setText(toQString(str));
 }
 
 void View::cut(){
     if(!controller.hasSelection()) return;
     std::string str = controller.selectedText();
-    QGuiApplication::clipboard()->setText(QString::fromStdString(str));
+    QGuiApplication::clipboard()->setText(toQString(str));
     controller.del();
 
     ensureCursorVisible();
@@ -797,7 +798,7 @@ void View::cut(){
 }
 
 void View::paste(){
-    std::string str = QGuiApplication::clipboard()->text().toStdString();
+    std::string str = toCppString(QGuiApplication::clipboard()->text());
 
     if(isIllFormedUtf8(str)){
         QMessageBox messageBox;
@@ -1609,7 +1610,22 @@ void Editor::rename(){
 
     if(!ok) return;
 
-    std::string name = text.toStdString();
+    std::string name = toCppString(text);
+
+    if(isIllFormedUtf8(name)){
+        QMessageBox messageBox;
+        messageBox.critical(nullptr, "Error", "Name is not UTF-8 encoded.");
+        messageBox.setFixedSize(500,200);
+        return;
+    }
+
+    if(!Forscape::isValidSerial(name)){
+        QMessageBox messageBox;
+        messageBox.critical(nullptr, "Error", "Name does not conform to Forscape encoding.");
+        messageBox.setFixedSize(500,200);
+        return;
+    }
+
     rename(name);
 }
 
@@ -1709,6 +1725,7 @@ void Editor::showCommasInLargeNumbers() {
 }
 
 void Editor::rename(const std::string& str){
+    assert(isValidSerial(str));
     assert(contextNode != NONE && model->parseTree().getOp(contextNode) == Code::OP_IDENTIFIER);
     std::vector<Typeset::Selection> occurences;
     const Code::Symbol& sym = *model->parseTree().getSymbol(contextNode);

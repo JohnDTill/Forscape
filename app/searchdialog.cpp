@@ -2,6 +2,8 @@
 #include "ui_searchdialog.h"
 
 #include <mainwindow.h>
+#include <forscape_serial.h>
+#include <forscape_unicode.h>
 #include <typeset_markerlink.h>
 #include <typeset_model.h>
 #include <typeset_phrase.h>
@@ -125,6 +127,8 @@ void SearchDialog::populateHits(const std::string& str){
 }
 
 void SearchDialog::replace(const std::string& str){
+    assert(isValidSerial(str));
+
     if(index >= hits.size()) index = 0;
 
     in->getController() = hits[index];
@@ -137,6 +141,8 @@ void SearchDialog::replace(const std::string& str){
 }
 
 void SearchDialog::replaceAll(const std::string& str){
+    assert(isValidSerial(str));
+
     in->replaceAll(hits, str);
     populateHits();
 }
@@ -153,6 +159,32 @@ void SearchDialog::updateInfo(){
 
 void SearchDialog::on_findEdit_textChanged(const QString&){
     populateHits();
+}
+
+void SearchDialog::on_replaceEdit_textChanged(const QString&) {
+    const std::string str = replaceStr();
+    QPalette pal = palette();
+
+    if(isIllFormedUtf8(str)){
+        ui->infoLabel->setText("Replacement\nnot valid\nUTF-8");
+        ui->replaceButton->setEnabled(false);
+        ui->replaceAllButton->setEnabled(false);
+        pal.setColor(QPalette::Text, Qt::red);
+        pal.setColor(QPalette::WindowText, Qt::darkRed);
+    }else if(!isValidSerial(str)){
+        ui->infoLabel->setText("Replacement\nnot valid\nForscape\nencoding");
+        ui->replaceButton->setEnabled(false);
+        ui->replaceAllButton->setEnabled(false);
+        pal.setColor(QPalette::Text, Qt::red);
+        pal.setColor(QPalette::WindowText, Qt::darkRed);
+    }else{
+        updateInfo();
+        ui->replaceButton->setEnabled(true);
+        ui->replaceAllButton->setEnabled(true);
+    }
+
+    ui->replaceEdit->setPalette(pal);
+    ui->infoLabel->setPalette(pal);
 }
 
 void SearchDialog::on_findAllButton_clicked(){
@@ -225,4 +257,3 @@ void SearchDialog::on_wordBox_stateChanged(int){
 void SearchDialog::on_selectionBox_stateChanged(int){
     populateHits();
 }
-
