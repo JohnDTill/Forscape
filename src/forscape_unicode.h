@@ -234,7 +234,7 @@ inline bool isIllFormedUtf8(const std::string& str) noexcept {
         }
     }
 
-    return str.size() > 0 && isZeroWidth(codepointInt(str, 0));
+    return str.size() > 0 && isZeroWidth(codepointInt(str, 0)); //EVENTUALLY: should accommodate leading zero-width char?
 }
 
 }

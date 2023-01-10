@@ -1699,8 +1699,11 @@ void Editor::showTooltipParseNode(){
             tooltip->appendSerial(parse_tree.str(hover_node) + " ∈ " + staticPass().typeString(*symbol));
 
             if(symbol->comment != NONE){
-                tooltip->appendSerial("\n");
-                tooltip->appendSerial(model->parser.parse_tree.str(symbol->comment), SEM_COMMENT);
+                std::string comment = model->parser.parse_tree.str(symbol->comment);
+                if(!isIllFormedUtf8(comment)){
+                    tooltip->appendSerial("\n");
+                    tooltip->appendSerial(model->parser.parse_tree.str(symbol->comment), SEM_COMMENT);
+                }
             }
 
             tooltip->fitToContents();
