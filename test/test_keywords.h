@@ -1,5 +1,5 @@
-#ifndef TYPESET_KEYWORDS_H
-#define TYPESET_KEYWORDS_H
+#ifndef TEST_KEYWORDS_H
+#define TEST_KEYWORDS_H
 
 #include "report.h"
 #include <forscape_serial.h>
@@ -25,4 +25,4 @@ inline bool testKeywords(){
 }
 
 
-#endif // TYPESET_KEYWORDS_H
+#endif // TEST_KEYWORDS_H

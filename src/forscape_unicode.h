@@ -28,11 +28,9 @@ inline constexpr bool isAscii(char ch) noexcept{
     return ch >> 7 == 0;
 }
 
-#ifndef NDEBUG
 inline constexpr bool seventhBitSet(char ch) noexcept{
     return (ch & (1 << 6));
 }
-#endif
 
 inline constexpr bool sixthBitSet(char ch) noexcept{
     return (ch & (1 << 5));
@@ -208,6 +206,35 @@ inline size_t charIndexOfGrapheme(StringType str, size_t grapheme_index, size_t 
     }
 
     return index;
+}
+
+//Note: This should only be actively checked where external inputs are supplied.
+//      Internally, strings are known to be valid UTF-8, which may be verified by assertions.
+inline bool isIllFormedUtf8(const std::string& str) noexcept {
+    size_t index = 0;
+    while(index < str.size()){
+        const char ch = str[index++];
+        if(!isAscii(ch)){
+            if(!seventhBitSet(ch)) return true;
+
+            if(sixthBitSet(ch)){
+                if(fifthBitSet(ch)){
+                    if(index >= str.size()-2
+                       || !isContinuationCharacter(str[index++])
+                       || !isContinuationCharacter(str[index++])
+                       || !isContinuationCharacter(str[index++])) return true;
+                }else{
+                    if(index >= str.size()-1
+                       || !isContinuationCharacter(str[index++])
+                       || !isContinuationCharacter(str[index++])) return true;
+                }
+            }else{
+                if(index >= str.size() || !isContinuationCharacter(str[index++])) return true;
+            }
+        }
+    }
+
+    return str.size() > 0 && isZeroWidth(codepointInt(str, 0));
 }
 
 }

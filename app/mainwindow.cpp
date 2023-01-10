@@ -767,10 +767,17 @@ void MainWindow::openProject(QString path){
             src[i] = '\0';
     src.erase( std::remove(src.begin(), src.end(), '\0'), src.end() );
 
-    assert(Forscape::isValidSerial(src));
+    if(isIllFormedUtf8(src)){
+        QMessageBox messageBox;
+        messageBox.critical(nullptr, "Error", "\"" + path + "\" is not UTF-8 encoded.");
+        messageBox.setFixedSize(500,200);
+        return;
+    }
+
     if(!Forscape::isValidSerial(src)){
         QMessageBox messageBox;
-        messageBox.critical(nullptr, "Error", "\"" + path + "\" is corrupted.");
+        messageBox.critical(nullptr, "Error", "\"" + path + "\" does not conform to Forscape encoding.\n"
+            "This is caused by corruption, or erroneous typesetting specifiers.");
         messageBox.setFixedSize(500,200);
         return;
     }
@@ -1380,11 +1387,17 @@ void MainWindow::on_actionReload_triggered() {
             src[i] = '\0';
     src.erase( std::remove(src.begin(), src.end(), '\0'), src.end() );
 
-    assert(Forscape::isValidSerial(src));
+    if(isIllFormedUtf8(src)){
+        QMessageBox messageBox;
+        messageBox.critical(nullptr, "Error", "\"" + toQString(model->path) + "\" is not UTF-8 encoded.");
+        messageBox.setFixedSize(500,200);
+        return;
+    }
+
     if(!Forscape::isValidSerial(src)){
         QMessageBox messageBox;
-        QString str = toQString(model->path);
-        messageBox.critical(nullptr, "Error", "\"" + str + "\" is corrupted.");
+        messageBox.critical(nullptr, "Error", "\"" + toQString(model->path) + "\" does not conform to Forscape encoding.\n"
+            "This is caused by corruption, or erroneous typesetting specifiers.");
         messageBox.setFixedSize(500,200);
         return;
     }

@@ -1,6 +1,8 @@
 #include <typeset_view.h>
 
 #include "forscape_program.h"
+#include "forscape_serial.h"
+#include "forscape_unicode.h"
 #include <typeset_command_pair.h>
 #include <typeset_construct.h>
 #include <typeset_integral_preference.h>
@@ -17,6 +19,7 @@
 #include <QInputDialog>
 #include <QKeyEvent>
 #include <QMenu>
+#include <QMessageBox>
 #include <QPaintEvent>
 #include <QScrollBar>
 #include <QStyle>
@@ -795,6 +798,21 @@ void View::cut(){
 
 void View::paste(){
     std::string str = QGuiApplication::clipboard()->text().toStdString();
+
+    if(isIllFormedUtf8(str)){
+        QMessageBox messageBox;
+        messageBox.critical(nullptr, "Error", "Clipboard content is not UTF-8 encoded.");
+        messageBox.setFixedSize(500,200);
+        return;
+    }
+
+    if(!Forscape::isValidSerial(str)){
+        QMessageBox messageBox;
+        messageBox.critical(nullptr, "Error", "Clipboard content does not conform to Forscape encoding.");
+        messageBox.setFixedSize(500,200);
+        return;
+    }
+
     paste(str);
 }
 
@@ -1113,6 +1131,8 @@ void View::handleKey(int key, int modifiers, const std::string& str){
 }
 
 void View::paste(const std::string& str){
+    assert(isValidSerial(str));
+
     model->mutate(controller.getInsertSerial(str), controller);
 
     ensureCursorVisible();

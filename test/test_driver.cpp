@@ -4,6 +4,7 @@
 #include "code_scanner.h"
 #include "serial.h"
 #include "test_keywords.h"
+#include "test_unicode.h"
 #include "typeset_control.h"
 #include "typeset_loadsave.h"
 #include "typeset_mutability.h"
@@ -31,6 +32,7 @@ int main(int argc, char* argv[]){
     bool passing = true;
 
     printf("\n");
+    passing &= testUnicode();
     passing &= testSerial();
     passing &= testTypesetLoadSave();
     passing &= testTypesetController();
