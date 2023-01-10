@@ -446,7 +446,9 @@ void View::resolveRightClick(double x, double y, int xScreen, int yScreen){
     menu.addSeparator();
     append("Select All", selectAll, true, true)
 
+    #ifndef TEST_QT
     menu.exec(QPoint(xScreen, yScreen));
+    #endif
 }
 
 void View::resolveWordClick(double x, double y){
@@ -1264,10 +1266,14 @@ void Label::appendSerial(const std::string& src, SemanticType type) {
 }
 
 void Label::fitToContents() noexcept {
+    //EVENTUALLY: this spams logs, and you need to fix the class hierarchy so that the label
+    // doesn't have scrollbars
+    #ifndef TEST_QT
     QWidget::resize(
         xScreen(model->getWidth()) + MARGIN_RIGHT,
         yScreen(model->getHeight()) + MARGIN_BOT
     );
+    #endif
 
     v_scroll->setVisible(false);
     h_scroll->setVisible(false);

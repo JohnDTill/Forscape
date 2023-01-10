@@ -266,7 +266,7 @@ public:
     void clickLink(Forscape::Typeset::Model* model, size_t line);
 
     //EVENTUALLY: define hierarchy
-protected:
+protected: TEST_PUBLIC
     virtual void focusOutEvent(QFocusEvent* event) override;
     virtual void keyPressEvent(QKeyEvent* e) override final;
     virtual void leaveEvent(QEvent* event) override;

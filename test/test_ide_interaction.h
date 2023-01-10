@@ -20,9 +20,13 @@ using namespace Code;
 inline bool ideCase(const std::filesystem::path& path){
     std::string in = readFile(path.u8string());
 
-    Typeset::Editor* view = new Typeset::Editor;
+    static Typeset::Editor* view = new Typeset::Editor;
+    QEvent leave(QEvent::Type::Leave);
+    view->leaveEvent(&leave);
+
     Typeset::Model* input = Typeset::Model::fromSerial(in);
     view->setModel(input);
+    //view->show(); //This slows the test down CONSIDERABLY
     input->path = std::filesystem::canonical(path);
     Forscape::Program::instance()->setProgramEntryPoint(input->path, input);
     input->postmutate();
@@ -35,17 +39,17 @@ inline bool ideCase(const std::filesystem::path& path){
     while(!controller.atStart()){ view->handleKey(Qt::Key_Left, Qt::ShiftModifier, ""); QCoreApplication::processEvents(); }
     controller.deselect();
 
-    //DO THIS: test hover
-    /*
-    do {
+    while(!controller.atEnd()){
         const Typeset::Marker& anchor = controller.getAnchor();
-        view->dispatchHover(anchor.x()+1, anchor.y()+1);
+        view->resolveTooltip(anchor.x()+1, anchor.y()+1);
         for(size_t i = 0; i < 10; i++) QCoreApplication::processEvents();
-        view->handleKey(Qt::Key_Right, Qt::NoModifier, "");
-    } while(!controller.atEnd());
-    */
 
-    delete view;
+        view->resolveRightClick(anchor.x()+1, anchor.y()+1, 0, 0);
+        for(size_t i = 0; i < 10; i++) QCoreApplication::processEvents();
+
+        view->handleKey(Qt::Key_Right, Qt::NoModifier, "");
+    }
+
     Program::instance()->freeFileMemory();
 
     return true;
@@ -57,9 +61,8 @@ inline bool testIdeInteraction(){
     for(directory_iterator end, dir(BASE_TEST_DIR "/in"); dir != end; dir++)
         passing &= ideCase(dir->path());
 
-    //DO THIS: test error cases
-    //for(directory_iterator end, dir(BASE_TEST_DIR "/errors"); dir != end; dir++)
-    //    passing &= ideCase(dir->path());
+    for(directory_iterator end, dir(BASE_TEST_DIR "/errors"); dir != end; dir++)
+        passing &= ideCase(dir->path());
 
     report("IDE interaction", passing);
     return passing;
