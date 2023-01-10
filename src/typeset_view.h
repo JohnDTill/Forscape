@@ -6,6 +6,12 @@
 
 #include <QListWidget>
 
+#ifdef TEST_QT
+#define TEST_PUBLIC public:
+#else
+#define TEST_PUBLIC
+#endif
+
 class QScrollBar;
 
 namespace Forscape {
@@ -53,7 +59,7 @@ public:
 
     Typeset::Selection search_selection;
 
-protected:
+protected: TEST_PUBLIC
     void dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held) alloc_except;
     void dispatchRelease(double x, double y);
     void dispatchDoubleClick(double x, double y);
@@ -131,7 +137,6 @@ protected:
     void onBlink() noexcept;
 
 protected:
-    virtual std::string_view logPrefix() const noexcept = 0;
     void setCursorAppearance(double x, double y);
     void drawLinebox(double yT, double yB);
     void fillInScrollbarCorner();
@@ -160,7 +165,7 @@ public slots:
     void selectAll() noexcept;
     void changeIntegralPreference() noexcept;
 
-private:
+private:  TEST_PUBLIC
     void handleKey(int key, int modifiers, const std::string& str);
     void paste(const std::string& str);
 
@@ -183,8 +188,6 @@ public:
         controller.insertSerial(src);
     }
 
-    virtual std::string_view logPrefix() const noexcept override { return "console->"; }
-
 protected:
     void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE final;
 };
@@ -195,8 +198,6 @@ class LineEdit : public View {
     //EVENTUALLY: define hierarchy
 public:
     LineEdit();
-
-    virtual std::string_view logPrefix() const noexcept override { return "line_edit->"; }
 
 protected:
     void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE final;
@@ -214,7 +215,6 @@ public:
     void appendSerial(const std::string& src, SemanticType type);
     void fitToContents() noexcept;
     bool empty() const noexcept;
-    virtual std::string_view logPrefix() const noexcept override { return "label->"; }
 
 private:
     void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE final;
@@ -237,8 +237,6 @@ public:
     void moveDown() noexcept;
     void moveUp() noexcept;
     void take() noexcept;
-
-    virtual std::string_view logPrefix() const noexcept override { return "recommender->"; }
 
     Editor* editor = nullptr;
     size_t recommend_typeset_phrase_size = 0;
@@ -274,7 +272,6 @@ protected:
     virtual void leaveEvent(QEvent* event) override;
     virtual void mousePressEvent(QMouseEvent* e) override;
     virtual void wheelEvent(QWheelEvent* e) override;
-    virtual std::string_view logPrefix() const noexcept override { return "editor->"; }
     virtual void resolveTooltip(double x, double y) noexcept override;
     virtual void populateContextMenuFromModel(QMenu& menu, double x, double y) override;
     void setTooltipError(const std::string& str);
@@ -312,7 +309,11 @@ private:
     ParseNode contextNode = NONE;
     static Recommender* recommender;
     QTimer* tooltip_timer;
+    #ifdef TEST_QT
+    static constexpr int TOOLTIP_DELAY_MILLISECONDS = 0;
+    #else
     static constexpr int TOOLTIP_DELAY_MILLISECONDS = 750;
+    #endif
 
     friend Recommender;
     std::vector<std::string> suggestions;

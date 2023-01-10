@@ -448,9 +448,7 @@ void Controller::detab() noexcept{
 }
 
 std::string_view Controller::keystroke(const std::string& str){
-    if(str.front() == syntax_cmd){
-        insertText(str);
-    }else if(hasSelection() || (active.index==0)){
+    if(hasSelection() || (active.index==0)){
         insertText(str);
     }else if(str.front() == ' '){
         insertText(str);
