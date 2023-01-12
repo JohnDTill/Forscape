@@ -17,20 +17,11 @@ using std::filesystem::directory_iterator;
 using namespace Forscape;
 using namespace Code;
 
-inline bool ideCase(const std::filesystem::path& path){
-    std::string in = readFile(path.u8string());
-
+inline bool testFile(Typeset::Model* input) {
     static Typeset::Editor* view = new Typeset::Editor;
     QEvent leave(QEvent::Type::Leave);
     view->leaveEvent(&leave);
-
-    Typeset::Model* input = Typeset::Model::fromSerial(in);
     view->setModel(input);
-    //view->show(); //This slows the test down CONSIDERABLY
-    input->path = std::filesystem::canonical(path);
-    Forscape::Program::instance()->setProgramEntryPoint(input->path, input);
-    input->postmutate();
-
     Typeset::Controller& controller = view->getController();
     controller.moveToStartOfDocument();
     while(!controller.atEnd()){ view->handleKey(Qt::Key_Right, Qt::NoModifier, ""); QCoreApplication::processEvents(); }
@@ -51,19 +42,68 @@ inline bool ideCase(const std::filesystem::path& path){
         view->handleKey(Qt::Key_Right, Qt::NoModifier, "");
     }
 
-    Program::instance()->freeFileMemory();
+    //DO THIS
+    /*
+    controller.moveToStartOfDocument();
+    size_t n_commands = 0;
+    while(!controller.atEnd()) {
+        n_commands++;
+        //view->handleKey(Qt::Key_Delete, Qt::ControlModifier, "");
+        view->handleKey(Qt::Key_Delete, Qt::ShiftModifier, "");
+        QCoreApplication::processEvents();
+    }
+    */
+
+    /*
+    for(size_t i = 0; i < n_commands; i++){
+        view->undo();
+        QCoreApplication::processEvents();
+    }
+
+    for(size_t i = 0; i < n_commands/2; i++){
+        view->redo();
+        QCoreApplication::processEvents();
+    }
+
+    controller.moveToEndOfDocument();
+    while(!controller.atStart()){
+        view->handleKey(Qt::Key_Backspace, Qt::NoModifier, "");
+        QCoreApplication::processEvents();
+    }
+    */
 
     return true;
+}
+
+inline bool ideCase(const std::filesystem::path& path){
+    std::string in = readFile(path.u8string());
+
+    Typeset::Model* input = Typeset::Model::fromSerial(in);
+    //view->show(); //This slows the test down CONSIDERABLY
+    input->path = std::filesystem::canonical(path);
+    Forscape::Program::instance()->setProgramEntryPoint(input->path, input);
+    input->postmutate();
+
+    bool passing = true;
+
+    for(Typeset::Model* m : Forscape::Program::instance()->allFiles())
+        passing &= testFile(m);
+
+    Program::instance()->freeFileMemory();
+
+    return passing;
 }
 
 inline bool testIdeInteraction(){
     bool passing = true;
 
     for(directory_iterator end, dir(BASE_TEST_DIR "/in"); dir != end; dir++)
-        passing &= ideCase(dir->path());
+        if(std::filesystem::is_regular_file(dir->path()))
+            passing &= ideCase(dir->path());
 
     for(directory_iterator end, dir(BASE_TEST_DIR "/errors"); dir != end; dir++)
-        passing &= ideCase(dir->path());
+        if(std::filesystem::is_regular_file(dir->path()))
+            passing &= ideCase(dir->path());
 
     report("IDE interaction", passing);
     return passing;

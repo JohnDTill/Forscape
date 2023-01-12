@@ -97,7 +97,8 @@ inline bool testInterpreter(){
     passing &= testExpression("4^0.5", "2");
 
     for(directory_iterator end, dir(BASE_TEST_DIR "/in"); dir != end; dir++)
-        passing &= testCase(dir->path().stem().string());
+        if(std::filesystem::is_regular_file(dir->path()))
+            passing &= testCase(dir->path().stem().string());
 
     if(!allTypesetElementsFreed()){
         printf("Unfreed typeset elements\n");

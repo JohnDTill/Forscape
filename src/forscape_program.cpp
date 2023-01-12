@@ -69,7 +69,7 @@ Program::ptr_or_code Program::openFromAbsolutePath(const std::filesystem::path& 
 
     Typeset::Model* model = Typeset::Model::fromSerial(src);
     all_files.push_back(model);
-    model->path = path;
+    model->path = canonical_path;
     entry->second = model;
     canonical_result.first->second = model;
     pending_project_browser_updates.push_back(model);

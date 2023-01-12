@@ -807,7 +807,9 @@ ParseNode Parser::rightUnary(ParseNode n) alloc_except {
             case TOKEN_SUPERSCRIPT: n = superscript(n); break;
             case TOKEN_SUBSCRIPT: n = subscript(n, rMark()); break;
             case TOKEN_DUALSCRIPT: n = dualscript(n); break;
-            case PERIOD: advance(); n = parse_tree.addNode<2>(OP_SCOPE_ACCESS, {n, primary()}); break;
+            case PERIOD: advance();
+                if(!noErrors()) return n;
+                n = parse_tree.addNode<2>(OP_SCOPE_ACCESS, {n, primary()}); break;
             default: return n;
         }
     }

@@ -430,7 +430,6 @@ void MainWindow::pollInterpreterThread(){
                 auto model = editor->getModel();
                 Typeset::Selection c = model->parser.parse_tree.getSelection(interpreter.error_node);
                 model->errors.push_back(Code::Error(c, interpreter.error_code));
-                output->appendLine();
                 Code::Error::writeErrors(model->errors, output, editor);
                 output->calculateSizes();
                 output->updateLayout();
@@ -464,6 +463,96 @@ void MainWindow::symbolTable(){
 
 void MainWindow::github(){
     QDesktopServices::openUrl(QUrl("https://github.com/JohnDTill/Forscape"));
+}
+
+void MainWindow::on_actionNew_Project_triggered() {
+    if(!editor->isEnabled()) return;
+
+    if(!modified_files.empty()){
+        const bool multiple_files = (modified_files.size() > 1);
+
+        QList<QString> files;
+        for(Forscape::Typeset::Model* model : modified_files){
+            QString qpath = toQString(model->path.filename());
+            files.push_back(qpath);
+        }
+        files.sort();
+
+        static constexpr int NUM_PRINT = 7;
+
+        QString msg = files.front();
+        for(int i = 1; i < std::min<int>(files.size(), NUM_PRINT); i++){
+            msg += '\n';
+            msg += files[i];
+        }
+        if(files.size() > NUM_PRINT)
+            msg += "\n... and " + QString::number(files.size()-NUM_PRINT) + " more";
+
+        QString prompt = "Save file";
+        if(multiple_files) prompt += 's';
+        prompt += " before changing project?";
+
+        QMessageBox msg_box;
+        msg_box.setWindowTitle("Unsaved changes");
+        msg_box.setText(prompt);
+        msg_box.setInformativeText(msg);
+        msg_box.setStandardButtons((multiple_files ? QMessageBox::SaveAll : QMessageBox::Save) | QMessageBox::Discard | QMessageBox::Cancel);
+        msg_box.setDefaultButton(QMessageBox::SaveAll);
+        msg_box.setEscapeButton(QMessageBox::Cancel);
+        msg_box.setIcon(QMessageBox::Icon::Question);
+        int ret = msg_box.exec();
+
+        switch (ret) {
+            case QMessageBox::Save:
+            case QMessageBox::SaveAll:
+                if(!on_actionSave_All_triggered()){
+                    //EVENTUALLY: have feedback here
+                    return;
+                }
+            case QMessageBox::Discard:
+                break;
+            case QMessageBox::Cancel:
+                return;
+            default:
+                assert(false);
+        }
+    }
+
+    Forscape::Program::instance()->freeFileMemory();
+
+    modified_files.clear();
+    project_browser->clear();
+    project_browser_entries.clear();
+
+    ui->actionSave->setEnabled(false);
+    ui->actionSave_All->setEnabled(false);
+
+    console->clearModel();
+
+    resetViewJumpPointElements();
+    Typeset::Model* model = Typeset::Model::fromSerial("");
+    Program::instance()->program_entry_point = model;
+    setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
+    active_file_path.clear();
+    project_path.clear();
+
+    project_browser->clear();
+    QTreeWidgetItem* item = new QTreeWidgetItem(project_browser);
+    item->setText(0, "untitled");
+    item->setIcon(0, main_icon);
+    item->setData(0, Qt::UserRole, QVariant::fromValue(model));
+    project_browser->sortItems(0, Qt::SortOrder::AscendingOrder);
+    model->project_browser_entry = item;
+    item->setSelected(true);
+    QFont font = project_browser->font();
+    font.setBold(true);
+    item->setFont(0, font);
+
+    Forscape::Program::instance()->setProgramEntryPoint("", model);
+    model->performSemanticFormatting();
+    editor->setModel(model);
+
+    //onTextChanged();
 }
 
 void MainWindow::on_actionNew_triggered(){
@@ -1595,4 +1684,3 @@ void MainWindow::on_actionGo_to_main_file_triggered() {
     Forscape::Typeset::Model* entry_point = Forscape::Program::instance()->program_entry_point;
     if(entry_point != editor->getModel()) viewModel(entry_point, 0);
 }
-

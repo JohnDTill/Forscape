@@ -71,7 +71,7 @@ void runBenchmark(){
 
     Code::SymbolLexicalPass sym_table(parser.parse_tree, m);
     sym_table.resolveSymbols();
-    Code::StaticPass static_pass(parser.parse_tree, sym_table.symbol_table, m->errors, m->warnings);
+    Code::StaticPass static_pass(m, parser.parse_tree, sym_table.symbol_table, m->errors, m->warnings);
     static_pass.resolve();
     Code::Interpreter interpreter;
 

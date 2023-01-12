@@ -865,14 +865,14 @@ void View::drawModel(double xL, double yT, double xR, double yB) {
     setColour(COLOUR_ERRORBORDER, getColour(COLOUR_WARNINGBORDER));
 
     for(const Code::Error& e : model->warnings)
-        if(e.selection.overlapsY(yT, yB))
+        if(e.selection.getModel() == model && e.selection.overlapsY(yT, yB))
             e.selection.paintError(painter);
 
     setColour(COLOUR_ERRORBACKGROUND, error_background);
     setColour(COLOUR_ERRORBORDER, error_border);
 
     for(const Code::Error& e : model->errors)
-        if(e.selection.overlapsY(yT, yB))
+        if(e.selection.getModel() == model && e.selection.overlapsY(yT, yB))
             e.selection.paintError(painter);
 
     for(const Selection& c : highlighted_words)
