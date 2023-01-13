@@ -53,7 +53,8 @@ inline bool testIllFormedPrograms(){
     bool passing = true;
 
     for(directory_iterator end, dir(BASE_TEST_DIR "/errors"); dir != end; dir++)
-        passing &= testErrorAndNoCrash(dir->path().stem().string());
+        if(std::filesystem::is_regular_file(dir->path()))
+            passing &= testErrorAndNoCrash(dir->path().stem().string());
 
     if(!allTypesetElementsFreed()){
         printf("Unfreed typeset elements\n");

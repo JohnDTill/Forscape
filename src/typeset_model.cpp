@@ -616,6 +616,7 @@ void Model::performSemanticFormatting(){
 
 void Model::premutate() noexcept{
     clearRedo();
+    if(is_output) return;
     clearFormatting();
 }
 

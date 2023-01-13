@@ -865,14 +865,14 @@ void View::drawModel(double xL, double yT, double xR, double yB) {
     setColour(COLOUR_ERRORBORDER, getColour(COLOUR_WARNINGBORDER));
 
     for(const Code::Error& e : model->warnings)
-        if(e.selection.overlapsY(yT, yB))
+        if(e.selection.getModel() == model && e.selection.overlapsY(yT, yB))
             e.selection.paintError(painter);
 
     setColour(COLOUR_ERRORBACKGROUND, error_background);
     setColour(COLOUR_ERRORBORDER, error_border);
 
     for(const Code::Error& e : model->errors)
-        if(e.selection.overlapsY(yT, yB))
+        if(e.selection.getModel() == model && e.selection.overlapsY(yT, yB))
             e.selection.paintError(painter);
 
     for(const Selection& c : highlighted_words)
@@ -1546,7 +1546,9 @@ void Editor::populateContextMenuFromModel(QMenu& menu, double x, double y) {
 
     switch (model->parseTree().getOp(contextNode)) {
         case Code::OP_IDENTIFIER:{
-            auto sym_ptr = parseTree().getSymbol(contextNode + model->parse_node_offset);
+            bool global_result_valid = model->is_imported || model == Forscape::Program::instance()->program_entry_point;
+            const Code::ParseTree* parse_tree = global_result_valid ? &parseTree() : &model->parseTree();
+            auto sym_ptr = parse_tree->getSymbol(contextNode + model->parse_node_offset * global_result_valid);
             if(!sym_ptr) return;
             const Code::Symbol& sym = *sym_ptr;
             if(!sym.tied_to_file) append("Rename", rename, true, true)
@@ -1688,15 +1690,17 @@ void Editor::goToFile() {
 void Editor::showTooltipParseNode(){
     if(this->hover_node == NONE) return;
 
-    const auto& parse_tree = parseTree();
-    const ParseNode hover_node = this->hover_node + model->parse_node_offset;
-    switch(parse_tree.getOp(hover_node)){
+    //EVENTUALLY: dealing with errors here is a pain
+    bool global_result_valid = model->is_imported || model == Forscape::Program::instance()->program_entry_point;
+    const Code::ParseTree* parse_tree = global_result_valid ? &parseTree() : &model->parseTree();
+    const ParseNode hover_node = this->hover_node + model->parse_node_offset * global_result_valid;
+    switch(parse_tree->getOp(hover_node)){
         case Code::OP_IDENTIFIER:{
-            const auto symbol = parse_tree.getSymbol(hover_node);
+            const auto symbol = parse_tree->getSymbol(hover_node);
             if(!symbol) return;
 
             tooltip->clear();
-            tooltip->appendSerial(parse_tree.str(hover_node) + " ∈ " + staticPass().typeString(*symbol));
+            tooltip->appendSerial(parse_tree->str(hover_node) + " ∈ " + staticPass().typeString(*symbol));
 
             if(symbol->comment != NONE){
                 std::string comment = model->parser.parse_tree.str(symbol->comment);

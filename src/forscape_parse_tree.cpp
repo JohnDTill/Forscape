@@ -236,23 +236,23 @@ template<size_t N> ParseNode ParseTree::addNode(Op type, const std::array<ParseN
     return addNode<std::array<ParseNode, N>>(type, children);
 }
 
-ParseNode ParseTree::addTerminal(size_t type, const Selection& c) alloc_except {
+ParseNode ParseTree::addTerminal(Op type, const Selection& c) alloc_except {
     return addNode<0>(type, c, {});
 }
 
-ParseNode ParseTree::addUnary(size_t type, const Selection& c, ParseNode child) alloc_except {
+ParseNode ParseTree::addUnary(Op type, const Selection& c, ParseNode child) alloc_except {
     return addNode<1>(type, c, {child});
 }
 
-ParseNode ParseTree::addUnary(size_t type, size_t child) alloc_except {
+ParseNode ParseTree::addUnary(Op type, size_t child) alloc_except {
     return addNode<1>(type, {child});
 }
 
-ParseNode ParseTree::addLeftUnary(size_t type, const Typeset::Marker& left, ParseNode child) alloc_except {
+ParseNode ParseTree::addLeftUnary(Op type, const Typeset::Marker& left, ParseNode child) alloc_except {
     return addNode<1>(type, Selection(left, getRight(child)), {child});
 }
 
-ParseNode ParseTree::addRightUnary(size_t type, const Typeset::Marker& right, ParseNode child) alloc_except {
+ParseNode ParseTree::addRightUnary(Op type, const Typeset::Marker& right, ParseNode child) alloc_except {
     return addNode<1>(type, Selection(getLeft(child), right), {child});
 }
 

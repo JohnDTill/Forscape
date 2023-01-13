@@ -502,8 +502,14 @@ ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
 
     //Repurpose the call
     ParseNode params = call;
-    for(size_t i = 0; i < nargs; i++)
-        parse_tree.setArg(params, i, parse_tree.arg(call, i+1));
+    for(size_t i = 0; i < nargs; i++){
+        ParseNode param = parse_tree.arg(call, i+1);
+        Op op = parse_tree.getOp(param);
+        if(op == OP_IDENTIFIER || (op == OP_EQUAL && parse_tree.getOp(parse_tree.lhs(param)) == OP_IDENTIFIER))
+            parse_tree.setArg(params, i, parse_tree.arg(call, i+1));
+        else
+            parse_tree.setArg(params, i, error(INVALID_PARAMETER, parse_tree.getSelection(param)));
+    }
     parse_tree.reduceNumArgs(params, nargs);
     parse_tree.setOp(params, OP_LIST);
     parse_tree.setLeft(params, parse_tree.getLeft(parse_tree.arg<0>(params)));
@@ -807,7 +813,9 @@ ParseNode Parser::rightUnary(ParseNode n) alloc_except {
             case TOKEN_SUPERSCRIPT: n = superscript(n); break;
             case TOKEN_SUBSCRIPT: n = subscript(n, rMark()); break;
             case TOKEN_DUALSCRIPT: n = dualscript(n); break;
-            case PERIOD: advance(); n = parse_tree.addNode<2>(OP_SCOPE_ACCESS, {n, primary()}); break;
+            case PERIOD: advance();
+                if(!noErrors()) return n;
+                n = parse_tree.addNode<2>(OP_SCOPE_ACCESS, {n, primary()}); break;
             default: return n;
         }
     }
@@ -1890,7 +1898,7 @@ ParseNode Parser::error(ErrorCode code) alloc_except {
 
 ParseNode Parser::error(ErrorCode code, const Typeset::Selection& c) alloc_except {
     if(noErrors()){
-        error_node = parse_tree.addTerminal(SCANNER_ERROR, c);
+        error_node = parse_tree.addTerminal(OP_ERROR, c);
         errors.push_back(Error(c, code));
     }
 
@@ -1994,8 +2002,6 @@ void Parser::recover() noexcept{
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
 void Parser::registerParseNodeRegion(ParseNode pn, size_t token_index) alloc_except {
-    if(!noErrors()) return;
-
     assert(token_index < tokens.size());
     assert(parse_tree.isLastAllocatedNode(pn));
 

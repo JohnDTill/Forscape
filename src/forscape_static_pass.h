@@ -120,7 +120,12 @@ private:
         std::stack<ReturnType> return_types;
 
     public:
-        StaticPass(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors, std::vector<Code::Error>& warnings) noexcept;
+        StaticPass(
+            Typeset::Model* model,
+            ParseTree& parse_tree,
+            SymbolTable& symbol_table,
+            std::vector<Code::Error>& errors,
+            std::vector<Code::Error>& warnings) noexcept;
         void resolve();
 
     private:
@@ -165,6 +170,8 @@ private:
         SymbolTable& symbol_table;
         std::vector<Error>& errors;
         std::vector<Error>& warnings;
+        Typeset::Model* base_model;
+        Typeset::Model* active_model;
 
         struct CachedInfo{
             Type type;

@@ -10,8 +10,14 @@ namespace Forscape {
 
 namespace Code {
 
-StaticPass::StaticPass(ParseTree& parse_tree, SymbolTable& symbol_table, std::vector<Code::Error>& errors, std::vector<Error>& warnings) noexcept
-    : parse_tree(parse_tree), symbol_table(symbol_table), errors(errors), warnings(warnings) {}
+StaticPass::StaticPass(
+        Typeset::Model* model,
+        ParseTree& parse_tree,
+        SymbolTable& symbol_table,
+        std::vector<Code::Error>& errors,
+        std::vector<Error>& warnings) noexcept
+    : parse_tree(parse_tree), symbol_table(symbol_table), errors(errors), warnings(warnings),
+      base_model(model), active_model(model) {}
 
 void StaticPass::resolve(){
     reset();
@@ -381,7 +387,10 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                 if(model->errors.empty()){
                     const ParseTree& imported = model->parser.parse_tree;
                     const ParseNode root = parse_tree.append(imported);
+                    Typeset::Model* current = active_model;
+                    active_model = model;
                     resolveStmt(root);
+                    active_model = current;
                     parse_tree.setFlag(pn, root);
                 }else{
                     parse_tree.setFlag(pn, NONE);
@@ -405,7 +414,10 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                 if(model->errors.empty()){
                     const ParseTree& imported = model->parser.parse_tree;
                     const ParseNode root = parse_tree.append(imported);
+                    Typeset::Model* current = active_model;
+                    active_model = model;
                     resolveStmt(root);
+                    active_model = current;
                     parse_tree.setFlag(pn, root);
                 }else{
                     parse_tree.setFlag(pn, NONE);
@@ -1272,14 +1284,22 @@ Type StaticPass::instantiateSetOfFuncs(ParseNode call_node, Type fun_group, Call
 
 size_t StaticPass::error(ParseNode pn, ParseNode sel, ErrorCode code) noexcept{
     if(retry_at_recursion) parse_tree.setType(pn, RECURSIVE_CYCLE);
-    else if(errors.empty()) errors.push_back(Error(parse_tree.getSelection(sel), code));
+    else if(errors.empty()){
+        Error err(parse_tree.getSelection(sel), code);
+        errors.push_back(err);
+        if(active_model != base_model) active_model->errors.push_back(err);
+    }
     return pn;
 }
 
 size_t StaticPass::errorType(ParseNode pn, ErrorCode code) noexcept{
     if(retry_at_recursion) return RECURSIVE_CYCLE;
 
-    if(errors.empty()) errors.push_back(Error(parse_tree.getSelection(pn), code));
+    if(errors.empty()){
+        Error err(parse_tree.getSelection(pn), code);
+        errors.push_back(err);
+        if(active_model != base_model) active_model->errors.push_back(err);
+    }
     return FAILURE;
 }
 

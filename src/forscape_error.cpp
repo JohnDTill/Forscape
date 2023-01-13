@@ -15,18 +15,23 @@ void Error::writeTo(Typeset::Text* t, Typeset::View* caller) const {
     if(caller){
         t->getParent()->appendConstruct(new Typeset::MarkerLink(l, caller, selection.getModel()));
         t = t->nextTextAsserted();
-        t->setString(" - " + message());
+        t->setString(" - ");
+        t->getModel()->appendSerialToOutput(message());
     }else{
-        t->setString("Line " + line() + " - " + message());
+        t->setString("Line " + line() + " - ");
+        t->getModel()->appendSerialToOutput(message());
     }
     t->tags.push_back( SemanticTag(0, SEM_ERROR) );
 }
 
 void Error::writeErrors(const std::vector<Error>& errors, Typeset::Model* m, Typeset::View* caller){
-    Typeset::Text* t = m->lastText();
-    t->setString("_______________________________");
-    t->tags.push_back( SemanticTag(0, SEM_ERROR) );
-    m->appendLine();
+    if(!m->empty()){
+        m->appendLine();
+        Typeset::Text* t = m->lastText();
+        t->setString("_______________________________");
+        t->tags.push_back( SemanticTag(0, SEM_ERROR) );
+        m->appendLine();
+    }
 
     for(const Error& err : errors){
         err.writeTo(m->lastText(), caller);

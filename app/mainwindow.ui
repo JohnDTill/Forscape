@@ -37,6 +37,7 @@
      <addaction name="separator"/>
      <addaction name="actionClearRecentProjects"/>
     </widget>
+    <addaction name="actionNew_Project"/>
     <addaction name="actionNew"/>
     <addaction name="actionOpen"/>
     <addaction name="menuRecent_Projects"/>
@@ -357,6 +358,14 @@
   <action name="actionGo_to_main_file">
    <property name="text">
     <string>Go to main file</string>
+   </property>
+  </action>
+  <action name="actionNew_Project">
+   <property name="text">
+    <string>New Project</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+N</string>
    </property>
   </action>
  </widget>
