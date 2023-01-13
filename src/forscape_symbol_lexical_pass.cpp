@@ -180,7 +180,7 @@ void SymbolLexicalPass::resolveExpr(ParseNode pn) alloc_except {
 }
 
 void SymbolLexicalPass::resolveEquality(ParseNode pn) alloc_except {
-    if(parse_tree.getNumArgs(pn) > 2){
+    if(parse_tree.getNumArgs(pn) != 2){
         errors.push_back(Error(parse_tree.getSelection(pn), ErrorCode::TYPE_ERROR));
     }else{
         resolveExpr(parse_tree.rhs(pn));
@@ -670,6 +670,7 @@ void SymbolLexicalPass::resolveAlgorithm(ParseNode pn) alloc_except {
     for(size_t i = 0; i < parse_tree.getNumArgs(params); i++){
         ParseNode param = parse_tree.arg(params, i);
         if(parse_tree.getOp(param) == OP_EQUAL) param = parse_tree.lhs(param);
+        if(parse_tree.getOp(param) == OP_ERROR) continue;
         size_t sym_id = parse_tree.getSymId(param);
         if(sym_id != NONE){
             Symbol& sym = symbols[sym_id];

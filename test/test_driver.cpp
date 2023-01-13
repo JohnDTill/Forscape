@@ -40,8 +40,8 @@ int main(int argc, char* argv[]){
     passing &= testKeywords();
     passing &= testScanner();
     passing &= testParser();
-    //passing &= testInterpreter(); //DO THIS: revert
-    //passing &= testIllFormedPrograms();
+    passing &= testInterpreter();
+    passing &= testIllFormedPrograms();
     passing &= testTypesetMutability();
     #ifdef TEST_QT
     passing &= testIdeInteraction();

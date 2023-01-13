@@ -113,8 +113,10 @@ void Program::reset() noexcept {
     for(const auto& entry : all_files){
         entry->is_imported = false;
 
-        for(Code::Symbol& symbol : entry->symbol_builder.symbol_table.symbols)
+        for(Code::Symbol& symbol : entry->symbol_builder.symbol_table.symbols){
             symbol.last_external_usage = symbol.lastUsage();
+            symbol.type = NONE;
+        }
     }
 }
 

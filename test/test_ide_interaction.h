@@ -17,7 +17,7 @@ using std::filesystem::directory_iterator;
 using namespace Forscape;
 using namespace Code;
 
-inline bool testFile(Typeset::Model* input) {
+inline bool testModel(Typeset::Model* input) {
     static Typeset::Editor* view = new Typeset::Editor;
     QEvent leave(QEvent::Type::Leave);
     view->leaveEvent(&leave);
@@ -42,25 +42,20 @@ inline bool testFile(Typeset::Model* input) {
         view->handleKey(Qt::Key_Right, Qt::NoModifier, "");
     }
 
-    //DO THIS
-    /*
     controller.moveToStartOfDocument();
     size_t n_commands = 0;
     while(!controller.atEnd()) {
         n_commands++;
-        //view->handleKey(Qt::Key_Delete, Qt::ControlModifier, "");
-        view->handleKey(Qt::Key_Delete, Qt::ShiftModifier, "");
+        view->handleKey(Qt::Key_Delete, Qt::NoModifier, "");
         QCoreApplication::processEvents();
     }
-    */
 
-    /*
     for(size_t i = 0; i < n_commands; i++){
         view->undo();
         QCoreApplication::processEvents();
     }
 
-    for(size_t i = 0; i < n_commands/2; i++){
+    for(size_t i = 0; i < 5; i++){
         view->redo();
         QCoreApplication::processEvents();
     }
@@ -70,7 +65,6 @@ inline bool testFile(Typeset::Model* input) {
         view->handleKey(Qt::Key_Backspace, Qt::NoModifier, "");
         QCoreApplication::processEvents();
     }
-    */
 
     return true;
 }
@@ -87,7 +81,7 @@ inline bool ideCase(const std::filesystem::path& path){
     bool passing = true;
 
     for(Typeset::Model* m : Forscape::Program::instance()->allFiles())
-        passing &= testFile(m);
+        passing &= testModel(m);
 
     Program::instance()->freeFileMemory();
 
