@@ -468,55 +468,7 @@ void MainWindow::github(){
 void MainWindow::on_actionNew_Project_triggered() {
     if(!editor->isEnabled()) return;
 
-    if(!modified_files.empty()){
-        const bool multiple_files = (modified_files.size() > 1);
-
-        QList<QString> files;
-        for(Forscape::Typeset::Model* model : modified_files){
-            QString qpath = toQString(model->path.filename());
-            files.push_back(qpath);
-        }
-        files.sort();
-
-        static constexpr int NUM_PRINT = 7;
-
-        QString msg = files.front();
-        for(int i = 1; i < std::min<int>(files.size(), NUM_PRINT); i++){
-            msg += '\n';
-            msg += files[i];
-        }
-        if(files.size() > NUM_PRINT)
-            msg += "\n... and " + QString::number(files.size()-NUM_PRINT) + " more";
-
-        QString prompt = "Save file";
-        if(multiple_files) prompt += 's';
-        prompt += " before changing project?";
-
-        QMessageBox msg_box;
-        msg_box.setWindowTitle("Unsaved changes");
-        msg_box.setText(prompt);
-        msg_box.setInformativeText(msg);
-        msg_box.setStandardButtons((multiple_files ? QMessageBox::SaveAll : QMessageBox::Save) | QMessageBox::Discard | QMessageBox::Cancel);
-        msg_box.setDefaultButton(QMessageBox::SaveAll);
-        msg_box.setEscapeButton(QMessageBox::Cancel);
-        msg_box.setIcon(QMessageBox::Icon::Question);
-        int ret = msg_box.exec();
-
-        switch (ret) {
-            case QMessageBox::Save:
-            case QMessageBox::SaveAll:
-                if(!on_actionSave_All_triggered()){
-                    //EVENTUALLY: have feedback here
-                    return;
-                }
-            case QMessageBox::Discard:
-                break;
-            case QMessageBox::Cancel:
-                return;
-            default:
-                assert(false);
-        }
-    }
+    if(promptForUnsavedChanges("changing project")) return;
 
     Forscape::Program::instance()->freeFileMemory();
 
@@ -543,6 +495,7 @@ void MainWindow::on_actionNew_Project_triggered() {
     item->setData(0, Qt::UserRole, QVariant::fromValue(model));
     project_browser->sortItems(0, Qt::SortOrder::AscendingOrder);
     model->project_browser_entry = item;
+    project_browser_active_item = item;
     item->setSelected(true);
     QFont font = project_browser->font();
     font.setBold(true);
@@ -551,6 +504,12 @@ void MainWindow::on_actionNew_Project_triggered() {
     Forscape::Program::instance()->setProgramEntryPoint("", model);
     model->performSemanticFormatting();
     editor->setModel(model);
+
+    if(recent_projects.empty()) recent_projects.push_back(project_path);
+
+    recent_projects.push_front(project_path);
+    if(recent_projects.size() > MAX_STORED_RECENT_PROJECTS) recent_projects.pop_back();
+    updateRecentProjectsFromList();
 
     //onTextChanged();
 }
@@ -788,55 +747,7 @@ bool MainWindow::saveAs(QString path, Forscape::Typeset::Model* saved_model) {
 }
 
 void MainWindow::openProject(QString path){
-    if(!modified_files.empty()){
-        const bool multiple_files = (modified_files.size() > 1);
-
-        QList<QString> files;
-        for(Forscape::Typeset::Model* model : modified_files){
-            QString qpath = toQString(model->path.filename());
-            files.push_back(qpath);
-        }
-        files.sort();
-
-        static constexpr int NUM_PRINT = 7;
-
-        QString msg = files.front();
-        for(int i = 1; i < std::min<int>(files.size(), NUM_PRINT); i++){
-            msg += '\n';
-            msg += files[i];
-        }
-        if(files.size() > NUM_PRINT)
-            msg += "\n... and " + QString::number(files.size()-NUM_PRINT) + " more";
-
-        QString prompt = "Save file";
-        if(multiple_files) prompt += 's';
-        prompt += " before changing project?";
-
-        QMessageBox msg_box;
-        msg_box.setWindowTitle("Unsaved changes");
-        msg_box.setText(prompt);
-        msg_box.setInformativeText(msg);
-        msg_box.setStandardButtons((multiple_files ? QMessageBox::SaveAll : QMessageBox::Save) | QMessageBox::Discard | QMessageBox::Cancel);
-        msg_box.setDefaultButton(QMessageBox::SaveAll);
-        msg_box.setEscapeButton(QMessageBox::Cancel);
-        msg_box.setIcon(QMessageBox::Icon::Question);
-        int ret = msg_box.exec();
-
-        switch (ret) {
-            case QMessageBox::Save:
-            case QMessageBox::SaveAll:
-                if(!on_actionSave_All_triggered()){
-                    //EVENTUALLY: have feedback here
-                    return;
-                }
-            case QMessageBox::Discard:
-                break;
-            case QMessageBox::Cancel:
-                return;
-            default:
-                assert(false);
-        }
-    }
+    if(promptForUnsavedChanges("changing project")) return;
 
     std::filesystem::path std_path = toCppPath(path);
     std::ifstream in(std_path);
@@ -1179,60 +1090,60 @@ int seconds_to_shutdown = -1;
 void MainWindow::closeEvent(QCloseEvent* event){
     while(seconds_to_shutdown != -1) QGuiApplication::processEvents();
 
-    if(!modified_files.empty()){
-        const bool multiple_files = (modified_files.size() > 1);
+    if(promptForUnsavedChanges("closing")){
+        event->ignore();
+    }else{
+        preferences->close();
+        QMainWindow::closeEvent(event);
+        emit destroyed();
+    }
+}
 
-        QList<QString> files;
-        for(Forscape::Typeset::Model* model : modified_files){
-            QString qpath = toQString(model->path.filename());
-            files.push_back(qpath);
-        }
-        files.sort();
+bool MainWindow::promptForUnsavedChanges(const QString& action) {
+    if(modified_files.empty()) return false;
 
-        static constexpr int NUM_PRINT = 7;
+    const bool multiple_files = (modified_files.size() > 1);
 
-        QString msg = files.front();
-        for(int i = 1; i < std::min<int>(files.size(), NUM_PRINT); i++){
-            msg += '\n';
-            msg += files[i];
-        }
-        if(files.size() > NUM_PRINT)
-            msg += "\n... and " + QString::number(files.size()-NUM_PRINT) + " more";
+    QList<QString> files;
+    for(Forscape::Typeset::Model* model : modified_files){
+        QString qpath = model->path.empty() ? "untitled" : toQString(model->path.filename());
+        files.push_back(qpath);
+    }
+    files.sort();
 
-        QString prompt = "Save file";
-        if(multiple_files) prompt += 's';
-        prompt += " before closing?";
+    static constexpr int NUM_PRINT = 7;
 
-        QMessageBox msg_box;
-        msg_box.setWindowTitle("Unsaved changes");
-        msg_box.setText(prompt);
-        msg_box.setInformativeText(msg);
-        msg_box.setStandardButtons((multiple_files ? QMessageBox::SaveAll : QMessageBox::Save) | QMessageBox::Discard | QMessageBox::Cancel);
-        msg_box.setDefaultButton(QMessageBox::SaveAll);
-        msg_box.setEscapeButton(QMessageBox::Cancel);
-        msg_box.setIcon(QMessageBox::Icon::Question);
-        int ret = msg_box.exec();
+    QString msg = files.front();
+    for(int i = 1; i < std::min<int>(files.size(), NUM_PRINT); i++){
+        msg += '\n';
+        msg += files[i];
+    }
+    if(files.size() > NUM_PRINT)
+        msg += "\n... and " + QString::number(files.size()-NUM_PRINT) + " more";
 
-        switch (ret) {
-            case QMessageBox::Save:
-            case QMessageBox::SaveAll:
-                if(!on_actionSave_All_triggered()){
-                    event->ignore();
-                    return;
-                }
-            case QMessageBox::Discard:
-                break;
-            case QMessageBox::Cancel:
-                event->ignore();
-                return;
-            default:
-                assert(false);
-        }
+    QString prompt = "Save file";
+    if(multiple_files) prompt += 's';
+    prompt += " before " + action + "?";
+
+    QMessageBox msg_box;
+    msg_box.setWindowTitle("Unsaved changes");
+    msg_box.setText(prompt);
+    msg_box.setInformativeText(msg);
+    msg_box.setStandardButtons((multiple_files ? QMessageBox::SaveAll : QMessageBox::Save) | QMessageBox::Discard | QMessageBox::Cancel);
+    msg_box.setDefaultButton(QMessageBox::SaveAll);
+    msg_box.setEscapeButton(QMessageBox::Cancel);
+    msg_box.setIcon(QMessageBox::Icon::Question);
+
+    switch (msg_box.exec()) {
+        case QMessageBox::Save:
+        case QMessageBox::SaveAll:
+            //DO THIS - if there are files which have never been saved, then SaveAll is not appropriate!
+            return !on_actionSave_All_triggered();
+        case QMessageBox::Discard: return false;
+        case QMessageBox::Cancel: return true;
     }
 
-    preferences->close();
-    QMainWindow::closeEvent(event);
-    emit destroyed();
+    assert(false);
 }
 
 void MainWindow::on_actionShow_action_toolbar_toggled(bool show){

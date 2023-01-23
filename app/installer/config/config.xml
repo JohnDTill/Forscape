@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Installer>
     <Name>Forscape</Name>
-    <Version>0.0.2</Version>
+    <Version>0.0.3</Version>
     <Title>Forscape Installer</Title>
     <Publisher>AutoMath</Publisher>
 	<ProductUrl>https://github.com/JohnDTill/Forscape</ProductUrl>

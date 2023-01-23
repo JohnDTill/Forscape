@@ -143,6 +143,7 @@ protected:
     virtual void closeEvent(QCloseEvent* event) override;
 
 private:
+    bool promptForUnsavedChanges(const QString& action);
     void checkOutput();
     bool savePrompt();
     bool saveAs(QString name);
