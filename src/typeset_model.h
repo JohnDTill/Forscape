@@ -44,6 +44,7 @@ public:
     std::vector<Code::Error> errors;
     std::vector<Code::Error> warnings;
     std::filesystem::path path;
+    bool notOnDisk() const noexcept { return path.empty(); }
     #ifdef QT_VERSION
     QTreeWidgetItem* project_browser_entry  DEBUG_INIT_NULLPTR;
     std::filesystem::file_time_type write_time;

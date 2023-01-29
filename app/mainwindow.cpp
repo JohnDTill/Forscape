@@ -1104,10 +1104,13 @@ bool MainWindow::promptForUnsavedChanges(const QString& action) {
 
     const bool multiple_files = (modified_files.size() > 1);
 
+    size_t num_files_not_on_disk = 0;
+
     QList<QString> files;
     for(Forscape::Typeset::Model* model : modified_files){
         QString qpath = model->path.empty() ? "untitled" : toQString(model->path.filename());
         files.push_back(qpath);
+        num_files_not_on_disk += model->notOnDisk();
     }
     files.sort();
 
@@ -1121,23 +1124,36 @@ bool MainWindow::promptForUnsavedChanges(const QString& action) {
     if(files.size() > NUM_PRINT)
         msg += "\n... and " + QString::number(files.size()-NUM_PRINT) + " more";
 
-    QString prompt = "Save file";
-    if(multiple_files) prompt += 's';
-    prompt += " before " + action + "?";
-
     QMessageBox msg_box;
+
+    QString prompt;
+    if(num_files_not_on_disk == 1){
+        viewModel(*modified_files.begin(), 0);
+        prompt = "Save new file before " + action + "?";
+    }else if(num_files_not_on_disk > 1){
+        prompt = "Discard multiple new files?";
+    }else{
+        prompt = "Save file";
+        if(multiple_files) prompt += 's';
+        prompt += " before " + action + "?";
+        msg_box.setInformativeText(msg);
+    }
+
     msg_box.setWindowTitle("Unsaved changes");
     msg_box.setText(prompt);
-    msg_box.setInformativeText(msg);
-    msg_box.setStandardButtons((multiple_files ? QMessageBox::SaveAll : QMessageBox::Save) | QMessageBox::Discard | QMessageBox::Cancel);
-    msg_box.setDefaultButton(QMessageBox::SaveAll);
+    auto save_btn = num_files_not_on_disk ?
+                        (multiple_files ? QMessageBox::StandardButton::NoButton : QMessageBox::StandardButton::Save) :
+                        (multiple_files ? QMessageBox::SaveAll : QMessageBox::Save);
+    msg_box.setStandardButtons(save_btn | QMessageBox::Discard | QMessageBox::Cancel);
+    msg_box.setDefaultButton(save_btn);
     msg_box.setEscapeButton(QMessageBox::Cancel);
     msg_box.setIcon(QMessageBox::Icon::Question);
 
     switch (msg_box.exec()) {
         case QMessageBox::Save:
+            if(num_files_not_on_disk) return !savePrompt();
+            else return !on_actionSave_All_triggered();
         case QMessageBox::SaveAll:
-            //DO THIS - if there are files which have never been saved, then SaveAll is not appropriate!
             return !on_actionSave_All_triggered();
         case QMessageBox::Discard: return false;
         case QMessageBox::Cancel: return true;
