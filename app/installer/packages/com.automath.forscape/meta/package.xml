@@ -2,8 +2,8 @@
 <Package>
     <DisplayName>Forscape</DisplayName>
     <Description>Core</Description>
-    <Version>0.0.2</Version>
-    <ReleaseDate>2022-12-10</ReleaseDate>
+    <Version>0.0.3</Version>
+    <ReleaseDate>2023-02-10</ReleaseDate>
     <Licenses>
         <License name="MIT License" file="LICENSE" />
     </Licenses>
