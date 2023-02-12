@@ -89,8 +89,13 @@ protected: TEST_PUBLIC
     double getLineboxWidth() const noexcept;
 
     static constexpr double ZOOM_DEFAULT = 1.2;
+    #ifdef linux
+    //EVENTUALLY: QPainter::drawText suffers terrible performance at high zoom on linux
+    static constexpr double ZOOM_MAX = 2.0*ZOOM_DEFAULT; static_assert(ZOOM_DEFAULT <= ZOOM_MAX);
+    #else
     static constexpr double ZOOM_MAX = 2.5*ZOOM_DEFAULT; static_assert(ZOOM_DEFAULT <= ZOOM_MAX);
-    static constexpr double ZOOM_MIN = 0.375/2*ZOOM_DEFAULT; static_assert(ZOOM_DEFAULT >= ZOOM_MIN);
+    #endif
+    static constexpr double ZOOM_MIN = 0.375/ZOOM_DEFAULT; static_assert(ZOOM_DEFAULT >= ZOOM_MIN);
     static constexpr double ZOOM_DELTA = 1.1; static_assert(ZOOM_DELTA > 1);
     static constexpr size_t CURSOR_BLINK_INTERVAL = 600;
     static constexpr bool ALLOW_SELECTION_DRAG = true;
