@@ -36,6 +36,7 @@ private:
     void resolveNamespace(ParseNode pn) noexcept;
     void resolveRangedFor(ParseNode pn) noexcept;
     void resolveReassignment(ParseNode pn) noexcept;
+    void resolveSwitch(ParseNode pn) noexcept;
 
     //Expressions
     void resolveBig(ParseNode pn) noexcept;

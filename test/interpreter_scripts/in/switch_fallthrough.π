@@ -1,0 +1,14 @@
+alg mySwitch(x){
+    switch(x){
+        case 0:
+        case 3: print("Hello")
+        case 1:
+        case 4: print(" world")
+        default:
+        case 5: print("!")
+    }
+}
+
+mySwitch(0)
+mySwitch(1)
+mySwitch(2)

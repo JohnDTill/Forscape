@@ -89,6 +89,7 @@ ParseNode Parser::statement() alloc_except {
         case BREAK: return loops ? terminalAndAdvance(OP_BREAK) : error(BAD_BREAK);
         case CLASS: return classStatement();
         case CONTINUE: return loops ? terminalAndAdvance(OP_CONTINUE) : error(BAD_CONTINUE);
+        case ENUM: return enumStatement();
         case FOR: return forStatement();
         case FROM: return fromStatement();
         case IF: return ifStatement();
@@ -97,6 +98,7 @@ ParseNode Parser::statement() alloc_except {
         case PLOT: return plotStatement();
         case PRINT: return printStatement();
         case RETURN: return returnStatement();
+        case SWITCH: return switchStatement();
         case UNKNOWN: return unknownsStatement();
         case WHILE: return whileStatement();
         default: return mathStatement();
@@ -192,6 +194,107 @@ ParseNode Parser::rangedFor(Typeset::Marker stmt_left, Typeset::Marker paren_lef
     Typeset::Selection c(stmt_left, stmt_right);
 
     return parse_tree.addNode<3>(OP_RANGED_FOR, c, {initialiser, collection, body});
+}
+
+ParseNode Parser::enumStatement() alloc_except {
+    Typeset::Marker start;
+    advance();
+    ParseNode id = isolatedIdentifier();
+    Typeset::Marker lmark = lMark();
+    if(!match(LEFTBRACKET)) return error(EXPECT_LBRACKET);
+
+    parse_tree.prepareNary();
+    parse_tree.addNaryChild(id);
+
+    while(match(NEWLINE));
+    while(!match(RIGHTBRACKET) && noErrors()){
+        parse_tree.addNaryChild(isolatedIdentifier());
+        match(COMMA); //EVENTUALLY: is this necessary?
+        while(match(NEWLINE));
+    }
+
+    Typeset::Marker end = rMarkPrev();
+
+    if(noErrors()){
+        registerGrouping(lmark, end);
+        return parse_tree.finishNary(OP_ENUM, Typeset::Selection(start, end));
+    }else{
+        parse_tree.cancelNary();
+        return error(EXPECT_CASE);
+    }
+
+    //EVENTUALLY:
+    // it's fairly trivial to support enums downstream as numbers,
+    // but you'll get better mileage to support them as enums
+    // enums also have a scoped access, e.g. COLOUR::RED
+}
+
+ParseNode Parser::switchStatement() alloc_except {
+    Typeset::Marker start;
+    advance();
+    Typeset::Marker cond_l = lMark();
+    if(!match(LEFTPAREN)) return error(EXPECT_LPAREN);
+    ParseNode switch_key = disjunction();
+    Typeset::Marker cond_r = rMark();
+    if(!match(RIGHTPAREN)) return error(EXPECT_RPAREN);
+    registerGrouping(cond_l, cond_r);
+    cond_l = lMark();
+    if(!match(LEFTBRACKET)) return error(EXPECT_LBRACKET);
+    parse_tree.prepareNary();
+    parse_tree.addNaryChild(switch_key);
+    while(!match(RIGHTBRACKET) && noErrors()){
+        switch (currentType()) {
+            case CASE:{
+                advance();
+                ParseNode case_key = disjunction();
+                consume(COLON);
+                match(NEWLINE);
+                if(peek(CASE) || peek(DEFAULT) || peek(RIGHTBRACKET)){
+                    ParseNode case_node = parse_tree.addNode<2>(OP_CASE, parse_tree.getSelection(case_key), {case_key, NONE});
+                    parse_tree.addNaryChild(case_node);
+                }else{
+                    ParseNode case_codepath = blockStatement();
+                    ParseNode case_node = parse_tree.addNode<2>(OP_CASE, {case_key, case_codepath});
+                    parse_tree.addNaryChild(case_node);
+                }
+                break;
+            }
+
+            case DEFAULT:{
+                ParseNode default_label = terminalAndAdvance(OP_DEFAULT);
+                consume(COLON);
+                match(NEWLINE);
+                if(peek(CASE) || peek(DEFAULT) || peek(RIGHTBRACKET)){
+                    ParseNode case_node = parse_tree.addNode<2>(OP_DEFAULT, parse_tree.getSelection(default_label), {default_label, NONE});
+                    parse_tree.addNaryChild(case_node);
+                }else{
+                    ParseNode default_codepath = blockStatement();
+                    ParseNode default_node = parse_tree.addNode<2>(OP_DEFAULT, {default_label, default_codepath});
+                    parse_tree.addNaryChild(default_node);
+                }
+                break;
+            }
+
+            case NEWLINE:
+            case COMMENT:
+                advance();
+                break;
+
+            default:
+                parse_tree.cancelNary();
+                return error(EXPECT_CASE);
+        }
+    }
+
+    cond_r = rMarkPrev();
+
+    if(noErrors()){
+        registerGrouping(cond_l, cond_r);
+        return parse_tree.finishNary(OP_SWITCH, Typeset::Selection(start, cond_r));
+    }else{
+        parse_tree.cancelNary();
+        return error(EXPECT_CASE);
+    }
 }
 
 ParseNode Parser::printStatement() alloc_except {

@@ -68,6 +68,7 @@ public:
     #ifndef FORSCAPE_TYPESET_HEADLESS
     static constexpr double EMPTY_PHRASE_WIDTH_RATIO = 0.6;
     Text* textLeftOf(double x) const noexcept;
+    Text* textRightOf(double x) const noexcept;
     Construct* constructAt(double x, double y) const noexcept;
     double height() const noexcept {return above_center + under_center;}
     double yBottom() const noexcept {return y + height();}

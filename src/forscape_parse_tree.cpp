@@ -433,6 +433,9 @@ void ParseTree::shift(ParseNode pn, size_t offset) {
     // (although it's haunting you during adhoc tree grafting)
     // Anywhere a ParseNode is implicitly in the tree, you'll have a bad time
     switch (getOp(pn)) {
+        case OP_SWITCH:
+            if(getFlag(pn) == NONE) break;
+            [[fallthrough]];
         case OP_SINGLE_CHAR_MULT_PROXY:
         case OP_IMPORT:
             setFlag(pn, getFlag(pn)+offset);

@@ -143,9 +143,9 @@ void Painter::drawText(double x, double y, std::string_view text){
 }
 
 void Painter::drawHighlightedGrouping(double x, double y, double w, std::string_view text){
-    x += x_offset;
-
     if(x >= xR || y >= yB || (y + CAPHEIGHT[depth]) <= yT || x + CHARACTER_WIDTHS[depth] < xL) return;
+
+    x += x_offset;
 
     painter.setPen(getColour(COLOUR_GROUPINGBACKGROUND));
     painter.setBrush(getColour(COLOUR_GROUPINGBACKGROUND));
@@ -160,11 +160,11 @@ void Painter::drawHighlightedGrouping(double x, double y, double w, std::string_
 }
 
 void Painter::drawSymbol(double x, double y, std::string_view text){
-    x += x_offset;
     if(x >= xR ||
        y >= yB ||
        (y += BIG_SYM_SCALE*CAPHEIGHT[depth]) <= yT ||
        x + BIG_SYM_SCALE*CHARACTER_WIDTHS[depth] < xL) return;
+    x += x_offset;
     QFont font = getFont(SEM_BIG_SYM, depth);
     font.setPointSizeF(font.pointSizeF()*BIG_SYM_SCALE);
     painter.setFont(font);

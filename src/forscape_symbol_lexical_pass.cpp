@@ -145,6 +145,7 @@ void SymbolLexicalPass::resolveStmt(ParseNode pn) alloc_except {
             if(closure_depth == 0) errors.push_back(Error(parse_tree.getSelection(pn), RETURN_OUTSIDE_FUNCTION));
             resolveDefault(pn);
             break;
+        case OP_SWITCH: resolveSwitch(pn); break;
         case OP_UNKNOWN_LIST: resolveUnknownDeclaration(pn); break;
         case OP_WHILE: resolveConditional1(SCOPE_NAME("-while-")  pn); break;
 
@@ -555,6 +556,18 @@ void SymbolLexicalPass::resolveRangedFor(ParseNode pn) alloc_except {
     resolveExpr(parse_tree.arg<1>(pn));
     resolveStmt(parse_tree.arg<2>(pn));
     decreaseLexicalDepth(parse_tree.getRight(pn));
+}
+
+void SymbolLexicalPass::resolveSwitch(ParseNode pn) noexcept {
+    resolveExpr(parse_tree.arg<0>(pn));
+    for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++){
+        ParseNode a = parse_tree.arg(pn, i);
+        increaseLexicalDepth(SCOPE_NAME("case " + parse_tree.str(a))  parse_tree.getLeft(parse_tree.arg<1>(pn)));
+        if(parse_tree.getOp(a) == OP_CASE) resolveExpr(parse_tree.lhs(a));
+        ParseNode stmt = parse_tree.rhs(a);
+        if(stmt != NONE) resolveStmt(stmt);
+        decreaseLexicalDepth(parse_tree.getRight(pn));
+    }
 }
 
 void SymbolLexicalPass::resolveBody(

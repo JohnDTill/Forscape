@@ -40,6 +40,10 @@ void SymbolTableLinker::resolveStmt(ParseNode pn) noexcept {
         case OP_RANGED_FOR: resolveRangedFor(pn); break;
         case OP_REASSIGN: resolveReassignment(pn); break;
         case OP_RETURN: resolveExpr(parse_tree.child(pn)); break;
+        case OP_SWITCH:
+        case OP_SWITCH_NUMERIC:
+        case OP_SWITCH_STRING:
+            resolveSwitch(pn); break;
         default: assert(false);
     }
 }
@@ -170,6 +174,25 @@ void SymbolTableLinker::resolveReassignment(ParseNode pn) noexcept {
     assert(parse_tree.getOp(pn) == OP_REASSIGN);
     resolveExpr(parse_tree.rhs(pn));
     resolveExpr(parse_tree.lhs(pn));
+}
+
+void SymbolTableLinker::resolveSwitch(ParseNode pn) noexcept {
+    resolveExpr(parse_tree.arg<0>(pn));
+    for(size_t i = parse_tree.getNumArgs(pn); i-->1;){
+        ParseNode case_node = parse_tree.arg(pn, i);
+        if(parse_tree.getOp(case_node) == OP_CASE) resolveExpr(parse_tree.lhs(case_node));
+        ParseNode stmt = parse_tree.rhs(case_node);
+        if(stmt != NONE){
+            increaseLexicalDepth();
+            resolveStmt(stmt);
+            decreaseLexicalDepth();
+        }
+    }
+
+    //EVENTUALLY: should remove a step here
+    //ParseNode default_node = parse_tree.getFlag(pn);
+    //if(default_node != NONE)
+    //    parse_tree.setFlag(pn, parse_tree.rhs(default_node));
 }
 
 void SymbolTableLinker::resolveBig(ParseNode pn) noexcept {

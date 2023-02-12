@@ -93,7 +93,12 @@ std::string Model::toSerial() const {
 std::string Model::run(){
     assert(errors.empty());
 
-    interpreter.run(parser.parse_tree, &symbol_builder.symbol_table, static_pass.instantiation_lookup);
+    interpreter.run(
+        parser.parse_tree,
+        &symbol_builder.symbol_table,
+        static_pass.instantiation_lookup,
+        static_pass.number_switch,
+        static_pass.string_switch);
 
     std::string str;
 
@@ -126,7 +131,12 @@ std::string Model::run(){
 
 void Model::runThread(){
     assert(errors.empty());
-    interpreter.runThread(parser.parse_tree, symbol_builder.symbol_table, static_pass.instantiation_lookup);
+    interpreter.runThread(
+        parser.parse_tree,
+        symbol_builder.symbol_table,
+        static_pass.instantiation_lookup,
+        static_pass.number_switch,
+        static_pass.string_switch);
 }
 
 void Model::stop(){
@@ -509,7 +519,7 @@ void Model::paintGroupings(Painter& painter, const Marker& loc) const{
     }else{
         painter.drawNarrowCursor(lastLine()->x + lastLine()->width, lastText()->y, 12);
     }
-#endif
+    #endif
 }
 
 void Model::paintNumberCommas(Painter& painter, double xL, double yT, double xR, double yB, const Selection& sel) const {
