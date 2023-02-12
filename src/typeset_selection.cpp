@@ -610,6 +610,16 @@ void Selection::paintSelectionPhrase(Painter& painter, double xLeft, double xRig
         }
     }
 
+    if(text_left == text_right){
+        if(text_left != tL){
+            text_left = text_left->prevTextAsserted();
+            index_left = text_left->numChars();
+        }else{
+            text_right = text_right->nextTextAsserted();
+            index_right = 0;
+        }
+    }
+
     double x = tL->xGlobal(iL);
     double w = tR->xGlobal(iR) - x;
     painter.drawSelection(x, y, w, h);

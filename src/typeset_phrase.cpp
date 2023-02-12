@@ -346,6 +346,8 @@ void Phrase::paintAfter(Painter& painter, Text* t_start, size_t index) const{
 }
 
 void Phrase::paintMid(Painter& painter, Text* tL, size_t iL, Text* tR, size_t iR) const{
+    assert(tL->getParent() == tR->getParent() && tL->id < tR->id);
+
     painter.setScriptLevel(script_level);
     tL->paintAfter(painter, iL);
     constructs[tL->id]->paint(painter);

@@ -1154,11 +1154,20 @@ void View::paintEvent(QPaintEvent* event){
     qpainter.begin(this);
     qpainter.setRenderHints(QPainter::Antialiasing|QPainter::TextAntialiasing);
 
+    #ifdef _MSC_VER
     QRect r = event->rect();
     double xL = xModel(r.x());
     double yT = yModel(r.y());
     double xR = xModel(r.x() + r.width());
     double yB = yModel(r.y() + r.height());
+    #else
+    //EVENTUALLY: why doesn't event->rect() work on linux?
+    double xL = xModel(0);
+    double yT = yModel(0);
+    double xR = xModel(width());
+    double yB = yModel(height());
+    #endif
+
 
     drawModel(xL, yT, xR, yB);
     drawLinebox(yT, yB);
