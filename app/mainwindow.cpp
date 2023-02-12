@@ -663,8 +663,16 @@ bool MainWindow::savePrompt(){
     QString file_name = QFileDialog::getSaveFileName(nullptr, tr("Save File"), prompt_name, tr(FORSCAPE_FILE_TYPE_DESC));
     #endif
 
-    if(!file_name.isEmpty()) return saveAs(file_name);
-    return false;
+    if(file_name.isEmpty()) return false;
+
+    bool anchor_file = active_file_path == project_path;
+    bool success = saveAs(file_name);
+    if(success && anchor_file){
+        project_path = file_name;
+        updateRecentProjectsFromCurrent();
+        settings.setValue(PROJECT_ROOT_FILE, project_path);
+    }
+    return success;
 }
 
 bool MainWindow::saveAs(QString path){

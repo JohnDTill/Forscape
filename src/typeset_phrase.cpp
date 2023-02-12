@@ -253,6 +253,12 @@ Text* Phrase::textLeftOf(double x) const noexcept{
     return search != texts.rend() ? *search : texts.front();
 }
 
+Text* Phrase::textRightOf(double x) const noexcept{
+    Text* t = textLeftOf(x);
+    if(t->xRight() > x || t == back()) return t;
+    else return texts[t->id+1];
+}
+
 Construct* Phrase::constructAt(double x, double y) const noexcept{
     auto search = std::lower_bound(
                 constructs.rbegin(),
@@ -364,16 +370,15 @@ void Phrase::paintMid(Painter& painter, Text* tL, size_t iL, Text* tR, size_t iR
 
 void Phrase::paint(Painter& painter, double xL, double xR) const {
     Text* tL = textLeftOf(xL);
-    Text* tR = textLeftOf(xR);
-
-    Typeset::Marker r_mark(tR, tR->charIndexLeft(xR));
-    if(!r_mark.atTextEnd()) r_mark.incrementGrapheme();
+    Text* tR = textRightOf(xR);
 
     if(tL == tR){
+        Typeset::Marker r_mark(tR, tR->charIndexLeft(xR));
+        if(!r_mark.atTextEnd()) r_mark.incrementGrapheme();
         painter.setScriptLevel(script_level);
         tL->paintMid(painter, tL->charIndexLeft(xL), r_mark.index);
     }else{
-        paintMid(painter, tL, tL->charIndexLeft(xL), tR, r_mark.index);
+        paintMid(painter, tL, tL->charIndexLeft(xL), tR, 0);
     }
 }
 

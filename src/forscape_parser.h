@@ -35,6 +35,8 @@ private:
     ParseNode whileStatement() alloc_except;
     ParseNode forStatement() alloc_except;
     ParseNode rangedFor(Typeset::Marker stmt_left, Typeset::Marker paren_left, ParseNode initialiser) alloc_except;
+    ParseNode enumStatement() alloc_except;
+    ParseNode switchStatement() alloc_except;
     ParseNode printStatement() alloc_except;
     ParseNode assertStatement() alloc_except;
     ParseNode blockStatement() alloc_except;

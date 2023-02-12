@@ -19,7 +19,12 @@ namespace Code {
 Interpreter::Interpreter() noexcept
     : error_node(NONE){}
 
-void Interpreter::run(const ParseTree& parse_tree, SymbolTable* symbol_table, const InstantiationLookup& inst_lookup){
+void Interpreter::run(
+        const ParseTree& parse_tree,
+        SymbolTable* symbol_table,
+        const InstantiationLookup& inst_lookup,
+        const NumericSwitchMap& number_switch,
+        const StringSwitchMap& string_switch){
     assert(parse_tree.getOp(parse_tree.root) == OP_BLOCK);
     reset();
 
@@ -29,6 +34,8 @@ void Interpreter::run(const ParseTree& parse_tree, SymbolTable* symbol_table, co
 
     this->parse_tree = parse_tree;
     this->inst_lookup = inst_lookup;
+    this->number_switch = number_switch;
+    this->string_switch = string_switch;
     SymbolTableLinker linker(*symbol_table, this->parse_tree);
     linker.link();
     this->parse_tree.patchClones();
@@ -37,9 +44,14 @@ void Interpreter::run(const ParseTree& parse_tree, SymbolTable* symbol_table, co
     status = FINISHED;
 }
 
-void Interpreter::runThread(const ParseTree& parse_tree, SymbolTable& symbol_table, const InstantiationLookup& inst_lookup){
+void Interpreter::runThread(
+        const ParseTree& parse_tree,
+        SymbolTable& symbol_table,
+        const InstantiationLookup& inst_lookup,
+        const NumericSwitchMap& number_switch,
+        const StringSwitchMap& string_switch){
     status = NORMAL;
-    std::thread(&Interpreter::run, this, parse_tree, &symbol_table, inst_lookup).detach();
+    std::thread(&Interpreter::run, this, parse_tree, &symbol_table, inst_lookup, number_switch, string_switch).detach();
 
     //EVENTUALLY: linking in a threaded call with the original symbol_table means a crash will happen
     //            if the symbol_table is invalidated before the linker finishes running.
@@ -102,6 +114,8 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_RANGED_FOR: rangedForStmt(pn); break;
         case OP_REASSIGN: reassign(parse_tree.lhs(pn), parse_tree.rhs(pn)); break;
         case OP_RETURN: returnStmt(pn); break;
+        case OP_SWITCH_NUMERIC: switchStmtNumeric(pn); break;
+        case OP_SWITCH_STRING: switchStmtString(pn); break;
         case OP_WHILE: whileStmt(pn); break;
         default: error(UNRECOGNIZED_STMT, pn);
     }
@@ -207,6 +221,28 @@ void Interpreter::ifElseStmt(ParseNode pn){
 void Interpreter::blockStmt(ParseNode pn){
     for(size_t i = 0; i < parse_tree.getNumArgs(pn) && status == NORMAL; i++)
         interpretStmt(parse_tree.arg(pn, i));
+}
+
+void Interpreter::switchStmtNumeric(ParseNode pn) {
+    double switch_key = readDoubleAsserted(parse_tree.arg<0>(pn));
+    auto lookup = number_switch.find({pn, switch_key});
+    //EVENTUALLY: should make default path rhs earlier
+    ParseNode codepath = lookup == number_switch.end()
+            ? (parse_tree.getFlag(pn) != NONE ? parse_tree.rhs(parse_tree.getFlag(pn)) : NONE)
+            : lookup->second;
+    if(codepath != NONE) interpretStmt(codepath);
+}
+
+void Interpreter::switchStmtString(ParseNode pn) {
+    Value key_expr = interpretExpr(parse_tree.arg<0>(pn));
+    assert(key_expr.index() == string_index);
+    std::string switch_key = std::get<std::string>(key_expr);
+    auto lookup = string_switch.find({pn, switch_key});
+    //EVENTUALLY: should make default path rhs earlier
+    ParseNode codepath = lookup == string_switch.end()
+            ? (parse_tree.getFlag(pn) != NONE ? parse_tree.rhs(parse_tree.getFlag(pn)) : NONE)
+            : lookup->second;
+    if(codepath != NONE) interpretStmt(codepath);
 }
 
 void Interpreter::algorithmStmt(ParseNode pn, bool is_prototyped){

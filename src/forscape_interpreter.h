@@ -48,8 +48,18 @@ public:
     ParseNode error_node;
 
     Interpreter() noexcept;
-    void run(const ParseTree& parse_tree, SymbolTable* symbol_table, const InstantiationLookup& inst_lookup);
-    void runThread(const ParseTree& parse_tree, SymbolTable& symbol_table, const InstantiationLookup& inst_lookup);
+    void run(
+        const ParseTree& parse_tree,
+        SymbolTable* symbol_table,
+        const InstantiationLookup& inst_lookup,
+        const NumericSwitchMap& number_switch,
+        const StringSwitchMap& string_switch);
+    void runThread(
+        const ParseTree& parse_tree,
+        SymbolTable& symbol_table,
+        const InstantiationLookup& inst_lookup,
+        const NumericSwitchMap& number_switch,
+        const StringSwitchMap& string_switch);
     void execute();
     void stop();
 
@@ -57,6 +67,8 @@ private:
     std::vector<size_t> frames;
     ParseTree parse_tree;
     InstantiationLookup inst_lookup;
+    NumericSwitchMap number_switch;
+    StringSwitchMap string_switch;
     Closure* active_closure = nullptr;
     Stack stack;
 
@@ -73,6 +85,8 @@ private:
     void ifStmt(ParseNode pn);
     void ifElseStmt(ParseNode pn);
     void blockStmt(ParseNode pn);
+    void switchStmtNumeric(ParseNode pn);
+    void switchStmtString(ParseNode pn);
     void algorithmStmt(ParseNode pn, bool is_prototyped);
     void initClosure(Closure& closure, ParseNode val_cap, ParseNode ref_cap);
     void breakLocalClosureLinks(Closure& closure, ParseNode val_cap, ParseNode ref_cap);

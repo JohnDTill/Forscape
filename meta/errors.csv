@@ -57,6 +57,7 @@ INTERRUPT,,Execution stopped by user
 EXPECT_LPAREN,,Expected ‘(‘
 EXPECT_RPAREN,,Expected ‘)’
 EXPECT_RBRACE,,Expected ‘]’
+EXPECT_LBRACKET,,Expected ‘}’
 EXPECT_DOUBLEBAR,,Expected ‘‖’
 EXPECT_RANGLE,,Expected ‘⟩’
 RECURSIVE_TYPE,,Type cannot be deduced due to recursion
@@ -87,3 +88,7 @@ IMPORT_FIELD_NOT_FOUND,y,Variable does not exist in global scope of file
 ERROR_IN_LOADED_FILE,,Imported file contains an error
 NOT_A_SCOPE,,Scope does not exist
 EXPECT_GROUPING_CLOSE,,Expected grouping close
+EXPECT_CASE,,Expected switch case
+UNSUPPORTED_SWITCH_TYPE,,Switch is not supported on this type
+VALUE_NOT_DETERMINED,,Value could not be determined at compile time
+REDUNDANT_CASE,,Case value is already used

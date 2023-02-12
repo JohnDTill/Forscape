@@ -25,6 +25,10 @@ struct PairHash{
 };
 typedef FORSCAPE_UNORDERED_MAP<std::pair<ParseNode, ParseNode>, ParseNode, PairHash> InstantiationLookup;
 
+//EVENTUALLY: should generalise these to any supported Value type
+typedef FORSCAPE_UNORDERED_MAP<std::pair<ParseNode, double>, ParseNode> NumericSwitchMap;
+typedef FORSCAPE_UNORDERED_MAP<std::pair<ParseNode, std::string>, ParseNode> StringSwitchMap;
+
 struct Error;
 class ParseTree;
 class SymbolTable;
@@ -35,6 +39,8 @@ class StaticPass : private std::vector<size_t>{
 
 public:
     InstantiationLookup instantiation_lookup;
+    NumericSwitchMap number_switch;
+    StringSwitchMap string_switch;
     typedef std::vector<size_t> DeclareSignature;
     typedef std::vector<size_t> CallSignature;
     static constexpr Type UNINITIALISED = std::numeric_limits<size_t>::max();
@@ -143,6 +149,9 @@ private:
         ParseNode getFuncFromCallSig(const CallSignature& sig) const noexcept;
         ParseNode getFuncFromDeclSig(const DeclareSignature& sig) const noexcept;
         ParseNode resolveAlg(ParseNode pn);
+        ParseNode resolveSwitch(ParseNode pn);
+        ParseNode resolveSwitchNumeric(ParseNode pn, ParseNode switch_key);
+        ParseNode resolveSwitchString(ParseNode pn, ParseNode switch_key);
         ParseNode resolveDeriv(ParseNode pn);
         ParseNode resolveIdentity(ParseNode pn);
         ParseNode resolveInverse(ParseNode pn);

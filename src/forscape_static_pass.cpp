@@ -129,6 +129,8 @@ void StaticPass::reset() noexcept{
     called_func_map.clear();
     instantiation_lookup.clear();
     all_calls.clear();
+    number_switch.clear();
+    string_switch.clear();
     assert(return_types.empty());
     assert(retry_at_recursion == false);
     assert(first_attempt == true);
@@ -489,6 +491,8 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
 
             return pn;
         }
+
+        case OP_SWITCH: return resolveSwitch(pn);
 
         default:
             assert(false);
@@ -1356,6 +1360,101 @@ ParseNode StaticPass::resolveAlg(ParseNode pn){
 
     parse_tree.getSymbol(parse_tree.algName(pn))->type = t;
     parse_tree.setType(pn, t);
+
+    return pn;
+}
+
+ParseNode StaticPass::resolveSwitch(ParseNode pn) {
+    ParseNode switch_key = resolveExprTop(parse_tree.arg<0>(pn));
+    parse_tree.setArg<0>(pn, switch_key);
+
+    switch (parse_tree.getType(switch_key)) {
+        case NUMERIC: return resolveSwitchNumeric(pn, switch_key);
+        case STRING: return resolveSwitchString(pn, switch_key); //EVENTUALLY: generalise to templated function
+        default: return error(pn, switch_key, UNSUPPORTED_SWITCH_TYPE);
+    }
+}
+
+ParseNode StaticPass::resolveSwitchNumeric(ParseNode pn, ParseNode switch_key) {
+    parse_tree.setFlag(pn, NONE);
+
+    //Resolve codepaths, supporting fallthrough
+    ParseNode last_codepath = NONE;
+    for(size_t i = parse_tree.getNumArgs(pn); i-->1;){
+        ParseNode case_node = parse_tree.arg(pn, i);
+        ParseNode case_codepath = parse_tree.rhs(case_node);
+        if(case_codepath != NONE)
+            last_codepath = resolveStmt(case_codepath);
+        parse_tree.setArg<1>(case_node, last_codepath);
+    }
+
+    //Resolve keys
+    for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++){
+        ParseNode case_node = parse_tree.arg(pn, i);
+
+        ParseNode codepath = parse_tree.rhs(case_node);
+
+        if(parse_tree.getOp(case_node) == OP_CASE){
+            ParseNode case_key = resolveExpr(parse_tree.lhs(case_node));
+            auto type = parse_tree.getType(case_key);
+            if(type != NUMERIC) return error(pn, case_key, TYPE_ERROR);
+            double val = parse_tree.getDouble(case_key);
+            auto result = number_switch.insert({{pn, val}, codepath});
+            if(!result.second) return error(pn, case_key, REDUNDANT_CASE);
+        }else{
+            assert(parse_tree.getOp(case_node) == OP_DEFAULT);
+            if(parse_tree.getFlag(pn) != NONE){
+                return error(pn, parse_tree.lhs(case_node), REDUNDANT_CASE);
+            }
+            parse_tree.setFlag(pn, case_node);
+        }
+    }
+
+    parse_tree.setOp(pn, OP_SWITCH_NUMERIC);
+
+    return pn;
+}
+
+ParseNode StaticPass::resolveSwitchString(ParseNode pn, ParseNode switch_key){
+    parse_tree.setFlag(pn, NONE);
+
+    //Resolve codepaths, supporting fallthrough
+    ParseNode last_codepath = NONE;
+    for(size_t i = parse_tree.getNumArgs(pn); i-->1;){
+        ParseNode case_node = parse_tree.arg(pn, i);
+        ParseNode case_codepath = parse_tree.rhs(case_node);
+        if(case_codepath != NONE)
+            last_codepath = resolveStmt(case_codepath);
+        parse_tree.setArg<1>(case_node, last_codepath);
+    }
+
+    //Resolve keys
+    for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++){
+        ParseNode case_node = parse_tree.arg(pn, i);
+
+        ParseNode codepath = parse_tree.rhs(case_node);
+
+        if(parse_tree.getOp(case_node) == OP_CASE){
+            ParseNode case_key = resolveExpr(parse_tree.lhs(case_node));
+            auto type = parse_tree.getType(case_key);
+            if(type != STRING) return error(pn, case_key, TYPE_ERROR);
+            //EVENTUALLY: this should use actual string values
+            Typeset::Selection sel = parse_tree.getSelection(case_key);
+            sel.left.index++;
+            sel.right.index--;
+            std::string val = sel.str();
+            auto result = string_switch.insert({{pn, val}, codepath});
+            if(!result.second) return error(pn, case_key, REDUNDANT_CASE);
+        }else{
+            assert(parse_tree.getOp(case_node) == OP_DEFAULT);
+            if(parse_tree.getFlag(pn) != NONE){
+                return error(pn, parse_tree.lhs(case_node), REDUNDANT_CASE);
+            }
+            parse_tree.setFlag(pn, case_node);
+        }
+    }
+
+    parse_tree.setOp(pn, OP_SWITCH_STRING);
 
     return pn;
 }
