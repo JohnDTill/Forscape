@@ -372,13 +372,14 @@ void Phrase::paint(Painter& painter, double xL, double xR) const {
     Text* tL = textLeftOf(xL);
     Text* tR = textRightOf(xR);
 
+    Typeset::Marker r_mark(tR, tR->charIndexLeft(xR));
+    if(!r_mark.atTextEnd()) r_mark.incrementGrapheme();
+
     if(tL == tR){
-        Typeset::Marker r_mark(tR, tR->charIndexLeft(xR));
-        if(!r_mark.atTextEnd()) r_mark.incrementGrapheme();
         painter.setScriptLevel(script_level);
         tL->paintMid(painter, tL->charIndexLeft(xL), r_mark.index);
     }else{
-        paintMid(painter, tL, tL->charIndexLeft(xL), tR, 0);
+        paintMid(painter, tL, tL->charIndexLeft(xL), tR, r_mark.index);
     }
 }
 
