@@ -13,7 +13,7 @@ private:
     std::vector<size_t> old_flags;
     size_t stack_size = 0;
     size_t closure_depth = 0;
-    SymbolTable& symbol_table;
+    SymbolTable& symbol_table; //DO THIS: there isn't a global symbol table for the whole program!
     ParseTree& parse_tree;
 
 public:

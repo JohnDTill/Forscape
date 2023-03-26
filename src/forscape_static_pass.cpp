@@ -13,10 +13,9 @@ namespace Code {
 StaticPass::StaticPass(
         Typeset::Model* model,
         ParseTree& parse_tree,
-        SymbolTable& symbol_table,
         std::vector<Code::Error>& errors,
         std::vector<Error>& warnings) noexcept
-    : parse_tree(parse_tree), symbol_table(symbol_table), errors(errors), warnings(warnings),
+    : parse_tree(parse_tree), errors(errors), warnings(warnings),
       base_model(model), active_model(model) {}
 
 void StaticPass::resolve(){
@@ -48,11 +47,14 @@ void StaticPass::resolve(){
     //EVENTUALLY: replace this with something less janky
     parse_tree.patchClonedTypes();
 
-    for(Symbol& sym : symbol_table.symbols)
-        if(!sym.is_used)
-            warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+    //DO THIS: fix for multiple symbol tables
+    //for(Symbol& sym : symbolTable.symbols)
+    //    if(!sym.is_used)
+    //        warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
 
-    for(const SymbolUsage& usage : symbol_table.symbol_usages){
+    //DO THIS: fix for multiple symbol tables
+    /*
+    for(const SymbolUsage& usage : symbolTable.symbol_usages){
         const Symbol& sym = *usage.symbol();
 
         SemanticType fmt = SEM_ID;
@@ -66,6 +68,7 @@ void StaticPass::resolve(){
 
         usage.sel.format(fmt);
     }
+    */
 
     #ifndef NDEBUG
     if(!errors.empty()) return;
@@ -106,7 +109,9 @@ void StaticPass::resolve(){
     #endif
     #endif
 
-    for(const SymbolUsage& usage : symbol_table.symbol_usages){
+    //DO THIS: fix for multiple symbol tables
+    /*
+    for(const SymbolUsage& usage : symbolTable.symbol_usages){
         const Symbol& sym = *usage.symbol();
 
         if(sym.type == StaticPass::NUMERIC && (sym.rows > 1 || sym.cols > 1)){
@@ -119,6 +124,7 @@ void StaticPass::resolve(){
             }
         }
     }
+    */
 }
 
 void StaticPass::reset() noexcept{
@@ -136,8 +142,9 @@ void StaticPass::reset() noexcept{
     assert(first_attempt == true);
     assert(recursion_fallback == nullptr);
 
-    for(Symbol& sym : symbol_table.symbols)
-        sym.type = UNINITIALISED;
+    //DO THIS: fix for multiple symbol tables
+    //for(Symbol& sym : symbolTable.symbols)
+    //    sym.type = UNINITIALISED;
 
     Program::instance()->reset();
 
@@ -1546,8 +1553,8 @@ ParseNode StaticPass::resolveLambda(ParseNode pn){
     for(size_t i = 0; i < cap_list_size; i++){
         ParseNode cap = parse_tree.arg(cap_list, i);
         size_t inner_id = parse_tree.getFlag(cap);
-        assert(inner_id < symbol_table.symbols.size());
-        const Symbol& inner = symbol_table.symbols[inner_id];
+        assert(inner_id < symbolTable().symbols.size());
+        const Symbol& inner = symbolTable().symbols[inner_id];
         const Symbol& outer = *inner.shadowedVar();
         Type t = outer.type;
         sig.push_back(t);
@@ -1977,13 +1984,13 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
         parse_tree.setCols(field, sym.cols);
         return field;
     }else if(sym.type == NAMESPACE){
-        auto lookup = symbol_table.scoped_vars.find(SymbolTable::ScopedVarKey(sym_id, parse_tree.getSelection(field)));
-        if(lookup != symbol_table.scoped_vars.end()){
+        auto lookup = symbolTable().scoped_vars.find(SymbolTable::ScopedVarKey(sym_id, parse_tree.getSelection(field)));
+        if(lookup != symbolTable().scoped_vars.end()){
             parse_tree.setOp(field, OP_IDENTIFIER);
             Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
             SymbolUsage& usage = *reinterpret_cast<SymbolUsage*>(parse_tree.getFlag(field));
 
-            symbol_table.resolveScopeReference(usage, sym);
+            symbolTable().resolveScopeReference(usage, sym);
 
             if(write){
                 if(sym.is_const){
@@ -2096,8 +2103,12 @@ ParseNode StaticPass::enforceSemiPositiveInt(ParseNode pn){
     return pn;
 }
 
-bool StaticPass::dimsDisagree(size_t a, size_t b) noexcept{
+bool StaticPass::dimsDisagree(size_t a, size_t b) noexcept {
     return a != UNKNOWN_SIZE && b != UNKNOWN_SIZE && a != b;
+}
+
+SymbolTable& StaticPass::symbolTable() const noexcept {
+    return active_model->symbol_builder.symbol_table;
 }
 
 constexpr bool StaticPass::isAbstractFunctionGroup(size_t type) noexcept {
@@ -2158,10 +2169,10 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
     size_t type_index = 0;
     if(val_list != NONE){
         size_t scope_index = parse_tree.getFlag(val_list);
-        const ScopeSegment& scope_segment = symbol_table.scope_segments[scope_index];
+        const ScopeSegment& scope_segment = symbolTable().scope_segments[scope_index];
         for(size_t i = 0; i < N_vals; i++){
             size_t sym_id = scope_segment.first_sym_index + i;
-            Symbol& sym = symbol_table.symbols[sym_id];
+            Symbol& sym = symbolTable().symbols[sym_id];
             old_val_cap.push_back(sym);
             sym.type = dec[1+type_index++];
             if(sym.type == NUMERIC){
