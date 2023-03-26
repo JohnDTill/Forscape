@@ -176,7 +176,8 @@ private:
         static bool dimsDisagree(size_t a, size_t b) noexcept;
 
         ParseTree& parse_tree;
-        SymbolTable& symbol_table;
+        SymbolTable& symbol_table; //DO THIS: how can there be one symbol table when it is defined per model?
+                                   // spoiler: it doesn't work. You merely haven't tested situations where it breaks.
         std::vector<Error>& errors;
         std::vector<Error>& warnings;
         Typeset::Model* base_model;
