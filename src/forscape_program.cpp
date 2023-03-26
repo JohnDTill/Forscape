@@ -1,5 +1,6 @@
 #include "forscape_program.h"
 
+#include "forscape_message.h"
 #include "forscape_serial.h"
 #include "typeset_model.h"
 #include <fstream>
@@ -193,6 +194,59 @@ Program::ptr_or_code Program::openFromRelativePathAutoExtension(std::filesystem:
     }
 
     return FILE_NOT_FOUND;
+}
+
+std::string Program::run(){
+    assert(errors.empty());
+
+    interpreter.run(
+        program_entry_point->parser.parse_tree,
+        &program_entry_point->symbol_builder.symbol_table,
+        program_entry_point->static_pass.instantiation_lookup,
+        program_entry_point->static_pass.number_switch,
+        program_entry_point->static_pass.string_switch);
+
+    std::string str;
+
+    InterpreterOutput* msg;
+    while(interpreter.message_queue.try_dequeue(msg))
+        switch(msg->getType()){
+            case Forscape::InterpreterOutput::Print:
+                str += static_cast<PrintMessage*>(msg)->msg;
+                delete msg;
+                break;
+            case Forscape::InterpreterOutput::CreatePlot:
+                //EVENTUALLY: maybe do something here?
+                delete msg;
+                break;
+            case Forscape::InterpreterOutput::AddDiscreteSeries:{
+                delete msg;
+                break;
+            }
+            default: assert(false);
+        }
+
+    if(interpreter.error_code != Code::ErrorCode::NO_ERROR_FOUND){
+        Code::Error error(program_entry_point->parser.parse_tree.getSelection(interpreter.error_node), interpreter.error_code);
+        str += "\nLine " + error.line() + " - " + error.message();
+        errors.push_back(error);
+    }
+
+    return str;
+}
+
+void Program::runThread(){
+    assert(errors.empty());
+    interpreter.runThread(
+        program_entry_point->parser.parse_tree,
+        program_entry_point->symbol_builder.symbol_table,
+        program_entry_point->static_pass.instantiation_lookup,
+        program_entry_point->static_pass.number_switch,
+        program_entry_point->static_pass.string_switch);
+}
+
+void Program::stop(){
+    interpreter.stop();
 }
 
 }

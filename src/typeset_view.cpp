@@ -1464,16 +1464,16 @@ void Editor::runThread(){
     }else{
         is_running = true;
         allow_write = false;
-        Program::instance()->program_entry_point->runThread();
+        Program::instance()->runThread();
     }
 }
 
-bool Editor::isRunning() const noexcept{
+bool Editor::isRunning() const noexcept {
     return is_running;
 }
 
-void Editor::reenable() noexcept{
-    assert(Program::instance()->program_entry_point->interpreter.status == Code::Interpreter::FINISHED);
+void Editor::reenable() noexcept {
+    assert(Program::instance()->interpreter.status == Code::Interpreter::FINISHED);
     is_running = false;
     allow_write = true;
 }

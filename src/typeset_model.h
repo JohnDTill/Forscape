@@ -11,7 +11,6 @@
 #include "forscape_parser.h"
 #include "forscape_symbol_lexical_pass.h"
 #include "forscape_static_pass.h"
-#include "forscape_interpreter.h"
 
 #ifdef QT_VERSION
 class QTreeWidgetItem;
@@ -40,7 +39,6 @@ public:
     Code::Parser parser = Code::Parser(scanner, this);
     Code::SymbolLexicalPass symbol_builder = Code::SymbolLexicalPass(parser.parse_tree, this);
     Code::StaticPass static_pass = Code::StaticPass(this, parser.parse_tree, symbol_builder.symbol_table, errors, warnings);
-    Code::Interpreter interpreter;
     std::vector<Code::Error> errors;
     std::vector<Code::Error> warnings;
     std::filesystem::path path;
@@ -58,9 +56,6 @@ public:
     void clear() noexcept;
     static Model* fromSerial(const std::string& src, bool is_output = false);
     std::string toSerial() const;
-    std::string run();
-    void runThread();
-    void stop();
     void updateWidth() noexcept;
     double getWidth() noexcept;
     void updateHeight() noexcept;

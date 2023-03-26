@@ -123,7 +123,7 @@ void runBenchmark(){
 
     startClock();
     for(size_t i = 0; i < ITER_LOOP; i++)
-        m->run();
+        Forscape::Program::instance()->run();
     report("Print " N_PRINTS, ITER_LOOP);
 
     #ifndef FORSCAPE_TYPESET_HEADLESS

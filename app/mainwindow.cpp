@@ -408,11 +408,11 @@ void MainWindow::run(){
 
 void MainWindow::stop(){
     if(!editor->isRunning()) return;
-    editor->getModel()->stop();
+    Program::instance()->stop();
 }
 
 void MainWindow::pollInterpreterThread(){
-    auto& interpreter = Program::instance()->program_entry_point->interpreter;
+    auto& interpreter = Program::instance()->interpreter;
 
     if(interpreter.status == Forscape::Code::Interpreter::FINISHED){
         checkOutput();
@@ -604,7 +604,7 @@ void MainWindow::on_actionExit_triggered(){
 }
 
 void MainWindow::checkOutput(){
-    auto& interpreter = Program::instance()->program_entry_point->interpreter;
+    auto& interpreter = Program::instance()->interpreter;
     auto& message_queue = interpreter.message_queue;
 
     static std::string print_buffer;

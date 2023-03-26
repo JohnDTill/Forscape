@@ -31,8 +31,8 @@ inline bool testErrorAndNoCrash(const std::string& name){
     input->postmutate();
     bool had_error = !input->errors.empty();
     if(!had_error){
-        input->run();
-        had_error = !input->errors.empty();
+        Forscape::Program::instance()->run();
+        had_error = !Forscape::Program::instance()->errors.empty();
     }
 
     #ifndef NDEBUG
@@ -43,6 +43,7 @@ inline bool testErrorAndNoCrash(const std::string& name){
     #endif
 
     Program::instance()->freeFileMemory();
+    Program::instance()->errors.clear();
 
     assert(had_error);
 

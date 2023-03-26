@@ -6,6 +6,8 @@
 #include <filesystem>
 #include <vector>
 
+#include "forscape_interpreter.h"
+
 namespace Forscape {
 
 class Program {
@@ -27,6 +29,11 @@ public:
     void runStaticPass();
     void getFileSuggestions(std::vector<std::string>& suggestions, Typeset::Model* active) const;
     void getFileSuggestions(std::vector<std::string>& suggestions, std::string_view input, Typeset::Model* active) const;
+    std::string run();
+    void runThread();
+    void stop();
+
+    Code::Interpreter interpreter;
 
     FORSCAPE_UNORDERED_MAP<std::filesystem::path, Typeset::Model*> source_files; //May contain multiple entries per model
     std::vector<Code::Error> errors;
