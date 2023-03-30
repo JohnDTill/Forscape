@@ -33,6 +33,8 @@ public:
     void runThread();
     void stop();
 
+    Code::ParseTree parse_tree;
+    Code::StaticPass static_pass = Code::StaticPass(parse_tree, errors, warnings);
     Code::Interpreter interpreter;
 
     FORSCAPE_UNORDERED_MAP<std::filesystem::path, Typeset::Model*> source_files; //May contain multiple entries per model

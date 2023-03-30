@@ -456,7 +456,7 @@ void MainWindow::parseTree(){
 void MainWindow::symbolTable(){
     #ifndef NDEBUG
     Typeset::Model* m = editor->getModel();
-    SymbolTreeView* view = new SymbolTreeView(m->symbol_builder.symbol_table, m->static_pass);
+    SymbolTreeView* view = new SymbolTreeView(m->symbol_builder.symbol_table, Forscape::Program::instance()->static_pass);
     view->show();
     #endif
 }

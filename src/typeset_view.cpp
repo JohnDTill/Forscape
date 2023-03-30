@@ -51,7 +51,7 @@ static Code::ParseTree& parseTree() noexcept {
 }
 
 static Code::StaticPass& staticPass() noexcept {
-    return Program::instance()->program_entry_point->static_pass;
+    return Program::instance()->static_pass;
 }
 
 class View::VerticalScrollBar : public QScrollBar {

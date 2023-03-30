@@ -41,6 +41,7 @@ void Error::writeErrors(const std::vector<Error>& errors, Typeset::Model* m, Typ
 
 Typeset::Model* Error::writeErrors(const std::vector<Error>& errors, Typeset::View* caller){
     Typeset::Model* m = new Typeset::Model;
+    m->is_output = true; //DO THIS - janky
     writeErrors(errors, m, caller);
 
     return m;

@@ -127,11 +127,10 @@ private:
 
     public:
         StaticPass(
-            Typeset::Model* model,
             ParseTree& parse_tree,
             std::vector<Code::Error>& errors,
             std::vector<Code::Error>& warnings) noexcept;
-        void resolve();
+        void resolve(Typeset::Model* entry_point);
 
     private:
         ParseNode resolveStmt(ParseNode pn) noexcept;
@@ -175,11 +174,12 @@ private:
         static bool dimsDisagree(size_t a, size_t b) noexcept;
         SymbolTable& symbolTable() const noexcept;
 
-        ParseTree& parse_tree;
+        //ParseTree& parse_tree; //DO THIS: why do scope accesses crash when moving away
+                                 //from using the program entry point parse tree?
+        ParseTree* parse_tree;
         std::vector<Error>& errors;
         std::vector<Error>& warnings;
-        Typeset::Model* base_model;
-        Typeset::Model* active_model;
+        Typeset::Model* active_model  DEBUG_INIT_NULLPTR;
 
         struct CachedInfo{
             Type type;

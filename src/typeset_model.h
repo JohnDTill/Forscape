@@ -10,7 +10,6 @@
 #include "forscape_scanner.h"
 #include "forscape_parser.h"
 #include "forscape_symbol_lexical_pass.h"
-#include "forscape_static_pass.h"
 
 #ifdef QT_VERSION
 class QTreeWidgetItem;
@@ -38,8 +37,6 @@ public:
     Code::Scanner scanner = Code::Scanner(this);
     Code::Parser parser = Code::Parser(scanner, this);
     Code::SymbolLexicalPass symbol_builder = Code::SymbolLexicalPass(parser.parse_tree, this);
-    Code::StaticPass static_pass = Code::StaticPass(this, parser.parse_tree, errors, warnings);
-    // DO THIS: move the static_pass to a program level
     std::vector<Code::Error> errors;
     std::vector<Code::Error> warnings;
     std::filesystem::path path;

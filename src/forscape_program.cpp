@@ -122,11 +122,15 @@ void Program::reset() noexcept {
 }
 
 void Program::runStaticPass() {
+    errors.clear();
+    warnings.clear();
+
     static bool running = false;
     if(running) return;
     running = true;
     program_entry_point->performSemanticFormatting();
-    program_entry_point->static_pass.resolve();
+    static_pass.resolve(program_entry_point);
+    parse_tree = program_entry_point->parser.parse_tree; //DO THIS: delete
     running = false;
 }
 
@@ -200,10 +204,10 @@ std::string Program::run(){
     assert(errors.empty());
 
     interpreter.run(
-        program_entry_point->parser.parse_tree,
-        program_entry_point->static_pass.instantiation_lookup,
-        program_entry_point->static_pass.number_switch,
-        program_entry_point->static_pass.string_switch);
+        parse_tree,
+        static_pass.instantiation_lookup,
+        static_pass.number_switch,
+        static_pass.string_switch);
 
     std::string str;
 
@@ -237,10 +241,10 @@ std::string Program::run(){
 void Program::runThread(){
     assert(errors.empty());
     interpreter.runThread(
-        program_entry_point->parser.parse_tree,
-        program_entry_point->static_pass.instantiation_lookup,
-        program_entry_point->static_pass.number_switch,
-        program_entry_point->static_pass.string_switch);
+        parse_tree,
+        static_pass.instantiation_lookup,
+        static_pass.number_switch,
+        static_pass.string_switch);
 }
 
 void Program::stop(){

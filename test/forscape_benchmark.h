@@ -21,6 +21,7 @@ static constexpr size_t ITER_MODEL_LOAD_DELETE = DEBUG_CAP(5000);
 static constexpr size_t ITER_SCANNER = DEBUG_CAP(500000);
 static constexpr size_t ITER_PARSER = DEBUG_CAP(500000);
 static constexpr size_t ITER_SYMBOL_TABLE = DEBUG_CAP(50000);
+static constexpr size_t ITER_STATIC_PASS = DEBUG_CAP(50000);
 static constexpr size_t ITER_INTERPRETER = DEBUG_CAP(5000);
 static constexpr size_t ITER_CALC_SIZE = DEBUG_CAP(5000000);
 static constexpr size_t ITER_LAYOUT = DEBUG_CAP(10000000);
@@ -71,14 +72,27 @@ void runBenchmark(){
 
     Code::SymbolLexicalPass sym_table(parser.parse_tree, m);
     sym_table.resolveSymbols();
-    Code::StaticPass static_pass(m, parser.parse_tree, m->errors, m->warnings);
-    static_pass.resolve();
+
+    //DO THIS: this is janky
+    ParseTree parse_tree;
+
+    startClock();
+    for(size_t i = 0; i < ITER_STATIC_PASS; i++){
+        m->parser.parse_tree = parser.parse_tree;
+        Code::StaticPass static_pass(parse_tree, m->errors, m->warnings);
+        static_pass.resolve(m);
+    }
+    report("StaticPass", ITER_STATIC_PASS);
+
+    Code::StaticPass static_pass(parse_tree, m->errors, m->warnings);
+    static_pass.resolve(m);
     Code::Interpreter interpreter;
+    parse_tree = m->parser.parse_tree; //DO THIS: delete
 
     startClock();
     for(size_t i = 0; i < ITER_INTERPRETER; i++)
         interpreter.run(
-            parser.parse_tree,
+            parse_tree,
             static_pass.instantiation_lookup,
             static_pass.number_switch,
             static_pass.string_switch);
