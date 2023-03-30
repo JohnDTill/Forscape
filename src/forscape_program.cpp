@@ -201,7 +201,6 @@ std::string Program::run(){
 
     interpreter.run(
         program_entry_point->parser.parse_tree,
-        &program_entry_point->symbol_builder.symbol_table,
         program_entry_point->static_pass.instantiation_lookup,
         program_entry_point->static_pass.number_switch,
         program_entry_point->static_pass.string_switch);
@@ -239,7 +238,6 @@ void Program::runThread(){
     assert(errors.empty());
     interpreter.runThread(
         program_entry_point->parser.parse_tree,
-        program_entry_point->symbol_builder.symbol_table,
         program_entry_point->static_pass.instantiation_lookup,
         program_entry_point->static_pass.number_switch,
         program_entry_point->static_pass.string_switch);

@@ -1,7 +1,7 @@
 #ifndef FORSCAPE_SYMBOL_LINK_PASS_H
 #define FORSCAPE_SYMBOL_LINK_PASS_H
 
-#include <forscape_symbol_table.h>
+#include "forscape_parse_tree.h"
 
 namespace Forscape {
 
@@ -13,11 +13,10 @@ private:
     std::vector<size_t> old_flags;
     size_t stack_size = 0;
     size_t closure_depth = 0;
-    SymbolTable& symbol_table; //DO THIS: there isn't a global symbol table for the whole program!
     ParseTree& parse_tree;
 
 public:
-    SymbolTableLinker(SymbolTable& symbol_table, ParseTree& parse_tree) noexcept;
+    SymbolTableLinker(ParseTree& parse_tree) noexcept;
     void link() noexcept; //No user errors possible at link stage
 
 private:
