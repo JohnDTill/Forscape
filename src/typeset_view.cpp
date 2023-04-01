@@ -609,6 +609,8 @@ void View::populateHighlightWordsFromParseNode(ParseNode pn){
 
     const Code::Symbol* const sym = parse_tree.getSymbol(pn);
     if(sym) sym->getAllOccurences(highlighted_words);
+
+    //DO THIS: integration test this works in various contexts, including modules
 }
 
 bool View::scrolledToBottom() const noexcept{

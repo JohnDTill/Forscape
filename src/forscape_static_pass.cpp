@@ -1981,8 +1981,10 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
 
         //Patch the empty usage inserted earlier
         usage.symbol_index = reinterpret_cast<size_t>(&sym);
-        //DO THIS: handle parse_tree logic please
         parse_tree.setSymbol(pn + active_model->parse_node_offset, &sym);
+        //DO THIS: handle parse_tree logic please
+        active_model->parser.parse_tree.setOp(field - active_model->parse_node_offset, OP_IDENTIFIER);
+        active_model->parser.parse_tree.setSymbol(pn, &sym);
         usage.prev_usage_index = reinterpret_cast<size_t>(sym.last_external_usage);
         sym.last_external_usage = &usage;
 
@@ -2007,12 +2009,14 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
             Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
             SymbolUsage& usage = *reinterpret_cast<SymbolUsage*>(parse_tree.getFlag(field));
 
-            ParseNode pn = usage.pn; //DO THIS: depends on parse_tree offset
+            ParseNode pn = usage.pn;
 
             //Patch the empty usage inserted earlier
             usage.symbol_index = reinterpret_cast<size_t>(&sym);
-            //DO THIS: handle parse_tree logic please
             parse_tree.setSymbol(pn + active_model->parse_node_offset, &sym);
+            //DO THIS: handle parse_tree logic please
+            active_model->parser.parse_tree.setOp(field - active_model->parse_node_offset, OP_IDENTIFIER);
+            active_model->parser.parse_tree.setSymbol(pn, &sym);
 
             usage.prev_usage_index = reinterpret_cast<size_t>(sym.last_external_usage);
             sym.last_external_usage = &usage;
