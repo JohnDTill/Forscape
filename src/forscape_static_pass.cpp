@@ -460,7 +460,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                     Symbol& carry_over = *parse_tree.getSymbol(imported_var);
                     for(SymbolUsage* usage = carry_over.last_external_usage; usage != nullptr; usage = usage->prevUsage()){
                         usage->symbol_index = reinterpret_cast<size_t>(&sym);
-                        parse_tree.setSymbol(usage->pn, &sym);
+                        parse_tree.setSymbol(usage->pn, &sym); //DO THIS - depends on parse_tree offset
 
                         if(usage->prevUsage() == nullptr){
                             usage->prev_usage_index = reinterpret_cast<size_t>(sym.last_external_usage);
@@ -471,7 +471,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                 }else{
                     SymbolUsage* carry_over_usage = reinterpret_cast<SymbolUsage*>(parse_tree.getFlag(imported_var));
                     carry_over_usage->symbol_index = reinterpret_cast<size_t>(&sym);
-                    parse_tree.setSymbol(carry_over_usage->pn, &sym);
+                    parse_tree.setSymbol(carry_over_usage->pn, &sym); //DO THIS: depends on parse_tree offset
                     carry_over_usage->prev_usage_index = reinterpret_cast<size_t>(sym.last_external_usage);
                     sym.last_external_usage = carry_over_usage;
 
@@ -1966,7 +1966,7 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
         Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
         SymbolUsage& usage = *reinterpret_cast<SymbolUsage*>(parse_tree.getFlag(field));
 
-        ParseNode pn = usage.pn;
+        ParseNode pn = usage.pn; //DO THIS: depends on parse_tree offset
 
         //Patch the empty usage inserted earlier
         usage.symbol_index = reinterpret_cast<size_t>(&sym);
@@ -1995,7 +1995,7 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
             Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
             SymbolUsage& usage = *reinterpret_cast<SymbolUsage*>(parse_tree.getFlag(field));
 
-            ParseNode pn = usage.pn;
+            ParseNode pn = usage.pn; //DO THIS: depends on parse_tree offset
 
             //Patch the empty usage inserted earlier
             usage.symbol_index = reinterpret_cast<size_t>(&sym);

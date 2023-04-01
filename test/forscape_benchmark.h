@@ -140,7 +140,7 @@ void runBenchmark(){
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     Typeset::Model* temp = m;
-    m = Typeset::Model::fromSerial(m->run(), true);
+    m = Typeset::Model::fromSerial(Forscape::Program::instance()->run(), true);
     delete temp;
 
     startClock();

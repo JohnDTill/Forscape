@@ -28,7 +28,7 @@ inline bool testExpression(const std::string& in, const std::string& expect){
     #ifndef NDEBUG
     input->parseTreeDot(); //Make sure dot generation doesn't crash
     #ifndef FORSCAPE_TYPESET_HEADLESS
-    SymbolTreeView view(input->symbol_builder.symbol_table, input->static_pass);
+    SymbolTreeView view(input->symbol_builder.symbol_table, Forscape::Program::instance()->static_pass);
     #endif
     #endif
 
@@ -60,7 +60,8 @@ inline bool testCase(const std::string& name){
     #ifndef NDEBUG
     input->parseTreeDot(); //Make sure dot generation doesn't crash
     #ifndef FORSCAPE_TYPESET_HEADLESS
-    SymbolTreeView view(input->symbol_builder.symbol_table, input->static_pass); //Make sure symbol table view doesn't crash
+    //Make sure symbol table view doesn't crash
+    SymbolTreeView view(input->symbol_builder.symbol_table, Forscape::Program::instance()->static_pass);
     #endif
     #endif
 
