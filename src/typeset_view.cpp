@@ -47,7 +47,7 @@ namespace Forscape {
 namespace Typeset {
 
 static Code::ParseTree& parseTree() noexcept {
-    return Program::instance()->program_entry_point->parser.parse_tree;
+    return Program::instance()->parse_tree;
 }
 
 static Code::StaticPass& staticPass() noexcept {

@@ -1,5 +1,2 @@
-//DO THIS: hovering helloWorld crashes
-//from hello_world import helloWorld as hello
-//hello()
-import hello_world.π
-hello_world.helloWorld()
+from hello_world import helloWorld as hello
+hello()
