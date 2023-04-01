@@ -1969,8 +1969,8 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
         const auto& lexical_map = model->symbol_builder.symbol_table.lexical_map;
         auto lookup = lexical_map.find(parse_tree.getSelection(field));
         if(lookup == lexical_map.end()){
-            //DO THIS: provide information for module member suggestions
-            return error(pn, field, BAD_READ); //MODULE_FIELD_NOT_FOUND
+            parse_tree.setFlag(field, reinterpret_cast<size_t>(&lexical_map));
+            return error(pn, field, MODULE_FIELD_NOT_FOUND);
         }
         parse_tree.setOp(field, OP_IDENTIFIER);
 

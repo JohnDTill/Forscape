@@ -1917,6 +1917,9 @@ void Editor::suggestFileNames(const Selection& sel) {
 }
 
 void Editor::suggestModuleFields(const Selection& sel) {
+    //DO THIS: integration test of recommendations
+    //DO THIS: allow recomendation before typing first character
+
     const Typeset::Marker& left = sel.left;
     ParseNode err_node = left.text->parseNodeAtIndex(left.index);
     size_t flag = parseTree().getFlag(err_node);
