@@ -1893,7 +1893,7 @@ void Editor::populateSuggestions() {
             suggestFileNames(); return;
         }else if(err.code == Code::FILE_NOT_FOUND && err.selection.right == controller.anchor){
             suggestFileNames(err.selection); return;
-        }else if(err.code == Code::IMPORT_FIELD_NOT_FOUND && err.selection.right == controller.anchor){
+        }else if(err.code == Code::MODULE_FIELD_NOT_FOUND && err.selection.right == controller.anchor){
             suggestModuleFields(err.selection); return;
         }
     }

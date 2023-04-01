@@ -328,10 +328,14 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             ParseNode expr = resolveExprTop(parse_tree.child(pn));
             parse_tree.setArg<0>(pn, expr);
             if(parse_tree.getOp(expr) != OP_CALL || !isAbstractFunctionGroup(parse_tree.getType(parse_tree.arg<0>(expr)))){
+                //DO THIS: what is error handling strategy?
                 warnings.push_back(Error(parse_tree.getSelection(expr), ErrorCode::UNUSED_EXPRESSION));
+                active_model->warnings.push_back(Error(parse_tree.getSelection(expr), ErrorCode::UNUSED_EXPRESSION));
                 parse_tree.setOp(pn, OP_DO_NOTHING);
-                //EVENTUALLY: check the call stmt has side effects
             }
+
+            //EVENTUALLY: check the call stmt has side effects
+
             return pn;
         }
 
@@ -351,7 +355,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
                 ParseNode expr = resolveExprTop(parse_tree.arg(pn, i));
                 parse_tree.setArg(pn, i, expr);
-                //Specialise printing for type
+                //EVENTUALLY: Specialise printing for type
             }
             return pn;
 
@@ -359,6 +363,9 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             ParseNode child = resolveExprTop(parse_tree.child(pn));
             parse_tree.setArg<0>(pn, child);
             if(parse_tree.getType(child) != BOOLEAN) return error(pn, child);
+            else if(parse_tree.getOp(child) == OP_TRUE) parse_tree.setOp(pn, OP_DO_NOTHING);
+            //EVENTUALLY: assertion fires if OP_FALSE and codepath is definitely encountered
+            //            probably still want to be able to run the code and fail at this point
             return pn;
         }
 
@@ -451,7 +458,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                 if(lookup == lexical_map.end()){
                     parse_tree.setOp(imported_var, OP_ERROR);
                     parse_tree.setFlag(imported_var, reinterpret_cast<size_t>(&lexical_map));
-                    return error(pn, imported_var, IMPORT_FIELD_NOT_FOUND);
+                    return error(pn, imported_var, MODULE_FIELD_NOT_FOUND);
                 }
 
                 Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
@@ -1303,7 +1310,7 @@ size_t StaticPass::error(ParseNode pn, ParseNode sel, ErrorCode code) noexcept{
     else if(errors.empty()){
         Error err(parse_tree.getSelection(sel), code);
         errors.push_back(err);
-        active_model->errors.push_back(err);
+        active_model->errors.push_back(err); //DO THIS: what is error handling strategy?
     }
     return pn;
 }
@@ -1960,7 +1967,10 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
         Typeset::Model* model = reinterpret_cast<Typeset::Model*>(sym.flag);
         const auto& lexical_map = model->symbol_builder.symbol_table.lexical_map;
         auto lookup = lexical_map.find(parse_tree.getSelection(field));
-        if(lookup == lexical_map.end()) return error(pn, pn, BAD_READ);
+        if(lookup == lexical_map.end()){
+            //DO THIS: provide information for module member suggestions
+            return error(pn, field, BAD_READ); //MODULE_FIELD_NOT_FOUND
+        }
         parse_tree.setOp(field, OP_IDENTIFIER);
 
         Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
