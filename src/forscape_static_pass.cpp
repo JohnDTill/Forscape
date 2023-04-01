@@ -2006,7 +2006,7 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
 
             //Patch the empty usage inserted earlier
             usage.symbol_index = reinterpret_cast<size_t>(&sym);
-            parse_tree.setSymbol(pn, &sym); //DO THIS: why does this crash when using a different parse tree?
+            parse_tree.setSymbol(pn, &sym);
 
             usage.prev_usage_index = reinterpret_cast<size_t>(sym.last_external_usage);
             sym.last_external_usage = &usage;
