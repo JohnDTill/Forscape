@@ -520,8 +520,6 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
 }
 
 ParseNode StaticPass::resolveLValue(ParseNode pn, bool write) noexcept {
-    if(!errors.empty()) return pn;
-
     assert(pn != NONE);
 
     switch (parse_tree.getOp(pn)) {
@@ -1952,12 +1950,11 @@ ParseNode StaticPass::resolveDefiniteIntegral(ParseNode pn) {
 
 ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
     ParseNode lhs = parse_tree.lhs(pn);
+    size_t num_errors = errors.size();
     ParseNode lhs_lvalue = resolveLValue(lhs);
     ParseNode field = parse_tree.arg<1>(pn);
-    if(parse_tree.getOp(lhs_lvalue) == OP_ERROR){
-        parse_tree.setOp(field, OP_ERROR);
-        return lhs_lvalue;
-    }
+    if(errors.size() > num_errors) //DO THIS: there has to be a better way to check for errors
+        return error(pn, pn, NOT_A_SCOPE);
     size_t sym_id = parse_tree.getSymId(lhs_lvalue);
     Symbol& sym = *parse_tree.getSymbol(lhs_lvalue);
 
@@ -2029,7 +2026,7 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
             parse_tree.setCols(field, sym.cols);
             return field;
         }else{
-            return error(pn, pn, BAD_READ);
+            return error(pn, field, BAD_READ);
         }
     }else{
         return error(pn, lhs, NOT_A_SCOPE);
