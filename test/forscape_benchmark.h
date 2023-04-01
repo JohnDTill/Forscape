@@ -75,10 +75,10 @@ void runBenchmark(){
 
     //DO THIS: this is janky
     ParseTree parse_tree;
+    m->parser.parse_tree = parser.parse_tree;
 
     startClock();
     for(size_t i = 0; i < ITER_STATIC_PASS; i++){
-        m->parser.parse_tree = parser.parse_tree;
         Code::StaticPass static_pass(parse_tree, m->errors, m->warnings);
         static_pass.resolve(m);
     }
@@ -87,7 +87,6 @@ void runBenchmark(){
     Code::StaticPass static_pass(parse_tree, m->errors, m->warnings);
     static_pass.resolve(m);
     Code::Interpreter interpreter;
-    parse_tree = m->parser.parse_tree; //DO THIS: delete
 
     startClock();
     for(size_t i = 0; i < ITER_INTERPRETER; i++)

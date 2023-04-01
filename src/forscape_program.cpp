@@ -130,7 +130,6 @@ void Program::runStaticPass() {
     running = true;
     program_entry_point->performSemanticFormatting();
     static_pass.resolve(program_entry_point);
-    parse_tree = program_entry_point->parser.parse_tree; //DO THIS: delete
     running = false;
 }
 

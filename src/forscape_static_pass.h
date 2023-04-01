@@ -174,9 +174,7 @@ private:
         static bool dimsDisagree(size_t a, size_t b) noexcept;
         SymbolTable& symbolTable() const noexcept;
 
-        //ParseTree& parse_tree; //DO THIS: why do scope accesses crash when moving away
-                                 //from using the program entry point parse tree?
-        ParseTree* parse_tree;
+        ParseTree& parse_tree;
         std::vector<Error>& errors;
         std::vector<Error>& warnings;
         Typeset::Model* active_model  DEBUG_INIT_NULLPTR;

@@ -168,7 +168,6 @@ public:
     FORSCAPE_UNORDERED_MAP<ScopedVarKey, SymbolIndex, HashScopedVarKey> scoped_vars;
 
     void resolveReference(ParseNode pn, size_t sym_id, size_t closure_depth) alloc_except;
-    void resolveScopeReference(SymbolUsage& usage, Symbol& sym) alloc_except;
 };
 
 }

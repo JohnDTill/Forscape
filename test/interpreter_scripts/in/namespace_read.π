@@ -2,6 +2,7 @@ namespace outer {
     test = "outer"
     assert( outer.test = "outer" )
     
+    //DO THIS: why does this crash when deleting inner?
     namespace inner {
         test = "inner"
         assert( test = "inner" )
