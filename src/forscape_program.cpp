@@ -119,6 +119,8 @@ void Program::reset() noexcept {
             symbol.type = NONE;
         }
     }
+
+    program_entry_point->is_imported = true;
 }
 
 void Program::runStaticPass() {

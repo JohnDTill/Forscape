@@ -17,6 +17,8 @@ StaticPass::StaticPass(
     : parse_tree(parse_tree), errors(errors), warnings(warnings) {}
 
 void StaticPass::resolve(Typeset::Model* entry_point){
+    //DO THIS: separate model specific parts and unify with import functions
+
     active_model = entry_point;
 
     parse_tree = entry_point->parser.parse_tree;
@@ -71,10 +73,6 @@ void StaticPass::reset() noexcept{
     assert(retry_at_recursion == false);
     assert(first_attempt == true);
     assert(recursion_fallback == nullptr);
-
-    //DO THIS: fix for multiple symbol tables
-    //for(Symbol& sym : symbolTable.symbols)
-    //    sym.type = UNINITIALISED;
 
     Program::instance()->reset();
 
@@ -281,6 +279,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                 ParseNode expr = resolveExprTop(parse_tree.arg(pn, i));
                 parse_tree.setArg(pn, i, expr);
                 //EVENTUALLY: Specialise printing for type
+                //            Make sure all types accepted here are actually printable (e.g. modules crash)
             }
             return pn;
 
@@ -319,6 +318,8 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
         }
 
         case OP_IMPORT:{
+            //EVENTUALLY: what is the circular import execution method? How are cyclical errors reported?
+
             ParseNode var = parse_tree.getFlag(pn);
             Symbol& sym = *parse_tree.getSymbol(var);
             ParseNode file = parse_tree.child(pn);
@@ -351,6 +352,10 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
         }
 
         case OP_FROM_IMPORT:{
+            //DO THIS: chained import from does not work
+            //         chained import from as does work, but the alias debug mechanism is not robust to chaining
+            //         (I think the original symbol is used, but not reached)
+
             ParseNode file = parse_tree.arg<0>(pn);
             Typeset::Model* model = parse_tree.getModel(file);
 

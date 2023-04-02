@@ -1557,7 +1557,7 @@ void Editor::populateContextMenuFromModel(QMenu& menu, double x, double y) {
 
     switch (model->parseTree().getOp(contextNode)) {
         case Code::OP_IDENTIFIER:{
-            bool global_result_valid = model->is_imported || model == Forscape::Program::instance()->program_entry_point;
+            bool global_result_valid = model->is_imported;
             const Code::ParseTree* parse_tree = global_result_valid ? &parseTree() : &model->parseTree();
             auto sym_ptr = parse_tree->getSymbol(contextNode + model->parse_node_offset * global_result_valid);
             if(!sym_ptr) return;
@@ -1702,7 +1702,7 @@ void Editor::showTooltipParseNode(){
     if(this->hover_node == NONE) return;
 
     //EVENTUALLY: dealing with errors here is a pain
-    bool global_result_valid = model->is_imported || model == Forscape::Program::instance()->program_entry_point;
+    bool global_result_valid = model->is_imported;
     const Code::ParseTree* parse_tree = global_result_valid ? &parseTree() : &model->parseTree();
     const ParseNode hover_node = this->hover_node + model->parse_node_offset * global_result_valid;
     switch(parse_tree->getOp(hover_node)){
