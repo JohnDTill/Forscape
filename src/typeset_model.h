@@ -91,7 +91,7 @@ public:
     bool redoAvailable() const noexcept;
     void mutate(Command* cmd, Controller& controller);
     void clearFormatting() noexcept;
-    bool is_output = false;
+    bool is_output = false; //EVENTUALLY: this is janky and leads to dumb errors
 
     Text* firstText() const noexcept;
     Text* lastText() const noexcept;

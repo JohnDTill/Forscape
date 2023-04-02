@@ -52,84 +52,8 @@ void StaticPass::resolve(Typeset::Model* entry_point){
     //EVENTUALLY: replace this with something less janky
     parse_tree.patchClonedTypes();
 
-    //DO THIS: fix for multiple symbol tables
-    //for(Symbol& sym : symbolTable.symbols)
-    //    if(!sym.is_used)
-    //        warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
-
-    //DO THIS: fix for multiple symbol tables
-    /*
-    for(const SymbolUsage& usage : symbolTable.symbol_usages){
-        const Symbol& sym = *usage.symbol();
-
-        SemanticType fmt = SEM_ID;
-        if(sym.is_ewise_index){
-            fmt = SEM_ID_EWISE_INDEX;
-        }else if(sym.is_closure_nested | sym.is_captured_by_value){
-            fmt = SEM_LINK;
-        }else if(!sym.is_const){
-            fmt = SEM_ID_FUN_IMPURE;
-        }
-
-        usage.sel.format(fmt);
-    }
-    */
-
-    #ifndef NDEBUG
-    if(!errors.empty()) return;
-    assert(parse_tree.inFinalState());
-
-    #ifndef FORSCAPE_TYPESET_HEADLESS
-    static std::unordered_set<ParseNode> doc_map_nodes;
-    doc_map_nodes.clear();
-
-    struct hash {
-        size_t operator() (const Typeset::Selection& a) const noexcept {
-            return reinterpret_cast<size_t>(a.left.text) ^ (a.left.index);
-        }
-    };
-
-    struct cmp {
-        bool operator() (const Typeset::Selection& a, const Typeset::Selection& b) const noexcept {
-            return a.left == b.left && a.right == b.right;
-        }
-    };
-
-    static std::unordered_set<Typeset::Selection, hash, cmp> selection_in_map;
-    selection_in_map.clear();
-
-    //model->populateDocMapParseNodes(doc_map_nodes);
-
-    //EVENTUALLY: check this later?
-    //Every identifier in the doc map goes to a valid symbol
-    //for(ParseNode pn : doc_map_nodes)
-    //    if(parse_tree.getOp(pn) == OP_IDENTIFIER){
-    //        symbol_table.verifyIdentifier(pn);
-    //        selection_in_map.insert(parse_tree.getSelection(pn));
-    //    }
-
-    //Every usage in the symbol table is in the doc map
-    //for(const Usage& usage : symbol_table.usages)
-    //    assert(selection_in_map.find(parse_tree.getSelection(usage.pn)) != selection_in_map.end());
-    #endif
-    #endif
-
-    //DO THIS: fix for multiple symbol tables
-    /*
-    for(const SymbolUsage& usage : symbolTable.symbol_usages){
-        const Symbol& sym = *usage.symbol();
-
-        if(sym.type == StaticPass::NUMERIC && (sym.rows > 1 || sym.cols > 1)){
-            const Typeset::Selection& sel = usage.sel;
-            switch (sel.getFormat()) {
-                case SEM_ID: sel.format(SEM_ID_MAT); break;
-                case SEM_PREDEF: sel.format(SEM_PREDEFINEDMAT); break;
-                case SEM_ID_FUN_IMPURE: sel.format(SEM_ID_MAT_IMPURE); break;
-                default: break;
-            }
-        }
-    }
-    */
+    finaliseSymbolTable(active_model);
+    for(Typeset::Model* m : imported_models) finaliseSymbolTable(m);
 }
 
 void StaticPass::reset() noexcept{
@@ -142,6 +66,7 @@ void StaticPass::reset() noexcept{
     all_calls.clear();
     number_switch.clear();
     string_switch.clear();
+    imported_models.clear();
     assert(return_types.empty());
     assert(retry_at_recursion == false);
     assert(first_attempt == true);
@@ -411,6 +336,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                     Typeset::Model* current = active_model;
                     active_model = model;
                     resolveStmt(root);
+                    imported_models.push_back(model);
                     active_model = current;
                     parse_tree.setFlag(pn, root);
                 }else{
@@ -438,6 +364,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                     Typeset::Model* current = active_model;
                     active_model = model;
                     resolveStmt(root);
+                    imported_models.push_back(model);
                     active_model = current;
                     parse_tree.setFlag(pn, root);
                 }else{
@@ -465,6 +392,11 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
 
                 if(local_var == NONE){
                     Symbol& carry_over = *parse_tree.getSymbol(imported_var);
+
+                    //EVENTUALLY: think about rules for warning symbol is not used in a module
+                    // edge cases: in Python, imports can be chained accross multiple modules
+                    sym.is_used = carry_over.is_used;
+
                     for(SymbolUsage* usage = carry_over.last_external_usage; usage != nullptr; usage = usage->prevUsage()){
                         usage->symbol_index = reinterpret_cast<size_t>(&sym);
                         //DO THIS - parse_tree strategy please
@@ -478,6 +410,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                     }
                     sym.last_external_usage = carry_over.last_external_usage;
                 }else{
+                    sym.is_used = true;
                     SymbolUsage* carry_over_usage = reinterpret_cast<SymbolUsage*>(parse_tree.getFlag(imported_var));
                     carry_over_usage->symbol_index = reinterpret_cast<size_t>(&sym);
                     //DO THIS - parse_tree strategy please
@@ -2138,6 +2071,84 @@ bool StaticPass::dimsDisagree(size_t a, size_t b) noexcept {
 
 SymbolTable& StaticPass::symbolTable() const noexcept {
     return active_model->symbol_builder.symbol_table;
+}
+
+void StaticPass::finaliseSymbolTable(Typeset::Model* model) const noexcept {
+    auto& symbol_table = model->symbol_builder.symbol_table;
+
+    for(Symbol& sym : symbol_table.symbols)
+        if(!sym.is_used){
+            warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+            model->warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+        }
+
+    for(const SymbolUsage& usage : symbol_table.symbol_usages){
+        const Symbol& sym = *usage.symbol();
+
+        SemanticType fmt = SEM_ID;
+        if(sym.is_ewise_index){
+            fmt = SEM_ID_EWISE_INDEX;
+        }else if(sym.is_closure_nested | sym.is_captured_by_value){
+            fmt = SEM_LINK;
+        }else if(!sym.is_const){
+            fmt = SEM_ID_FUN_IMPURE;
+        }
+
+        usage.sel.format(fmt);
+    }
+
+    #ifndef NDEBUG
+    if(!errors.empty()) return;
+    assert(parse_tree.inFinalState());
+
+    #ifndef FORSCAPE_TYPESET_HEADLESS
+    static std::unordered_set<ParseNode> doc_map_nodes;
+    doc_map_nodes.clear();
+
+    struct hash {
+        size_t operator() (const Typeset::Selection& a) const noexcept {
+            return reinterpret_cast<size_t>(a.left.text) ^ (a.left.index);
+        }
+    };
+
+    struct cmp {
+        bool operator() (const Typeset::Selection& a, const Typeset::Selection& b) const noexcept {
+            return a.left == b.left && a.right == b.right;
+        }
+    };
+
+    static std::unordered_set<Typeset::Selection, hash, cmp> selection_in_map;
+    selection_in_map.clear();
+
+    //model->populateDocMapParseNodes(doc_map_nodes);
+
+    //EVENTUALLY: check this later?
+    //Every identifier in the doc map goes to a valid symbol
+    //for(ParseNode pn : doc_map_nodes)
+    //    if(parse_tree.getOp(pn) == OP_IDENTIFIER){
+    //        symbol_table.verifyIdentifier(pn);
+    //        selection_in_map.insert(parse_tree.getSelection(pn));
+    //    }
+
+    //Every usage in the symbol table is in the doc map
+    //for(const Usage& usage : symbol_table.usages)
+    //    assert(selection_in_map.find(parse_tree.getSelection(usage.pn)) != selection_in_map.end());
+    #endif
+    #endif
+
+    for(const SymbolUsage& usage : symbol_table.symbol_usages){
+        const Symbol& sym = *usage.symbol();
+
+        if(sym.type == StaticPass::NUMERIC && (sym.rows > 1 || sym.cols > 1)){
+            const Typeset::Selection& sel = usage.sel;
+            switch (sel.getFormat()) {
+                case SEM_ID: sel.format(SEM_ID_MAT); break;
+                case SEM_PREDEF: sel.format(SEM_PREDEFINEDMAT); break;
+                case SEM_ID_FUN_IMPURE: sel.format(SEM_ID_MAT_IMPURE); break;
+                default: break;
+            }
+        }
+    }
 }
 
 constexpr bool StaticPass::isAbstractFunctionGroup(size_t type) noexcept {

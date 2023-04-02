@@ -173,11 +173,13 @@ private:
         ParseNode enforceSemiPositiveInt(ParseNode pn);
         static bool dimsDisagree(size_t a, size_t b) noexcept;
         SymbolTable& symbolTable() const noexcept;
+        void finaliseSymbolTable(Typeset::Model* model) const noexcept;
 
         ParseTree& parse_tree;
         std::vector<Error>& errors;
         std::vector<Error>& warnings;
         Typeset::Model* active_model  DEBUG_INIT_NULLPTR;
+        std::vector<Typeset::Model*> imported_models;
 
         struct CachedInfo{
             Type type;
