@@ -95,6 +95,7 @@ set(SOURCES
     ${TEST}/forscape_benchmark.h
     ${TEST}/report.h
     ${TEST}/serial.h
+    ${TEST}/test_highlighting.h
     ${TEST}/test_ide_interaction.h
     ${TEST}/test_keywords.h
     ${TEST}/test_unicode.h

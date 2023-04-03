@@ -12,6 +12,7 @@
 #include <typeset_themes.h>
 
 #ifdef TEST_QT
+#include "test_highlighting.h"
 #include "test_ide_interaction.h"
 #include <QApplication>
 #endif
@@ -33,6 +34,7 @@ int main(int argc, char* argv[]){
     bool passing = true;
 
     printf("\n");
+
     passing &= testUnicode();
     passing &= testSerial();
     passing &= testTypesetLoadSave();
@@ -43,7 +45,9 @@ int main(int argc, char* argv[]){
     passing &= testInterpreter();
     passing &= testIllFormedPrograms();
     passing &= testTypesetMutability();
+
     #ifdef TEST_QT
+    passing &= testIdeFeatures();
     passing &= testIdeInteraction();
     #endif
 

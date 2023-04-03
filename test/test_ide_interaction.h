@@ -99,6 +99,6 @@ inline bool testIdeInteraction(){
         if(std::filesystem::is_regular_file(dir->path()))
             passing &= ideCase(dir->path());
 
-    report("IDE interaction", passing);
+    report("IDE crash test", passing);
     return passing;
 }
