@@ -383,6 +383,10 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                 auto lookup = lexical_map.find(parse_tree.getSelection(imported_var));
                 if(lookup == lexical_map.end()){
                     parse_tree.setOp(imported_var, OP_ERROR);
+
+                    //DO THIS: discrepancy between parse_trees is a quagmire
+                    active_model->parser.parse_tree.setOp(imported_var - active_model->parse_node_offset, OP_ERROR);
+
                     parse_tree.setFlag(imported_var, reinterpret_cast<size_t>(&lexical_map));
                     return error(pn, imported_var, MODULE_FIELD_NOT_FOUND);
                 }
