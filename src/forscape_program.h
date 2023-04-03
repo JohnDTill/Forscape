@@ -44,7 +44,6 @@ public:
 
     //DO THIS: define differences between model errors/warnings and program errors/warnings
     //DO THIS: define difference between model parse_tree and program parse_tree
-    //            (is using the program_entry_point parse_tree okay?)
 
 private:
     static Program* singleton_instance;

@@ -17,13 +17,11 @@ StaticPass::StaticPass(
     : parse_tree(parse_tree), errors(errors), warnings(warnings) {}
 
 void StaticPass::resolve(Typeset::Model* entry_point){
-    //DO THIS: separate model specific parts and unify with import functions
-
     active_model = entry_point;
 
+    reset();
     parse_tree = entry_point->parser.parse_tree;
 
-    reset();
     if(!entry_point->errors.empty()){
         errors = entry_point->errors;
         return;
