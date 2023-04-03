@@ -42,6 +42,7 @@ public:
     size_t rows = UNKNOWN_SIZE;
     size_t cols = UNKNOWN_SIZE;
     ParseNode comment  DEBUG_INIT_UNITIALISED(ParseNode);
+    Symbol* aliased_var = nullptr;
     bool is_const;
     bool is_used = false;
     bool is_reassigned = false; //Used to determine if parameters are constant

@@ -1,0 +1,2 @@
+from hello_world_from_as.π import hello as hi
+hi()

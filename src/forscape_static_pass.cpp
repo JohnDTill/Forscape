@@ -352,10 +352,6 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
         }
 
         case OP_FROM_IMPORT:{
-            //DO THIS: chained import from does not work
-            //         chained import from as does work, but the alias debug mechanism is not robust to chaining
-            //         (I think the original symbol is used, but not reached)
-
             ParseNode file = parse_tree.arg<0>(pn);
             Typeset::Model* model = parse_tree.getModel(file);
 
@@ -393,43 +389,49 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                     return error(pn, imported_var, MODULE_FIELD_NOT_FOUND);
                 }
 
-                Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
+                Symbol* sym = reinterpret_cast<Symbol*>(lookup->second);
+
+                //Getting the original var could be accomplished by updating the active model's lexical map,
+                //but we choose a space cost over a dictionary op
+                if(sym->aliased_var) sym = sym->aliased_var;
 
                 if(local_var == NONE){
                     Symbol& carry_over = *parse_tree.getSymbol(imported_var);
+                    carry_over.aliased_var = sym;
 
                     //EVENTUALLY: think about rules for warning symbol is not used in a module
                     // edge cases: in Python, imports can be chained accross multiple modules
-                    sym.is_used = carry_over.is_used;
+                    sym->is_used = carry_over.is_used;
 
                     for(SymbolUsage* usage = carry_over.last_external_usage; usage != nullptr; usage = usage->prevUsage()){
                         usage->symbol_index = reinterpret_cast<size_t>(&sym);
                         //DO THIS - parse_tree strategy please
-                        parse_tree.setSymbol(usage->pn + active_model->parse_node_offset, &sym);
-                        active_model->parser.parse_tree.setSymbol(usage->pn, &sym);
+                        parse_tree.setSymbol(usage->pn + active_model->parse_node_offset, sym);
+                        active_model->parser.parse_tree.setSymbol(usage->pn, sym);
 
                         if(usage->prevUsage() == nullptr){
-                            usage->prev_usage_index = reinterpret_cast<size_t>(sym.last_external_usage);
+                            usage->prev_usage_index = reinterpret_cast<size_t>(sym->last_external_usage);
                             break;
                         }
                     }
-                    sym.last_external_usage = carry_over.last_external_usage;
+                    sym->last_external_usage = carry_over.last_external_usage;
                 }else{
-                    sym.is_used = true;
+                    sym->is_used = true;
                     SymbolUsage* carry_over_usage = reinterpret_cast<SymbolUsage*>(parse_tree.getFlag(imported_var));
-                    carry_over_usage->symbol_index = reinterpret_cast<size_t>(&sym);
+                    carry_over_usage->symbol_index = reinterpret_cast<size_t>(sym);
                     //DO THIS - parse_tree strategy please
-                    parse_tree.setSymbol(carry_over_usage->pn + active_model->parse_node_offset, &sym);
-                    active_model->parser.parse_tree.setSymbol(carry_over_usage->pn, &sym);
-                    carry_over_usage->prev_usage_index = reinterpret_cast<size_t>(sym.last_external_usage);
-                    sym.last_external_usage = carry_over_usage;
+                    parse_tree.setSymbol(carry_over_usage->pn + active_model->parse_node_offset, sym);
+                    active_model->parser.parse_tree.setSymbol(carry_over_usage->pn, sym);
+                    carry_over_usage->prev_usage_index = reinterpret_cast<size_t>(sym->last_external_usage);
+                    sym->last_external_usage = carry_over_usage;
 
                     Symbol& alias = *parse_tree.getSymbol(local_var);
                     alias.type = ALIAS;
-                    alias.setShadowedVar(&sym);
+                    alias.setShadowedVar(sym);
+                    alias.aliased_var = sym;
 
                     #ifndef NDEBUG
-                    auto result = parse_tree.aliases.insert({sym.str(), {alias.str()}});
+                    auto result = parse_tree.aliases.insert({sym->str(), {alias.str()}});
                     if(!result.second) result.first->second.insert(alias.str());
                     #endif
                 }
