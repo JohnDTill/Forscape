@@ -94,6 +94,7 @@ inline bool testFileSuggestions(){
     for(directory_iterator end, dir(BASE_TEST_DIR "/in"); dir != end; dir++)
         if(std::filesystem::is_regular_file(dir->path()))
             expected.push_back(dir->path().filename().u8string());
+    std::sort(expected.begin(), expected.end());
 
     if(view->suggestions != expected){
         reportFailure("File", expected, view->suggestions);
@@ -104,15 +105,24 @@ inline bool testFileSuggestions(){
     view->handleKey(Qt::Key_Period, Qt::NoModifier, "."); QCoreApplication::processEvents();
     view->handleKey(Qt::Key_Slash, Qt::NoModifier, "/"); QCoreApplication::processEvents();
 
+    #ifdef __linux__
+    #define SLASH "/"
+    #else
+    #define SLASH "\\"
+    #endif
+
     expected.clear();
     for(directory_iterator end, dir(BASE_TEST_DIR); dir != end; dir++)
         if(std::filesystem::is_regular_file(dir->path()) && dir->path() != mocked_file)
-            expected.push_back("..\\" + dir->path().filename().u8string());
+            expected.push_back(".." SLASH + dir->path().filename().u8string());
+    std::sort(expected.begin(), expected.end());
 
     if(view->suggestions != expected){
         reportFailure("File", expected, view->suggestions);
         return false;
     }
+
+    //EVENTUALLY: recommend files in "from _"
 
     Program::instance()->freeFileMemory();
     delete view;
@@ -145,6 +155,29 @@ inline bool testModuleSuggestions(){
         passing = false;
         reportFailure("Module", expected, view->suggestions);
     }
+
+    view->handleKey(Qt::Key_D, Qt::NoModifier, "d"); QCoreApplication::processEvents();
+
+    expected = {
+        "doughnut",
+    };
+
+    view->handleKey(Qt::Key_Home, Qt::ShiftModifier, ""); QCoreApplication::processEvents();
+    view->paste("from bob_closure_a import");
+    view->handleKey(Qt::Key_Space, Qt::NoModifier, " "); QCoreApplication::processEvents();
+
+    expected = {
+        "bagel",
+        "doughnut",
+        "makeClosure",
+    };
+
+    /* EVENTUALLY: recommend "from _ import" without first letter of variable
+    if(passing && view->suggestions != expected){
+        passing = false;
+        reportFailure("Module", expected, view->suggestions);
+    }
+    */
 
     view->handleKey(Qt::Key_D, Qt::NoModifier, "d"); QCoreApplication::processEvents();
 
