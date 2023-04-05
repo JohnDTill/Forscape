@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-#option(TEST_QT OFF)
-set(TEST_QT ON) #DO THIS
+option(TEST_QT OFF)
 
 project(ForscapeTests LANGUAGES CXX)
 
@@ -98,6 +97,7 @@ set(SOURCES
     ${TEST}/test_highlighting.h
     ${TEST}/test_ide_interaction.h
     ${TEST}/test_keywords.h
+    ${TEST}/test_suggestions.h
     ${TEST}/test_unicode.h
     ${TEST}/typeset.h
     ${TEST}/typeset_control.h

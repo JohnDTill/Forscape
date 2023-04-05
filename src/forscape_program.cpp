@@ -136,7 +136,7 @@ void Program::runStaticPass() {
 }
 
 static bool notPiFile(const std::string& str) noexcept {
-    assert(str.size() >= 3);
+    if(str.size() < 3) return true;
     return std::string_view(str.data() + str.size() - 3) != ".π";
 }
 
@@ -156,9 +156,9 @@ void Program::getFileSuggestions(std::vector<std::string>& suggestions, Typeset:
 
 void Program::getFileSuggestions(std::vector<std::string>& suggestions, std::string_view input, Typeset::Model* active) const {
     const std::filesystem::path input_as_path(input);
-    const std::string input_filename = input_as_path.filename().u8string();
 
     for(const std::filesystem::path& path_entry : project_path){
+        const std::string input_filename = std::filesystem::is_directory(path_entry / input_as_path) ? "" : input_as_path.filename().u8string();
         const std::filesystem::path dir_of_input = (path_entry / input_as_path).parent_path();
         if(!std::filesystem::exists(dir_of_input)) continue;
 

@@ -14,6 +14,7 @@
 #ifdef TEST_QT
 #include "test_highlighting.h"
 #include "test_ide_interaction.h"
+#include "test_suggestions.h"
 #include <QApplication>
 #endif
 
@@ -48,7 +49,8 @@ int main(int argc, char* argv[]){
 
     #ifdef TEST_QT
     passing &= testIdeFeatures();
-    passing &= testIdeInteraction();
+    passing &= testSuggestions();
+    passing &= testIdeDoesNotCrashOnVariousInteractions();
     #endif
 
     if(passing) printf("\nAll passing\n\n");

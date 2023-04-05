@@ -1455,6 +1455,10 @@ Editor::Editor(){
     connect(tooltip_timer, SIGNAL(timeout()), this, SLOT(showTooltipParseNode()));
 }
 
+Editor::~Editor() {
+    recommender->setParent(nullptr);
+}
+
 void Editor::runThread(){
     console->setModel(Typeset::Model::fromSerial("", true));
 
@@ -1917,15 +1921,12 @@ void Editor::suggestFileNames(const Selection& sel) {
 }
 
 void Editor::suggestModuleFields(const Selection& sel) {
-    //DO THIS: integration test of recommendations
-    //DO THIS: allow recomendation before typing first character
-
     const Typeset::Marker& left = sel.left;
     ParseNode err_node = left.text->parseNodeAtIndex(left.index);
     size_t flag = parseTree().getFlag(err_node);
     const auto& lexical_map = *reinterpret_cast<FORSCAPE_UNORDERED_MAP<Typeset::Selection, size_t>*>(flag);
     for(const auto& entry : lexical_map)
-        if(entry.first.startsWith(sel))
+        if(entry.first.startsWith(sel) || (sel.isTextSelection() && sel.strView() == "."))
             suggestions.push_back(entry.first.str());
     std::sort(suggestions.begin(), suggestions.end());
 }
@@ -1940,7 +1941,7 @@ void Editor::takeRecommendation(const std::string& str){
         controller.anchor = *filename_start;
         controller.insertSerial(str);
     }else{
-        controller.selectPrevWord();
+        if(controller.charLeft() != '.') controller.selectPrevWord();
         if(str != controller.selectedText())
             controller.insertSerial(str);
         else

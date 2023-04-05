@@ -265,6 +265,7 @@ public:
 
 public:
     Editor();
+    ~Editor();
     void runThread();
     bool isRunning() const noexcept;
     void reenable() noexcept;
@@ -301,7 +302,7 @@ signals:
     void setCommasInLargeNumbers(bool show);
     void modelChanged(Forscape::Typeset::Model* model);
 
-private:
+private: TEST_PUBLIC
     void rename(const std::string& str);
     virtual void recommend() override final;
     virtual void recommendTypeset(std::string_view phrase) override final;

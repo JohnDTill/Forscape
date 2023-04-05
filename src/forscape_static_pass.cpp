@@ -249,7 +249,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             ParseNode expr = resolveExprTop(parse_tree.child(pn));
             parse_tree.setArg<0>(pn, expr);
             if(parse_tree.getOp(expr) != OP_CALL || !isAbstractFunctionGroup(parse_tree.getType(parse_tree.arg<0>(expr)))){
-                //DO THIS: what is error handling strategy?
+                //DESIGN QUAGMIRE (ERRORS): what is error handling strategy?
                 warnings.push_back(Error(parse_tree.getSelection(expr), ErrorCode::UNUSED_EXPRESSION));
                 active_model->warnings.push_back(Error(parse_tree.getSelection(expr), ErrorCode::UNUSED_EXPRESSION));
                 parse_tree.setOp(pn, OP_DO_NOTHING);
@@ -384,7 +384,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                 if(lookup == lexical_map.end()){
                     parse_tree.setOp(imported_var, OP_ERROR);
 
-                    //DO THIS: discrepancy between parse_trees is a quagmire
+                    //DESIGN QUAGMIRE (AST)
                     active_model->parser.parse_tree.setOp(imported_var - active_model->parse_node_offset, OP_ERROR);
 
                     parse_tree.setFlag(imported_var, reinterpret_cast<size_t>(&lexical_map));
@@ -407,7 +407,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
 
                     for(SymbolUsage* usage = carry_over.last_external_usage; usage != nullptr; usage = usage->prevUsage()){
                         usage->symbol_index = reinterpret_cast<size_t>(&sym);
-                        //DO THIS - parse_tree strategy please
+                        //DESIGN QUAGMIRE (AST) - parse_tree strategy please
                         parse_tree.setSymbol(usage->pn + active_model->parse_node_offset, sym);
                         active_model->parser.parse_tree.setSymbol(usage->pn, sym);
 
@@ -421,7 +421,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                     sym->is_used = true;
                     SymbolUsage* carry_over_usage = reinterpret_cast<SymbolUsage*>(parse_tree.getFlag(imported_var));
                     carry_over_usage->symbol_index = reinterpret_cast<size_t>(sym);
-                    //DO THIS - parse_tree strategy please
+                    //DESIGN QUAGMIRE (AST) - parse_tree strategy please
                     parse_tree.setSymbol(carry_over_usage->pn + active_model->parse_node_offset, sym);
                     active_model->parser.parse_tree.setSymbol(carry_over_usage->pn, sym);
                     carry_over_usage->prev_usage_index = reinterpret_cast<size_t>(sym->last_external_usage);
@@ -1254,7 +1254,7 @@ size_t StaticPass::error(ParseNode pn, ParseNode sel, ErrorCode code) noexcept{
     else if(errors.empty()){
         Error err(parse_tree.getSelection(sel), code);
         errors.push_back(err);
-        active_model->errors.push_back(err); //DO THIS: what is error handling strategy?
+        active_model->errors.push_back(err); //DESIGN QUAGMIRE (ERRORS): what is error handling strategy?
     }
     return pn;
 }
@@ -1899,7 +1899,7 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
     size_t num_errors = errors.size();
     ParseNode lhs_lvalue = resolveLValue(lhs);
     ParseNode field = parse_tree.arg<1>(pn);
-    if(errors.size() > num_errors) //DO THIS: there has to be a better way to check for errors
+    if(errors.size() > num_errors) //DESIGN QUAGMIRE (ERRORS): there has to be a better way to check for errors
         return error(pn, pn, NOT_A_SCOPE);
     size_t sym_id = parse_tree.getSymId(lhs_lvalue);
     Symbol& sym = *parse_tree.getSymbol(lhs_lvalue);
@@ -1924,7 +1924,7 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
         //Patch the empty usage inserted earlier
         usage.symbol_index = reinterpret_cast<size_t>(&sym);
         parse_tree.setSymbol(pn + active_model->parse_node_offset, &sym);
-        //DO THIS: handle parse_tree logic please
+        //DESIGN QUAGMIRE (AST): handle parse_tree logic please
         active_model->parser.parse_tree.setOp(field - active_model->parse_node_offset, OP_IDENTIFIER);
         active_model->parser.parse_tree.setSymbol(pn, &sym);
         usage.prev_usage_index = reinterpret_cast<size_t>(sym.last_external_usage);
@@ -1956,7 +1956,7 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
             //Patch the empty usage inserted earlier
             usage.symbol_index = reinterpret_cast<size_t>(&sym);
             parse_tree.setSymbol(pn + active_model->parse_node_offset, &sym);
-            //DO THIS: handle parse_tree logic please
+            //DESIGN QUAGMIRE (AST): handle parse_tree logic please
             active_model->parser.parse_tree.setOp(field - active_model->parse_node_offset, OP_IDENTIFIER);
             active_model->parser.parse_tree.setSymbol(pn, &sym);
 

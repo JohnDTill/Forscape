@@ -88,7 +88,7 @@ inline bool ideCase(const std::filesystem::path& path){
     return passing;
 }
 
-inline bool testIdeInteraction(){
+inline bool testIdeDoesNotCrashOnVariousInteractions(){
     bool passing = true;
 
     for(directory_iterator end, dir(BASE_TEST_DIR "/in"); dir != end; dir++)

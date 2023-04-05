@@ -73,7 +73,6 @@ void runBenchmark(){
     Code::SymbolLexicalPass sym_table(parser.parse_tree, m);
     sym_table.resolveSymbols();
 
-    //DO THIS: this is janky
     ParseTree parse_tree;
     m->parser.parse_tree = parser.parse_tree;
 

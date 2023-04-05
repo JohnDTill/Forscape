@@ -42,8 +42,8 @@ public:
     std::vector<Code::Error> warnings;
     Typeset::Model* program_entry_point = nullptr;
 
-    //DO THIS: define differences between model errors/warnings and program errors/warnings
-    //DO THIS: define difference between model parse_tree and program parse_tree
+    //DESIGN QUAGMIRE (ERRORS): define differences between model errors/warnings and program errors/warnings
+    //DESIGN QUAGMIRE (AST): define difference between model parse_tree and program parse_tree
 
 private:
     static Program* singleton_instance;
@@ -56,9 +56,6 @@ private:
     std::vector<std::filesystem::path> project_path = {
         std::filesystem::path(), //Placeholder for searching file's directory
         std::filesystem::current_path(), //Placeholder for base project directory
-        //EVENTUALLY: stop hardcoding these, make an "include directory" mechanism or similar
-        std::filesystem::current_path() / ".." / "test" / "interpreter_scripts" / "in",
-        std::filesystem::current_path() / ".." / "test" / "interpreter_scripts" / "errors",
     };
     static constexpr std::string_view extensions[] = {".π"};
 

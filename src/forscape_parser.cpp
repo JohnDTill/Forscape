@@ -917,6 +917,12 @@ ParseNode Parser::rightUnary(ParseNode n) alloc_except {
             case TOKEN_SUBSCRIPT: n = subscript(n, rMark()); break;
             case TOKEN_DUALSCRIPT: n = dualscript(n); break;
             case PERIOD: advance();
+                if(!peek(IDENTIFIER)){
+                    ParseNode blank = parse_tree.addTerminal(OP_IDENTIFIER, selectionPrev());
+                    parse_tree.setSymbol(blank, nullptr);
+                    registerParseNodeRegion(blank, index-1);
+                    n = parse_tree.addNode<2>(OP_SCOPE_ACCESS, {n, blank}); break;
+                }
                 if(!noErrors()) return n;
                 n = parse_tree.addNode<2>(OP_SCOPE_ACCESS, {n, primary()}); break;
             default: return n;

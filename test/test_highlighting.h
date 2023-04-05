@@ -1,7 +1,4 @@
-#include <forscape_interpreter.h>
-#include <forscape_parser.h>
 #include <forscape_program.h>
-#include <forscape_scanner.h>
 #include "report.h"
 #include "typeset.h"
 #include <typeset_view.h>
