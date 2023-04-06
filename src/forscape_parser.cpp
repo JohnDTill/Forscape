@@ -428,9 +428,18 @@ ParseNode Parser::fromStatement() noexcept {
 
     ParseNode file = filename();
 
+    if(!match(IMPORT)) return error(UNRECOGNIZED_EXPR);
+
     parse_tree.prepareNary();
     parse_tree.addNaryChild(file);
     do {
+        if(!peek(IDENTIFIER)){
+            const Typeset::Marker& m = rMarkPrev();
+            parse_tree.addNaryChild(parse_tree.addTerminal(OP_IDENTIFIER, Typeset::Selection(m, m)));
+            parse_tree.addNaryChild(NONE);
+            return parse_tree.finishNary(OP_FROM_IMPORT, Typeset::Selection(left, rMarkPrev()));
+        }
+
         ParseNode component = isolatedIdentifier();
         ParseNode alias = match(AS) ? isolatedIdentifier() : NONE;
         parse_tree.addNaryChild(component);

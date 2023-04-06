@@ -111,10 +111,10 @@ void Scanner::scanIdentifier() alloc_except {
             scanFilePath();
             controller->skipWhitespace();
             controller->selectToIdentifierEnd();
-            if(controller->selection().strView() == "import")
+            if(controller->selection().strView() == "import"){
                 controller->formatKeyword();
-            else if(errors.empty())
-                errors.push_back(Error(controller->selection(), CONSUME));
+                createToken(IMPORT);
+            }
         }
     }
 }

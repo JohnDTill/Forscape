@@ -90,14 +90,14 @@ inline bool testFileSuggestions(){
 
     view->handleKey(Qt::Key_Space, Qt::NoModifier, " "); QCoreApplication::processEvents();
 
-    std::vector<std::string> expected;
+    std::vector<std::string> local_files;
     for(directory_iterator end, dir(BASE_TEST_DIR "/in"); dir != end; dir++)
         if(std::filesystem::is_regular_file(dir->path()))
-            expected.push_back(dir->path().filename().u8string());
-    std::sort(expected.begin(), expected.end());
+            local_files.push_back(dir->path().filename().u8string());
+    std::sort(local_files.begin(), local_files.end());
 
-    if(view->suggestions != expected){
-        reportFailure("File", expected, view->suggestions);
+    if(view->suggestions != local_files){
+        reportFailure("File", local_files, view->suggestions);
         return false;
     }
 
@@ -111,18 +111,45 @@ inline bool testFileSuggestions(){
     #define SLASH "\\"
     #endif
 
-    expected.clear();
+    std::vector<std::string> parent_files;
     for(directory_iterator end, dir(BASE_TEST_DIR); dir != end; dir++)
         if(std::filesystem::is_regular_file(dir->path()) && dir->path() != mocked_file)
-            expected.push_back(".." SLASH + dir->path().filename().u8string());
-    std::sort(expected.begin(), expected.end());
+            parent_files.push_back(".." SLASH + dir->path().filename().u8string());
+    std::sort(parent_files.begin(), parent_files.end());
 
-    if(view->suggestions != expected){
-        reportFailure("File", expected, view->suggestions);
+    if(view->suggestions != parent_files){
+        reportFailure("File", parent_files, view->suggestions);
         return false;
     }
 
-    //EVENTUALLY: recommend files in "from _"
+    //Recommend files in "from _"
+    view->handleKey(Qt::Key_A, Qt::CTRL, "a"); QCoreApplication::processEvents();
+    view->handleKey(Qt::Key_Delete, Qt::NoModifier, ""); QCoreApplication::processEvents();
+    view->handleKey(Qt::Key_F, Qt::NoModifier, "f"); QCoreApplication::processEvents();
+    view->handleKey(Qt::Key_R, Qt::NoModifier, "r"); QCoreApplication::processEvents();
+    view->handleKey(Qt::Key_O, Qt::NoModifier, "o"); QCoreApplication::processEvents();
+    view->handleKey(Qt::Key_M, Qt::NoModifier, "m"); QCoreApplication::processEvents();
+
+    if(view->suggestions != local_files){
+        reportFailure("File", local_files, view->suggestions);
+        return false;
+    }
+
+    view->handleKey(Qt::Key_Space, Qt::NoModifier, " "); QCoreApplication::processEvents();
+
+    if(view->suggestions != local_files){
+        reportFailure("File", local_files, view->suggestions);
+        return false;
+    }
+
+    view->handleKey(Qt::Key_Period, Qt::NoModifier, "."); QCoreApplication::processEvents();
+    view->handleKey(Qt::Key_Period, Qt::NoModifier, "."); QCoreApplication::processEvents();
+    view->handleKey(Qt::Key_Slash, Qt::NoModifier, "/"); QCoreApplication::processEvents();
+
+    if(view->suggestions != parent_files){
+        reportFailure("File", parent_files, view->suggestions);
+        return false;
+    }
 
     Program::instance()->freeFileMemory();
     delete view;
