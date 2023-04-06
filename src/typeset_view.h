@@ -245,6 +245,7 @@ public:
 
     Editor* editor = nullptr;
     size_t recommend_typeset_phrase_size = 0;
+    bool should_erase = true;
 
     void sizeToFit();
 
@@ -309,7 +310,7 @@ private: TEST_PUBLIC
     void populateSuggestions();
     void suggestFileNames();
     void suggestFileNames(const Typeset::Selection& sel);
-    void suggestModuleFields(const Typeset::Selection& sel);
+    void suggestModuleFields(const Code::Error& err);
     void takeRecommendation(const std::string& str);
 
     ParseNode contextNode = NONE;

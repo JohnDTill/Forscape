@@ -1890,6 +1890,7 @@ void Editor::recommendTypeset(std::string_view phrase) {
 void Editor::populateSuggestions() {
     recommend_without_hint = false;
     filename_start = nullptr;
+    recommender->should_erase = true;
     suggestions.clear();
 
     for(const Code::Error& err : model->errors){
@@ -1898,7 +1899,7 @@ void Editor::populateSuggestions() {
         }else if(err.code == Code::FILE_NOT_FOUND && err.selection.right == controller.anchor){
             suggestFileNames(err.selection); return;
         }else if(err.code == Code::MODULE_FIELD_NOT_FOUND && err.selection.right == controller.anchor){
-            suggestModuleFields(err.selection); return;
+            suggestModuleFields(err); return;
         }
     }
 
@@ -1920,13 +1921,13 @@ void Editor::suggestFileNames(const Selection& sel) {
     suggestions.erase(std::unique(suggestions.begin(), suggestions.end()), suggestions.end());
 }
 
-void Editor::suggestModuleFields(const Selection& sel) {
-    const Typeset::Marker& left = sel.left;
-    ParseNode err_node = left.text->parseNodeAtIndex(left.index);
-    size_t flag = parseTree().getFlag(err_node);
+void Editor::suggestModuleFields(const Code::Error& err) {
+    const Typeset::Selection& sel = err.selection;
+    recommender->should_erase = !sel.isEmpty();
+    size_t flag = err.flag;
     const auto& lexical_map = *reinterpret_cast<FORSCAPE_UNORDERED_MAP<Typeset::Selection, size_t>*>(flag);
     for(const auto& entry : lexical_map)
-        if(entry.first.startsWith(sel) || (sel.isTextSelection() && sel.strView() == "."))
+        if(entry.first.startsWith(sel))
             suggestions.push_back(entry.first.str());
     std::sort(suggestions.begin(), suggestions.end());
 }
@@ -1941,9 +1942,13 @@ void Editor::takeRecommendation(const std::string& str){
         controller.anchor = *filename_start;
         controller.insertSerial(str);
     }else{
-        if(controller.charLeft() != '.') controller.selectPrevWord();
+        //EVENTUALLY: mechanism for deciding when to erase the recommender candidate is janky
+        std::string copy = str;
+
+        if(recommender->should_erase) controller.selectPrevWord();
+        else if(controller.charLeft() == 't') copy = ' ' + copy;
         if(str != controller.selectedText())
-            controller.insertSerial(str);
+            controller.insertSerial(copy);
         else
             controller.consolidateToAnchor();
     }

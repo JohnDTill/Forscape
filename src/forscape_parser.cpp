@@ -434,7 +434,8 @@ ParseNode Parser::fromStatement() noexcept {
     parse_tree.addNaryChild(file);
     do {
         if(!peek(IDENTIFIER)){
-            const Typeset::Marker& m = rMarkPrev();
+            Typeset::Marker m = rMarkPrev();
+            if(!m.atTextEnd()) m.incrementToNextWord();
             parse_tree.addNaryChild(parse_tree.addTerminal(OP_IDENTIFIER, Typeset::Selection(m, m)));
             parse_tree.addNaryChild(NONE);
             return parse_tree.finishNary(OP_FROM_IMPORT, Typeset::Selection(left, rMarkPrev()));
@@ -927,9 +928,8 @@ ParseNode Parser::rightUnary(ParseNode n) alloc_except {
             case TOKEN_DUALSCRIPT: n = dualscript(n); break;
             case PERIOD: advance();
                 if(!peek(IDENTIFIER)){
-                    ParseNode blank = parse_tree.addTerminal(OP_IDENTIFIER, selectionPrev());
-                    parse_tree.setSymbol(blank, nullptr);
-                    registerParseNodeRegion(blank, index-1);
+                    const Typeset::Marker& m = rMarkPrev();
+                    ParseNode blank = parse_tree.addTerminal(OP_ERROR, Typeset::Selection(m, m));
                     n = parse_tree.addNode<2>(OP_SCOPE_ACCESS, {n, blank}); break;
                 }
                 if(!noErrors()) return n;

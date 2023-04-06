@@ -387,8 +387,10 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                     //DESIGN QUAGMIRE (AST)
                     active_model->parser.parse_tree.setOp(imported_var - active_model->parse_node_offset, OP_ERROR);
 
-                    parse_tree.setFlag(imported_var, reinterpret_cast<size_t>(&lexical_map));
-                    return error(pn, imported_var, MODULE_FIELD_NOT_FOUND);
+                    ParseNode err = error(pn, imported_var, MODULE_FIELD_NOT_FOUND);
+                    errors.back().flag = reinterpret_cast<size_t>(&lexical_map);
+                    active_model->errors.back().flag = reinterpret_cast<size_t>(&lexical_map);
+                    return err;
                 }
 
                 Symbol* sym = reinterpret_cast<Symbol*>(lookup->second);
@@ -1911,8 +1913,10 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
         const auto& lexical_map = model->symbol_builder.symbol_table.lexical_map;
         auto lookup = lexical_map.find(parse_tree.getSelection(field));
         if(lookup == lexical_map.end()){
-            parse_tree.setFlag(field, reinterpret_cast<size_t>(&lexical_map));
-            return error(pn, field, MODULE_FIELD_NOT_FOUND);
+            ParseNode err = error(pn, field, MODULE_FIELD_NOT_FOUND);
+            errors.back().flag = reinterpret_cast<size_t>(&lexical_map);
+            active_model->errors.back().flag = reinterpret_cast<size_t>(&lexical_map);
+            return err;
         }
         parse_tree.setOp(field, OP_IDENTIFIER);
 

@@ -80,7 +80,7 @@ inline bool testLocalSuggestions(){
 }
 
 inline bool testFileSuggestions(){
-    Typeset::Model* input = Typeset::Model::fromSerial("import");
+    Typeset::Model* input = Typeset::Model::fromSerial("impor");
     std::filesystem::path mocked_file = std::filesystem::u8path(BASE_TEST_DIR "/in/hello_world.π");
     input->path = std::filesystem::canonical(mocked_file); //Just get suggestions from "in"
     Forscape::Program::instance()->setProgramEntryPoint(input->path, input);
@@ -88,13 +88,20 @@ inline bool testFileSuggestions(){
     Typeset::Editor* view = new Typeset::Editor;
     view->setModel(input);
 
-    view->handleKey(Qt::Key_Space, Qt::NoModifier, " "); QCoreApplication::processEvents();
+    view->handleKey(Qt::Key_T, Qt::NoModifier, "t"); QCoreApplication::processEvents();
 
     std::vector<std::string> local_files;
     for(directory_iterator end, dir(BASE_TEST_DIR "/in"); dir != end; dir++)
         if(std::filesystem::is_regular_file(dir->path()))
             local_files.push_back(dir->path().filename().u8string());
     std::sort(local_files.begin(), local_files.end());
+
+    if(view->suggestions != local_files){
+        reportFailure("File", local_files, view->suggestions);
+        return false;
+    }
+
+    view->handleKey(Qt::Key_Space, Qt::NoModifier, " "); QCoreApplication::processEvents();
 
     if(view->suggestions != local_files){
         reportFailure("File", local_files, view->suggestions);
@@ -172,11 +179,7 @@ inline bool testModuleSuggestions(){
 
     view->handleKey(Qt::Key_Period, Qt::NoModifier, "."); QCoreApplication::processEvents();
 
-    std::vector<std::string> expected = {
-        "bagel",
-        "doughnut",
-        "makeClosure",
-    };
+    std::vector<std::string> expected = { "bagel", "doughnut", "makeClosure" };
 
     if(passing && view->suggestions != expected){
         passing = false;
@@ -185,32 +188,29 @@ inline bool testModuleSuggestions(){
 
     view->handleKey(Qt::Key_D, Qt::NoModifier, "d"); QCoreApplication::processEvents();
 
-    expected = {
-        "doughnut",
-    };
+    expected = { "doughnut" };
 
     view->handleKey(Qt::Key_Home, Qt::ShiftModifier, ""); QCoreApplication::processEvents();
-    view->paste("from bob_closure_a import");
-    view->handleKey(Qt::Key_Space, Qt::NoModifier, " "); QCoreApplication::processEvents();
+    view->paste("from bob_closure_a impor");
+    view->handleKey(Qt::Key_T, Qt::NoModifier, "t"); QCoreApplication::processEvents();
 
-    expected = {
-        "bagel",
-        "doughnut",
-        "makeClosure",
-    };
+    expected = { "bagel", "doughnut", "makeClosure" };
 
-    /* EVENTUALLY: recommend "from _ import" without first letter of variable
     if(passing && view->suggestions != expected){
         passing = false;
         reportFailure("Module", expected, view->suggestions);
     }
-    */
+
+    view->handleKey(Qt::Key_Space, Qt::NoModifier, " "); QCoreApplication::processEvents();
+
+    if(passing && view->suggestions != expected){
+        passing = false;
+        reportFailure("Module", expected, view->suggestions);
+    }
 
     view->handleKey(Qt::Key_D, Qt::NoModifier, "d"); QCoreApplication::processEvents();
 
-    expected = {
-        "doughnut",
-    };
+    expected = { "doughnut" };
 
     if(passing && view->suggestions != expected){
         passing = false;
