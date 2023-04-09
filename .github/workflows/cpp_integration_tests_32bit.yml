@@ -19,7 +19,7 @@ jobs:
              export CFLAGS=-m32 &&
              export CXXFLAGS=-m32 &&
              export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig &&
-             conan install -e CXXFLAGS=-m32 --generator cmake_find_package --install-folder ../build_test/conan-dependencies .
+             conan install -e CXXFLAGS=-m32 --generator cmake_find_package --output-folder ../build_test/conan-dependencies .
       - id: cmake
         run: cd ${GITHUB_WORKSPACE}/test &&
              export CFLAGS=-m32 &&

@@ -15,7 +15,7 @@ jobs:
       - id: patch_conan
         run: conan profile detect --name default
       - id: run_conan
-        run: cd ${GITHUB_WORKSPACE}/app && conan install --generator cmake_find_package --install-folder ../build/conan-dependencies .
+        run: cd ${GITHUB_WORKSPACE}/app && conan install --generator cmake_find_package --output-folder ../build/conan-dependencies .
       - id: cmake
         run: cd ${GITHUB_WORKSPACE}/app && cmake -B../build -S.
       - id: make
