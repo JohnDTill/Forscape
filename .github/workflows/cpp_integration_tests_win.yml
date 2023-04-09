@@ -12,6 +12,8 @@ jobs:
         uses: microsoft/setup-msbuild@v1.1
       - id: install_conan
         uses: turtlebrowser/get-conan@main
+        with:
+          version: 1.59.0
       - id: run_conan
         run: cd $Env:GITHUB_WORKSPACE/test && conan install --generator cmake_find_package --install-folder ../build_test/conan-dependencies .
       - id: cmake
