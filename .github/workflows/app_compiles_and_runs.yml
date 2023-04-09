@@ -13,9 +13,9 @@ jobs:
       - id: install_conan
         uses: turtlebrowser/get-conan@main
       - id: patch_conan
-        run: conan profile new default --detect && conan profile update settings.compiler.libcxx=libstdc++11 default
+        run: conan profile detect --name default
       - id: run_conan
-        run: cd ${GITHUB_WORKSPACE}/app && conan install --generator cmake_find_package --install-folder ../build/conan-dependencies .
+        run: cd ${GITHUB_WORKSPACE}/app && conan install --generator cmake_find_package --output-folder ../build/conan-dependencies .
       - id: cmake
         run: cd ${GITHUB_WORKSPACE}/app && cmake -B../build -S.
       - id: make
