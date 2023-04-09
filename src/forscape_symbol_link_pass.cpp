@@ -2,6 +2,7 @@
 
 #include "forscape_parse_tree.h"
 #include "forscape_static_pass.h"
+#include "forscape_symbol_table.h"
 
 #ifndef NDEBUG
 #include <iostream>
@@ -11,8 +12,8 @@ namespace Forscape {
 
 namespace Code {
 
-Forscape::Code::SymbolTableLinker::SymbolTableLinker(SymbolTable& symbol_table, Forscape::Code::ParseTree& parse_tree) noexcept
-    : symbol_table(symbol_table), parse_tree(parse_tree) {}
+Forscape::Code::SymbolTableLinker::SymbolTableLinker(Forscape::Code::ParseTree& parse_tree) noexcept
+    : parse_tree(parse_tree) {}
 
 void SymbolTableLinker::link() noexcept{
     resolveBlock(parse_tree.root);
@@ -25,6 +26,7 @@ void SymbolTableLinker::resolveStmt(ParseNode pn) noexcept {
         case OP_ASSIGN: resolveAssignment(pn); break;
         case OP_BLOCK: resolveBlock(pn); break;
         case OP_DEFINE_PROTO: resolveAlgorithm(pn, false); break;
+        case OP_DO_NOTHING: break;
         case OP_ELEMENTWISE_ASSIGNMENT: resolveEWiseAssignment(pn); break;
         case OP_EQUAL: resolveAssignment(pn); break;
         case OP_EXPR_STMT: resolveExpr(pn); break;

@@ -42,6 +42,7 @@ public:
     size_t rows = UNKNOWN_SIZE;
     size_t cols = UNKNOWN_SIZE;
     ParseNode comment  DEBUG_INIT_UNITIALISED(ParseNode);
+    Symbol* aliased_var = nullptr;
     bool is_const;
     bool is_used = false;
     bool is_reassigned = false; //Used to determine if parameters are constant
@@ -168,7 +169,6 @@ public:
     FORSCAPE_UNORDERED_MAP<ScopedVarKey, SymbolIndex, HashScopedVarKey> scoped_vars;
 
     void resolveReference(ParseNode pn, size_t sym_id, size_t closure_depth) alloc_except;
-    void resolveScopeReference(SymbolUsage& usage, Symbol& sym) alloc_except;
 };
 
 }

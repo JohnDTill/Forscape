@@ -127,12 +127,10 @@ private:
 
     public:
         StaticPass(
-            Typeset::Model* model,
             ParseTree& parse_tree,
-            SymbolTable& symbol_table,
             std::vector<Code::Error>& errors,
             std::vector<Code::Error>& warnings) noexcept;
-        void resolve();
+        void resolve(Typeset::Model* entry_point);
 
     private:
         ParseNode resolveStmt(ParseNode pn) noexcept;
@@ -174,13 +172,14 @@ private:
         ParseNode enforceNaturalNumber(ParseNode pn);
         ParseNode enforceSemiPositiveInt(ParseNode pn);
         static bool dimsDisagree(size_t a, size_t b) noexcept;
+        SymbolTable& symbolTable() const noexcept;
+        void finaliseSymbolTable(Typeset::Model* model) const noexcept;
 
         ParseTree& parse_tree;
-        SymbolTable& symbol_table;
         std::vector<Error>& errors;
         std::vector<Error>& warnings;
-        Typeset::Model* base_model;
-        Typeset::Model* active_model;
+        Typeset::Model* active_model  DEBUG_INIT_NULLPTR;
+        std::vector<Typeset::Model*> imported_models;
 
         struct CachedInfo{
             Type type;

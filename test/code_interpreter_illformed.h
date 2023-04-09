@@ -31,18 +31,20 @@ inline bool testErrorAndNoCrash(const std::string& name){
     input->postmutate();
     bool had_error = !input->errors.empty();
     if(!had_error){
-        input->run();
-        had_error = !input->errors.empty();
+        Forscape::Program::instance()->run();
+        had_error = !Forscape::Program::instance()->errors.empty();
     }
 
     #ifndef NDEBUG
     input->parseTreeDot(); //Make sure dot generation doesn't crash
     #ifndef FORSCAPE_TYPESET_HEADLESS
-    SymbolTreeView view(input->symbol_builder.symbol_table, input->static_pass); //Make sure symbol table view doesn't crash
+    //Make sure symbol table view doesn't crash
+    SymbolTreeView view(input->symbol_builder.symbol_table, Forscape::Program::instance()->static_pass);
     #endif
     #endif
 
     Program::instance()->freeFileMemory();
+    Program::instance()->errors.clear();
 
     assert(had_error);
 

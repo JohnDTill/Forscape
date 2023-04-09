@@ -1,5 +1,6 @@
 #include "forscape_program.h"
 
+#include "forscape_message.h"
 #include "forscape_serial.h"
 #include "typeset_model.h"
 #include <fstream>
@@ -118,19 +119,24 @@ void Program::reset() noexcept {
             symbol.type = NONE;
         }
     }
+
+    program_entry_point->is_imported = true;
 }
 
 void Program::runStaticPass() {
+    errors.clear();
+    warnings.clear();
+
     static bool running = false;
     if(running) return;
     running = true;
     program_entry_point->performSemanticFormatting();
-    program_entry_point->static_pass.resolve();
+    static_pass.resolve(program_entry_point);
     running = false;
 }
 
 static bool notPiFile(const std::string& str) noexcept {
-    assert(str.size() >= 3);
+    if(str.size() < 3) return true;
     return std::string_view(str.data() + str.size() - 3) != ".π";
 }
 
@@ -150,9 +156,9 @@ void Program::getFileSuggestions(std::vector<std::string>& suggestions, Typeset:
 
 void Program::getFileSuggestions(std::vector<std::string>& suggestions, std::string_view input, Typeset::Model* active) const {
     const std::filesystem::path input_as_path(input);
-    const std::string input_filename = input_as_path.filename().u8string();
 
     for(const std::filesystem::path& path_entry : project_path){
+        const std::string input_filename = std::filesystem::is_directory(path_entry / input_as_path) ? "" : input_as_path.filename().u8string();
         const std::filesystem::path dir_of_input = (path_entry / input_as_path).parent_path();
         if(!std::filesystem::exists(dir_of_input)) continue;
 
@@ -193,6 +199,57 @@ Program::ptr_or_code Program::openFromRelativePathAutoExtension(std::filesystem:
     }
 
     return FILE_NOT_FOUND;
+}
+
+std::string Program::run(){
+    assert(errors.empty());
+
+    interpreter.run(
+        parse_tree,
+        static_pass.instantiation_lookup,
+        static_pass.number_switch,
+        static_pass.string_switch);
+
+    std::string str;
+
+    InterpreterOutput* msg;
+    while(interpreter.message_queue.try_dequeue(msg))
+        switch(msg->getType()){
+            case Forscape::InterpreterOutput::Print:
+                str += static_cast<PrintMessage*>(msg)->msg;
+                delete msg;
+                break;
+            case Forscape::InterpreterOutput::CreatePlot:
+                //EVENTUALLY: maybe do something here?
+                delete msg;
+                break;
+            case Forscape::InterpreterOutput::AddDiscreteSeries:{
+                delete msg;
+                break;
+            }
+            default: assert(false);
+        }
+
+    if(interpreter.error_code != Code::ErrorCode::NO_ERROR_FOUND){
+        Code::Error error(program_entry_point->parser.parse_tree.getSelection(interpreter.error_node), interpreter.error_code);
+        str += "\nLine " + error.line() + " - " + error.message();
+        errors.push_back(error);
+    }
+
+    return str;
+}
+
+void Program::runThread(){
+    assert(errors.empty());
+    interpreter.runThread(
+        parse_tree,
+        static_pass.instantiation_lookup,
+        static_pass.number_switch,
+        static_pass.string_switch);
+}
+
+void Program::stop(){
+    interpreter.stop();
 }
 
 }

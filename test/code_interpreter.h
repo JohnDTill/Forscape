@@ -23,12 +23,12 @@ inline bool testExpression(const std::string& in, const std::string& expect){
     Typeset::Model* input = Typeset::Model::fromSerial("print(" + in + ")");
     Forscape::Program::instance()->setProgramEntryPoint("", input);
     input->postmutate();
-    std::string str = input->run();
+    std::string str = Forscape::Program::instance()->run();
 
     #ifndef NDEBUG
     input->parseTreeDot(); //Make sure dot generation doesn't crash
     #ifndef FORSCAPE_TYPESET_HEADLESS
-    SymbolTreeView view(input->symbol_builder.symbol_table, input->static_pass);
+    SymbolTreeView view(input->symbol_builder.symbol_table, Forscape::Program::instance()->static_pass);
     #endif
     #endif
 
@@ -55,12 +55,13 @@ inline bool testCase(const std::string& name){
     input->path = std::filesystem::canonical(std::filesystem::u8path(file_name));
     Forscape::Program::instance()->setProgramEntryPoint(input->path, input);
     input->postmutate();
-    std::string str = input->run();
+    std::string str = Forscape::Program::instance()->run();
 
     #ifndef NDEBUG
     input->parseTreeDot(); //Make sure dot generation doesn't crash
     #ifndef FORSCAPE_TYPESET_HEADLESS
-    SymbolTreeView view(input->symbol_builder.symbol_table, input->static_pass); //Make sure symbol table view doesn't crash
+    //Make sure symbol table view doesn't crash
+    SymbolTreeView view(input->symbol_builder.symbol_table, Forscape::Program::instance()->static_pass);
     #endif
     #endif
 

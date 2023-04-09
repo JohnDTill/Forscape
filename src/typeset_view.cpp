@@ -47,11 +47,11 @@ namespace Forscape {
 namespace Typeset {
 
 static Code::ParseTree& parseTree() noexcept {
-    return Program::instance()->program_entry_point->parser.parse_tree;
+    return Program::instance()->parse_tree;
 }
 
 static Code::StaticPass& staticPass() noexcept {
-    return Program::instance()->program_entry_point->static_pass;
+    return Program::instance()->static_pass;
 }
 
 class View::VerticalScrollBar : public QScrollBar {
@@ -1455,6 +1455,10 @@ Editor::Editor(){
     connect(tooltip_timer, SIGNAL(timeout()), this, SLOT(showTooltipParseNode()));
 }
 
+Editor::~Editor() {
+    recommender->setParent(nullptr);
+}
+
 void Editor::runThread(){
     console->setModel(Typeset::Model::fromSerial("", true));
 
@@ -1464,16 +1468,16 @@ void Editor::runThread(){
     }else{
         is_running = true;
         allow_write = false;
-        Program::instance()->program_entry_point->runThread();
+        Program::instance()->runThread();
     }
 }
 
-bool Editor::isRunning() const noexcept{
+bool Editor::isRunning() const noexcept {
     return is_running;
 }
 
-void Editor::reenable() noexcept{
-    assert(Program::instance()->program_entry_point->interpreter.status == Code::Interpreter::FINISHED);
+void Editor::reenable() noexcept {
+    assert(Program::instance()->interpreter.status == Code::Interpreter::FINISHED);
     is_running = false;
     allow_write = true;
 }
@@ -1555,7 +1559,7 @@ void Editor::populateContextMenuFromModel(QMenu& menu, double x, double y) {
 
     switch (model->parseTree().getOp(contextNode)) {
         case Code::OP_IDENTIFIER:{
-            bool global_result_valid = model->is_imported || model == Forscape::Program::instance()->program_entry_point;
+            bool global_result_valid = model->is_imported;
             const Code::ParseTree* parse_tree = global_result_valid ? &parseTree() : &model->parseTree();
             auto sym_ptr = parse_tree->getSymbol(contextNode + model->parse_node_offset * global_result_valid);
             if(!sym_ptr) return;
@@ -1700,7 +1704,7 @@ void Editor::showTooltipParseNode(){
     if(this->hover_node == NONE) return;
 
     //EVENTUALLY: dealing with errors here is a pain
-    bool global_result_valid = model->is_imported || model == Forscape::Program::instance()->program_entry_point;
+    bool global_result_valid = model->is_imported;
     const Code::ParseTree* parse_tree = global_result_valid ? &parseTree() : &model->parseTree();
     const ParseNode hover_node = this->hover_node + model->parse_node_offset * global_result_valid;
     switch(parse_tree->getOp(hover_node)){
@@ -1886,6 +1890,7 @@ void Editor::recommendTypeset(std::string_view phrase) {
 void Editor::populateSuggestions() {
     recommend_without_hint = false;
     filename_start = nullptr;
+    recommender->should_erase = true;
     suggestions.clear();
 
     for(const Code::Error& err : model->errors){
@@ -1893,8 +1898,8 @@ void Editor::populateSuggestions() {
             suggestFileNames(); return;
         }else if(err.code == Code::FILE_NOT_FOUND && err.selection.right == controller.anchor){
             suggestFileNames(err.selection); return;
-        }else if(err.code == Code::IMPORT_FIELD_NOT_FOUND && err.selection.right == controller.anchor){
-            suggestModuleFields(err.selection); return;
+        }else if(err.code == Code::MODULE_FIELD_NOT_FOUND && err.selection.right == controller.anchor){
+            suggestModuleFields(err); return;
         }
     }
 
@@ -1916,10 +1921,10 @@ void Editor::suggestFileNames(const Selection& sel) {
     suggestions.erase(std::unique(suggestions.begin(), suggestions.end()), suggestions.end());
 }
 
-void Editor::suggestModuleFields(const Selection& sel) {
-    const Typeset::Marker& left = sel.left;
-    ParseNode err_node = left.text->parseNodeAtIndex(left.index);
-    size_t flag = parseTree().getFlag(err_node);
+void Editor::suggestModuleFields(const Code::Error& err) {
+    const Typeset::Selection& sel = err.selection;
+    recommender->should_erase = !sel.isEmpty();
+    size_t flag = err.flag;
     const auto& lexical_map = *reinterpret_cast<FORSCAPE_UNORDERED_MAP<Typeset::Selection, size_t>*>(flag);
     for(const auto& entry : lexical_map)
         if(entry.first.startsWith(sel))
@@ -1937,9 +1942,13 @@ void Editor::takeRecommendation(const std::string& str){
         controller.anchor = *filename_start;
         controller.insertSerial(str);
     }else{
-        controller.selectPrevWord();
+        //EVENTUALLY: mechanism for deciding when to erase the recommender candidate is janky
+        std::string copy = str;
+
+        if(recommender->should_erase) controller.selectPrevWord();
+        else if(controller.charLeft() == 't') copy = ' ' + copy;
         if(str != controller.selectedText())
-            controller.insertSerial(str);
+            controller.insertSerial(copy);
         else
             controller.consolidateToAnchor();
     }

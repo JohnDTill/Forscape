@@ -9,7 +9,6 @@
 #include "typeset_text.h"
 
 #include <forscape_error.h>
-#include "forscape_message.h"
 #include <forscape_scanner.h>
 #include <forscape_parser.h>
 #include <forscape_symbol_lexical_pass.h>
@@ -88,59 +87,6 @@ std::string Model::toSerial() const {
     writeString(out);
 
     return out;
-}
-
-std::string Model::run(){
-    assert(errors.empty());
-
-    interpreter.run(
-        parser.parse_tree,
-        &symbol_builder.symbol_table,
-        static_pass.instantiation_lookup,
-        static_pass.number_switch,
-        static_pass.string_switch);
-
-    std::string str;
-
-    InterpreterOutput* msg;
-    while(interpreter.message_queue.try_dequeue(msg))
-        switch(msg->getType()){
-            case Forscape::InterpreterOutput::Print:
-                str += static_cast<PrintMessage*>(msg)->msg;
-                delete msg;
-                break;
-            case Forscape::InterpreterOutput::CreatePlot:
-                //EVENTUALLY: maybe do something here?
-                delete msg;
-                break;
-            case Forscape::InterpreterOutput::AddDiscreteSeries:{
-                delete msg;
-                break;
-            }
-            default: assert(false);
-        }
-
-    if(interpreter.error_code != Code::ErrorCode::NO_ERROR_FOUND){
-        Code::Error error(parser.parse_tree.getSelection(interpreter.error_node), interpreter.error_code);
-        str += "\nLine " + error.line() + " - " + error.message();
-        errors.push_back(error);
-    }
-
-    return str;
-}
-
-void Model::runThread(){
-    assert(errors.empty());
-    interpreter.runThread(
-        parser.parse_tree,
-        symbol_builder.symbol_table,
-        static_pass.instantiation_lookup,
-        static_pass.number_switch,
-        static_pass.string_switch);
-}
-
-void Model::stop(){
-    interpreter.stop();
 }
 
 Model::Model(const std::string& src, bool is_output)

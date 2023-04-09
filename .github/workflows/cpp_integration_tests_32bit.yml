@@ -12,6 +12,8 @@ jobs:
         run: sudo apt-get install gcc-multilib g++-multilib
       - id: install_conan
         uses: turtlebrowser/get-conan@main
+        with:
+          version: 1.59.0
       - id: patch_conan
         run: conan profile new default --detect && conan profile update settings.compiler.libcxx=libstdc++11 default
       - id: run_conan

@@ -428,9 +428,19 @@ ParseNode Parser::fromStatement() noexcept {
 
     ParseNode file = filename();
 
+    if(!match(IMPORT)) return error(UNRECOGNIZED_EXPR);
+
     parse_tree.prepareNary();
     parse_tree.addNaryChild(file);
     do {
+        if(!peek(IDENTIFIER)){
+            Typeset::Marker m = rMarkPrev();
+            if(!m.atTextEnd()) m.incrementToNextWord();
+            parse_tree.addNaryChild(parse_tree.addTerminal(OP_IDENTIFIER, Typeset::Selection(m, m)));
+            parse_tree.addNaryChild(NONE);
+            return parse_tree.finishNary(OP_FROM_IMPORT, Typeset::Selection(left, rMarkPrev()));
+        }
+
         ParseNode component = isolatedIdentifier();
         ParseNode alias = match(AS) ? isolatedIdentifier() : NONE;
         parse_tree.addNaryChild(component);
@@ -917,6 +927,11 @@ ParseNode Parser::rightUnary(ParseNode n) alloc_except {
             case TOKEN_SUBSCRIPT: n = subscript(n, rMark()); break;
             case TOKEN_DUALSCRIPT: n = dualscript(n); break;
             case PERIOD: advance();
+                if(!peek(IDENTIFIER)){
+                    const Typeset::Marker& m = rMarkPrev();
+                    ParseNode blank = parse_tree.addTerminal(OP_ERROR, Typeset::Selection(m, m));
+                    n = parse_tree.addNode<2>(OP_SCOPE_ACCESS, {n, blank}); break;
+                }
                 if(!noErrors()) return n;
                 n = parse_tree.addNode<2>(OP_SCOPE_ACCESS, {n, primary()}); break;
             default: return n;

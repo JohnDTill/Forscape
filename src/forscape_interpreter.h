@@ -16,7 +16,6 @@ class InterpreterOutput;
 namespace Code {
 
 class ParseTree;
-class SymbolTable;
 
 class Interpreter{
 public:
@@ -50,13 +49,11 @@ public:
     Interpreter() noexcept;
     void run(
         const ParseTree& parse_tree,
-        SymbolTable* symbol_table,
         const InstantiationLookup& inst_lookup,
         const NumericSwitchMap& number_switch,
         const StringSwitchMap& string_switch);
     void runThread(
         const ParseTree& parse_tree,
-        SymbolTable& symbol_table,
         const InstantiationLookup& inst_lookup,
         const NumericSwitchMap& number_switch,
         const StringSwitchMap& string_switch);

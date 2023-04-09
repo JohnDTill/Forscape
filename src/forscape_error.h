@@ -16,6 +16,7 @@ namespace Code {
 struct Error {
     Typeset::Selection selection;
     ErrorCode code;
+    size_t flag;
 
     Error() noexcept = default;
     Error(Typeset::Selection controller, ErrorCode code) noexcept;

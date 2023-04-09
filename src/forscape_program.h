@@ -6,6 +6,8 @@
 #include <filesystem>
 #include <vector>
 
+#include "forscape_interpreter.h"
+
 namespace Forscape {
 
 class Program {
@@ -27,11 +29,21 @@ public:
     void runStaticPass();
     void getFileSuggestions(std::vector<std::string>& suggestions, Typeset::Model* active) const;
     void getFileSuggestions(std::vector<std::string>& suggestions, std::string_view input, Typeset::Model* active) const;
+    std::string run();
+    void runThread();
+    void stop();
+
+    Code::ParseTree parse_tree;
+    Code::StaticPass static_pass = Code::StaticPass(parse_tree, errors, warnings);
+    Code::Interpreter interpreter;
 
     FORSCAPE_UNORDERED_MAP<std::filesystem::path, Typeset::Model*> source_files; //May contain multiple entries per model
     std::vector<Code::Error> errors;
     std::vector<Code::Error> warnings;
     Typeset::Model* program_entry_point = nullptr;
+
+    //DESIGN QUAGMIRE (ERRORS): define differences between model errors/warnings and program errors/warnings
+    //DESIGN QUAGMIRE (AST): define difference between model parse_tree and program parse_tree
 
 private:
     static Program* singleton_instance;
@@ -44,9 +56,6 @@ private:
     std::vector<std::filesystem::path> project_path = {
         std::filesystem::path(), //Placeholder for searching file's directory
         std::filesystem::current_path(), //Placeholder for base project directory
-        //EVENTUALLY: stop hardcoding these, make an "include directory" mechanism or similar
-        std::filesystem::current_path() / ".." / "test" / "interpreter_scripts" / "in",
-        std::filesystem::current_path() / ".." / "test" / "interpreter_scripts" / "errors",
     };
     static constexpr std::string_view extensions[] = {".π"};
 

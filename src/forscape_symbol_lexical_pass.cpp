@@ -1021,7 +1021,7 @@ void SymbolLexicalPass::resolveScopeAccess(ParseNode pn) noexcept {
     switch (parse_tree.getOp(lhs)) {
         case OP_IDENTIFIER: resolveReference(lhs); break;
         case OP_SCOPE_ACCESS: resolveScopeAccess(lhs); break;
-        default: assert(false);
+        default: resolveDefault(lhs); break;
     }
 
     //Create a usage for the RHS which will be patched later

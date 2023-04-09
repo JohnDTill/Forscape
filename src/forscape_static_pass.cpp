@@ -11,17 +11,21 @@ namespace Forscape {
 namespace Code {
 
 StaticPass::StaticPass(
-        Typeset::Model* model,
         ParseTree& parse_tree,
-        SymbolTable& symbol_table,
         std::vector<Code::Error>& errors,
         std::vector<Error>& warnings) noexcept
-    : parse_tree(parse_tree), symbol_table(symbol_table), errors(errors), warnings(warnings),
-      base_model(model), active_model(model) {}
+    : parse_tree(parse_tree), errors(errors), warnings(warnings) {}
 
-void StaticPass::resolve(){
+void StaticPass::resolve(Typeset::Model* entry_point){
+    active_model = entry_point;
+
     reset();
-    if(!errors.empty()) return;
+    parse_tree = entry_point->parser.parse_tree;
+
+    if(!entry_point->errors.empty()){
+        errors = entry_point->errors;
+        return;
+    }
     parse_tree.root = resolveStmt(parse_tree.root);
 
     for(const auto& entry : called_func_map)
@@ -48,77 +52,8 @@ void StaticPass::resolve(){
     //EVENTUALLY: replace this with something less janky
     parse_tree.patchClonedTypes();
 
-    for(Symbol& sym : symbol_table.symbols)
-        if(!sym.is_used)
-            warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
-
-    for(const SymbolUsage& usage : symbol_table.symbol_usages){
-        const Symbol& sym = *usage.symbol();
-
-        SemanticType fmt = SEM_ID;
-        if(sym.is_ewise_index){
-            fmt = SEM_ID_EWISE_INDEX;
-        }else if(sym.is_closure_nested | sym.is_captured_by_value){
-            fmt = SEM_LINK;
-        }else if(!sym.is_const){
-            fmt = SEM_ID_FUN_IMPURE;
-        }
-
-        usage.sel.format(fmt);
-    }
-
-    #ifndef NDEBUG
-    if(!errors.empty()) return;
-    assert(parse_tree.inFinalState());
-
-    #ifndef FORSCAPE_TYPESET_HEADLESS
-    static std::unordered_set<ParseNode> doc_map_nodes;
-    doc_map_nodes.clear();
-
-    struct hash {
-        size_t operator() (const Typeset::Selection& a) const noexcept {
-            return reinterpret_cast<size_t>(a.left.text) ^ (a.left.index);
-        }
-    };
-
-    struct cmp {
-        bool operator() (const Typeset::Selection& a, const Typeset::Selection& b) const noexcept {
-            return a.left == b.left && a.right == b.right;
-        }
-    };
-
-    static std::unordered_set<Typeset::Selection, hash, cmp> selection_in_map;
-    selection_in_map.clear();
-
-    //model->populateDocMapParseNodes(doc_map_nodes);
-
-    //EVENTUALLY: check this later?
-    //Every identifier in the doc map goes to a valid symbol
-    //for(ParseNode pn : doc_map_nodes)
-    //    if(parse_tree.getOp(pn) == OP_IDENTIFIER){
-    //        symbol_table.verifyIdentifier(pn);
-    //        selection_in_map.insert(parse_tree.getSelection(pn));
-    //    }
-
-    //Every usage in the symbol table is in the doc map
-    //for(const Usage& usage : symbol_table.usages)
-    //    assert(selection_in_map.find(parse_tree.getSelection(usage.pn)) != selection_in_map.end());
-    #endif
-    #endif
-
-    for(const SymbolUsage& usage : symbol_table.symbol_usages){
-        const Symbol& sym = *usage.symbol();
-
-        if(sym.type == StaticPass::NUMERIC && (sym.rows > 1 || sym.cols > 1)){
-            const Typeset::Selection& sel = usage.sel;
-            switch (sel.getFormat()) {
-                case SEM_ID: sel.format(SEM_ID_MAT); break;
-                case SEM_PREDEF: sel.format(SEM_PREDEFINEDMAT); break;
-                case SEM_ID_FUN_IMPURE: sel.format(SEM_ID_MAT_IMPURE); break;
-                default: break;
-            }
-        }
-    }
+    finaliseSymbolTable(active_model);
+    for(Typeset::Model* m : imported_models) finaliseSymbolTable(m);
 }
 
 void StaticPass::reset() noexcept{
@@ -131,13 +66,11 @@ void StaticPass::reset() noexcept{
     all_calls.clear();
     number_switch.clear();
     string_switch.clear();
+    imported_models.clear();
     assert(return_types.empty());
     assert(retry_at_recursion == false);
     assert(first_attempt == true);
     assert(recursion_fallback == nullptr);
-
-    for(Symbol& sym : symbol_table.symbols)
-        sym.type = UNINITIALISED;
 
     Program::instance()->reset();
 
@@ -316,10 +249,14 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             ParseNode expr = resolveExprTop(parse_tree.child(pn));
             parse_tree.setArg<0>(pn, expr);
             if(parse_tree.getOp(expr) != OP_CALL || !isAbstractFunctionGroup(parse_tree.getType(parse_tree.arg<0>(expr)))){
+                //DESIGN QUAGMIRE (ERRORS): what is error handling strategy?
                 warnings.push_back(Error(parse_tree.getSelection(expr), ErrorCode::UNUSED_EXPRESSION));
+                active_model->warnings.push_back(Error(parse_tree.getSelection(expr), ErrorCode::UNUSED_EXPRESSION));
                 parse_tree.setOp(pn, OP_DO_NOTHING);
-                //EVENTUALLY: check the call stmt has side effects
             }
+
+            //EVENTUALLY: check the call stmt has side effects
+
             return pn;
         }
 
@@ -339,7 +276,8 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
                 ParseNode expr = resolveExprTop(parse_tree.arg(pn, i));
                 parse_tree.setArg(pn, i, expr);
-                //Specialise printing for type
+                //EVENTUALLY: Specialise printing for type
+                //            Make sure all types accepted here are actually printable (e.g. modules crash)
             }
             return pn;
 
@@ -347,6 +285,9 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             ParseNode child = resolveExprTop(parse_tree.child(pn));
             parse_tree.setArg<0>(pn, child);
             if(parse_tree.getType(child) != BOOLEAN) return error(pn, child);
+            else if(parse_tree.getOp(child) == OP_TRUE) parse_tree.setOp(pn, OP_DO_NOTHING);
+            //EVENTUALLY: assertion fires if OP_FALSE and codepath is definitely encountered
+            //            probably still want to be able to run the code and fail at this point
             return pn;
         }
 
@@ -375,6 +316,8 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
         }
 
         case OP_IMPORT:{
+            //EVENTUALLY: what is the circular import execution method? How are cyclical errors reported?
+
             ParseNode var = parse_tree.getFlag(pn);
             Symbol& sym = *parse_tree.getSymbol(var);
             ParseNode file = parse_tree.child(pn);
@@ -392,6 +335,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                     Typeset::Model* current = active_model;
                     active_model = model;
                     resolveStmt(root);
+                    imported_models.push_back(model);
                     active_model = current;
                     parse_tree.setFlag(pn, root);
                 }else{
@@ -419,6 +363,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                     Typeset::Model* current = active_model;
                     active_model = model;
                     resolveStmt(root);
+                    imported_models.push_back(model);
                     active_model = current;
                     parse_tree.setFlag(pn, root);
                 }else{
@@ -438,37 +383,59 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                 auto lookup = lexical_map.find(parse_tree.getSelection(imported_var));
                 if(lookup == lexical_map.end()){
                     parse_tree.setOp(imported_var, OP_ERROR);
-                    parse_tree.setFlag(imported_var, reinterpret_cast<size_t>(&lexical_map));
-                    return error(pn, imported_var, IMPORT_FIELD_NOT_FOUND);
+
+                    //DESIGN QUAGMIRE (AST)
+                    active_model->parser.parse_tree.setOp(imported_var - active_model->parse_node_offset, OP_ERROR);
+
+                    ParseNode err = error(pn, imported_var, MODULE_FIELD_NOT_FOUND);
+                    errors.back().flag = reinterpret_cast<size_t>(&lexical_map);
+                    active_model->errors.back().flag = reinterpret_cast<size_t>(&lexical_map);
+                    return err;
                 }
 
-                Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
+                Symbol* sym = reinterpret_cast<Symbol*>(lookup->second);
+
+                //Getting the original var could be accomplished by updating the active model's lexical map,
+                //but we choose a space cost over a dictionary op
+                if(sym->aliased_var) sym = sym->aliased_var;
 
                 if(local_var == NONE){
                     Symbol& carry_over = *parse_tree.getSymbol(imported_var);
+                    carry_over.aliased_var = sym;
+
+                    //EVENTUALLY: think about rules for warning symbol is not used in a module
+                    // edge cases: in Python, imports can be chained accross multiple modules
+                    sym->is_used = carry_over.is_used;
+
                     for(SymbolUsage* usage = carry_over.last_external_usage; usage != nullptr; usage = usage->prevUsage()){
                         usage->symbol_index = reinterpret_cast<size_t>(&sym);
-                        parse_tree.setSymbol(usage->pn, &sym);
+                        //DESIGN QUAGMIRE (AST) - parse_tree strategy please
+                        parse_tree.setSymbol(usage->pn + active_model->parse_node_offset, sym);
+                        active_model->parser.parse_tree.setSymbol(usage->pn, sym);
 
                         if(usage->prevUsage() == nullptr){
-                            usage->prev_usage_index = reinterpret_cast<size_t>(sym.last_external_usage);
+                            usage->prev_usage_index = reinterpret_cast<size_t>(sym->last_external_usage);
                             break;
                         }
                     }
-                    sym.last_external_usage = carry_over.last_external_usage;
+                    sym->last_external_usage = carry_over.last_external_usage;
                 }else{
+                    sym->is_used = true;
                     SymbolUsage* carry_over_usage = reinterpret_cast<SymbolUsage*>(parse_tree.getFlag(imported_var));
-                    carry_over_usage->symbol_index = reinterpret_cast<size_t>(&sym);
-                    parse_tree.setSymbol(carry_over_usage->pn, &sym);
-                    carry_over_usage->prev_usage_index = reinterpret_cast<size_t>(sym.last_external_usage);
-                    sym.last_external_usage = carry_over_usage;
+                    carry_over_usage->symbol_index = reinterpret_cast<size_t>(sym);
+                    //DESIGN QUAGMIRE (AST) - parse_tree strategy please
+                    parse_tree.setSymbol(carry_over_usage->pn + active_model->parse_node_offset, sym);
+                    active_model->parser.parse_tree.setSymbol(carry_over_usage->pn, sym);
+                    carry_over_usage->prev_usage_index = reinterpret_cast<size_t>(sym->last_external_usage);
+                    sym->last_external_usage = carry_over_usage;
 
                     Symbol& alias = *parse_tree.getSymbol(local_var);
                     alias.type = ALIAS;
-                    alias.setShadowedVar(&sym);
+                    alias.setShadowedVar(sym);
+                    alias.aliased_var = sym;
 
                     #ifndef NDEBUG
-                    auto result = parse_tree.aliases.insert({sym.str(), {alias.str()}});
+                    auto result = parse_tree.aliases.insert({sym->str(), {alias.str()}});
                     if(!result.second) result.first->second.insert(alias.str());
                     #endif
                 }
@@ -501,8 +468,6 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
 }
 
 ParseNode StaticPass::resolveLValue(ParseNode pn, bool write) noexcept {
-    if(!errors.empty()) return pn;
-
     assert(pn != NONE);
 
     switch (parse_tree.getOp(pn)) {
@@ -1291,7 +1256,7 @@ size_t StaticPass::error(ParseNode pn, ParseNode sel, ErrorCode code) noexcept{
     else if(errors.empty()){
         Error err(parse_tree.getSelection(sel), code);
         errors.push_back(err);
-        if(active_model != base_model) active_model->errors.push_back(err);
+        active_model->errors.push_back(err); //DESIGN QUAGMIRE (ERRORS): what is error handling strategy?
     }
     return pn;
 }
@@ -1302,7 +1267,7 @@ size_t StaticPass::errorType(ParseNode pn, ErrorCode code) noexcept{
     if(errors.empty()){
         Error err(parse_tree.getSelection(pn), code);
         errors.push_back(err);
-        if(active_model != base_model) active_model->errors.push_back(err);
+        active_model->errors.push_back(err);
     }
     return FAILURE;
 }
@@ -1546,8 +1511,8 @@ ParseNode StaticPass::resolveLambda(ParseNode pn){
     for(size_t i = 0; i < cap_list_size; i++){
         ParseNode cap = parse_tree.arg(cap_list, i);
         size_t inner_id = parse_tree.getFlag(cap);
-        assert(inner_id < symbol_table.symbols.size());
-        const Symbol& inner = symbol_table.symbols[inner_id];
+        assert(inner_id < symbolTable().symbols.size());
+        const Symbol& inner = symbolTable().symbols[inner_id];
         const Symbol& outer = *inner.shadowedVar();
         Type t = outer.type;
         sig.push_back(t);
@@ -1933,12 +1898,11 @@ ParseNode StaticPass::resolveDefiniteIntegral(ParseNode pn) {
 
 ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
     ParseNode lhs = parse_tree.lhs(pn);
+    size_t num_errors = errors.size();
     ParseNode lhs_lvalue = resolveLValue(lhs);
     ParseNode field = parse_tree.arg<1>(pn);
-    if(parse_tree.getOp(lhs_lvalue) == OP_ERROR){
-        parse_tree.setOp(field, OP_ERROR);
-        return lhs_lvalue;
-    }
+    if(errors.size() > num_errors) //DESIGN QUAGMIRE (ERRORS): there has to be a better way to check for errors
+        return error(pn, pn, NOT_A_SCOPE);
     size_t sym_id = parse_tree.getSymId(lhs_lvalue);
     Symbol& sym = *parse_tree.getSymbol(lhs_lvalue);
 
@@ -1948,7 +1912,12 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
         Typeset::Model* model = reinterpret_cast<Typeset::Model*>(sym.flag);
         const auto& lexical_map = model->symbol_builder.symbol_table.lexical_map;
         auto lookup = lexical_map.find(parse_tree.getSelection(field));
-        if(lookup == lexical_map.end()) return error(pn, pn, BAD_READ);
+        if(lookup == lexical_map.end()){
+            ParseNode err = error(pn, field, MODULE_FIELD_NOT_FOUND);
+            errors.back().flag = reinterpret_cast<size_t>(&lexical_map);
+            active_model->errors.back().flag = reinterpret_cast<size_t>(&lexical_map);
+            return err;
+        }
         parse_tree.setOp(field, OP_IDENTIFIER);
 
         Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
@@ -1958,13 +1927,16 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
 
         //Patch the empty usage inserted earlier
         usage.symbol_index = reinterpret_cast<size_t>(&sym);
-        parse_tree.setSymbol(pn, &sym);
+        parse_tree.setSymbol(pn + active_model->parse_node_offset, &sym);
+        //DESIGN QUAGMIRE (AST): handle parse_tree logic please
+        active_model->parser.parse_tree.setOp(field - active_model->parse_node_offset, OP_IDENTIFIER);
+        active_model->parser.parse_tree.setSymbol(pn, &sym);
         usage.prev_usage_index = reinterpret_cast<size_t>(sym.last_external_usage);
         sym.last_external_usage = &usage;
 
         if(write){
             if(sym.is_const){
-                return error(pn, field, REASSIGN_CONSTANT);
+                return error(pn + active_model->parse_node_offset, field, REASSIGN_CONSTANT);
             }else{
                 sym.is_reassigned = true;
             }
@@ -1977,17 +1949,27 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
         parse_tree.setCols(field, sym.cols);
         return field;
     }else if(sym.type == NAMESPACE){
-        auto lookup = symbol_table.scoped_vars.find(SymbolTable::ScopedVarKey(sym_id, parse_tree.getSelection(field)));
-        if(lookup != symbol_table.scoped_vars.end()){
+        auto lookup = symbolTable().scoped_vars.find(SymbolTable::ScopedVarKey(sym_id, parse_tree.getSelection(field)));
+        if(lookup != symbolTable().scoped_vars.end()){
             parse_tree.setOp(field, OP_IDENTIFIER);
             Symbol& sym = *reinterpret_cast<Symbol*>(lookup->second);
             SymbolUsage& usage = *reinterpret_cast<SymbolUsage*>(parse_tree.getFlag(field));
 
-            symbol_table.resolveScopeReference(usage, sym);
+            ParseNode pn = usage.pn;
+
+            //Patch the empty usage inserted earlier
+            usage.symbol_index = reinterpret_cast<size_t>(&sym);
+            parse_tree.setSymbol(pn + active_model->parse_node_offset, &sym);
+            //DESIGN QUAGMIRE (AST): handle parse_tree logic please
+            active_model->parser.parse_tree.setOp(field - active_model->parse_node_offset, OP_IDENTIFIER);
+            active_model->parser.parse_tree.setSymbol(pn, &sym);
+
+            usage.prev_usage_index = reinterpret_cast<size_t>(sym.last_external_usage);
+            sym.last_external_usage = &usage;
 
             if(write){
                 if(sym.is_const){
-                    return error(pn, field, REASSIGN_CONSTANT);
+                    return error(pn + active_model->parse_node_offset, field, REASSIGN_CONSTANT);
                 }else{
                     sym.is_reassigned = true;
                 }
@@ -2000,7 +1982,7 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
             parse_tree.setCols(field, sym.cols);
             return field;
         }else{
-            return error(pn, pn, BAD_READ);
+            return error(pn, field, BAD_READ);
         }
     }else{
         return error(pn, lhs, NOT_A_SCOPE);
@@ -2096,8 +2078,90 @@ ParseNode StaticPass::enforceSemiPositiveInt(ParseNode pn){
     return pn;
 }
 
-bool StaticPass::dimsDisagree(size_t a, size_t b) noexcept{
+bool StaticPass::dimsDisagree(size_t a, size_t b) noexcept {
     return a != UNKNOWN_SIZE && b != UNKNOWN_SIZE && a != b;
+}
+
+SymbolTable& StaticPass::symbolTable() const noexcept {
+    return active_model->symbol_builder.symbol_table;
+}
+
+void StaticPass::finaliseSymbolTable(Typeset::Model* model) const noexcept {
+    auto& symbol_table = model->symbol_builder.symbol_table;
+
+    for(Symbol& sym : symbol_table.symbols)
+        if(!sym.is_used){
+            warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+            model->warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+        }
+
+    for(const SymbolUsage& usage : symbol_table.symbol_usages){
+        const Symbol& sym = *usage.symbol();
+
+        SemanticType fmt = SEM_ID;
+        if(sym.is_ewise_index){
+            fmt = SEM_ID_EWISE_INDEX;
+        }else if(sym.is_closure_nested | sym.is_captured_by_value){
+            fmt = SEM_LINK;
+        }else if(!sym.is_const){
+            fmt = SEM_ID_FUN_IMPURE;
+        }
+
+        usage.sel.format(fmt);
+    }
+
+    #ifndef NDEBUG
+    if(!errors.empty()) return;
+    assert(parse_tree.inFinalState());
+
+    #ifndef FORSCAPE_TYPESET_HEADLESS
+    static std::unordered_set<ParseNode> doc_map_nodes;
+    doc_map_nodes.clear();
+
+    struct hash {
+        size_t operator() (const Typeset::Selection& a) const noexcept {
+            return reinterpret_cast<size_t>(a.left.text) ^ (a.left.index);
+        }
+    };
+
+    struct cmp {
+        bool operator() (const Typeset::Selection& a, const Typeset::Selection& b) const noexcept {
+            return a.left == b.left && a.right == b.right;
+        }
+    };
+
+    static std::unordered_set<Typeset::Selection, hash, cmp> selection_in_map;
+    selection_in_map.clear();
+
+    //model->populateDocMapParseNodes(doc_map_nodes);
+
+    //EVENTUALLY: check this later?
+    //Every identifier in the doc map goes to a valid symbol
+    //for(ParseNode pn : doc_map_nodes)
+    //    if(parse_tree.getOp(pn) == OP_IDENTIFIER){
+    //        symbol_table.verifyIdentifier(pn);
+    //        selection_in_map.insert(parse_tree.getSelection(pn));
+    //    }
+
+    //Every usage in the symbol table is in the doc map
+    //for(const Usage& usage : symbol_table.usages)
+    //    assert(selection_in_map.find(parse_tree.getSelection(usage.pn)) != selection_in_map.end());
+    #endif
+    #endif
+
+    for(const SymbolUsage& usage : symbol_table.symbol_usages){
+        const Symbol& sym = *usage.symbol();
+
+        if(sym.type == StaticPass::NUMERIC && (sym.rows > 1 || sym.cols > 1)){
+            const Typeset::Selection& sel = usage.sel;
+            switch (sel.getFormat()) {
+                case SEM_ID: sel.format(SEM_ID_MAT); break;
+                case SEM_PREDEF: sel.format(SEM_PREDEFINEDMAT); break;
+                case SEM_ID_FUN_IMPURE: sel.format(SEM_ID_MAT_IMPURE); break;
+                default: break;
+            }
+        }
+    }
 }
 
 constexpr bool StaticPass::isAbstractFunctionGroup(size_t type) noexcept {
@@ -2158,10 +2222,10 @@ Type StaticPass::instantiate(ParseNode call_node, const CallSignature& fn){
     size_t type_index = 0;
     if(val_list != NONE){
         size_t scope_index = parse_tree.getFlag(val_list);
-        const ScopeSegment& scope_segment = symbol_table.scope_segments[scope_index];
+        const ScopeSegment& scope_segment = symbolTable().scope_segments[scope_index];
         for(size_t i = 0; i < N_vals; i++){
             size_t sym_id = scope_segment.first_sym_index + i;
-            Symbol& sym = symbol_table.symbols[sym_id];
+            Symbol& sym = symbolTable().symbols[sym_id];
             old_val_cap.push_back(sym);
             sym.type = dec[1+type_index++];
             if(sym.type == NUMERIC){

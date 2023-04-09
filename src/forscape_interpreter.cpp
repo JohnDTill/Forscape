@@ -21,7 +21,6 @@ Interpreter::Interpreter() noexcept
 
 void Interpreter::run(
         const ParseTree& parse_tree,
-        SymbolTable* symbol_table,
         const InstantiationLookup& inst_lookup,
         const NumericSwitchMap& number_switch,
         const StringSwitchMap& string_switch){
@@ -36,7 +35,7 @@ void Interpreter::run(
     this->inst_lookup = inst_lookup;
     this->number_switch = number_switch;
     this->string_switch = string_switch;
-    SymbolTableLinker linker(*symbol_table, this->parse_tree);
+    SymbolTableLinker linker(this->parse_tree);
     linker.link();
     this->parse_tree.patchClones();
 
@@ -44,14 +43,12 @@ void Interpreter::run(
     status = FINISHED;
 }
 
-void Interpreter::runThread(
-        const ParseTree& parse_tree,
-        SymbolTable& symbol_table,
+void Interpreter::runThread(const ParseTree& parse_tree,
         const InstantiationLookup& inst_lookup,
         const NumericSwitchMap& number_switch,
         const StringSwitchMap& string_switch){
     status = NORMAL;
-    std::thread(&Interpreter::run, this, parse_tree, &symbol_table, inst_lookup, number_switch, string_switch).detach();
+    std::thread(&Interpreter::run, this, parse_tree, inst_lookup, number_switch, string_switch).detach();
 
     //EVENTUALLY: linking in a threaded call with the original symbol_table means a crash will happen
     //            if the symbol_table is invalidated before the linker finishes running.
@@ -562,9 +559,12 @@ void Interpreter::reassignSubscript(ParseNode lhs, ParseNode rhs){
             if(rvalue.index() == double_index){
                 rmat.resize(1,1);
                 rmat(0,0) = std::get<double>(rvalue);
-            }else{
+            }else if(rvalue.index() == MatrixXd_index){
                 assert(rvalue.index() == MatrixXd_index);
                 rmat = std::get<Eigen::MatrixXd>(rvalue);
+            }else{
+                error(TYPE_ERROR, rhs);
+                return;
             }
 
             if(num_indices == 1){

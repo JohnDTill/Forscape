@@ -249,7 +249,8 @@ void SymbolTable::finalize() noexcept {
     }
     for(auto& entry : lexical_map) entry.second = reinterpret_cast<SymbolIndex>(symbol_offset + entry.second);
 
-    //EVENTUALLY: concession to current namespace scheme, probably don't need this
+    //EVENTUALLY: this is nested alloc, but the current namespace scheme can probably be erased
+    //            Likely make this decision when implementing OOP
     FORSCAPE_UNORDERED_MAP<ScopedVarKey, SymbolIndex, HashScopedVarKey> scoped_vars;
     for(const auto& entry : this->scoped_vars){
         auto key = entry.first;
@@ -279,17 +280,6 @@ void SymbolTable::resolveReference(ParseNode pn, size_t sym_id, size_t closure_d
 
     symbol_usages.push_back(SymbolUsage(sym.last_usage_index, sym_id, pn, parse_tree.getSelection(pn)));
     sym.last_usage_index = symbol_usages.size()-1;
-}
-
-void SymbolTable::resolveScopeReference(SymbolUsage& usage, Symbol& sym) noexcept {
-    ParseNode pn = usage.pn;
-
-    //Patch the empty usage inserted earlier
-    usage.symbol_index = reinterpret_cast<size_t>(&sym);
-    parse_tree.setSymbol(pn, &sym);
-
-    usage.prev_usage_index = reinterpret_cast<size_t>(sym.last_external_usage);
-    sym.last_external_usage = &usage;
 }
 
 }
