@@ -559,9 +559,12 @@ void Interpreter::reassignSubscript(ParseNode lhs, ParseNode rhs){
             if(rvalue.index() == double_index){
                 rmat.resize(1,1);
                 rmat(0,0) = std::get<double>(rvalue);
-            }else{
+            }else if(rvalue.index() == MatrixXd_index){
                 assert(rvalue.index() == MatrixXd_index);
                 rmat = std::get<Eigen::MatrixXd>(rvalue);
+            }else{
+                error(TYPE_ERROR, rhs);
+                return;
             }
 
             if(num_indices == 1){
