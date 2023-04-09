@@ -112,10 +112,10 @@ inline bool testFileSuggestions(){
     view->handleKey(Qt::Key_Period, Qt::NoModifier, "."); QCoreApplication::processEvents();
     view->handleKey(Qt::Key_Slash, Qt::NoModifier, "/"); QCoreApplication::processEvents();
 
-    #ifdef __linux__
-    #define SLASH "/"
-    #else
+    #ifdef WIN32
     #define SLASH "\\"
+    #else
+    #define SLASH "/"
     #endif
 
     std::vector<std::string> parent_files;
