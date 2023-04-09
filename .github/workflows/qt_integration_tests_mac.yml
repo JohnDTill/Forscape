@@ -13,7 +13,7 @@ jobs:
       - id: install_conan
         uses: turtlebrowser/get-conan@main
       - id: run_conan
-        run: cd ${GITHUB_WORKSPACE}/test && conan install --generator cmake_find_package --output-folder ../build_test/conan-dependencies .
+        run: cd ${GITHUB_WORKSPACE}/test && conan install --generator cmake_find_package --install-folder ../build_test/conan-dependencies .
       - id: cmake
         run: cd ${GITHUB_WORKSPACE}/test && cmake -DTEST_QT=ON -B../build_test -S.
       - id: make
