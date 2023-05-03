@@ -361,6 +361,7 @@ ParseNode Parser::algStatement() alloc_except {
     advance();
 
     ParseNode id = isolatedIdentifier();
+    if(parse_tree.getOp(id) == OP_ERROR) return id;
     if(comment != NONE) parse_tree.setFlag(id, parse_tree.addTerminal(OP_COMMENT, tokens[comment].sel));
 
     if(!peek(LEFTPAREN) && !peek(LEFTBRACE))
