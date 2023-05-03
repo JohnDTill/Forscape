@@ -16,11 +16,13 @@
 #include <chrono>
 
 #include <QClipboard>
+#include <QDrag>
 #include <QGuiApplication>
 #include <QInputDialog>
 #include <QKeyEvent>
 #include <QMenu>
 #include <QMessageBox>
+#include <QMimeData>
 #include <QPaintEvent>
 #include <QScrollBar>
 #include <QStyle>
@@ -179,7 +181,6 @@ enum MouseHoldState{
     DoubleClick,
     TripleClick,
     ClickedOnSelection,
-    SelectionDrag,
 };
 static MouseHoldState mouse_hold_state = Hover;
 
@@ -224,6 +225,8 @@ View::View() noexcept
     setAutoFillBackground(true);
     all_views.push_back(this);
     search_selection = controller.selection();
+
+    setAcceptDrops(true);
 }
 
 View::~View() noexcept {
@@ -307,11 +310,9 @@ void View::dispatchClick(double x, double y, int xScreen, int yScreen, bool righ
     update();
 }
 
-void View::dispatchRelease(double x, double y){
+void View::dispatchRelease(int x, int y){
     if(mouse_hold_state == ClickedOnSelection)
-        resolveClick(x, y);
-    else if(mouse_hold_state == SelectionDrag)
-        resolveSelectionDrag(x, y);
+        resolveClick(xModel(x), yModel(y));
 
     mouse_hold_state = Hover;
 
@@ -343,12 +344,21 @@ void View::dispatchHover(double x, double y){
             resolveShiftClick(x, y); update(); break;
         case DoubleClick: resolveWordDrag(x, y); update(); break;
         case TripleClick: resolveLineDrag(y); update(); break;
-        case ClickedOnSelection:
-            if(allow_write){
-                mouse_hold_state = SelectionDrag;
-                QWidget::setCursor(Qt::DragMoveCursor);
-            }
+        case ClickedOnSelection:{
+            mouse_hold_state = Hover;
+
+            Qt::DropActions actions = Qt::CopyAction;
+            if(allow_write) actions |= Qt::MoveAction;
+
+            QDrag* drag = new QDrag(this);
+            QMimeData* mimeData = new QMimeData;
+
+            mimeData->setText(toQString(controller.selectedText()));
+            drag->setMimeData(mimeData);
+            drag->setPixmap(QPixmap(1, 1));
+            drag->exec(actions);
             break;
+        }
         default: break;
     }
 }
@@ -729,7 +739,7 @@ void View::mouseDoubleClickEvent(QMouseEvent* e){
 }
 
 void View::mouseReleaseEvent(QMouseEvent* e){
-    dispatchRelease(xModel(e->x()), yModel(e->y()));
+    dispatchRelease(e->x(), e->y());
 }
 
 void View::mouseMoveEvent(QMouseEvent* e){
@@ -770,6 +780,47 @@ void View::focusOutEvent(QFocusEvent* e){
 void View::resizeEvent(QResizeEvent* e){
     QWidget::resizeEvent(e);
     handleResize();
+}
+
+void View::dragEnterEvent(QDragEnterEvent* event) {
+    if(!allow_write) return;
+
+    if(event->mimeData()->hasText()){
+        event->setAccepted(true);
+        event->setDropAction(event->source() == this ? Qt::DropAction::MoveAction : Qt::DropAction::CopyAction);
+    }
+}
+
+void View::dragLeaveEvent(QDragLeaveEvent* event) {
+    event->accept();
+}
+
+void View::dropEvent(QDropEvent* event) {
+    event->acceptProposedAction();
+
+    if(!rect().contains(event->pos())) return;
+
+    const QPoint& p = event->pos();
+    const double x = xModel(p.x());
+    const double y = yModel(p.y());
+
+    if(event->source() == this){
+        resolveSelectionDrag(x, y);
+        update();
+    }else{
+        const QMimeData* data = event->mimeData();
+        assert(data->hasText());
+        resolveClick(x, y);
+        controller.deselect();
+        paste(toCppString(data->text()));
+        activateWindow();
+    }
+}
+
+void View::dragMoveEvent(QDragMoveEvent* event) {
+    const QPoint& p = event->pos();
+    const bool can_drop = p.x() >= getLineboxWidth()*zoom && p.x() < width();
+    event->setAccepted(can_drop);
 }
 
 void View::onBlink() noexcept{
@@ -832,13 +883,11 @@ void View::del(){
 }
 
 void View::setCursorAppearance(double x, double y) {
-    if(mouse_hold_state != SelectionDrag){
-        Construct* con = model->constructAt(x, y);
-        if(con && con->constructCode() == MARKERLINK){
-            QWidget::setCursor(Qt::PointingHandCursor);
-        }else{
-            QWidget::setCursor(isInLineBox(x) ? Qt::ArrowCursor : Qt::IBeamCursor);
-        }
+    Construct* con = model->constructAt(x, y);
+    if(con && con->constructCode() == MARKERLINK){
+        QWidget::setCursor(Qt::PointingHandCursor);
+    }else{
+        QWidget::setCursor(isInLineBox(x) ? Qt::ArrowCursor : Qt::IBeamCursor);
     }
 }
 

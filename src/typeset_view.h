@@ -61,7 +61,7 @@ public:
 
 protected: TEST_PUBLIC
     void dispatchClick(double x, double y, int xScreen, int yScreen, bool right_click, bool shift_held) alloc_except;
-    void dispatchRelease(double x, double y);
+    void dispatchRelease(int x, int y);
     void dispatchDoubleClick(double x, double y);
     void dispatchHover(double x, double y);
     void dispatchMousewheel(bool ctrl_held, bool up);
@@ -138,6 +138,10 @@ protected:
     virtual void focusInEvent(QFocusEvent* event) override;
     virtual void focusOutEvent(QFocusEvent* event) override;
     virtual void resizeEvent(QResizeEvent* e) override;
+    virtual void dragEnterEvent(QDragEnterEvent* event) override;
+    virtual void dragLeaveEvent(QDragLeaveEvent* event) override;
+    virtual void dropEvent(QDropEvent* event) override;
+    virtual void dragMoveEvent(QDragMoveEvent* event) override;
     QTimer* cursor_blink_timer;
     void onBlink() noexcept;
 
