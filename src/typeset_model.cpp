@@ -453,19 +453,6 @@ void Model::paintGroupings(Painter& painter, const Marker& loc) const{
         Typeset::Marker left = close_lookup->second;
         left.text->paintGrouping(painter, left.index);
     }
-
-    //EVENTUALLY: delete me when scope lookup has adequate testing
-    #ifdef DRAW_ACTIVE_SCOPE
-    size_t scope = symbol_builder.symbol_table.containingScope(loc);
-    const Code::ScopeSegment& seg = symbol_builder.symbol_table.scopes[scope];
-    painter.drawNarrowCursor(seg.start.x(), seg.start.y(), 12);
-    if(scope+1 < symbol_builder.symbol_table.scopes.size()){
-        const Code::ScopeSegment& seg = symbol_builder.symbol_table.scopes[scope+1];
-        painter.drawNarrowCursor(seg.start.x(), seg.start.y(), 12);
-    }else{
-        painter.drawNarrowCursor(lastLine()->x + lastLine()->width, lastText()->y, 12);
-    }
-    #endif
 }
 
 void Model::paintNumberCommas(Painter& painter, double xL, double yT, double xR, double yB, const Selection& sel) const {
