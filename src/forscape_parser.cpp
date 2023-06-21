@@ -1963,6 +1963,7 @@ ParseNode Parser::oneArg(Op type) alloc_except{
 ParseNode Parser::twoArgs(Op type) alloc_except{
     const Typeset::Marker& left = lMark();
     advance();
+    const Typeset::Marker& left_grouping = lMark();
     consume(LEFTPAREN);
     ParseNode a = expression();
     consume(COMMA);
@@ -1970,7 +1971,7 @@ ParseNode Parser::twoArgs(Op type) alloc_except{
     const Typeset::Marker& right = rMark();
     consume(RIGHTPAREN);
     if(!noErrors()) return error_node;
-    registerGrouping(left, right);
+    registerGrouping(left_grouping, right);
     Typeset::Selection c(left, right);
 
     return parse_tree.addNode<2>(type, c, {a, b});
