@@ -1499,6 +1499,7 @@ void MainWindow::updateRecentProjectsFromList() {
             QFileInfo info(recent_project);
             QAction* open_action = new QAction(info.fileName());
             open_action->setData(recent_project);
+            open_action->setToolTip(recent_project);  //EVENTUALLY: parse a project description in the tooltip also
             ui->menuRecent_Projects->addAction(open_action);
 
             if(++entries == MAX_DISPLAYED_RECENT_PROJECTS) break;

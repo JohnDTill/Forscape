@@ -93,6 +93,7 @@ private:
         #endif
         ParseNode pn) alloc_except;
     void resolveBlock(ParseNode pn) alloc_except;
+    void resolveLexicalScope(ParseNode pn) alloc_except;
     void resolveDefault(ParseNode pn) alloc_except;
     void resolveLambda(ParseNode pn) alloc_except;
     void resolveAlgorithm(ParseNode pn) alloc_except;

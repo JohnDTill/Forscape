@@ -271,6 +271,9 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
         }
 
         case OP_BLOCK: return resolveBlock(pn);
+        case OP_LEXICAL_SCOPE:
+            parse_tree.setOp(pn, OP_BLOCK);
+            return resolveBlock(pn);
 
         case OP_PRINT:
             for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){

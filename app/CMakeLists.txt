@@ -130,6 +130,8 @@ set(PROJECT_SOURCES
     ${GEN_FILES}
     ${CONSTRUCT_FILES}
     ${SRC}/forscape_common.h
+    ${SRC}/forscape_dynamic_settings.cpp
+    ${SRC}/forscape_dynamic_settings.h
     ${SRC}/forscape_error.cpp
     ${SRC}/forscape_error.h
     ${SRC}/forscape_interpreter.cpp

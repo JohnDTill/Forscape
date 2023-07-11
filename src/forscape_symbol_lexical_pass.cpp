@@ -137,6 +137,7 @@ void SymbolLexicalPass::resolveStmt(ParseNode pn) alloc_except {
         case OP_IF: resolveConditional1(SCOPE_NAME("-if-")  pn); break;
         case OP_IF_ELSE: resolveConditional2(pn); break;
         case OP_IMPORT: resolveImport(pn); break;
+        case OP_LEXICAL_SCOPE: resolveLexicalScope(pn); break;
         case OP_NAMESPACE: resolveNamespace(pn); break;
         case OP_PROTOTYPE_ALG: resolvePrototype(pn); break;
         case OP_RANGED_FOR: resolveRangedFor(pn); break;
@@ -591,6 +592,12 @@ void SymbolLexicalPass::resolveBody(
 void SymbolLexicalPass::resolveBlock(ParseNode pn) alloc_except {
     for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
         resolveStmt( parse_tree.arg(pn, i) );
+}
+
+void SymbolLexicalPass::resolveLexicalScope(ParseNode pn) noexcept {
+    increaseLexicalDepth(SCOPE_NAME("Anonymous")  parse_tree.getLeft(pn));
+    resolveBlock(pn);
+    decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
 void SymbolLexicalPass::resolveDefault(ParseNode pn) alloc_except {

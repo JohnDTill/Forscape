@@ -40,6 +40,7 @@ private:
     ParseNode printStatement() alloc_except;
     ParseNode assertStatement() alloc_except;
     ParseNode blockStatement() alloc_except;
+    ParseNode lexicalScopeStatement() alloc_except;
     ParseNode algStatement() alloc_except;
     ParseNode returnStatement() alloc_except;
     ParseNode plotStatement() alloc_except;

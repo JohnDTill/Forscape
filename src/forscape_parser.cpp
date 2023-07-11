@@ -12,6 +12,10 @@
 #define finishPatch(a)
 #endif
 
+#define CONSUME_ASSERT(expected) \
+    assert(tokens[index].type == expected); \
+    advance();
+
 namespace Forscape {
 
 namespace Code {
@@ -94,6 +98,7 @@ ParseNode Parser::statement() alloc_except {
         case FROM: return fromStatement();
         case IF: return ifStatement();
         case IMPORT: return importStatement();
+        case LEFTBRACKET: return lexicalScopeStatement();
         case NAMESPACE: return namespaceStatement();
         case PLOT: return plotStatement();
         case PRINT: return printStatement();
@@ -341,7 +346,7 @@ ParseNode Parser::blockStatement() alloc_except {
     }
 
     Typeset::Marker left = lMark();
-    consume(LEFTBRACKET);
+    CONSUME_ASSERT(LEFTBRACKET);
     parse_tree.prepareNary();
 
     skipNewlines();
@@ -354,6 +359,23 @@ ParseNode Parser::blockStatement() alloc_except {
     if(noErrors()) registerGrouping(sel);
 
     return parse_tree.finishNary(OP_BLOCK, sel);
+}
+
+ParseNode Parser::lexicalScopeStatement() alloc_except {
+    Typeset::Marker left = lMark();
+    CONSUME_ASSERT(LEFTBRACKET);
+    parse_tree.prepareNary();
+
+    skipNewlines();
+    while(noErrors() && !match(RIGHTBRACKET)){
+        parse_tree.addNaryChild(statement());
+        skipNewlines();
+    }
+
+    Typeset::Selection sel(left, rMarkPrev());
+    if(noErrors()) registerGrouping(sel);
+
+    return parse_tree.finishNary(OP_LEXICAL_SCOPE, sel);
 }
 
 ParseNode Parser::algStatement() alloc_except {
