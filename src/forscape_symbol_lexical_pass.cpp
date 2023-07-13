@@ -2,6 +2,8 @@
 
 #include <code_parsenode_ops.h>
 #include <forscape_common.h>
+#include <forscape_dynamic_settings.h>
+#include <forscape_program.h>
 #include "typeset_model.h"
 #include "typeset_construct.h"
 #include <algorithm>
@@ -146,6 +148,7 @@ void SymbolLexicalPass::resolveStmt(ParseNode pn) alloc_except {
             if(closure_depth == 0) errors.push_back(Error(parse_tree.getSelection(pn), RETURN_OUTSIDE_FUNCTION));
             resolveDefault(pn);
             break;
+        case OP_SETTINGS_UPDATE: resolveSettingsUpdate(pn); break;
         case OP_SWITCH: resolveSwitch(pn); break;
         case OP_UNKNOWN_LIST: resolveUnknownDeclaration(pn); break;
         case OP_WHILE: resolveConditional1(SCOPE_NAME("-while-")  pn); break;
@@ -557,6 +560,10 @@ void SymbolLexicalPass::resolveRangedFor(ParseNode pn) alloc_except {
     resolveExpr(parse_tree.arg<1>(pn));
     resolveStmt(parse_tree.arg<2>(pn));
     decreaseLexicalDepth(parse_tree.getRight(pn));
+}
+
+void SymbolLexicalPass::resolveSettingsUpdate(ParseNode pn) alloc_except {
+    Program::instance()->settings.enact(parse_tree.getFlag(pn));
 }
 
 void SymbolLexicalPass::resolveSwitch(ParseNode pn) noexcept {
@@ -1102,6 +1109,8 @@ void SymbolLexicalPass::increaseLexicalDepth(
         const Typeset::Marker& begin) alloc_except {
     lexical_depth++;
     addScope(SCOPE_NAME(name)  begin);
+
+    Forscape::Program::instance()->settings.enterScope();
 }
 
 void SymbolLexicalPass::decreaseLexicalDepth(const Typeset::Marker& end) alloc_except {
@@ -1122,6 +1131,8 @@ void SymbolLexicalPass::decreaseLexicalDepth(const Typeset::Marker& end) alloc_e
     }
 
     lexical_depth--;
+
+    Forscape::Program::instance()->settings.leaveScope();
 }
 
 void SymbolLexicalPass::increaseClosureDepth(

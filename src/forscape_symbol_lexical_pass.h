@@ -86,6 +86,7 @@ private:
     void resolveConditional2(ParseNode pn) alloc_except;
     void resolveFor(ParseNode pn) alloc_except;
     void resolveRangedFor(ParseNode pn) alloc_except;
+    void resolveSettingsUpdate(ParseNode pn) alloc_except;
     void resolveSwitch(ParseNode pn) alloc_except;
     void resolveBody(
         #ifdef FORSCAPE_USE_SCOPE_NAME

@@ -23,6 +23,10 @@ inline bool isValidSerial(const std::string& src) noexcept {
         if(ch == OPEN){
             if(index >= src.size()) return false;
             switch (src[index++]) {
+                //DO THIS: support settings
+                //case SETTINGS:
+                //    while(static_cast<uint8_t>(src[index++]) != std::numeric_limits<uint8_t>::max());
+                //    break;
                 FORSCAPE_SERIAL_NULLARY_CASES
                     break;
                 FORSCAPE_SERIAL_UNARY_CASES

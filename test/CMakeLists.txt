@@ -79,6 +79,8 @@ set(CONSTRUCT_FILES
     ${CONSTRUCT}/typeset_max.h
     ${CONSTRUCT}/typeset_min.h
     ${CONSTRUCT}/typeset_nrt.h
+    ${CONSTRUCT}/typeset_settings.cpp
+    ${CONSTRUCT}/typeset_settings.h
     ${CONSTRUCT}/typeset_sqrt.h
     ${CONSTRUCT}/typeset_subscript.h
     ${CONSTRUCT}/typeset_sup.h
@@ -160,6 +162,8 @@ set(SOURCES
     ${SRC}/typeset_syntax.h
     ${SRC}/typeset_text.cpp
     ${SRC}/typeset_text.h
+    ${COMMAND}/typeset_command_change_settings.cpp
+    ${COMMAND}/typeset_command_change_settings.h
     ${COMMAND}/typeset_command_indent.cpp
     ${COMMAND}/typeset_command_indent.h
     ${COMMAND}/typeset_command_line.cpp
@@ -193,6 +197,9 @@ if (${TEST_QT})
         ${EMBEDDED_RESOURCES}
         ${SRC}/typeset_painter.h
         ${SRC}/typeset_painter_qt.cpp
+        ${SRC}/typeset_settings_dialog.cpp
+        ${SRC}/typeset_settings_dialog.h
+        ${SRC}/typeset_settings_dialog.ui
         ${SRC}/typeset_view.cpp
         ${SRC}/typeset_view.h
         ${SRC}/qt_compatability.h

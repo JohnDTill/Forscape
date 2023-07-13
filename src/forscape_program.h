@@ -2,6 +2,7 @@
 #define FORSCAPE_PROGRAM_H
 
 #include "forscape_common.h"
+#include "forscape_dynamic_settings.h"
 #include "forscape_error.h"
 #include <filesystem>
 #include <vector>
@@ -33,6 +34,7 @@ public:
     void runThread();
     void stop();
 
+    Code::Settings settings;
     Code::ParseTree parse_tree;
     Code::StaticPass static_pass = Code::StaticPass(parse_tree, errors, warnings);
     Code::Interpreter interpreter;

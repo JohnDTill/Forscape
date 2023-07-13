@@ -85,6 +85,14 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
     assert(pn != NONE);
 
     switch (parse_tree.getOp(pn)) {
+        case OP_SETTINGS_UPDATE:
+            Program::instance()->settings.enact( parse_tree.getFlag(pn) );
+            parse_tree.setOp(pn, OP_DO_NOTHING);
+            return pn;
+
+        case OP_DO_NOTHING:
+            return pn;
+
         case OP_ASSIGN:
         case OP_EQUAL:{
             ParseNode rhs = resolveExprTop(parse_tree.rhs(pn));
@@ -2094,8 +2102,16 @@ void StaticPass::finaliseSymbolTable(Typeset::Model* model) const noexcept {
 
     for(Symbol& sym : symbol_table.symbols)
         if(!sym.is_used){
-            warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
-            model->warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+
+            //DO THIS: generalise this
+            const auto level = Program::instance()->settings.warningLevel<SettingId::UNUSED_VARIABLE>();
+            if(level == WarningLevel::WARN){
+                warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+                model->warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+            }else if(level == WarningLevel::ERROR){
+                errors.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+                model->errors.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+            }
         }
 
     for(const SymbolUsage& usage : symbol_table.symbol_usages){

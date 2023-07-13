@@ -104,6 +104,7 @@ ParseNode Parser::statement() alloc_except {
         case PRINT: return printStatement();
         case RETURN: return returnStatement();
         case SWITCH: return switchStatement();
+        case TOKEN_SETTINGS: return settingsStatement();
         case UNKNOWN: return unknownsStatement();
         case WHILE: return whileStatement();
         default: return mathStatement();
@@ -232,6 +233,14 @@ ParseNode Parser::enumStatement() alloc_except {
     // it's fairly trivial to support enums downstream as numbers,
     // but you'll get better mileage to support them as enums
     // enums also have a scoped access, e.g. COLOUR::RED
+}
+
+ParseNode Parser::settingsStatement() noexcept {
+    Typeset::Construct* c = lMark().text->nextConstructAsserted();
+    ParseNode pn = terminalAndAdvance(OP_SETTINGS_UPDATE);
+    parse_tree.setFlag(pn, reinterpret_cast<size_t>(c));
+
+    return pn;
 }
 
 ParseNode Parser::switchStatement() alloc_except {

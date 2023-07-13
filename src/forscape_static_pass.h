@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <code_error_types.h>
 #include <forscape_common.h>
+#include <forscape_dynamic_settings.h>
 #include <limits>
 #include <set>
 #include <stack>
@@ -12,6 +13,8 @@
 #ifndef NDEBUG
 #include <iostream>
 #endif
+
+//DO THIS: settings are applied to lexical scope
 
 namespace Forscape {
 

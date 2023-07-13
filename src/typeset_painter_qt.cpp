@@ -322,6 +322,22 @@ void Painter::drawLineNumber(double y, size_t num, bool active){
     painter.drawText(x, y, str);
 }
 
+void Painter::drawSettings(double x, double y, double w, double h) {
+    x += x_offset;
+
+    QPen pen(getColour(COLOUR_TEXT));
+    pen.setWidthF(0.6);
+    painter.setPen(pen);
+
+    //painter.drawRoundedRect(x, y-h*0.1, w+1, h*1.15, 3, 3);
+    painter.drawLine(x, y-0.2*h, x+w, y-0.2*h);
+    painter.drawLine(x, y+h, x+w, y+h);
+
+    y += CAPHEIGHT[depth];
+    painter.setPen(getColour(COLOUR_KEYWORD));
+    painter.drawText(QPointF(x, y), "⚒ Settings...");
+}
+
 void Painter::setSelectionMode(){
     color_can_change = false;
 }
