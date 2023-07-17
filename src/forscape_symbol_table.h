@@ -37,6 +37,7 @@ private: friend SymbolLexicalPass; friend SymbolTable; //Fields for the lexical 
 
 public:
     uint8_t declaration_closure_depth  DEBUG_INIT_UNITIALISED(uint8_t);
+    uint8_t use_level;
     size_t flag  DEBUG_INIT_UNITIALISED(size_t);
     size_t type = NONE;
     size_t rows = UNKNOWN_SIZE;

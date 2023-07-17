@@ -1,6 +1,8 @@
 #include "forscape_symbol_table.h"
 
+#include "forscape_dynamic_settings.h"
 #include "forscape_parse_tree.h"
+#include "forscape_program.h"
 #include "forscape_scanner.h"
 #include "forscape_symbol_lexical_pass.h"
 #include <algorithm>
@@ -31,10 +33,11 @@ Symbol::Symbol() noexcept
     : declaration_lexical_depth(0) {}
 
 Symbol::Symbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t shadowed_var, bool is_const) noexcept
-    : declaration_lexical_depth(lexical_depth),
+    : index_of_shadowed_var(shadowed_var),
+      declaration_lexical_depth(lexical_depth),
       declaration_closure_depth(closure_depth),
+      use_level(Program::instance()->settings.warningLevel<SettingId::UNUSED_VARIABLE>()),
       flag(pn),
-      index_of_shadowed_var(shadowed_var),
       is_const(is_const) {}
 
 size_t Symbol::closureIndex() const noexcept{

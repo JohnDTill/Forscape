@@ -1743,7 +1743,16 @@ ParseNode StaticPass::resolvePower(ParseNode pn){
             //return ast.setComplement(base);
 
         case OP_MAYBE_TRANSPOSE:
-            warnings.push_back(Error(parse_tree.getSelection(rhs), TRANSPOSE_T));
+            switch (Program::instance()->settings.warningLevel<WARN_TRANSPOSE_T>()) {
+                case WarningLevel::ERROR:
+                    return error(pn, rhs, TRANSPOSE_T);
+                case WarningLevel::WARN:
+                    warnings.push_back(Error(parse_tree.getSelection(rhs), TRANSPOSE_T));
+                    active_model->warnings.push_back(Error(parse_tree.getSelection(rhs), TRANSPOSE_T));
+                    break;
+                default: break;
+            }
+
             parse_tree.setOp(pn, OP_TRANSPOSE);
             parse_tree.reduceNumArgs(pn, 1);
             return resolveTranspose(pn);
@@ -2103,14 +2112,17 @@ void StaticPass::finaliseSymbolTable(Typeset::Model* model) const noexcept {
     for(Symbol& sym : symbol_table.symbols)
         if(!sym.is_used){
 
-            //DO THIS: generalise this
-            const auto level = Program::instance()->settings.warningLevel<SettingId::UNUSED_VARIABLE>();
-            if(level == WarningLevel::WARN){
-                warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
-                model->warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
-            }else if(level == WarningLevel::ERROR){
-                errors.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
-                model->errors.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+            switch (sym.use_level) {
+                case WarningLevel::ERROR:
+                    errors.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+                    model->errors.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+                    break;
+                case WarningLevel::WARN:
+                    warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+                    model->warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+                    break;
+                default:
+                    break;
             }
         }
 
