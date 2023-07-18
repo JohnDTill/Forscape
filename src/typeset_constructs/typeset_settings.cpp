@@ -6,21 +6,19 @@ namespace Typeset {
 
 char Settings::constructCode() const noexcept { return SETTINGS; }
 
-/* DO THIS: support writing
 void Settings::writeArgs(std::string& out, size_t& curr) const noexcept {
     for(const Code::Settings::Update update : updates){
-        static_assert(Code::SettingId::NUM_SETTINGS <= std::numeric_limits<uint8_t>::max());
-        out[curr++] = static_cast<uint8_t>(update.setting_id);
+        static_assert(Code::SettingId::NUM_SETTINGS <= 0b01111111);
+        out[curr++] = static_cast<uint8_t>(update.setting_id) + 1;
         static_assert(sizeof(Code::Settings::SettingValue) <= sizeof(uint8_t));
-        out[curr++] = static_cast<uint8_t>(update.prev_value);
+        out[curr++] = static_cast<uint8_t>(update.prev_value) + 1;
     }
-    out[curr++] = std::numeric_limits<uint8_t>::max();
+    out[curr++] = 0b01111111;
 }
 
 size_t Settings::dims() const noexcept {
     return 2 * updates.size() + 1;
 }
-*/
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
 const std::vector<Construct::ContextAction> Settings::actions {

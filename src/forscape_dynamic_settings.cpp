@@ -6,6 +6,10 @@ namespace Forscape {
 
 namespace Code {
 
+void Settings::reset() noexcept {
+    flags = DEFAULT_FLAGS;
+}
+
 void Settings::set(SettingId setting, SettingValue value) alloc_except {
     assert(setting < NUM_SETTINGS);
     assert(value < NUM_WARNING_LEVELS);

@@ -30,6 +30,9 @@ MathToolbar::MathToolbar(QWidget* parent) : QToolBar(parent) {
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     addWidget(spacer);
 
+    addAction(new TypesetAction("Š", "Insert a settings update", OPEN_STR SETTINGS_STR "", this));
+    addSeparator();
+
     setupScripts();
     setupAccents();
     setupMisc();

@@ -39,10 +39,12 @@ public:
     };
 
 private:
-    std::array<SettingValue, NUM_SETTINGS> flags = {
+    static constexpr std::array<SettingValue, NUM_SETTINGS> DEFAULT_FLAGS = {
         WARN,
         WARN
     };
+
+    std::array<SettingValue, NUM_SETTINGS> flags = DEFAULT_FLAGS;
     std::vector<Update> updates;
     std::vector<size_t> scope_start;
 
@@ -59,6 +61,7 @@ public:
         flags[setting] = warning_level;
     }
 
+    void reset() noexcept;
     void set(SettingId setting, SettingValue value) alloc_except;
     void enact(size_t flag) alloc_except;
     void enterScope() alloc_except;

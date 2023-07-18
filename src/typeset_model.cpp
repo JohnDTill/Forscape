@@ -137,6 +137,18 @@ std::vector<Line*> Model::linesFromSerial(const std::string& src){
             text->setString(&src[start], index-start-1);
 
             switch (src[index++]) {
+                case SETTINGS: {
+                    Settings* settings = new Settings;
+                    while(static_cast<uint8_t>(src[index]) != 0b01111111) { //DO THIS: remove magic numbers
+                        Code::SettingId id = static_cast<Code::SettingId>(static_cast<uint8_t>(src[index++] - 1));
+                        Code::Settings::SettingValue value = static_cast<uint8_t>(src[index++] - 1);
+                        settings->updates.push_back( Code::Settings::Update(id, value) );
+                    }
+                    index++;
+                    text->getParent()->appendConstruct(settings);
+                    text = text->nextTextInPhrase();
+                    break;
+                }
                 FORSCAPE_TYPESET_PARSER_CASES
                 default: assert(false);
             }

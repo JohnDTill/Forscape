@@ -13,7 +13,6 @@
 
 //DO THIS: should reveal settings on hover
 //DO THIS: should open on click or double-click
-//DO THIS: allow saving/loading (prereq to tests)
 
 namespace Forscape {
 
@@ -31,10 +30,8 @@ private:
 public:
     std::vector<Code::Settings::Update> updates;
     virtual char constructCode() const noexcept override;
-
-    //DO THIS: support writing
-    //virtual void writeArgs(std::string& out, size_t& curr) const noexcept override;
-    //virtual size_t dims() const noexcept override;
+    virtual void writeArgs(std::string& out, size_t& curr) const noexcept override;
+    virtual size_t dims() const noexcept override;
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual void updateSizeFromChildSizes() noexcept override;

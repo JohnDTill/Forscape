@@ -124,12 +124,13 @@ void Program::reset() noexcept {
 }
 
 void Program::runStaticPass() {
-    errors.clear();
-    warnings.clear();
-
     static bool running = false;
     if(running) return;
     running = true;
+
+    errors.clear();
+    warnings.clear();
+    settings.reset();
     program_entry_point->performSemanticFormatting();
     static_pass.resolve(program_entry_point);
     running = false;
