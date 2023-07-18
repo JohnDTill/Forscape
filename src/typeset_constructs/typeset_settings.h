@@ -23,8 +23,8 @@ namespace Typeset {
 
 class Settings final : public Construct {
 private:
-    static constexpr std::string_view label = "⚒ Settings...";
-    static constexpr size_t label_glyph_length = label.size() - std::string_view("⚒").size() + 1;
+    static constexpr std::string_view label = "Settings";
+    static constexpr size_t label_glyph_length = label.size();
     bool expanded = false;
 
 public:
@@ -42,6 +42,11 @@ public:
     virtual const std::vector<ContextAction>& getContextActions(Subphrase*) const noexcept override;
     std::string getString() const alloc_except;
     bool isExpanded() const noexcept;
+    void updateString() alloc_except;
+
+private:
+    std::string str;
+    size_t expanded_chars = 0;
     #endif
 };
 

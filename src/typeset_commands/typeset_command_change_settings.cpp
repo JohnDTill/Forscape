@@ -2,6 +2,7 @@
 
 #include <typeset_construct.h>
 #include <typeset_controller.h>
+#include <typeset_settings.h>
 
 namespace Forscape {
 
@@ -22,6 +23,9 @@ void CommandChangeSettings::redo(Controller& c) {
 void CommandChangeSettings::swap(Controller& c) noexcept {
     std::swap(live_updates, stale_updates);
     c.setBothToFrontOf(settings->next());
+    #ifndef FORSCAPE_TYPESET_HEADLESS
+    debug_cast<Settings*>(settings)->updateString();
+    #endif
 }
 
 }

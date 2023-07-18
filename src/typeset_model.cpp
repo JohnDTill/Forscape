@@ -146,6 +146,9 @@ std::vector<Line*> Model::linesFromSerial(const std::string& src){
                     }
                     index++;
                     text->getParent()->appendConstruct(settings);
+                    #ifndef FORSCAPE_TYPESET_HEADLESS
+                    settings->updateString();
+                    #endif
                     text = text->nextTextInPhrase();
                     break;
                 }

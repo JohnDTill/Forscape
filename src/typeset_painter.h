@@ -77,7 +77,6 @@ public:
     void drawRightParen(double x, double y, double w, double h);
     void drawDot(double x, double y);
     void drawLineNumber(double y, size_t num, bool active);
-    void drawSettings(double x, double y, double w, double h);
     void setSelectionMode();
     void exitSelectionMode();
     void drawSymbol(char ch, double x, double y, double w, double h);
