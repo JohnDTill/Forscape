@@ -2,6 +2,7 @@
 #define FORSCAPE_DYNAMIC_SETTINGS_H
 
 #include <array>
+#include <cassert>
 #include <cinttypes>
 #include <stddef.h>
 #include <vector>
