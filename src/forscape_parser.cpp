@@ -3,6 +3,7 @@
 #include <code_parsenode_ops.h>
 #include <forscape_common.h>
 #include <forscape_program.h>
+#include "typeset_construct.h"
 #include "typeset_model.h"
 
 #ifdef FORSCAPE_TYPESET_HEADLESS
@@ -239,6 +240,9 @@ ParseNode Parser::settingsStatement() noexcept {
     Typeset::Construct* c = lMark().text->nextConstructAsserted();
     ParseNode pn = terminalAndAdvance(OP_SETTINGS_UPDATE);
     parse_tree.setFlag(pn, reinterpret_cast<size_t>(c));
+    #ifndef FORSCAPE_TYPESET_HEADLESS
+    c->pn = pn;
+    #endif
 
     return pn;
 }

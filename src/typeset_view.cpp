@@ -11,6 +11,7 @@
 #include <typeset_line.h>
 #include <typeset_markerlink.h>
 #include <typeset_model.h>
+#include <typeset_settings.h>
 #include <typeset_themes.h>
 
 #include <chrono>
@@ -1592,10 +1593,18 @@ void Editor::resolveTooltip(double x, double y) noexcept {
     hover_node = model->parseNodeAt(x, y);
     #ifndef NDEBUG
     if(hover_node == NONE) clearTooltip();
-    #else
-    if(hover_node == NONE || model->parseTree().getOp(hover_node) != Code::OP_IDENTIFIER) clearTooltip();
-    #endif
     else tooltip_timer->start(TOOLTIP_DELAY_MILLISECONDS);
+    #else
+    if(hover_node == NONE) clearTooltip();
+    else switch( model->parseTree().getOp(hover_node) ){
+        case Code::OP_IDENTIFIER:
+        case Code::OP_SETTINGS_UPDATE:
+            tooltip_timer->start(TOOLTIP_DELAY_MILLISECONDS);
+            break;
+        default: clearTooltip();
+
+    }
+    #endif
 
     #ifndef NDEBUG
     update();
@@ -1772,6 +1781,15 @@ void Editor::showTooltipParseNode(){
                 }
             }
 
+            tooltip->fitToContents();
+            break;
+        }
+
+        case Code::OP_SETTINGS_UPDATE:{
+            Settings* settings = debug_cast<Settings*>(parse_tree->getLeft(hover_node).text->nextConstructAsserted());
+            if(settings->isExpanded()) return;
+            tooltip->clear();
+            tooltip->appendSerial(settings->getString());
             tooltip->fitToContents();
             break;
         }

@@ -11,7 +11,6 @@
 #include <typeset_settings_dialog.h>
 #endif
 
-//DO THIS: should reveal settings on hover
 //DO THIS: should open on click or double-click, maybe have a button for expand/condense
 
 namespace Forscape {
@@ -26,6 +25,7 @@ class Settings final : public Construct {
 private:
     static constexpr std::string_view label = "⚒ Settings...";
     static constexpr size_t label_glyph_length = label.size() - std::string_view("⚒").size() + 1;
+    bool expanded = false;
 
 public:
     std::vector<Code::Settings::Update> updates;
@@ -40,6 +40,8 @@ public:
     static void expandCollapse(Construct* con, Controller&, Subphrase*);
     static const std::vector<Construct::ContextAction> actions;
     virtual const std::vector<ContextAction>& getContextActions(Subphrase*) const noexcept override;
+    std::string getString() const alloc_except;
+    bool isExpanded() const noexcept;
     #endif
 };
 

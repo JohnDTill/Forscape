@@ -89,8 +89,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             //EVENTUALLY: settings should only be applied to the lexical scope
             // not a concern now since the static pass and interpreter will undergo a total rewrite
             Program::instance()->settings.enact( parse_tree.getFlag(pn) );
-            parse_tree.setOp(pn, OP_DO_NOTHING);
-            return pn;
+            return parse_tree.addTerminal(OP_DO_NOTHING, parse_tree.getSelection(pn));
 
         case OP_DO_NOTHING:
             return pn;

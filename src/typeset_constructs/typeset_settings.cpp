@@ -4,6 +4,10 @@ namespace Forscape {
 
 namespace Typeset {
 
+//DO THIS: codegen
+static constexpr std::array<const char*, Code::NUM_SETTINGS> setting_id_strs = { "Unused var", "Transpose T" };
+static constexpr std::array<const char*, Code::NUM_WARNING_LEVELS> warning_strs = {"No Warning", "Warning", "Error"};
+
 char Settings::constructCode() const noexcept { return SETTINGS; }
 
 void Settings::writeArgs(std::string& out, size_t& curr) const noexcept {
@@ -54,6 +58,27 @@ void Settings::expandCollapse(Construct* con, Controller&, Subphrase*){
 
 const std::vector<Construct::ContextAction>& Settings::getContextActions(Subphrase*) const noexcept {
     return actions;
+}
+
+std::string Settings::getString() const alloc_except {
+    if(updates.empty()) return "No changes";
+
+    std::string str;
+
+    for(const auto& update : updates){
+        str += setting_id_strs[update.setting_id];
+        str += ':';
+        str += ' ';
+        str += warning_strs[update.prev_value];
+        str += '\n';
+    }
+    str.pop_back();
+
+    return str;
+}
+
+bool Settings::isExpanded() const noexcept {
+    return expanded;
 }
 #endif
 
