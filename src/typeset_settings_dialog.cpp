@@ -18,7 +18,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
 
     setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
-    // DO THIS: codegen
+    // DO THIS: codegen and have better names
     combo_boxes[0] = ui->comboBox;
     combo_boxes[1] = ui->comboBox_2;
 }

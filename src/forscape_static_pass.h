@@ -14,8 +14,6 @@
 #include <iostream>
 #endif
 
-//DO THIS: settings are applied to lexical scope
-
 namespace Forscape {
 
 namespace Code {

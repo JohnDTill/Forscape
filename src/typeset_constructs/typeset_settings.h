@@ -12,7 +12,7 @@
 #endif
 
 //DO THIS: should reveal settings on hover
-//DO THIS: should open on click or double-click
+//DO THIS: should open on click or double-click, maybe have a button for expand/condense
 
 namespace Forscape {
 

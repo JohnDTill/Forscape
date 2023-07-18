@@ -49,7 +49,7 @@ void Settings::changeSettings(Construct* con, Controller& c, Subphrase*){
 
 void Settings::expandCollapse(Construct* con, Controller&, Subphrase*){
     Settings* settings = debug_cast<Settings*>(con);
-    //DO THIS
+    //DO THIS: preview or hide changed settings
 }
 
 const std::vector<Construct::ContextAction>& Settings::getContextActions(Subphrase*) const noexcept {

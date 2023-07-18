@@ -23,7 +23,6 @@ inline bool isValidSerial(const std::string& src) noexcept {
         if(ch == OPEN){
             if(index >= src.size()) return false;
             switch (src[index++]) {
-                //DO THIS: support settings
                 case SETTINGS:
                     while(index < src.size() && static_cast<uint8_t>(src[index++]) != 0b01111111);
                     break;

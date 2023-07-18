@@ -31,6 +31,8 @@ MathToolbar::MathToolbar(QWidget* parent) : QToolBar(parent) {
     addWidget(spacer);
 
     addAction(new TypesetAction("Š", "Insert a settings update", OPEN_STR SETTINGS_STR "", this));
+    //DO THIS: clicking this should also open the settings UI
+    //DO THIS: there should be a default keyword shortcut for settings
     addSeparator();
 
     setupScripts();

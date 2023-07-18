@@ -15,7 +15,7 @@ namespace Code {
 
 enum SettingId {
     UNUSED_VARIABLE,
-    WARN_TRANSPOSE_T, //Transpose with letter 'T' instead of symbol '⊤'  //DO THIS: implement conditional warning
+    WARN_TRANSPOSE_T, //Transpose with letter 'T' instead of symbol '⊤'
 
     NUM_SETTINGS,
 };
