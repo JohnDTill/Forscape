@@ -23,11 +23,6 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
     combo_boxes[1] = ui->comboBox_2;
 }
 
-SettingsDialog* SettingsDialog::get() noexcept {
-    if(instance == nullptr) instance = new SettingsDialog;
-    return instance;
-}
-
 SettingsDialog::~SettingsDialog() {
     delete ui;
 }
@@ -39,7 +34,7 @@ bool SettingsDialog::execSettingsForm(const std::vector<Code::Settings::Update>&
     for(const Code::Settings::Update& update : settings)
         combo_boxes[update.setting_id]->setCurrentIndex( update.prev_value + 1 );
 
-    const auto user_action = get()->exec();
+    const auto user_action = instance->exec();
 
     return user_action == QDialog::Accepted;
 }

@@ -11,6 +11,7 @@
 #include <typeset_line.h>
 #include <typeset_model.h>
 #include <typeset_painter.h>
+#include <typeset_settings.h>
 #include <typeset_view.h>
 #include <qt_compatability.h>
 #include <QBuffer>
@@ -258,6 +259,7 @@ MainWindow::MainWindow(QWidget* parent)
     connect(math_toolbar, SIGNAL(insertSerial(QString)), this, SLOT(insertSerial(const QString&)));
     connect(math_toolbar, SIGNAL(insertSerialSelection(QString, QString)),
             this, SLOT(insertSerialSelection(QString, QString)));
+    connect(math_toolbar, SIGNAL(insertSettings()), this, SLOT(insertSettings()));
     addToolBarBreak(Qt::ToolBarArea::TopToolBarArea);
     addToolBar(Qt::ToolBarArea::TopToolBarArea, math_toolbar);
 
@@ -1008,6 +1010,16 @@ void MainWindow::insertSerialSelection(const QString& A, const QString& B){
 
     Typeset::Controller& c = editor->getController();
     editor->insertSerial(toCppString(A) + c.selectedText() + toCppString(B));
+    editor->update();
+
+    onTextChanged();
+}
+
+void MainWindow::insertSettings() {
+    insertSerial(OPEN_STR SETTINGS_STR "");
+    Typeset::Construct* settings = editor->getController().getActive().text->prevConstructAsserted();
+    Typeset::Settings::changeSettings(settings, editor->getController(), nullptr);
+    Typeset::Settings::expandCollapse(settings, editor->getController(), nullptr);
     editor->update();
 
     onTextChanged();

@@ -30,9 +30,7 @@ MathToolbar::MathToolbar(QWidget* parent) : QToolBar(parent) {
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     addWidget(spacer);
 
-    addAction(new TypesetAction("Š", "Insert a settings update", OPEN_STR SETTINGS_STR "", this));
-    //DO THIS: clicking this should also open the settings UI
-    //DO THIS: there should be a default keyword shortcut for settings
+    addAction(new SettingsAction("Š", "\\settings", this));
     addSeparator();
 
     setupScripts();
@@ -206,6 +204,10 @@ void MathToolbar::insertWithSelection(){
     emit insertSerialSelection(a->command_start, a->command_end);
 }
 
+void MathToolbar::insertSettingsSlot() {
+    emit insertSettings();
+}
+
 void MathToolbar::symbolTableTriggered(QTableWidgetItem* item){
     if(item->text().isEmpty()) return;
     emit insertFlatText(item->text());
@@ -230,4 +232,12 @@ MathToolbar::EnclosedTypesetAction::EnclosedTypesetAction(const QString& text,
     setToolTip(tooltip);
     setFont(glyph_font);
     connect(this, SIGNAL(triggered(bool)), parent, SLOT(insertWithSelection()));
+}
+
+MathToolbar::SettingsAction::SettingsAction(const QString& text, const QString& tooltip, MathToolbar* parent)
+    : QAction(text, parent)
+{
+    setToolTip(tooltip);
+    setFont(glyph_font);
+    connect(this, SIGNAL(triggered(bool)), parent, SLOT(insertSettingsSlot()));
 }
