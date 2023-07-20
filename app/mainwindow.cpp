@@ -1018,8 +1018,8 @@ void MainWindow::insertSerialSelection(const QString& A, const QString& B){
 void MainWindow::insertSettings() {
     insertSerial(OPEN_STR SETTINGS_STR "");
     Typeset::Construct* settings = editor->getController().getActive().text->prevConstructAsserted();
-    Typeset::Settings::changeSettings(settings, editor->getController(), nullptr);
-    Typeset::Settings::expandCollapse(settings, editor->getController(), nullptr);
+    Typeset::Settings::changeSettings(settings, editor->getController());
+    Typeset::Settings::expandCollapse(settings, editor->getController());
     editor->update();
 
     onTextChanged();

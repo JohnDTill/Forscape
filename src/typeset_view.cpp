@@ -295,15 +295,15 @@ void View::dispatchClick(double x, double y, int xScreen, int yScreen, bool righ
     if(right_click){
         resolveRightClick(x, y, xScreen, yScreen);
     }else if(recentlyDoubleClicked() || isInLineBox(x)){
-        resolveTripleClick(y);
         mouse_hold_state = TripleClick;
+        resolveTripleClick(y);
     }else if(shift_held){
         resolveShiftClick(x, y);
     }else if(ALLOW_SELECTION_DRAG && controller.contains(x, y)){
         mouse_hold_state = ClickedOnSelection;
     }else{
-        resolveClick(x, y);
         mouse_hold_state = SingleClick;
+        resolveClick(x, y);
     }
 
     restartCursorBlink();
@@ -321,6 +321,9 @@ void View::dispatchRelease(int x, int y){
 }
 
 void View::dispatchDoubleClick(double x, double y){
+    mouse_hold_state = DoubleClick;
+    updateDoubleClickTime();
+
     if(!isInLineBox(x)){
         //EVENTUALLY: do something better than this hack to avoid highlight when double clicking link
         if(controller.atTextEnd())
@@ -331,9 +334,6 @@ void View::dispatchDoubleClick(double x, double y){
         resolveWordClick(x, y);
         update();
     }
-
-    mouse_hold_state = DoubleClick;
-    updateDoubleClickTime();
 }
 
 void View::dispatchHover(double x, double y){
@@ -382,6 +382,9 @@ void View::resolveClick(double x, double y) noexcept{
     Line* l = model->nearestLine(y);
     controller.clickTo(l, x, y);
     updateXSetpoint();
+
+    model->updateLayout();
+    v_scroll->update();
 }
 
 void View::resolveShiftClick(double x, double y) noexcept {
@@ -463,11 +466,16 @@ void View::resolveRightClick(double x, double y, int xScreen, int yScreen){
 }
 
 void View::resolveWordClick(double x, double y){
-    resolveClick(x, y);
-    if(!controller.isConstructSelection()){
+    if(Construct* c = model->constructAt(x, y)){
+        c->onDoubleClick(controller, x - c->x, y - c->y);
+        model->updateLayout();
+        v_scroll->update();
+    }else{
+        resolveClick(x, y);
         controller.moveToPrevWord();
         controller.selectNextWord();
     }
+
     restartCursorBlink();
     updateXSetpoint();
 }
@@ -773,6 +781,7 @@ void View::focusOutEvent(QFocusEvent* e){
         update();
     }else if(!mock_focus){
         stopCursorBlink();
+        mouse_hold_state = Hover;
         //EVENTUALLY: why was this here?
         //assert(mouse_hold_state == Hover);
     }

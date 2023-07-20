@@ -183,10 +183,6 @@ bool Selection::isPhraseSelection() const noexcept{
     return left.phrase() == right.phrase();
 }
 
-bool Selection::isConstructSelection() const noexcept {
-    return isPhraseSelection() && left.index == right.index-1 && left.atTextEnd() && right.atTextStart();
-}
-
 bool Selection::isEmpty() const noexcept{
     return left == right;
 }

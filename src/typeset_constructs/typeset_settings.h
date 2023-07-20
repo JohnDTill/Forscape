@@ -11,8 +11,6 @@
 #include <typeset_settings_dialog.h>
 #endif
 
-//DO THIS: should open on click or double-click, maybe have a button for expand/condense
-
 namespace Forscape {
 
 namespace Code {
@@ -23,8 +21,7 @@ namespace Typeset {
 
 class Settings final : public Construct {
 private:
-    static constexpr std::string_view label = "Settings";
-    static constexpr size_t label_glyph_length = label.size();
+    static constexpr size_t label_glyph_length = 12;
     bool expanded = false;
 
 public:
@@ -34,10 +31,14 @@ public:
     virtual size_t dims() const noexcept override;
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
+    virtual void onClick(Controller& controller, double local_x, double local_y) noexcept override;
+    virtual void onDoubleClick(Controller& controller, double local_x, double local_y) noexcept override;
     virtual void updateSizeFromChildSizes() noexcept override;
     virtual void paintSpecific(Painter& painter) const override;
     static void changeSettings(Construct* con, Controller& c, Subphrase*);
-    static void expandCollapse(Construct* con, Controller&, Subphrase*);
+    static void changeSettings(Construct* con, Controller& c);
+    static void expandCollapse(Construct* con, Controller& c, Subphrase*);
+    static void expandCollapse(Construct* con, Controller& c) noexcept;
     static const std::vector<Construct::ContextAction> actions;
     virtual const std::vector<ContextAction>& getContextActions(Subphrase*) const noexcept override;
     std::string getString() const alloc_except;

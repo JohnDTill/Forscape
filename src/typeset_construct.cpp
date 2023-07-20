@@ -1,5 +1,6 @@
 #include "typeset_construct.h"
 
+#include "typeset_controller.h"
 #include "typeset_selection.h"
 #include "typeset_subphrase.h"
 #include <algorithm>
@@ -131,6 +132,14 @@ std::string Construct::toStringWithSemanticTags() const{
 #endif
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
+void Construct::onClick(Controller& controller, double, double) noexcept {
+    controller.selectConstruct(this);
+}
+
+void Construct::onDoubleClick(Controller&, double, double) noexcept {
+    //DO NOTHING
+}
+
 ParseNode Construct::parseNodeAt(double x, double y) const noexcept {
     if(Subphrase* s = argAt(x, y)){
         ParseNode pn_from_child = s->parseNodeAt(x, y);

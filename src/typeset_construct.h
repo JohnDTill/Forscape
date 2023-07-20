@@ -67,6 +67,8 @@ public:
     #endif
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
+    virtual void onClick(Controller& controller, double local_x, double local_y) noexcept;
+    virtual void onDoubleClick(Controller& controller, double local_x, double local_y) noexcept;
     ParseNode parseNodeAt(double x, double y) const noexcept;
     bool contains(double x, double y) const noexcept;
     Construct* constructAt(double x, double y) noexcept;

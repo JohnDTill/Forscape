@@ -540,6 +540,15 @@ Selection Controller::selection() const noexcept{
     return isForward() ? Selection(anchor, active) : Selection(active, anchor);
 }
 
+bool Controller::isTextSelection() const noexcept{
+    return active.text == anchor.text;
+}
+
+void Controller::selectConstruct(const Construct* c) noexcept{
+    active.setToFrontOf(c->next());
+    anchor.setToBackOf(c->prev());
+}
+
 void Controller::consolidateToActive() noexcept{
     anchor = active;
 }
@@ -572,16 +581,8 @@ bool Controller::isNested() const noexcept{
     return active.text->isNested();
 }
 
-bool Controller::isTextSelection() const noexcept{
-    return active.text == anchor.text;
-}
-
 bool Controller::isPhraseSelection() const noexcept{
     return active.phrase() == anchor.phrase();
-}
-
-bool Controller::isConstructSelection() const noexcept{
-    return selection().isConstructSelection();
 }
 
 char Controller::charRight() const noexcept{
@@ -661,22 +662,6 @@ void Controller::selectLine(const Line* l) noexcept{
     anchor.setToFrontOf(l);
     if(Line* n = l->next()) active.setToFrontOf(n);
     else active.setToBackOf(l);
-}
-
-void Controller::selectConstruct(const Construct* c) noexcept{
-    #ifndef FORSCAPE_TYPESET_HEADLESS
-    if(c->constructCode() != MARKERLINK){
-        active.setToFrontOf(c->next());
-        anchor.setToBackOf(c->prev());
-    }else{
-        anchor.setToBackOf(c->prev());
-        consolidateToAnchor();
-        static_cast<const MarkerLink*>(c)->clickThrough();
-    }
-    #else
-    active.setToFrontOf(c->next());
-    anchor.setToBackOf(c->prev());
-    #endif
 }
 
 void Controller::deleteChar(){
@@ -810,9 +795,9 @@ void Controller::clickTo(const Phrase* p, double x, double y) noexcept{
     }
 }
 
-void Controller::clickTo(const Construct* c, double x, double y) noexcept{
+void Controller::clickTo(Construct* c, double x, double y) noexcept{
     if(Subphrase* s = c->argAt(x, y)) clickTo(s, x, y);
-    else selectConstruct(c);
+    else c->onClick(*this, x - c->x, y - c->y);
 }
 
 void Controller::shiftClick(const Phrase* p, double x) noexcept{

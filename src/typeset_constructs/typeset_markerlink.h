@@ -41,7 +41,9 @@ public:
     #ifndef FORSCAPE_TYPESET_HEADLESS
     MarkerLink(Line* line, View* view, Model* model) : line_id(line->id), view(view), model(model) {}
 
-    void clickThrough() const {
+    virtual void onClick(Controller& controller, double, double) noexcept override {
+        controller.selectConstruct(this);
+        controller.deselect();
         debug_cast<Editor*>(view)->clickLink(model, line_id);
     }
 

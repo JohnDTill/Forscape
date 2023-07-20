@@ -30,14 +30,41 @@ size_t Settings::dims() const noexcept {
 }
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
+static bool isInExpandBox(double local_x, double local_y, uint8_t script_depth) noexcept {
+    return local_y <= CHARACTER_HEIGHTS[script_depth] && local_x <= 1.5*CHARACTER_WIDTHS[script_depth];
+}
+
+static bool isInFormBox(double local_x, double local_y, uint8_t script_depth) noexcept {
+    return local_y <= CHARACTER_HEIGHTS[script_depth] &&
+           local_x > 1.5*CHARACTER_WIDTHS[script_depth] &&
+           local_x <= 3.5*CHARACTER_WIDTHS[script_depth];
+}
+
+void Settings::onClick(Controller& controller, double local_x, double local_y) noexcept {
+    local_x -= HSPACE;
+
+    if(isInExpandBox(local_x, local_y, scriptDepth())) expandCollapse(this, controller);
+    else if(isInFormBox(local_x, local_y, scriptDepth())) changeSettings(this, controller);
+    else Construct::onClick(controller, local_x, local_y);
+}
+
+void Settings::onDoubleClick(Controller& controller, double local_x, double local_y) noexcept {
+    local_x -= HSPACE;
+
+    if(isInExpandBox(local_x, local_y, scriptDepth())) expandCollapse(this, controller);
+    else changeSettings(this, controller);
+}
+
 const std::vector<Construct::ContextAction> Settings::actions {
     ContextAction("View/change settings", changeSettings),
     ContextAction("Expand/collapse", expandCollapse),
 };
 
+static constexpr size_t OFFSET = 2;
+
 void Settings::updateSizeFromChildSizes() noexcept {
-    width = (label_glyph_length + 3*!expanded) * CHARACTER_WIDTHS[scriptDepth()];
-    if(expanded) width = std::max(width, expanded_chars * CHARACTER_WIDTHS[scriptDepth()]);
+    width = label_glyph_length * CHARACTER_WIDTHS[scriptDepth()];
+    if(expanded) width = std::max(width, (expanded_chars+OFFSET) * CHARACTER_WIDTHS[scriptDepth()]);
     width += 2*HSPACE;
 
     const double row_heights = expanded*(updates.size() * (VSPACE + CHARACTER_HEIGHTS[scriptDepth()]));
@@ -48,29 +75,32 @@ void Settings::updateSizeFromChildSizes() noexcept {
 void Settings::paintSpecific(Painter& painter) const {
     painter.setTypeIfAppropriate(SEM_KEYWORD);
 
-    painter.drawLine(x, y-2, width, 0);
-    painter.drawLine(x, y + CHARACTER_HEIGHTS[scriptDepth()], width, 0);
-    painter.drawLine(x, y+height(), width, 0);
-    painter.drawLine(x, y-2, 0, height()+2);
-    painter.drawLine(x+width, y-2, 0, height()+2);
+    painter.drawText(x+HSPACE, y-1, "⃞ ⃞");
 
     if(isExpanded()){
-        painter.drawText(x+HSPACE, y, label);
+        painter.drawText(x+HSPACE, y, "-  Settings");
         double rolling_y = y;
         for(const auto& update : updates){
             std::string_view setting_id_str = setting_id_strs[update.setting_id];
             std::string_view warning_str = warning_strs[update.prev_value];
 
             rolling_y += VSPACE + CHARACTER_HEIGHTS[scriptDepth()];
-            painter.drawText(x+HSPACE, rolling_y, setting_id_str.data() + std::string(": ") + warning_str.data());
+            painter.drawText(
+                x+HSPACE + OFFSET*CHARACTER_WIDTHS[scriptDepth()],
+                rolling_y,
+                setting_id_str.data() + std::string(": ") + warning_str.data());
         }
     }else{
-        const std::string str = label.data() + std::string("...");
-        painter.drawText(x+HSPACE, y, str);
+        painter.drawText(x+HSPACE, y, "+  Settings");
     }
 }
 
 void Settings::changeSettings(Construct* con, Controller& c, Subphrase*){
+    changeSettings(con, c);
+}
+
+void Settings::changeSettings(Construct* con, Controller& c) {
+    c.deselect();
     Settings* settings = debug_cast<Settings*>(con);
 
     if( !SettingsDialog::execSettingsForm(settings->updates) ) return;
@@ -82,6 +112,11 @@ void Settings::changeSettings(Construct* con, Controller& c, Subphrase*){
 }
 
 void Settings::expandCollapse(Construct* con, Controller& c, Subphrase*){
+    expandCollapse(con, c);
+}
+
+void Settings::expandCollapse(Construct* con, Controller& c) noexcept {
+    c.deselect();
     Settings* settings = debug_cast<Settings*>(con);
     settings->expanded = !settings->expanded;
     c.getModel()->postmutate();
