@@ -44,6 +44,7 @@ public:
     virtual void onClick(Controller& controller, double, double) noexcept override {
         controller.selectConstruct(this);
         controller.deselect();
+        debug_cast<Editor*>(view)->setFocus(Qt::FocusReason::ShortcutFocusReason);
         debug_cast<Editor*>(view)->clickLink(model, line_id);
     }
 

@@ -385,6 +385,8 @@ void View::resolveClick(double x, double y) noexcept{
 
     model->updateLayout();
     v_scroll->update();
+
+    emit textChanged();
 }
 
 void View::resolveShiftClick(double x, double y) noexcept {
@@ -470,6 +472,7 @@ void View::resolveWordClick(double x, double y){
         c->onDoubleClick(controller, x - c->x, y - c->y);
         model->updateLayout();
         v_scroll->update();
+        emit textChanged();
     }else{
         resolveClick(x, y);
         controller.moveToPrevWord();
