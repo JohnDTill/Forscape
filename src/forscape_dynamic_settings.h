@@ -70,6 +70,7 @@ public:
 
     void reset() noexcept;
     void set(SettingId setting, SettingValue value) alloc_except;
+    void updateInherited(size_t flag) const noexcept;
     void enact(size_t flag) alloc_except;
     void enterScope() alloc_except;
     void leaveScope() noexcept;

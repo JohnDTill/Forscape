@@ -124,6 +124,7 @@ void Settings::changeSettings(Construct* con, Controller& c) {
     c.deselect();
     Settings* settings = debug_cast<Settings*>(con);
 
+    SettingsDialog::updateInherited(settings->inherited);
     if( !SettingsDialog::execSettingsForm(settings->updates) ) return;
 
     CommandChangeSettings* cmd = new CommandChangeSettings(settings, settings->updates);

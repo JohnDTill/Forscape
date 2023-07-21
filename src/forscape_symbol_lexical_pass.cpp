@@ -563,7 +563,10 @@ void SymbolLexicalPass::resolveRangedFor(ParseNode pn) alloc_except {
 }
 
 void SymbolLexicalPass::resolveSettingsUpdate(ParseNode pn) alloc_except {
-    Program::instance()->settings.enact(parse_tree.getFlag(pn));
+    Settings& s = Program::instance()->settings;
+    const auto settings_construct = parse_tree.getFlag(pn);
+    s.updateInherited(settings_construct);
+    s.enact(settings_construct);
 }
 
 void SymbolLexicalPass::resolveSwitch(ParseNode pn) noexcept {

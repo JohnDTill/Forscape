@@ -17,6 +17,11 @@ void Settings::set(SettingId setting, SettingValue value) alloc_except {
     flags[setting] = value;
 }
 
+void Settings::updateInherited(size_t flag) const noexcept {
+    auto c = reinterpret_cast<Typeset::Settings*>(flag);
+    c->inherited = flags;
+}
+
 void Settings::enact(size_t flag) noexcept {
     auto c = reinterpret_cast<Typeset::Settings*>(flag);
     for(const auto& update : c->updates)

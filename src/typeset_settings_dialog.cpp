@@ -33,6 +33,25 @@ SettingsDialog::~SettingsDialog() {
     delete ui;
 }
 
+void SettingsDialog::updateInherited(
+    const std::array<Code::Settings::SettingValue, Code::NUM_SETTINGS>& inherited) alloc_except {
+
+    if(instance == nullptr) instance = new SettingsDialog;
+
+    //DO THIS: codegen
+    static constexpr std::string_view names[Code::NUM_WARNING_LEVELS] = {
+        "No warning",
+        "Warn",
+        "Error",
+    };
+
+    for(size_t i = 0; i < Code::NUM_SETTINGS; i++) {
+        QComboBox* combo_box = combo_boxes[i];
+        const Code::Settings::SettingValue value = inherited[i];
+        combo_box->setItemText(0, QString("Inherited (") + names[value].data() + ")");
+    }
+}
+
 static QColor background_colour[Code::NUM_WARNING_LEVELS+1];
 static QColor text_colour[Code::NUM_WARNING_LEVELS+1];
 
