@@ -117,6 +117,7 @@ private:
     bool defineLocalScope(ParseNode pn, bool immutable = true, bool warn_on_shadow = true) alloc_except;
     bool declared(ParseNode pn) const noexcept;
     size_t symIndex(ParseNode pn) const noexcept;
+    Settings& settings() const noexcept;
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     template<bool first = true> void fixSubIdDocMap(ParseNode pn) const alloc_except;

@@ -563,7 +563,7 @@ void SymbolLexicalPass::resolveRangedFor(ParseNode pn) alloc_except {
 }
 
 void SymbolLexicalPass::resolveSettingsUpdate(ParseNode pn) alloc_except {
-    Settings& s = Program::instance()->settings;
+    Settings& s = settings();
     const auto settings_construct = parse_tree.getFlag(pn);
     s.updateInherited(settings_construct);
     s.enact(settings_construct);
@@ -1088,6 +1088,10 @@ size_t SymbolLexicalPass::symIndex(ParseNode pn) const noexcept{
     return lookup == lexical_map.end() ? NONE : lookup->second;
 }
 
+Settings& SymbolLexicalPass::settings() const noexcept {
+    return Program::instance()->settings;
+}
+
 #ifndef FORSCAPE_TYPESET_HEADLESS
 template<bool first>
 void SymbolLexicalPass::fixSubIdDocMap(ParseNode pn) const alloc_except {
@@ -1113,7 +1117,7 @@ void SymbolLexicalPass::increaseLexicalDepth(
     lexical_depth++;
     addScope(SCOPE_NAME(name)  begin);
 
-    Forscape::Program::instance()->settings.enterScope();
+    settings().enterScope();
 }
 
 void SymbolLexicalPass::decreaseLexicalDepth(const Typeset::Marker& end) alloc_except {
@@ -1135,7 +1139,7 @@ void SymbolLexicalPass::decreaseLexicalDepth(const Typeset::Marker& end) alloc_e
 
     lexical_depth--;
 
-    Forscape::Program::instance()->settings.leaveScope();
+    settings().leaveScope();
 }
 
 void SymbolLexicalPass::increaseClosureDepth(

@@ -173,6 +173,7 @@ private:
         ParseNode enforceNaturalNumber(ParseNode pn);
         ParseNode enforceSemiPositiveInt(ParseNode pn);
         static bool dimsDisagree(size_t a, size_t b) noexcept;
+        Settings& settings() const noexcept;
         SymbolTable& symbolTable() const noexcept;
         void finaliseSymbolTable(Typeset::Model* model) const noexcept;
 

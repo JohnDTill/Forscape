@@ -42,6 +42,7 @@ namespace Code {
 class AbstractSyntaxTree;
 struct Error;
 class ParseTree;
+class Settings;
 }
 
 namespace Typeset {

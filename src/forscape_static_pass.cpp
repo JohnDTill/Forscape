@@ -88,7 +88,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
         case OP_SETTINGS_UPDATE:
             //EVENTUALLY: settings should only be applied to the lexical scope
             // not a concern now since the static pass and interpreter will undergo a total rewrite
-            Program::instance()->settings.enact( parse_tree.getFlag(pn) );
+            settings().enact( parse_tree.getFlag(pn) );
             return parse_tree.addTerminal(OP_DO_NOTHING, parse_tree.getSelection(pn));
 
         case OP_DO_NOTHING:
@@ -1744,7 +1744,7 @@ ParseNode StaticPass::resolvePower(ParseNode pn){
             //return ast.setComplement(base);
 
         case OP_MAYBE_TRANSPOSE:
-            switch (Program::instance()->settings.warningLevel<WARN_TRANSPOSE_T>()) {
+            switch (settings().warningLevel<WARN_TRANSPOSE_T>()) {
                 case WarningLevel::ERROR:
                     return error(pn, rhs, TRANSPOSE_T);
                 case WarningLevel::WARN:
@@ -2103,6 +2103,10 @@ bool StaticPass::dimsDisagree(size_t a, size_t b) noexcept {
     return a != UNKNOWN_SIZE && b != UNKNOWN_SIZE && a != b;
 }
 
+Settings& StaticPass::settings() const noexcept {
+    return Program::instance()->settings;
+}
+
 SymbolTable& StaticPass::symbolTable() const noexcept {
     return active_model->symbol_builder.symbol_table;
 }
@@ -2111,8 +2115,7 @@ void StaticPass::finaliseSymbolTable(Typeset::Model* model) const noexcept {
     auto& symbol_table = model->symbol_builder.symbol_table;
 
     for(Symbol& sym : symbol_table.symbols)
-        if(!sym.is_used){
-
+        if(!sym.is_used)
             switch (sym.use_level) {
                 case WarningLevel::ERROR:
                     errors.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
@@ -2125,7 +2128,6 @@ void StaticPass::finaliseSymbolTable(Typeset::Model* model) const noexcept {
                 default:
                     break;
             }
-        }
 
     for(const SymbolUsage& usage : symbol_table.symbol_usages){
         const Symbol& sym = *usage.symbol();
