@@ -41,13 +41,14 @@ public:
     static void expandCollapse(Construct* con, Controller& c) noexcept;
     static const std::vector<Construct::ContextAction> actions;
     virtual const std::vector<ContextAction>& getContextActions(Subphrase*) const noexcept override;
-    std::string getString() const alloc_except;
+    std::string getTooltip(double x_local, double y_local) const alloc_except;
     bool isExpanded() const noexcept;
     void updateString() alloc_except;
 
 private:
     std::string str;
-    size_t expanded_chars = 0;
+    size_t chars_left = 0;
+    size_t chars_right = 0;
     #endif
 };
 

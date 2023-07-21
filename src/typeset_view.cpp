@@ -1799,9 +1799,13 @@ void Editor::showTooltipParseNode(){
 
         case Code::OP_SETTINGS_UPDATE:{
             Settings* settings = debug_cast<Settings*>(parse_tree->getLeft(hover_node).text->nextConstructAsserted());
-            if(settings->isExpanded()) return;
+
+            QPointF point = QWidget::mapFromGlobal(QCursor::pos());
+            std::string str = settings->getTooltip(xModel(point.x()) - settings->x, yModel(point.y()) - settings->y);
+            if(str.empty()) return;
+
             tooltip->clear();
-            tooltip->appendSerial(settings->getString());
+            tooltip->appendSerial(str);
             tooltip->fitToContents();
             break;
         }

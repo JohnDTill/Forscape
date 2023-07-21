@@ -21,6 +21,9 @@ public:
     static bool execSettingsForm(const std::vector<Code::Settings::Update>& settings) noexcept;
     static void populateSettingsFromForm(std::vector<Code::Settings::Update>& settings) noexcept;
 
+private slots:
+    void updateBackgroundColour() noexcept;
+
 private:
     Ui::SettingsDialog* ui;
 };

@@ -6,12 +6,22 @@ namespace Forscape {
 
 namespace Typeset {
 
-static constexpr double VSPACE = 2.5;
+static constexpr double VSPACE = 3.5;
 static constexpr double HSPACE = 2.5;
+static constexpr double INNER_COL_HSPACE = 5;
 
 //DO THIS: codegen
 static constexpr std::array<std::string_view, Code::NUM_SETTINGS> setting_id_strs = { "Unused var", "Transpose T" };
 static constexpr std::array<std::string_view, Code::NUM_WARNING_LEVELS> warning_strs = {"No Warning", "Warning", "Error"};
+static constexpr std::array<std::string_view, Code::NUM_SETTINGS> setting_tips = {
+    "Variable is set but never read",
+    "Transpose with letter 'T' instead of symbol '⊤'",
+};
+static constexpr std::array<std::string_view, Code::NUM_WARNING_LEVELS> warning_tips = {
+    "Take no action",
+    "Warn if the condition is encountered",
+    "Fail if the condition is encountered",
+};
 
 char Settings::constructCode() const noexcept { return SETTINGS; }
 
@@ -60,12 +70,9 @@ const std::vector<Construct::ContextAction> Settings::actions {
     ContextAction("Expand/collapse", expandCollapse),
 };
 
-static constexpr size_t OFFSET = 2;
-
 void Settings::updateSizeFromChildSizes() noexcept {
-    width = label_glyph_length * CHARACTER_WIDTHS[scriptDepth()];
-    if(expanded) width = std::max(width, (expanded_chars+OFFSET) * CHARACTER_WIDTHS[scriptDepth()]);
-    width += 2*HSPACE;
+    width = label_glyph_length * CHARACTER_WIDTHS[scriptDepth()] + 2*HSPACE;
+    if(expanded) width = std::max(width, (chars_left+chars_right) * CHARACTER_WIDTHS[scriptDepth()] + 2*HSPACE + 2*INNER_COL_HSPACE);
 
     const double row_heights = expanded*(updates.size() * (VSPACE + CHARACTER_HEIGHTS[scriptDepth()]));
     above_center = ABOVE_CENTER[scriptDepth()] + row_heights/2;
@@ -79,17 +86,31 @@ void Settings::paintSpecific(Painter& painter) const {
 
     if(isExpanded()){
         painter.drawText(x+HSPACE, y, "-  Settings");
+        if(updates.empty()) return;
+
         double rolling_y = y;
+        const double centre = x + (HSPACE+INNER_COL_HSPACE) + chars_left * CHARACTER_WIDTHS[scriptDepth()];
+        const double row_height = VSPACE + CHARACTER_HEIGHTS[scriptDepth()];
         for(const auto& update : updates){
             std::string_view setting_id_str = setting_id_strs[update.setting_id];
             std::string_view warning_str = warning_strs[update.prev_value];
 
-            rolling_y += VSPACE + CHARACTER_HEIGHTS[scriptDepth()];
+            rolling_y += row_height;
             painter.drawText(
-                x+HSPACE + OFFSET*CHARACTER_WIDTHS[scriptDepth()],
+                x + HSPACE,
                 rolling_y,
-                setting_id_str.data() + std::string(": ") + warning_str.data());
+                setting_id_str);
+            painter.drawText(
+                centre + INNER_COL_HSPACE,
+                rolling_y,
+                warning_str);
+
+            painter.drawDashedLine(x, rolling_y - VSPACE/2, width, 0);
         }
+        painter.drawDashedLine(centre, y + row_height - VSPACE/2, 0, height() - row_height + VSPACE/2);
+        painter.drawDashedLine(x, y + row_height - VSPACE/2, 0, height() - row_height + VSPACE/2);
+        painter.drawDashedLine(x + width, y + row_height - VSPACE/2, 0, height() - row_height + VSPACE/2);
+        painter.drawDashedLine(x, y + height(), width, 0);
     }else{
         painter.drawText(x+HSPACE, y, "+  Settings");
     }
@@ -126,8 +147,25 @@ const std::vector<Construct::ContextAction>& Settings::getContextActions(Subphra
     return actions;
 }
 
-std::string Settings::getString() const alloc_except {
-    return str;
+std::string Settings::getTooltip(double x_local, double y_local) const noexcept {
+    if(!expanded) return str;
+
+    if(y_local <= CHARACTER_HEIGHTS[scriptDepth()] + VSPACE/2 || y_local >= height()) return "";
+    size_t row = (y_local - VSPACE/2) / (VSPACE + CHARACTER_HEIGHTS[scriptDepth()]) - 1;
+
+    const auto& update = updates[row];
+    std::string_view setting = setting_id_strs[update.setting_id];
+    std::string_view warning = warning_strs[update.prev_value];
+
+    const double midline = width - HSPACE - chars_right * CHARACTER_WIDTHS[scriptDepth()];
+
+    if(x_local > HSPACE && x_local <= HSPACE + setting.size() * CHARACTER_WIDTHS[scriptDepth()]){
+        return setting_tips[update.setting_id].data();
+    }else if(x_local <= midline + warning.size() * CHARACTER_WIDTHS[scriptDepth()] && x_local > midline){
+        return warning_tips[update.prev_value].data();
+    }else{
+        return "";
+    }
 }
 
 bool Settings::isExpanded() const noexcept {
@@ -135,7 +173,8 @@ bool Settings::isExpanded() const noexcept {
 }
 
 void Settings::updateString() alloc_except {
-    expanded_chars = 0;
+    chars_left = 0;
+    chars_right = 0;
 
     if(updates.empty()){
         str = "No changes";
@@ -152,10 +191,10 @@ void Settings::updateString() alloc_except {
         str += ' ';
         str += warning_str;
         str += '\n';
-        expanded_chars = std::max(expanded_chars, setting_id_str.size() + warning_str.size());
+        chars_left = std::max(chars_left, setting_id_str.size());
+        chars_right = std::max(chars_right, warning_str.size());
     }
     str.pop_back();
-    expanded_chars += 2;
 }
 #endif
 

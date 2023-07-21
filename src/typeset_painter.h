@@ -65,6 +65,7 @@ public:
     void drawHighlightedGrouping(double x, double y, double w, std::string_view text);
     void drawSymbol(double x, double y, std::string_view text);
     void drawLine(double x, double y, double w, double h);
+    void drawDashedLine(double x, double y, double w, double h);
     void drawPath(const std::vector<std::pair<double,double> >& points);
     void drawRect(double x, double y, double w, double h);
     void drawSelection(double x, double y, double w, double h);
