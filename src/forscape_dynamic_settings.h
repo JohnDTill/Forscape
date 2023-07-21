@@ -39,6 +39,10 @@ public:
         Update() noexcept = default;
         Update(SettingId setting_id, SettingValue prev_value) noexcept
             : setting_id(setting_id), prev_value(prev_value) {}
+
+        bool operator==(const Update& other) const noexcept {
+            return setting_id == other.setting_id && prev_value == other.prev_value;
+        }
     };
 
 private:

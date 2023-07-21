@@ -65,7 +65,14 @@ bool SettingsDialog::execSettingsForm(const std::vector<Code::Settings::Update>&
         combo_boxes[update.setting_id]->setCurrentIndex( update.prev_value + 1 );
     }
 
-    return instance->exec() == QDialog::Accepted;
+    const auto user_response = instance->exec();
+    if(user_response != QDialog::Accepted) return false;
+
+    std::vector<Code::Settings::Update> altered_settings;
+    populateSettingsFromForm(altered_settings);
+
+    return (altered_settings.size() != settings.size()) ||
+           !std::equal(settings.begin(), settings.end(), altered_settings.begin());
 }
 
 void SettingsDialog::populateSettingsFromForm(std::vector<Code::Settings::Update>& settings) noexcept {

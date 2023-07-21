@@ -346,7 +346,7 @@ bool Model::isSavedDeepComparison() const {
     std::string saved_src = buffer.str();
     saved_src.erase( std::remove(saved_src.begin(), saved_src.end(), '\r'), saved_src.end() );
 
-    //MAYDO: no need to convert model to serial, but cost is probably negligible compared to I/O
+    //EVENTUALLY: no need to convert model to serial, but cost is probably negligible compared to I/O
     std::string curr_src = toSerial();
 
     return saved_src == curr_src;
@@ -369,7 +369,24 @@ void Model::undo(Controller& controller){
         clearFormatting();
         Command* cmd = undo_stack.back();
         undo_stack.pop_back();
+
+        #ifndef NDEBUG
+        const std::string state_before = toSerial();
+        #endif
+
         cmd->undo(controller);
+
+        #ifndef NDEBUG
+        const std::string state_after = toSerial();
+        assert(state_before != state_after); //Null commands are poor UX and should not be on the stack
+
+        // Check command roundtrip is consistent
+        cmd->redo(controller);
+        assert(toSerial() == state_before);
+        cmd->undo(controller);
+        assert(toSerial() == state_after);
+        #endif
+
         redo_stack.push_back(cmd);
         postmutate();
     }
@@ -380,7 +397,24 @@ void Model::redo(Controller& controller){
         clearFormatting();
         Command* cmd = redo_stack.back();
         redo_stack.pop_back();
+
+        #ifndef NDEBUG
+        const std::string state_before = toSerial();
+        #endif
+
         cmd->redo(controller);
+
+        #ifndef NDEBUG
+        const std::string state_after = toSerial();
+        assert(state_before != state_after); //Null commands are poor UX and should not be on the stack
+
+        // Check command roundtrip is consistent
+        cmd->undo(controller);
+        assert(toSerial() == state_before);
+        cmd->redo(controller);
+        assert(toSerial() == state_after);
+        #endif
+
         undo_stack.push_back(cmd);
         postmutate();
     }

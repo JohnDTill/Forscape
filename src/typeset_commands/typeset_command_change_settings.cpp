@@ -22,7 +22,7 @@ void CommandChangeSettings::redo(Controller& c) {
 
 void CommandChangeSettings::swap(Controller& c) noexcept {
     std::swap(live_updates, stale_updates);
-    c.setBothToFrontOf(settings->next());
+    c.selectConstruct(settings); //Select to give affordance of what was changed
     #ifndef FORSCAPE_TYPESET_HEADLESS
     debug_cast<Settings*>(settings)->updateString();
     #endif
