@@ -86,6 +86,7 @@ private:
     void resolveConditional2(ParseNode pn) alloc_except;
     void resolveFor(ParseNode pn) alloc_except;
     void resolveRangedFor(ParseNode pn) alloc_except;
+    void resolveSettingsUpdate(ParseNode pn) alloc_except;
     void resolveSwitch(ParseNode pn) alloc_except;
     void resolveBody(
         #ifdef FORSCAPE_USE_SCOPE_NAME
@@ -93,6 +94,7 @@ private:
         #endif
         ParseNode pn) alloc_except;
     void resolveBlock(ParseNode pn) alloc_except;
+    void resolveLexicalScope(ParseNode pn) alloc_except;
     void resolveDefault(ParseNode pn) alloc_except;
     void resolveLambda(ParseNode pn) alloc_except;
     void resolveAlgorithm(ParseNode pn) alloc_except;
@@ -115,6 +117,7 @@ private:
     bool defineLocalScope(ParseNode pn, bool immutable = true, bool warn_on_shadow = true) alloc_except;
     bool declared(ParseNode pn) const noexcept;
     size_t symIndex(ParseNode pn) const noexcept;
+    Settings& settings() const noexcept;
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     template<bool first = true> void fixSubIdDocMap(ParseNode pn) const alloc_except;

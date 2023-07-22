@@ -21,6 +21,7 @@
 #include <typeset_max.h>
 #include <typeset_min.h>
 #include <typeset_nrt.h>
+#include <typeset_settings.h>
 #include <typeset_sqrt.h>
 #include <typeset_subscript.h>
 #include <typeset_sup.h>

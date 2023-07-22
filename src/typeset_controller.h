@@ -85,6 +85,7 @@ public:
     std::string selectedText() const;
     Selection selection() const noexcept;
     bool isTextSelection() const noexcept;
+    void selectConstruct(const Construct* c) noexcept;
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     void moveToNextLine(double setpoint) noexcept;
@@ -112,7 +113,6 @@ private:
     bool isTopLevel() const noexcept;
     bool isNested() const noexcept;
     bool isPhraseSelection() const noexcept;
-    bool isConstructSelection() const noexcept;
     char charRight() const noexcept;
     char charLeft() const noexcept;
     Phrase* phrase() const noexcept;
@@ -132,7 +132,6 @@ private:
     void incrementToNextWord() noexcept;
     void decrementToPrevWord() noexcept;
     void selectLine(const Line* l) noexcept;
-    void selectConstruct(const Construct* c) noexcept;
     void deleteChar();
     void deleteAdditionalChar(Command* cmd);
     void deleteFirstChar();
@@ -149,7 +148,7 @@ private:
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     void clickTo(const Phrase* p, double x, double y) noexcept;
-    void clickTo(const Construct* c, double x, double y) noexcept;
+    void clickTo(Construct* c, double x, double y) noexcept;
     void shiftClick(const Phrase* p, double x) noexcept;
     double xActive() const;
     double xAnchor() const;

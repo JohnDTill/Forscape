@@ -18,6 +18,7 @@ signals:
     void insertSerial(QString);
     void insertSerialSelection(QString, QString);
     void insertFlatText(QString);
+    void insertSettings();
 
 private:
     void setupSymbolTable();
@@ -32,6 +33,7 @@ private slots:
     void symbolTableTriggered(QTableWidgetItem* item);
     void insertText();
     void insertWithSelection();
+    void insertSettingsSlot();
 
 private:
     class TypesetAction : public QAction{
@@ -52,6 +54,11 @@ private:
                               const QString& command_start,
                               const QString& command_end,
                               MathToolbar* parent);
+    };
+
+    class SettingsAction : public QAction{
+    public:
+        SettingsAction(const QString& text, const QString& tooltip, MathToolbar* parent);
     };
 };
 

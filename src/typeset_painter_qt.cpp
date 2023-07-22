@@ -181,6 +181,15 @@ void Painter::drawLine(double x, double y, double w, double h){
     painter.drawLine(x, y-THICKNESS/2, x+w, y+h-THICKNESS/2);
 }
 
+void Painter::drawDashedLine(double x, double y, double w, double h) {
+    const QPen backup = painter.pen();
+    QPen pen = backup;
+    pen.setStyle(Qt::PenStyle::DotLine);
+    painter.setPen(pen);
+    drawLine(x, y, w, h);
+    painter.setPen(backup);
+}
+
 void Painter::drawPath(const std::vector<std::pair<double, double> >& points){
     QPen pen = painter.pen();
     pen.setWidthF(0.5);

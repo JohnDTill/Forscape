@@ -11,6 +11,7 @@
 #include <typeset_line.h>
 #include <typeset_model.h>
 #include <typeset_painter.h>
+#include <typeset_settings.h>
 #include <typeset_view.h>
 #include <qt_compatability.h>
 #include <QBuffer>
@@ -258,6 +259,7 @@ MainWindow::MainWindow(QWidget* parent)
     connect(math_toolbar, SIGNAL(insertSerial(QString)), this, SLOT(insertSerial(const QString&)));
     connect(math_toolbar, SIGNAL(insertSerialSelection(QString, QString)),
             this, SLOT(insertSerialSelection(QString, QString)));
+    connect(math_toolbar, SIGNAL(insertSettings()), this, SLOT(insertSettings()));
     addToolBarBreak(Qt::ToolBarArea::TopToolBarArea);
     addToolBar(Qt::ToolBarArea::TopToolBarArea, math_toolbar);
 
@@ -1013,6 +1015,16 @@ void MainWindow::insertSerialSelection(const QString& A, const QString& B){
     onTextChanged();
 }
 
+void MainWindow::insertSettings() {
+    insertSerial(OPEN_STR SETTINGS_STR "");
+    Typeset::Construct* settings = editor->getController().getActive().text->prevConstructAsserted();
+    Typeset::Settings::changeSettings(settings, editor->getController());
+    Typeset::Settings::expandCollapse(settings, editor->getController());
+    editor->update();
+
+    onTextChanged();
+}
+
 void MainWindow::on_actionStop_triggered(){
     stop();
 }
@@ -1499,6 +1511,7 @@ void MainWindow::updateRecentProjectsFromList() {
             QFileInfo info(recent_project);
             QAction* open_action = new QAction(info.fileName());
             open_action->setData(recent_project);
+            open_action->setToolTip(recent_project);  //EVENTUALLY: parse a project description in the tooltip also
             ui->menuRecent_Projects->addAction(open_action);
 
             if(++entries == MAX_DISPLAYED_RECENT_PROJECTS) break;

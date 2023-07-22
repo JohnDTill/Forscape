@@ -35,7 +35,6 @@ public:
     bool isNested() const noexcept;
     bool isTextSelection() const noexcept;
     bool isPhraseSelection() const noexcept;
-    bool isConstructSelection() const noexcept;
     bool isEmpty() const noexcept;
     Line* getStartLine() const noexcept;
     Model* getModel() const noexcept;

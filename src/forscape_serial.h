@@ -11,6 +11,8 @@
 #include "forscape_unicode.h"
 #endif
 
+#define SETTINGS_END 0b01111111
+
 namespace Forscape {
 
 inline bool isValidSerial(const std::string& src) noexcept {
@@ -23,6 +25,9 @@ inline bool isValidSerial(const std::string& src) noexcept {
         if(ch == OPEN){
             if(index >= src.size()) return false;
             switch (src[index++]) {
+                case SETTINGS:
+                    while(index < src.size() && static_cast<uint8_t>(src[index++]) != SETTINGS_END);
+                    break;
                 FORSCAPE_SERIAL_NULLARY_CASES
                     break;
                 FORSCAPE_SERIAL_UNARY_CASES

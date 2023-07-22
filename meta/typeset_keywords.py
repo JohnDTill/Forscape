@@ -68,6 +68,8 @@ def main():
                     codegen_file.write(f"    {{\"{c.keyword}\", OPEN_STR {c.name.upper()}_STR CLOSE_STR}},\n")
                 elif c.arity == "2":
                     codegen_file.write(f"    {{\"{c.keyword}\", OPEN_STR {c.name.upper()}_STR CLOSE_STR CLOSE_STR}},\n")
+                elif not c.arity:
+                    codegen_file.write(f"    {{\"{c.keyword}\", OPEN_STR {c.name.upper()}_STR \"{c.default_args}\"}},\n")
         codegen_file.write('    {"^T", OPEN_STR SUPERSCRIPT_STR "⊤" CLOSE_STR},\n')
         codegen_file.write('    {"^+", OPEN_STR SUPERSCRIPT_STR "+" CLOSE_STR},\n')
         codegen_file.write('    {"^*", OPEN_STR SUPERSCRIPT_STR "*" CLOSE_STR},\n')

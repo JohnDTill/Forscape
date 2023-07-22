@@ -52,6 +52,8 @@ def main():
     header_writer.write("\n")
     header_writer.write("#define FORSCAPE_TYPESET_PARSER_CASES")
     for entry in constructs:
+        if not entry.arity:
+            continue
         name = entry.name
         header_writer.write(f" \\\n    case {name.upper()}: TypesetSetup")
         if entry.arity == "0":
@@ -60,7 +62,7 @@ def main():
             header_writer.write(f"Matrix({name});")
         elif entry.arity == "2xn":
             header_writer.write(f"Construct({name}, static_cast<uint8_t>(src[index++]));")
-        else:
+        elif entry.arity:
             header_writer.write(f"Construct({name},);")
     header_writer.write("\n")
 

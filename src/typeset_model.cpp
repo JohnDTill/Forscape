@@ -137,6 +137,21 @@ std::vector<Line*> Model::linesFromSerial(const std::string& src){
             text->setString(&src[start], index-start-1);
 
             switch (src[index++]) {
+                case SETTINGS: {
+                    Settings* settings = new Settings;
+                    while(static_cast<uint8_t>(src[index]) != SETTINGS_END) {
+                        SettingId id = static_cast<SettingId>(static_cast<uint8_t>(src[index++] - 1));
+                        SettingValue value = static_cast<uint8_t>(src[index++] - 1);
+                        settings->updates.push_back( Code::Settings::Update(id, value) );
+                    }
+                    index++;
+                    text->getParent()->appendConstruct(settings);
+                    #ifndef FORSCAPE_TYPESET_HEADLESS
+                    settings->updateString();
+                    #endif
+                    text = text->nextTextInPhrase();
+                    break;
+                }
                 FORSCAPE_TYPESET_PARSER_CASES
                 default: assert(false);
             }
@@ -331,7 +346,7 @@ bool Model::isSavedDeepComparison() const {
     std::string saved_src = buffer.str();
     saved_src.erase( std::remove(saved_src.begin(), saved_src.end(), '\r'), saved_src.end() );
 
-    //MAYDO: no need to convert model to serial, but cost is probably negligible compared to I/O
+    //EVENTUALLY: no need to convert model to serial, but cost is probably negligible compared to I/O
     std::string curr_src = toSerial();
 
     return saved_src == curr_src;
@@ -354,7 +369,24 @@ void Model::undo(Controller& controller){
         clearFormatting();
         Command* cmd = undo_stack.back();
         undo_stack.pop_back();
+
+        #ifndef NDEBUG
+        const std::string state_before = toSerial();
+        #endif
+
         cmd->undo(controller);
+
+        #ifndef NDEBUG
+        const std::string state_after = toSerial();
+        assert(state_before != state_after); //Null commands are poor UX and should not be on the stack
+
+        // Check command roundtrip is consistent
+        cmd->redo(controller);
+        assert(toSerial() == state_before);
+        cmd->undo(controller);
+        assert(toSerial() == state_after);
+        #endif
+
         redo_stack.push_back(cmd);
         postmutate();
     }
@@ -365,7 +397,24 @@ void Model::redo(Controller& controller){
         clearFormatting();
         Command* cmd = redo_stack.back();
         redo_stack.pop_back();
+
+        #ifndef NDEBUG
+        const std::string state_before = toSerial();
+        #endif
+
         cmd->redo(controller);
+
+        #ifndef NDEBUG
+        const std::string state_after = toSerial();
+        assert(state_before != state_after); //Null commands are poor UX and should not be on the stack
+
+        // Check command roundtrip is consistent
+        cmd->undo(controller);
+        assert(toSerial() == state_before);
+        cmd->redo(controller);
+        assert(toSerial() == state_after);
+        #endif
+
         undo_stack.push_back(cmd);
         postmutate();
     }

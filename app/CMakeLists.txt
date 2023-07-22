@@ -96,6 +96,8 @@ set(CONSTRUCT_FILES
     ${CONSTRUCT}/typeset_max.h
     ${CONSTRUCT}/typeset_min.h
     ${CONSTRUCT}/typeset_nrt.h
+    ${CONSTRUCT}/typeset_settings.cpp
+    ${CONSTRUCT}/typeset_settings.h
     ${CONSTRUCT}/typeset_sqrt.h
     ${CONSTRUCT}/typeset_subscript.h
     ${CONSTRUCT}/typeset_sup.h
@@ -130,6 +132,8 @@ set(PROJECT_SOURCES
     ${GEN_FILES}
     ${CONSTRUCT_FILES}
     ${SRC}/forscape_common.h
+    ${SRC}/forscape_dynamic_settings.cpp
+    ${SRC}/forscape_dynamic_settings.h
     ${SRC}/forscape_error.cpp
     ${SRC}/forscape_error.h
     ${SRC}/forscape_interpreter.cpp
@@ -179,6 +183,9 @@ set(PROJECT_SOURCES
     ${SRC}/typeset_phrase.h
     ${SRC}/typeset_selection.cpp
     ${SRC}/typeset_selection.h
+    ${SRC}/typeset_settings_dialog.cpp
+    ${SRC}/typeset_settings_dialog.h
+    ${SRC}/typeset_settings_dialog.ui
     ${SRC}/typeset_subphrase.cpp
     ${SRC}/typeset_subphrase.h
     ${SRC}/typeset_syntax.h
@@ -187,6 +194,8 @@ set(PROJECT_SOURCES
     ${SRC}/typeset_view.cpp
     ${SRC}/typeset_view.h
     ${SRC}/qt_compatability.h
+    ${COMMAND}/typeset_command_change_settings.cpp
+    ${COMMAND}/typeset_command_change_settings.h
     ${COMMAND}/typeset_command_indent.cpp
     ${COMMAND}/typeset_command_indent.h
     ${COMMAND}/typeset_command_line.cpp

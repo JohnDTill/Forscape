@@ -106,6 +106,7 @@ private slots:
     void insertFlatText(const QString& str);
     void insertSerial(const QString& str);
     void insertSerialSelection(const QString& A, const QString& B);
+    void insertSettings();
     void on_actionStop_triggered();
     void on_actionPNG_triggered();
     void on_actionSVG_Image_triggered();

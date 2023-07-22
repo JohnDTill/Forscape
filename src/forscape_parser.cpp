@@ -3,6 +3,7 @@
 #include <code_parsenode_ops.h>
 #include <forscape_common.h>
 #include <forscape_program.h>
+#include "typeset_construct.h"
 #include "typeset_model.h"
 
 #ifdef FORSCAPE_TYPESET_HEADLESS
@@ -11,6 +12,10 @@
 #define startPatch()
 #define finishPatch(a)
 #endif
+
+#define CONSUME_ASSERT(expected) \
+    assert(tokens[index].type == expected); \
+    advance();
 
 namespace Forscape {
 
@@ -94,11 +99,13 @@ ParseNode Parser::statement() alloc_except {
         case FROM: return fromStatement();
         case IF: return ifStatement();
         case IMPORT: return importStatement();
+        case LEFTBRACKET: return lexicalScopeStatement();
         case NAMESPACE: return namespaceStatement();
         case PLOT: return plotStatement();
         case PRINT: return printStatement();
         case RETURN: return returnStatement();
         case SWITCH: return switchStatement();
+        case TOKEN_SETTINGS: return settingsStatement();
         case UNKNOWN: return unknownsStatement();
         case WHILE: return whileStatement();
         default: return mathStatement();
@@ -229,6 +236,17 @@ ParseNode Parser::enumStatement() alloc_except {
     // enums also have a scoped access, e.g. COLOUR::RED
 }
 
+ParseNode Parser::settingsStatement() noexcept {
+    Typeset::Construct* c = lMark().text->nextConstructAsserted();
+    ParseNode pn = terminalAndAdvance(OP_SETTINGS_UPDATE);
+    parse_tree.setFlag(pn, reinterpret_cast<size_t>(c));
+    #ifndef FORSCAPE_TYPESET_HEADLESS
+    c->pn = pn;
+    #endif
+
+    return pn;
+}
+
 ParseNode Parser::switchStatement() alloc_except {
     Typeset::Marker start;
     advance();
@@ -341,7 +359,7 @@ ParseNode Parser::blockStatement() alloc_except {
     }
 
     Typeset::Marker left = lMark();
-    consume(LEFTBRACKET);
+    CONSUME_ASSERT(LEFTBRACKET);
     parse_tree.prepareNary();
 
     skipNewlines();
@@ -354,6 +372,23 @@ ParseNode Parser::blockStatement() alloc_except {
     if(noErrors()) registerGrouping(sel);
 
     return parse_tree.finishNary(OP_BLOCK, sel);
+}
+
+ParseNode Parser::lexicalScopeStatement() alloc_except {
+    Typeset::Marker left = lMark();
+    CONSUME_ASSERT(LEFTBRACKET);
+    parse_tree.prepareNary();
+
+    skipNewlines();
+    while(noErrors() && !match(RIGHTBRACKET)){
+        parse_tree.addNaryChild(statement());
+        skipNewlines();
+    }
+
+    Typeset::Selection sel(left, rMarkPrev());
+    if(noErrors()) registerGrouping(sel);
+
+    return parse_tree.finishNary(OP_LEXICAL_SCOPE, sel);
 }
 
 ParseNode Parser::algStatement() alloc_except {

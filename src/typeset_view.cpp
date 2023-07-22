@@ -11,6 +11,7 @@
 #include <typeset_line.h>
 #include <typeset_markerlink.h>
 #include <typeset_model.h>
+#include <typeset_settings.h>
 #include <typeset_themes.h>
 
 #include <chrono>
@@ -294,15 +295,15 @@ void View::dispatchClick(double x, double y, int xScreen, int yScreen, bool righ
     if(right_click){
         resolveRightClick(x, y, xScreen, yScreen);
     }else if(recentlyDoubleClicked() || isInLineBox(x)){
-        resolveTripleClick(y);
         mouse_hold_state = TripleClick;
+        resolveTripleClick(y);
     }else if(shift_held){
         resolveShiftClick(x, y);
     }else if(ALLOW_SELECTION_DRAG && controller.contains(x, y)){
         mouse_hold_state = ClickedOnSelection;
     }else{
-        resolveClick(x, y);
         mouse_hold_state = SingleClick;
+        resolveClick(x, y);
     }
 
     restartCursorBlink();
@@ -320,6 +321,9 @@ void View::dispatchRelease(int x, int y){
 }
 
 void View::dispatchDoubleClick(double x, double y){
+    mouse_hold_state = DoubleClick;
+    updateDoubleClickTime();
+
     if(!isInLineBox(x)){
         //EVENTUALLY: do something better than this hack to avoid highlight when double clicking link
         if(controller.atTextEnd())
@@ -330,9 +334,6 @@ void View::dispatchDoubleClick(double x, double y){
         resolveWordClick(x, y);
         update();
     }
-
-    mouse_hold_state = DoubleClick;
-    updateDoubleClickTime();
 }
 
 void View::dispatchHover(double x, double y){
@@ -381,6 +382,11 @@ void View::resolveClick(double x, double y) noexcept{
     Line* l = model->nearestLine(y);
     controller.clickTo(l, x, y);
     updateXSetpoint();
+
+    model->updateLayout();
+    v_scroll->update();
+
+    emit textChanged();
 }
 
 void View::resolveShiftClick(double x, double y) noexcept {
@@ -462,11 +468,17 @@ void View::resolveRightClick(double x, double y, int xScreen, int yScreen){
 }
 
 void View::resolveWordClick(double x, double y){
-    resolveClick(x, y);
-    if(!controller.isConstructSelection()){
+    if(Construct* c = model->constructAt(x, y)){
+        c->onDoubleClick(controller, x - c->x, y - c->y);
+        model->updateLayout();
+        v_scroll->update();
+        emit textChanged();
+    }else{
+        resolveClick(x, y);
         controller.moveToPrevWord();
         controller.selectNextWord();
     }
+
     restartCursorBlink();
     updateXSetpoint();
 }
@@ -772,6 +784,7 @@ void View::focusOutEvent(QFocusEvent* e){
         update();
     }else if(!mock_focus){
         stopCursorBlink();
+        mouse_hold_state = Hover;
         //EVENTUALLY: why was this here?
         //assert(mouse_hold_state == Hover);
     }
@@ -1592,10 +1605,18 @@ void Editor::resolveTooltip(double x, double y) noexcept {
     hover_node = model->parseNodeAt(x, y);
     #ifndef NDEBUG
     if(hover_node == NONE) clearTooltip();
-    #else
-    if(hover_node == NONE || model->parseTree().getOp(hover_node) != Code::OP_IDENTIFIER) clearTooltip();
-    #endif
     else tooltip_timer->start(TOOLTIP_DELAY_MILLISECONDS);
+    #else
+    if(hover_node == NONE) clearTooltip();
+    else switch( model->parseTree().getOp(hover_node) ){
+        case Code::OP_IDENTIFIER:
+        case Code::OP_SETTINGS_UPDATE:
+            tooltip_timer->start(TOOLTIP_DELAY_MILLISECONDS);
+            break;
+        default: clearTooltip();
+
+    }
+    #endif
 
     #ifndef NDEBUG
     update();
@@ -1772,6 +1793,19 @@ void Editor::showTooltipParseNode(){
                 }
             }
 
+            tooltip->fitToContents();
+            break;
+        }
+
+        case Code::OP_SETTINGS_UPDATE:{
+            Settings* settings = debug_cast<Settings*>(parse_tree->getLeft(hover_node).text->nextConstructAsserted());
+
+            QPointF point = QWidget::mapFromGlobal(QCursor::pos());
+            std::string str = settings->getTooltip(xModel(point.x()) - settings->x, yModel(point.y()) - settings->y);
+            if(str.empty()) return;
+
+            tooltip->clear();
+            tooltip->appendSerial(str);
             tooltip->fitToContents();
             break;
         }

@@ -34,6 +34,9 @@
      <property name="title">
       <string>Recent Projects</string>
      </property>
+     <property name="toolTipsVisible">
+      <bool>true</bool>
+     </property>
      <addaction name="separator"/>
      <addaction name="actionClearRecentProjects"/>
     </widget>

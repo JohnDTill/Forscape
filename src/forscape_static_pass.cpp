@@ -85,6 +85,15 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
     assert(pn != NONE);
 
     switch (parse_tree.getOp(pn)) {
+        case OP_SETTINGS_UPDATE:
+            //EVENTUALLY: settings should only be applied to the lexical scope
+            // not a concern now since the static pass and interpreter will undergo a total rewrite
+            settings().enact( parse_tree.getFlag(pn) );
+            return parse_tree.addTerminal(OP_DO_NOTHING, parse_tree.getSelection(pn));
+
+        case OP_DO_NOTHING:
+            return pn;
+
         case OP_ASSIGN:
         case OP_EQUAL:{
             ParseNode rhs = resolveExprTop(parse_tree.rhs(pn));
@@ -271,6 +280,9 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
         }
 
         case OP_BLOCK: return resolveBlock(pn);
+        case OP_LEXICAL_SCOPE:
+            parse_tree.setOp(pn, OP_BLOCK);
+            return resolveBlock(pn);
 
         case OP_PRINT:
             for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
@@ -1732,7 +1744,16 @@ ParseNode StaticPass::resolvePower(ParseNode pn){
             //return ast.setComplement(base);
 
         case OP_MAYBE_TRANSPOSE:
-            warnings.push_back(Error(parse_tree.getSelection(rhs), TRANSPOSE_T));
+            switch (settings().warningLevel<WARN_TRANSPOSE_T>()) {
+                case WarningLevel::ERROR:
+                    return error(pn, rhs, TRANSPOSE_T);
+                case WarningLevel::WARN:
+                    warnings.push_back(Error(parse_tree.getSelection(rhs), TRANSPOSE_T));
+                    active_model->warnings.push_back(Error(parse_tree.getSelection(rhs), TRANSPOSE_T));
+                    break;
+                default: break;
+            }
+
             parse_tree.setOp(pn, OP_TRANSPOSE);
             parse_tree.reduceNumArgs(pn, 1);
             return resolveTranspose(pn);
@@ -2082,6 +2103,10 @@ bool StaticPass::dimsDisagree(size_t a, size_t b) noexcept {
     return a != UNKNOWN_SIZE && b != UNKNOWN_SIZE && a != b;
 }
 
+Settings& StaticPass::settings() const noexcept {
+    return Program::instance()->settings;
+}
+
 SymbolTable& StaticPass::symbolTable() const noexcept {
     return active_model->symbol_builder.symbol_table;
 }
@@ -2090,10 +2115,19 @@ void StaticPass::finaliseSymbolTable(Typeset::Model* model) const noexcept {
     auto& symbol_table = model->symbol_builder.symbol_table;
 
     for(Symbol& sym : symbol_table.symbols)
-        if(!sym.is_used){
-            warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
-            model->warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
-        }
+        if(!sym.is_used)
+            switch (sym.use_level) {
+                case WarningLevel::ERROR:
+                    errors.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+                    model->errors.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+                    break;
+                case WarningLevel::WARN:
+                    warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+                    model->warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
+                    break;
+                default:
+                    break;
+            }
 
     for(const SymbolUsage& usage : symbol_table.symbol_usages){
         const Symbol& sym = *usage.symbol();

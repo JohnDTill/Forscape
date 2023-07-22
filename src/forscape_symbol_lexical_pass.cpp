@@ -2,6 +2,8 @@
 
 #include <code_parsenode_ops.h>
 #include <forscape_common.h>
+#include <forscape_dynamic_settings.h>
+#include <forscape_program.h>
 #include "typeset_model.h"
 #include "typeset_construct.h"
 #include <algorithm>
@@ -137,6 +139,7 @@ void SymbolLexicalPass::resolveStmt(ParseNode pn) alloc_except {
         case OP_IF: resolveConditional1(SCOPE_NAME("-if-")  pn); break;
         case OP_IF_ELSE: resolveConditional2(pn); break;
         case OP_IMPORT: resolveImport(pn); break;
+        case OP_LEXICAL_SCOPE: resolveLexicalScope(pn); break;
         case OP_NAMESPACE: resolveNamespace(pn); break;
         case OP_PROTOTYPE_ALG: resolvePrototype(pn); break;
         case OP_RANGED_FOR: resolveRangedFor(pn); break;
@@ -145,6 +148,7 @@ void SymbolLexicalPass::resolveStmt(ParseNode pn) alloc_except {
             if(closure_depth == 0) errors.push_back(Error(parse_tree.getSelection(pn), RETURN_OUTSIDE_FUNCTION));
             resolveDefault(pn);
             break;
+        case OP_SETTINGS_UPDATE: resolveSettingsUpdate(pn); break;
         case OP_SWITCH: resolveSwitch(pn); break;
         case OP_UNKNOWN_LIST: resolveUnknownDeclaration(pn); break;
         case OP_WHILE: resolveConditional1(SCOPE_NAME("-while-")  pn); break;
@@ -558,6 +562,13 @@ void SymbolLexicalPass::resolveRangedFor(ParseNode pn) alloc_except {
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
+void SymbolLexicalPass::resolveSettingsUpdate(ParseNode pn) alloc_except {
+    Settings& s = settings();
+    const auto settings_construct = parse_tree.getFlag(pn);
+    s.updateInherited(settings_construct);
+    s.enact(settings_construct);
+}
+
 void SymbolLexicalPass::resolveSwitch(ParseNode pn) noexcept {
     resolveExpr(parse_tree.arg<0>(pn));
     for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++){
@@ -591,6 +602,12 @@ void SymbolLexicalPass::resolveBody(
 void SymbolLexicalPass::resolveBlock(ParseNode pn) alloc_except {
     for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
         resolveStmt( parse_tree.arg(pn, i) );
+}
+
+void SymbolLexicalPass::resolveLexicalScope(ParseNode pn) noexcept {
+    increaseLexicalDepth(SCOPE_NAME("Anonymous")  parse_tree.getLeft(pn));
+    resolveBlock(pn);
+    decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
 void SymbolLexicalPass::resolveDefault(ParseNode pn) alloc_except {
@@ -1071,6 +1088,10 @@ size_t SymbolLexicalPass::symIndex(ParseNode pn) const noexcept{
     return lookup == lexical_map.end() ? NONE : lookup->second;
 }
 
+Settings& SymbolLexicalPass::settings() const noexcept {
+    return Program::instance()->settings;
+}
+
 #ifndef FORSCAPE_TYPESET_HEADLESS
 template<bool first>
 void SymbolLexicalPass::fixSubIdDocMap(ParseNode pn) const alloc_except {
@@ -1095,6 +1116,8 @@ void SymbolLexicalPass::increaseLexicalDepth(
         const Typeset::Marker& begin) alloc_except {
     lexical_depth++;
     addScope(SCOPE_NAME(name)  begin);
+
+    settings().enterScope();
 }
 
 void SymbolLexicalPass::decreaseLexicalDepth(const Typeset::Marker& end) alloc_except {
@@ -1115,6 +1138,8 @@ void SymbolLexicalPass::decreaseLexicalDepth(const Typeset::Marker& end) alloc_e
     }
 
     lexical_depth--;
+
+    settings().leaveScope();
 }
 
 void SymbolLexicalPass::increaseClosureDepth(

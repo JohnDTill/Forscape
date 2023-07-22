@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <code_error_types.h>
 #include <forscape_common.h>
+#include <forscape_dynamic_settings.h>
 #include <limits>
 #include <set>
 #include <stack>
@@ -172,6 +173,7 @@ private:
         ParseNode enforceNaturalNumber(ParseNode pn);
         ParseNode enforceSemiPositiveInt(ParseNode pn);
         static bool dimsDisagree(size_t a, size_t b) noexcept;
+        Settings& settings() const noexcept;
         SymbolTable& symbolTable() const noexcept;
         void finaliseSymbolTable(Typeset::Model* model) const noexcept;
 
