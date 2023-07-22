@@ -1,5 +1,6 @@
 #include "typeset_settings.h"
 
+#include "forscape_serial.h"
 #include "typeset_subphrase.h"
 
 namespace Forscape {
@@ -10,29 +11,16 @@ static constexpr double VSPACE = 3.5;
 static constexpr double HSPACE = 2.5;
 static constexpr double INNER_COL_HSPACE = 5;
 
-//DO THIS: codegen
-static constexpr std::array<std::string_view, Code::NUM_SETTINGS> setting_id_strs = { "Unused var", "Transpose T" };
-static constexpr std::array<std::string_view, Code::NUM_WARNING_LEVELS> warning_strs = {"No Warning", "Warning", "Error"};
-static constexpr std::array<std::string_view, Code::NUM_SETTINGS> setting_tips = {
-    "Variable is set but never read",
-    "Transpose with letter 'T' instead of symbol '⊤'",
-};
-static constexpr std::array<std::string_view, Code::NUM_WARNING_LEVELS> warning_tips = {
-    "Take no action",
-    "Warn if the condition is encountered",
-    "Fail if the condition is encountered",
-};
-
 char Settings::constructCode() const noexcept { return SETTINGS; }
 
 void Settings::writeArgs(std::string& out, size_t& curr) const noexcept {
     for(const Code::Settings::Update update : updates){
-        static_assert(Code::SettingId::NUM_SETTINGS <= 0b01111111);
+        static_assert(NUM_CODE_SETTINGS <= SETTINGS_END);
         out[curr++] = static_cast<uint8_t>(update.setting_id) + 1;
-        static_assert(sizeof(Code::Settings::SettingValue) <= sizeof(uint8_t));
+        static_assert(sizeof(SettingValue) <= sizeof(uint8_t));
         out[curr++] = static_cast<uint8_t>(update.prev_value) + 1;
     }
-    out[curr++] = 0b01111111;
+    out[curr++] = SETTINGS_END;
 }
 
 size_t Settings::dims() const noexcept {
@@ -92,8 +80,8 @@ void Settings::paintSpecific(Painter& painter) const {
         const double centre = x + (HSPACE+INNER_COL_HSPACE) + chars_left * CHARACTER_WIDTHS[scriptDepth()];
         const double row_height = VSPACE + CHARACTER_HEIGHTS[scriptDepth()];
         for(const auto& update : updates){
-            std::string_view setting_id_str = setting_id_strs[update.setting_id];
-            std::string_view warning_str = warning_strs[update.prev_value];
+            std::string_view setting_id_str = setting_id_labels[update.setting_id];
+            std::string_view warning_str = warning_labels[update.prev_value];
 
             rolling_y += row_height;
             painter.drawText(
@@ -155,15 +143,15 @@ std::string Settings::getTooltip(double x_local, double y_local) const noexcept 
     size_t row = (y_local - VSPACE/2) / (VSPACE + CHARACTER_HEIGHTS[scriptDepth()]) - 1;
 
     const auto& update = updates[row];
-    std::string_view setting = setting_id_strs[update.setting_id];
-    std::string_view warning = warning_strs[update.prev_value];
+    std::string_view setting = setting_id_labels[update.setting_id];
+    std::string_view warning = warning_labels[update.prev_value];
 
     const double midline = width - HSPACE - chars_right * CHARACTER_WIDTHS[scriptDepth()];
 
     if(x_local > HSPACE && x_local <= HSPACE + setting.size() * CHARACTER_WIDTHS[scriptDepth()]){
-        return setting_tips[update.setting_id].data();
+        return setting_descriptions[update.setting_id].data();
     }else if(x_local <= midline + warning.size() * CHARACTER_WIDTHS[scriptDepth()] && x_local > midline){
-        return warning_tips[update.prev_value].data();
+        return warning_descriptions[update.prev_value].data();
     }else{
         return "";
     }
@@ -184,8 +172,8 @@ void Settings::updateString() alloc_except {
 
     str.clear();
     for(const auto& update : updates){
-        std::string_view setting_id_str = setting_id_strs[update.setting_id];
-        std::string_view warning_str = warning_strs[update.prev_value];
+        std::string_view setting_id_str = setting_id_labels[update.setting_id];
+        std::string_view warning_str = warning_labels[update.prev_value];
 
         str += setting_id_str;
         str += ':';

@@ -38,6 +38,7 @@ def main():
     execfile('construct_codes.py')
     execfile('tokens.py')
     execfile('parse_nodes.py')
+    execfile('code_settings.py')
     execfile('colours.py')
     execfile('semantic_codes.py')
     execfile('typeset_keywords.py')

@@ -15,76 +15,28 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <layout class="QFormLayout" name="formLayout">
-     <item row="0" column="0">
-      <widget class="QLabel" name="label">
-       <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Variable is set but never read&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
-       <property name="text">
-        <string>Unused Variable:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QComboBox" name="comboBox">
-       <item>
-        <property name="text">
-         <string>Inherited</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>No warning</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Warning</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Error</string>
-        </property>
-       </item>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label_2">
-       <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Transpose with letter 'T' instead of symbol '⊤'&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
-       <property name="text">
-        <string>Transpose 'T':</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QComboBox" name="comboBox_2">
-       <item>
-        <property name="text">
-         <string>Inherited</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>No Warning</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Warning</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Error</string>
-        </property>
-       </item>
-      </widget>
-     </item>
-    </layout>
+    <widget class="QScrollArea" name="scrollArea">
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="horizontalScrollBarPolicy">
+      <enum>Qt::ScrollBarAlwaysOff</enum>
+     </property>
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="scrollAreaWidgetContents_2">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>380</width>
+        <height>250</height>
+       </rect>
+      </property>
+      <layout class="QFormLayout" name="formLayout_2"/>
+     </widget>
+    </widget>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">

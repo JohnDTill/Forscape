@@ -36,7 +36,7 @@ Symbol::Symbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t sha
     : index_of_shadowed_var(shadowed_var),
       declaration_lexical_depth(lexical_depth),
       declaration_closure_depth(closure_depth),
-      use_level(Program::instance()->settings.warningLevel<SettingId::UNUSED_VARIABLE>()),
+      use_level(Program::instance()->settings.warningLevel<WARN_UNUSED_VARIABLE>()),
       flag(pn),
       is_const(is_const) {}
 

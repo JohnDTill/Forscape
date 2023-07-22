@@ -7,11 +7,11 @@ namespace Forscape {
 namespace Code {
 
 void Settings::reset() noexcept {
-    flags = DEFAULT_FLAGS;
+    flags = DEFAULT_CODE_SETTINGS;
 }
 
 void Settings::set(SettingId setting, SettingValue value) alloc_except {
-    assert(setting < NUM_SETTINGS);
+    assert(setting < NUM_CODE_SETTINGS);
     assert(value < NUM_WARNING_LEVELS);
     updates.push_back( Update(setting, flags[setting]) );
     flags[setting] = value;
@@ -33,7 +33,7 @@ void Settings::enterScope() alloc_except {
 }
 
 void Settings::leaveScope() noexcept {
-    if(scope_start.empty()) return; //DO THIS: handle this better
+    if(scope_start.empty()) return; //EVENTUALLY: this should be assert(!scope_start.empty())
 
     const size_t start = scope_start.back();
     scope_start.pop_back();

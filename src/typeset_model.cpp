@@ -139,9 +139,9 @@ std::vector<Line*> Model::linesFromSerial(const std::string& src){
             switch (src[index++]) {
                 case SETTINGS: {
                     Settings* settings = new Settings;
-                    while(static_cast<uint8_t>(src[index]) != 0b01111111) { //DO THIS: remove magic numbers
-                        Code::SettingId id = static_cast<Code::SettingId>(static_cast<uint8_t>(src[index++] - 1));
-                        Code::Settings::SettingValue value = static_cast<uint8_t>(src[index++] - 1);
+                    while(static_cast<uint8_t>(src[index]) != SETTINGS_END) {
+                        SettingId id = static_cast<SettingId>(static_cast<uint8_t>(src[index++] - 1));
+                        SettingValue value = static_cast<uint8_t>(src[index++] - 1);
                         settings->updates.push_back( Code::Settings::Update(id, value) );
                     }
                     index++;

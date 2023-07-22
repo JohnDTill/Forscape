@@ -14,7 +14,7 @@ inline std::filesystem::path toCppPath(const QString& q_str) {
 }
 
 inline QString toQString(const std::string& str) {
-    return QString::fromUtf8(str.data(), str.size());
+    return QString::fromUtf8(str.data(), static_cast<int>(str.size()));
 }
 
 inline QString toQString(const std::filesystem::path& path){

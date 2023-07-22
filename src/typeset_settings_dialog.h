@@ -18,7 +18,7 @@ class SettingsDialog : public QDialog {
 
 public:
     ~SettingsDialog();
-    static void updateInherited(const std::array<Code::Settings::SettingValue, Code::NUM_SETTINGS>& inherited) alloc_except;
+    static void updateInherited(const std::array<SettingValue, NUM_CODE_SETTINGS>& inherited) alloc_except;
     static bool execSettingsForm(const std::vector<Code::Settings::Update>& settings) noexcept;
     static void populateSettingsFromForm(std::vector<Code::Settings::Update>& settings) noexcept;
 

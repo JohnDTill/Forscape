@@ -1,0 +1,3 @@
+setting,label,description,type,default
+UNUSED_VARIABLE,Unused Variable,Variable is set but never referenced,WarningLevel,WARN
+TRANSPOSE_T,Transpose ‘T’,Transpose with letter 'T' instead of symbol '⊤',WarningLevel,WARN

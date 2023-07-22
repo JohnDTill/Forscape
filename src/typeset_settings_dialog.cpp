@@ -3,6 +3,8 @@
 
 #include "forscape_common.h"
 #include <typeset_themes.h>
+#include <QComboBox>
+#include <QLabel>
 
 #ifndef NDEBUG
 #include <iostream>
@@ -10,7 +12,7 @@
 
 namespace Forscape {
 
-static std::array<QComboBox*, Code::NUM_SETTINGS> combo_boxes = { 0 };
+static std::array<QComboBox*, NUM_CODE_SETTINGS> combo_boxes = { 0 };
 
 SettingsDialog* SettingsDialog::instance = nullptr;
 
@@ -21,54 +23,55 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
 
     setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
-    // DO THIS: codegen and have better names
-    combo_boxes[0] = ui->comboBox;
-    combo_boxes[1] = ui->comboBox_2;
+    QFormLayout* layout = debug_cast<QFormLayout*>(ui->scrollAreaWidgetContents_2->layout());
 
-    for(QComboBox* combo_box : combo_boxes)
+    for(size_t i = 0; i < NUM_CODE_SETTINGS; i++){
+        QComboBox* combo_box = new QComboBox(ui->scrollArea);
+        combo_box->addItems({"", COMMA_SEPARATED_WARNING_LABELS});
+        combo_box->setItemData(0, "Maintain the previous setting", Qt::ToolTipRole);
+        for(int i = 0; i < NUM_WARNING_LEVELS; i++)
+            combo_box->setItemData(i+1, warning_descriptions[i].data(), Qt::ToolTipRole);
+
         connect(combo_box, SIGNAL(currentIndexChanged(int)), this, SLOT(updateBackgroundColour()));
+        QLabel* label = new QLabel(setting_id_labels[i].data() + QString(':'), ui->scrollArea);
+        label->setToolTip(setting_descriptions[i].data());
+        layout->addRow(label, combo_box);
+
+        combo_boxes[i] = combo_box;
+    }
 }
 
 SettingsDialog::~SettingsDialog() {
     delete ui;
 }
 
-void SettingsDialog::updateInherited(
-    const std::array<Code::Settings::SettingValue, Code::NUM_SETTINGS>& inherited) alloc_except {
-
+void SettingsDialog::updateInherited(const std::array<SettingValue, NUM_CODE_SETTINGS>& inherited) alloc_except {
     if(instance == nullptr) instance = new SettingsDialog;
 
-    //DO THIS: codegen
-    static constexpr std::string_view names[Code::NUM_WARNING_LEVELS] = {
-        "No warning",
-        "Warn",
-        "Error",
-    };
-
-    for(size_t i = 0; i < Code::NUM_SETTINGS; i++) {
+    for(size_t i = 0; i < NUM_CODE_SETTINGS; i++) {
         QComboBox* combo_box = combo_boxes[i];
-        const Code::Settings::SettingValue value = inherited[i];
-        combo_box->setItemText(0, QString("Inherited (") + names[value].data() + ")");
+        const SettingValue value = inherited[i];
+        combo_box->setItemText(0, QString("Inherited (") + warning_labels[value].data() + ")");
     }
 }
 
-static QColor background_colour[Code::NUM_WARNING_LEVELS+1];
-static QColor text_colour[Code::NUM_WARNING_LEVELS+1];
+static QColor background_colour[NUM_WARNING_LEVELS+1];
+static QColor text_colour[NUM_WARNING_LEVELS+1];
 
 bool SettingsDialog::execSettingsForm(const std::vector<Code::Settings::Update>& settings) noexcept {
     if(instance == nullptr) instance = new SettingsDialog;
 
     //Set colour coding
     background_colour[0] = instance->palette().color(QPalette::ColorRole::Base);
-    background_colour[1+Code::NO_WARNING] = Typeset::getColour(Typeset::COLOUR_HIGHLIGHTSECONDARY);
-    background_colour[1+Code::WARN] = Typeset::getColour(Typeset::COLOUR_WARNINGBACKGROUND);
-    background_colour[1+Code::ERROR] = Typeset::getColour(Typeset::COLOUR_ERRORBACKGROUND);
+    background_colour[1+NO_WARNING] = Typeset::getColour(Typeset::COLOUR_HIGHLIGHTSECONDARY);
+    background_colour[1+WARN] = Typeset::getColour(Typeset::COLOUR_WARNINGBACKGROUND);
+    background_colour[1+ERROR] = Typeset::getColour(Typeset::COLOUR_ERRORBACKGROUND);
     text_colour[0] = instance->palette().color(QPalette::ColorRole::Text);
-    text_colour[1+Code::NO_WARNING] = Typeset::getColour(Typeset::COLOUR_TEXT);
-    text_colour[1+Code::WARN] = Typeset::getColour(Typeset::COLOUR_ID);
-    text_colour[1+Code::ERROR] = Typeset::getColour(Typeset::COLOUR_ID);
+    text_colour[1+NO_WARNING] = Typeset::getColour(Typeset::COLOUR_TEXT);
+    text_colour[1+WARN] = Typeset::getColour(Typeset::COLOUR_ID);
+    text_colour[1+ERROR] = Typeset::getColour(Typeset::COLOUR_ID);
     for(QComboBox* combo_box : combo_boxes){
-        for(int i = 0; i < Code::NUM_WARNING_LEVELS+1; i++){
+        for(int i = 0; i < NUM_WARNING_LEVELS+1; i++){
             combo_box->setItemData(i, background_colour[i], Qt::ItemDataRole::BackgroundRole);
             combo_box->setItemData(i, text_colour[i], Qt::ItemDataRole::ForegroundRole);
         }
@@ -99,8 +102,8 @@ void SettingsDialog::populateSettingsFromForm(std::vector<Code::Settings::Update
     for(size_t i = 0; i < combo_boxes.size(); i++){
         auto index = combo_boxes[i]->currentIndex();
         if(index != 0) settings.push_back(
-            Code::Settings::Update(static_cast<Code::SettingId>(i),
-            static_cast<Code::Settings::SettingValue>(index-1))
+            Code::Settings::Update(static_cast<SettingId>(i),
+            static_cast<SettingValue>(index-1))
         );
     }
 }

@@ -26,7 +26,7 @@ private:
 
 public:
     std::vector<Code::Settings::Update> updates;
-    std::array<Code::Settings::SettingValue, Code::NUM_SETTINGS> inherited;
+    std::array<SettingValue, NUM_CODE_SETTINGS> inherited;
     virtual char constructCode() const noexcept override;
     virtual void writeArgs(std::string& out, size_t& curr) const noexcept override;
     virtual size_t dims() const noexcept override;
