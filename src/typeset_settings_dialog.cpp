@@ -110,13 +110,14 @@ void SettingsDialog::populateSettingsFromForm(std::vector<Code::Settings::Update
 
 void SettingsDialog::updateBackgroundColour() noexcept {
     QComboBox* combo_box = debug_cast<QComboBox*>(focusWidget());
+    const auto current_index = combo_box->currentIndex();
 
-    //DO THIS: why is this hack necessary?
-    combo_box->setStyleSheet("QComboBox { background: " + background_colour[combo_box->currentIndex()].name() + "; }");
+    //EVENTUALLY: this hack may not be necessary
+    combo_box->setStyleSheet("QComboBox { background: " + background_colour[current_index].name() + "; }");
 
     QPalette palette = combo_box->palette();
-    palette.setColor(combo_box->backgroundRole(), background_colour[combo_box->currentIndex()]);
-    palette.setColor(QPalette::ColorRole::Text, text_colour[combo_box->currentIndex()]);
+    palette.setColor(combo_box->backgroundRole(), background_colour[current_index]);
+    palette.setColor(QPalette::ColorRole::Text, text_colour[current_index]);
     combo_box->setPalette(palette);
 
     setFocus();
