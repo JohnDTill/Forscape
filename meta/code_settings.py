@@ -1,10 +1,6 @@
 from utils import cpp, table_reader
 
 
-def to_id(s):
-    return ''.join(filter(str.isalnum, s)).upper()
-
-
 def main():
     entries = table_reader.csv_to_list_of_tuples(
         csv_filepath="code_settings.csv",

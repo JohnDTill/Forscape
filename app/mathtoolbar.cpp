@@ -235,8 +235,7 @@ MathToolbar::EnclosedTypesetAction::EnclosedTypesetAction(const QString& text,
 }
 
 MathToolbar::SettingsAction::SettingsAction(const QString& text, const QString& tooltip, MathToolbar* parent)
-    : QAction(text, parent)
-{
+    : QAction(text, parent) {
     setToolTip(tooltip);
     setFont(glyph_font);
     connect(this, SIGNAL(triggered(bool)), parent, SLOT(insertSettingsSlot()));
