@@ -543,10 +543,31 @@ void View::resolveSelectionDrag(double x, double y){
 
     if(controller.contains(x, y)) return;
 
-    model->premutate();
     std::string str = controller.selectedText();
     Command* a = controller.deleteSelection();
-    bool delete_first = x <= controller.xActive();
+    bool delete_first = (x <= controller.xActive());
+    if(!controller.isPhraseSelection()){
+        Line* line_bot;
+        Line* line_top;
+        if(controller.isForward()){
+            line_top = controller.anchorLine();
+            line_bot = controller.activeLine();
+        }else{
+            line_top = controller.activeLine();
+            line_bot = controller.anchorLine();
+        }
+        if(y < line_top->y){
+            delete_first = false;
+        }else if(y > line_bot->yBottom()){
+            delete_first = true;
+        }else if (y < line_top->yBottom() && x <= controller.xActive()){
+            delete_first = true;
+        }else if (y >= line_bot->y && x > controller.xActive()){
+            delete_first = true;
+        }else{
+            return;
+        }
+    }
     if(delete_first) a->redo(controller);
     Line* l = model->nearestLine(y);
     controller.clickTo(l, x, y);
