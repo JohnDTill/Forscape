@@ -368,11 +368,12 @@ std::string Selection::selectedLines() const{
     out.resize(serial_chars);
     size_t curr = 0;
 
-    for(Text* t = tL; t != lL->back(); t = t->nextTextAsserted()){
-        t->writeString(out, curr, iL);
+    tL->writeString(out, curr, iL);
+    for(Text* t = tL; t != lL->back();){
         t->nextConstructAsserted()->writeString(out, curr);
+        t = t->nextTextAsserted();
+        t->writeString(out, curr);
     }
-    lL->back()->writeString(out, curr, iL);
     out[curr++] = '\n';
 
     for(Line* l = lL->nextAsserted(); l != lR; l = l->nextAsserted()){
@@ -384,7 +385,6 @@ std::string Selection::selectedLines() const{
         t->writeString(out, curr);
         t->nextConstructAsserted()->writeString(out, curr);
     }
-
     tR->writeString(out, curr, 0, iR);
 
     return out;
