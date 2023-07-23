@@ -1,3 +1,4 @@
 setting,label,description,type,default
 UNUSED_VARIABLE,Unused Variable,Variable is set but never referenced,WarningLevel,WARN
+SHADOWING,Shadowing,Variable name matches one from an outer scope,WarningLevel,NO_WARNING
 TRANSPOSE_T,Transpose ‘T’,Transpose with letter 'T' instead of symbol '⊤',WarningLevel,WARN

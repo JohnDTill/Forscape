@@ -38,7 +38,7 @@ def main():
         "};\n"
         "\n"
         "static constexpr std::array<std::string_view, NUM_WARNING_LEVELS> warning_labels = {\n"
-        '    "No Warning",\n'
+        '    "Ignore",\n'
         '    "Warning",\n'
         '    "Error",\n'
         "};\n"
@@ -49,7 +49,7 @@ def main():
         '    "Fail if the condition is encountered",\n'
         "};\n"
         "\n"
-        '#define COMMA_SEPARATED_WARNING_LABELS "No Warning", "Warning", "Error"\n\n'
+        '#define COMMA_SEPARATED_WARNING_LABELS "Ignore", "Warning", "Error"\n\n'
     )
 
     header_writer.write("typedef uint8_t SettingValue;\n\n")
