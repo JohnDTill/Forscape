@@ -1214,8 +1214,15 @@ void SymbolLexicalPass::makeEntry(const Typeset::Selection& c, ParseNode pn, boo
 }
 
 void SymbolLexicalPass::appendEntry(ParseNode pn, size_t& old_entry, bool immutable, bool warn_on_shadow) alloc_except {
-    //EVENTUALLY: let the user control warnings, decide defaults
-    if(warn_on_shadow) warnings.push_back(Error(parse_tree.getSelection(pn), SHADOWING_VAR));
+    if(warn_on_shadow){
+        const auto warning_level = settings().warningLevel<WARN_SHADOWING>();
+        const auto error = Error(parse_tree.getSelection(pn), SHADOWING_VAR);
+        switch (warning_level) {
+            case WARN: warnings.push_back(error); break;
+            case ERROR: errors.push_back(error); break;
+            default: break;
+        }
+    }
     symbol_table.addSymbol(pn, lexical_depth, closure_depth, old_entry, immutable);
     old_entry = symbols.size()-1;
 }

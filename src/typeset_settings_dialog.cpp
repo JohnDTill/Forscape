@@ -51,7 +51,7 @@ void SettingsDialog::updateInherited(const std::array<SettingValue, NUM_CODE_SET
     for(size_t i = 0; i < NUM_CODE_SETTINGS; i++) {
         QComboBox* combo_box = combo_boxes[i];
         const SettingValue value = inherited[i];
-        combo_box->setItemText(0, QString("Inherited (") + warning_labels[value].data() + ")");
+        combo_box->setItemText(0, QString("Unspecified (") + warning_labels[value].data() + ")");
     }
 }
 
