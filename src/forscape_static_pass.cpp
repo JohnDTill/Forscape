@@ -162,8 +162,6 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
 
             size_t child_rows = parse_tree.getRows(child);
             if(rt.rows == UNKNOWN_SIZE) rt.rows = child_rows;
-
-            //DO THIS: give more descriptive error messages wherever DIMENSION_MISMATCH occurs
             else if(rt.rows != child_rows && child_rows != UNKNOWN_SIZE) return error(pn, child, DIMENSION_MISMATCH);
 
             return pn;

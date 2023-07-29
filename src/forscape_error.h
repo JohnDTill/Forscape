@@ -39,7 +39,6 @@ private:
     std::string error_out;
     std::vector<Error> errors;
     std::vector<Error> warnings;
-    Typeset::View* caller = nullptr; //DO THIS: this shouldn't be necessary
 
 public:
     void reset() noexcept;
@@ -50,7 +49,7 @@ public:
     void warn(WarningLevel warning_level, const Typeset::Selection& selection, const std::string& str, ErrorCode code = ErrorCode::VALUE_NOT_DETERMINED) alloc_except;
 
 private:
-    void writeLocation(const Typeset::Selection& selection, const Typeset::Model* const model) alloc_except;
+    void writeLocation(WarningLevel level, const Typeset::Selection& selection, const Typeset::Model* const model) alloc_except;
 };
 
 }

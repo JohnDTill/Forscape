@@ -58,7 +58,7 @@ void Parser::reset() noexcept {
     index = 0;
     parsing_dims = false;
     loops = 0;
-    error_node = NONE;
+    error_node = model->errors.empty() ? NONE: parse_tree.addTerminal(model->errors.back().code, model->errors.back().selection);
 }
 
 void Parser::registerGrouping(const Typeset::Selection& sel) alloc_except {
@@ -1501,7 +1501,6 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
                 index = index_backup;
 
                 //DO THIS: you have to address this heinuous hack
-                error_stream.reset();
                 model->errors.clear();
                 error_node = NONE;
             }
@@ -2146,7 +2145,8 @@ const Typeset::Marker& Parser::rMarkPrev() const noexcept{
 }
 
 bool Parser::noErrors() const noexcept{
-    return model->errors.empty(); //DO THIS: a bit odd here
+    assert((error_node == NONE) == (model->errors.empty()));
+    return error_node == NONE; //DO THIS: a bit odd here
 }
 
 void Parser::recover() noexcept{

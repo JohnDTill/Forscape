@@ -37,6 +37,8 @@ void Error::writeErrors(const std::vector<Error>& errors, Typeset::Model* m, Typ
         err.writeTo(m->lastText(), caller);
         m->appendLine();
     }
+
+    m->appendSerialToOutput(*errors.front().error_out);
 }
 
 Typeset::Model* Error::writeErrors(const std::vector<Error>& errors, Typeset::View* caller){
@@ -72,7 +74,7 @@ bool ErrorStream::noErrors() const noexcept {
 
 void ErrorStream::fail(const Typeset::Selection& selection, ErrorCode code) alloc_except {
     Typeset::Model* model = selection.getModel();
-    writeLocation(selection, model);
+    writeLocation(ERROR, selection, model);
 
     const size_t start = error_out.size();
     error_out += getMessage(code);
@@ -90,17 +92,20 @@ void ErrorStream::fail(const Typeset::Selection& selection, ErrorCode code) allo
 
 void ErrorStream::fail(const Typeset::Selection& selection, const std::string& str, ErrorCode code) alloc_except {
     Typeset::Model* model = selection.getModel();
-    writeLocation(selection, model);
+    writeLocation(ERROR, selection, model);
 
     const size_t start = error_out.size();
     error_out += str;
+    error_out += '\n';
     errors.push_back(Error(selection, code, start, str.length(), &error_out));
     model->errors.push_back(errors.back());
 }
 
 void ErrorStream::warn(WarningLevel warning_level, const Typeset::Selection& selection, ErrorCode code) alloc_except {
+    if(warning_level == NO_WARNING) return;
+
     Typeset::Model* model = selection.getModel();
-    writeLocation(selection, model);
+    writeLocation(warning_level, selection, model);
 
     const size_t start = error_out.size();
     error_out += getMessage(code);
@@ -122,11 +127,14 @@ void ErrorStream::warn(WarningLevel warning_level, const Typeset::Selection& sel
 }
 
 void ErrorStream::warn(WarningLevel warning_level, const Typeset::Selection& selection, const std::string& str, ErrorCode code) alloc_except {
+    if(warning_level == NO_WARNING) return;
+
     Typeset::Model* model = selection.getModel();
-    writeLocation(selection, model);
+    writeLocation(warning_level, selection, model);
 
     const size_t start = error_out.size();
     error_out += str;
+    error_out += '\n';
 
     const Error error(selection, code, start, str.size(), &error_out);
     switch (warning_level) {
@@ -136,11 +144,14 @@ void ErrorStream::warn(WarningLevel warning_level, const Typeset::Selection& sel
     }
 }
 
-void ErrorStream::writeLocation(const Typeset::Selection& selection, const Typeset::Model* const model) alloc_except {
+void ErrorStream::writeLocation(WarningLevel level, const Typeset::Selection& selection, const Typeset::Model* const model) alloc_except {
     assert(model == selection.getModel());
+    error_out += warning_labels[level];
+    error_out += '\n';
     error_out += model->path.u8string();
-    error_out += ':';
+    error_out += ": Line ";
     error_out += selection.getStartLineAsString();
+    error_out += '\n';
     //DO THIS: no link here, markerlink design is bad
 }
 
