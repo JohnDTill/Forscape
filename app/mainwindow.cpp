@@ -431,7 +431,7 @@ void MainWindow::pollInterpreterThread(){
             default:
                 auto model = editor->getModel();
                 Typeset::Selection c = model->parser.parse_tree.getSelection(interpreter.error_node);
-                model->errors.push_back(Code::Error(c, interpreter.error_code));
+                Program::instance()->error_stream.fail(c, interpreter.error_code);
                 Code::Error::writeErrors(model->errors, output, editor);
                 output->calculateSizes();
                 output->updateLayout();

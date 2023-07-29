@@ -1609,7 +1609,7 @@ void Forscape::Typeset::Editor::wheelEvent(QWheelEvent* e) {
 void Editor::resolveTooltip(double x, double y) noexcept {
     for(const Code::Error& err : model->errors){
         if(err.selection.containsWithEmptyMargin(x, y)){
-            setTooltipError(err.message());
+            setTooltipError(std::string(err.message()));
             showTooltip();
             return;
         }
@@ -1617,7 +1617,7 @@ void Editor::resolveTooltip(double x, double y) noexcept {
 
     for(const Code::Error& err : model->warnings){
         if(err.selection.containsWithEmptyMargin(x, y)){
-            setTooltipWarning(err.message());
+            setTooltipWarning(std::string(err.message()));
             showTooltip();
             return;
         }

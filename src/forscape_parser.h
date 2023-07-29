@@ -145,7 +145,7 @@ private:
     std::vector<std::pair<size_t, size_t>> token_map_stack;
     std::vector<size_t> token_stack_frames;
     const std::vector<Token>& tokens;
-    std::vector<Error>& errors;
+    ErrorStream& error_stream;
     Typeset::Model* model;
     size_t index = 0;
     bool parsing_dims = false;

@@ -22,7 +22,7 @@ namespace Forscape {
 namespace Code {
 
 Parser::Parser(const Scanner& scanner, Typeset::Model* model) noexcept
-    : tokens(scanner.tokens), errors(model->errors), model(model), error_node(NONE) {}
+    : tokens(scanner.tokens), error_stream(Program::instance()->error_stream), model(model), error_node(NONE) {}
 
 void Parser::parseAll() alloc_except {
     reset();
@@ -44,8 +44,8 @@ void Parser::parseAll() alloc_except {
             parse_tree.setOp(stmt, OP_PRINT);
     }
 
-    assert(!errors.empty() || parse_tree.inFinalState());
-    assert((errors.empty() == (error_node == NONE)) || (!errors.empty() && (error_node == NONE)));
+    assert(!error_stream.noErrors() || parse_tree.inFinalState());
+    assert((error_stream.noErrors() == (error_node == NONE)) || (!error_stream.noErrors() && (error_node == NONE)));
 }
 
 void Parser::reset() noexcept {
@@ -58,7 +58,7 @@ void Parser::reset() noexcept {
     index = 0;
     parsing_dims = false;
     loops = 0;
-    error_node = errors.empty() ? NONE: parse_tree.addTerminal(errors.back().code, errors.back().selection);
+    error_node = NONE;
 }
 
 void Parser::registerGrouping(const Typeset::Selection& sel) alloc_except {
@@ -78,7 +78,6 @@ ParseNode Parser::checkedStatement() alloc_except {
     if(noErrors()){
         return n;
     }else{
-        assert(!errors.empty());
         recover();
         return n;
     }
@@ -1500,7 +1499,10 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
                     return pn;
                 }
                 index = index_backup;
-                errors.clear();
+
+                //DO THIS: you have to address this heinuous hack
+                error_stream.reset();
+                model->errors.clear();
                 error_node = NONE;
             }
 
@@ -1617,27 +1619,27 @@ ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, ForscapeTo
     advance();
     if(match(ARGCLOSE)){
         consume(tt);
-        if(!errors.empty()) return error_node;
+        if(error_node != NONE) return error_node; //DO THIS: the parser error strategy is terrible
         ParseNode id = isolatedIdentifier();
-        if(!errors.empty()) return error_node;
+        if(error_node != NONE) return error_node;
         consume(ARGCLOSE);
-        if(!errors.empty()) return error_node;
+        if(error_node != NONE) return error_node;
         ParseNode expr = multiplication();
-        if(!errors.empty()) return error_node;
+        if(error_node != NONE) return error_node;
         Typeset::Selection sel(c.left, rMarkPrev());
         ParseNode val = parse_tree.addTerminal(OP_IDENTIFIER, Typeset::Selection(parse_tree.getSelection(id)));
         return parse_tree.addNode<3>(type, sel, {expr, id, val});
     }else{
         ParseNode expr = multiplication();
-        if(!errors.empty()) return error_node;
+        if(error_node != NONE) return error_node;
         consume(ARGCLOSE);
-        if(!errors.empty()) return error_node;
+        if(error_node != NONE) return error_node;
         consume(tt);
-        if(!errors.empty()) return error_node;
+        if(error_node != NONE) return error_node;
         ParseNode id = isolatedIdentifier();
-        if(!errors.empty()) return error_node;
+        if(error_node != NONE) return error_node;
         consume(ARGCLOSE);
-        if(!errors.empty()) return error_node;
+        if(error_node != NONE) return error_node;
         ParseNode val = parse_tree.addTerminal(OP_IDENTIFIER, Typeset::Selection(parse_tree.getSelection(id)));
         return parse_tree.addNode<3>(type, c, {expr, id, val});
     }
@@ -2052,13 +2054,10 @@ ParseNode Parser::error(ErrorCode code) alloc_except {
 }
 
 ParseNode Parser::error(ErrorCode code, const Typeset::Selection& c) alloc_except {
-    if(noErrors()){
-        error_node = parse_tree.addTerminal(OP_ERROR, c);
-        errors.push_back(Error(c, code));
+    if(error_node == NONE){
+        error_stream.fail(c, code);
+        error_node = parse_tree.addTerminal(OP_ERROR, Typeset::Selection(c));
     }
-
-    assert(errors.empty() == (error_node == NONE));
-    assert(error_node != NONE);
 
     return error_node;
 }
@@ -2147,7 +2146,7 @@ const Typeset::Marker& Parser::rMarkPrev() const noexcept{
 }
 
 bool Parser::noErrors() const noexcept{
-    return error_node == NONE;
+    return model->errors.empty(); //DO THIS: a bit odd here
 }
 
 void Parser::recover() noexcept{

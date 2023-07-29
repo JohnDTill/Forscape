@@ -1,6 +1,7 @@
 #include "forscape_scanner.h"
 
 #include "construct_codes.h"
+#include "forscape_program.h"
 #include "forscape_unicode.h"
 #include "typeset_controller.h"
 #include "typeset_model.h"
@@ -16,10 +17,13 @@ namespace Forscape {
 namespace Code {
 
 Scanner::Scanner(Typeset::Model* model) noexcept :
-    model(model), errors(model->errors) {
+    model(model), error_stream(Program::instance()->error_stream) {
 }
 
 void Scanner::scanAll() alloc_except {
+    assert(model->errors.empty());
+    assert(model->warnings.empty());
+
     model->clearFormatting();
     tokens.clear();
     scope_depth = 0;
@@ -141,7 +145,7 @@ void Scanner::close() alloc_except {
 
 void Scanner::error(ErrorCode code) alloc_except {
     createToken(SCANNER_ERROR);
-    errors.push_back(Error(tokens.back().sel, code));
+    error_stream.fail(tokens.back().sel, code);
 }
 
 void Scanner::newline() alloc_except {
@@ -170,7 +174,7 @@ void Scanner::scanFilePath() alloc_except {
     controller->selectToPathEnd();
 
     if(!controller->hasSelection()){
-        errors.push_back(Error(controller->selection(), EXPECTED_FILEPATH));
+        error_stream.fail(controller->selection(), EXPECTED_FILEPATH);
     }else{
         createToken(FILEPATH);
         controller->formatSimple(SEM_FILE);

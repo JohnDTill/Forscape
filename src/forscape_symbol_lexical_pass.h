@@ -15,8 +15,7 @@ class ParseTree;
 
 class SymbolLexicalPass {
 private:
-    std::vector<Error>& errors;
-    std::vector<Error>& warnings;
+    ErrorStream& error_stream;
     ParseTree& parse_tree;
     Typeset::Model* model;
 
@@ -118,6 +117,7 @@ private:
     bool declared(ParseNode pn) const noexcept;
     size_t symIndex(ParseNode pn) const noexcept;
     Settings& settings() const noexcept;
+    void error(const Typeset::Selection& selection, ErrorCode code) alloc_except;
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     template<bool first = true> void fixSubIdDocMap(ParseNode pn) const alloc_except;

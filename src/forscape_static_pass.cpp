@@ -258,9 +258,8 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             parse_tree.setArg<0>(pn, expr);
             if(parse_tree.getOp(expr) != OP_CALL || !isAbstractFunctionGroup(parse_tree.getType(parse_tree.arg<0>(expr)))){
                 error_stream.warn(
-                    settings().warningLevel<WARN_UNUSED_VARIABLE>(),
+                    settings().warningLevel<WARN_UNUSED_VARIABLE>(), //DO THIS: rather specify the setting, not fetch warning level
                     parse_tree.getSelection(expr),
-                    getMessage(UNUSED_EXPRESSION),
                     UNUSED_EXPRESSION);
                 parse_tree.setOp(pn, OP_DO_NOTHING);
             }
@@ -341,7 +340,10 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             if(!model->is_imported){
                 model->is_imported = true;
                 model->parse_node_offset = parse_tree.offset();
+
+                //EVENTUALLY: Reparsing the model shouldn't be necessary
                 model->performSemanticFormatting();
+
                 if(model->errors.empty()){
                     const ParseTree& imported = model->parser.parse_tree;
                     const ParseNode root = parse_tree.append(imported);
@@ -1265,7 +1267,7 @@ Type StaticPass::instantiateSetOfFuncs(ParseNode call_node, Type fun_group, Call
 }
 
 size_t StaticPass::error(ParseNode pn, ParseNode sel, ErrorCode code) noexcept {
-    return error(pn, sel, getMessage(code), code);
+    return error(pn, sel, std::string(getMessage(code)), code);
 }
 
 size_t StaticPass::error(ParseNode pn, ParseNode sel, const std::string& msg, ErrorCode code) noexcept {
@@ -1280,7 +1282,7 @@ size_t StaticPass::errorType(ParseNode pn, ErrorCode code) noexcept{
     if(retry_at_recursion) return RECURSIVE_CYCLE;
 
     if(error_stream.noErrors())
-        error_stream.fail(parse_tree.getSelection(pn), getMessage(code), code);
+        error_stream.fail(parse_tree.getSelection(pn), code);
 
     return FAILURE;
 }
@@ -1752,7 +1754,7 @@ ParseNode StaticPass::resolvePower(ParseNode pn){
 
         case OP_MAYBE_TRANSPOSE:
             error_stream.warn(
-                settings().warningLevel<WARN_TRANSPOSE_T>(), parse_tree.getSelection(rhs), getMessage(TRANSPOSE_T), TRANSPOSE_T);
+                settings().warningLevel<WARN_TRANSPOSE_T>(), parse_tree.getSelection(rhs), TRANSPOSE_T);
 
             parse_tree.setOp(pn, OP_TRANSPOSE);
             parse_tree.reduceNumArgs(pn, 1);
@@ -2115,7 +2117,7 @@ void StaticPass::finaliseSymbolTable(Typeset::Model* model) const noexcept {
 
     for(Symbol& sym : symbol_table.symbols)
         if(!sym.is_used)
-            error_stream.warn(static_cast<WarningLevel>(sym.use_level), sym.firstOccurence(), getMessage(UNUSED_VAR), UNUSED_VAR);
+            error_stream.warn(static_cast<WarningLevel>(sym.use_level), sym.firstOccurence(), UNUSED_VAR);
 
     for(const SymbolUsage& usage : symbol_table.symbol_usages){
         const Symbol& sym = *usage.symbol();

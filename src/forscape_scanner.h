@@ -42,7 +42,7 @@ private:
 
     Typeset::Model* model;
     Typeset::Controller* controller;
-    std::vector<Error>& errors;
+    ErrorStream& error_stream;
     size_t scope_depth = 0;
 };
 
