@@ -14,6 +14,7 @@ namespace Forscape {
 class Program {
 public:
     static Program* instance() noexcept;
+    bool noErrors() const noexcept;
     void clear() noexcept;
     void setProgramEntryPoint(std::filesystem::path path, Typeset::Model* model);
     typedef size_t ptr_or_code;
@@ -35,16 +36,15 @@ public:
     void stop();
 
     Code::Settings settings;
+    Code::ErrorStream error_stream;
     Code::ParseTree parse_tree;
-    Code::StaticPass static_pass = Code::StaticPass(parse_tree, errors, warnings);
+    Code::StaticPass static_pass = Code::StaticPass(parse_tree, error_stream);
     Code::Interpreter interpreter;
 
     FORSCAPE_UNORDERED_MAP<std::filesystem::path, Typeset::Model*> source_files; //May contain multiple entries per model
-    std::vector<Code::Error> errors;
-    std::vector<Code::Error> warnings;
     Typeset::Model* program_entry_point = nullptr;
 
-    //DESIGN QUAGMIRE (ERRORS): define differences between model errors/warnings and program errors/warnings
+    //DO THIS (ERRORS): define differences between model errors/warnings and program errors/warnings
     //DESIGN QUAGMIRE (AST): define difference between model parse_tree and program parse_tree
 
 private:

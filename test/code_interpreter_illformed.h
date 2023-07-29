@@ -32,7 +32,7 @@ inline bool testErrorAndNoCrash(const std::string& name){
     bool had_error = !input->errors.empty();
     if(!had_error){
         Forscape::Program::instance()->run();
-        had_error = !Forscape::Program::instance()->errors.empty();
+        had_error = !Forscape::Program::instance()->noErrors();
     }
 
     #ifndef NDEBUG
@@ -44,7 +44,7 @@ inline bool testErrorAndNoCrash(const std::string& name){
     #endif
 
     Program::instance()->freeFileMemory();
-    Program::instance()->errors.clear();
+    //Program::instance()->errors.clear(); //DO THIS: is this necessary?
 
     assert(had_error);
 

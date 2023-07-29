@@ -12,9 +12,8 @@ namespace Code {
 
 StaticPass::StaticPass(
         ParseTree& parse_tree,
-        std::vector<Code::Error>& errors,
-        std::vector<Error>& warnings) noexcept
-    : parse_tree(parse_tree), errors(errors), warnings(warnings) {}
+        ErrorStream& error_stream) noexcept
+    : parse_tree(parse_tree), error_stream(error_stream) {}
 
 void StaticPass::resolve(Typeset::Model* entry_point){
     active_model = entry_point;
@@ -22,16 +21,14 @@ void StaticPass::resolve(Typeset::Model* entry_point){
     reset();
     parse_tree = entry_point->parser.parse_tree;
 
-    if(!entry_point->errors.empty()){
-        errors = entry_point->errors;
-        return;
-    }
+    if(!entry_point->errors.empty()) return;
+
     parse_tree.root = resolveStmt(parse_tree.root);
 
     for(const auto& entry : called_func_map)
         if(entry.second.type == RECURSIVE_CYCLE)
             error(getFuncFromCallSig(entry.first), RECURSIVE_TYPE);
-    if(!errors.empty()) return;
+    if(!error_stream.noErrors()) return;
 
     for(const auto& entry : all_calls){
         ParseNode call = entry.first;
@@ -80,7 +77,7 @@ void StaticPass::reset() noexcept{
 }
 
 ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
-    if(!errors.empty()) return pn;
+    if(!error_stream.noErrors()) return pn;
 
     assert(pn != NONE);
 
@@ -106,7 +103,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
         }
         case OP_REASSIGN:{
             ParseNode lhs = resolveLValue(parse_tree.lhs(pn), true);
-            if(!errors.empty()) return lhs;
+            if(!error_stream.noErrors()) return lhs;
 
             parse_tree.setArg<0>(pn, lhs);
             if(parse_tree.getOp(lhs) == OP_SUBSCRIPT_ACCESS){
@@ -165,6 +162,8 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
 
             size_t child_rows = parse_tree.getRows(child);
             if(rt.rows == UNKNOWN_SIZE) rt.rows = child_rows;
+
+            //DO THIS: give more descriptive error messages wherever DIMENSION_MISMATCH occurs
             else if(rt.rows != child_rows && child_rows != UNKNOWN_SIZE) return error(pn, child, DIMENSION_MISMATCH);
 
             return pn;
@@ -258,9 +257,11 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             ParseNode expr = resolveExprTop(parse_tree.child(pn));
             parse_tree.setArg<0>(pn, expr);
             if(parse_tree.getOp(expr) != OP_CALL || !isAbstractFunctionGroup(parse_tree.getType(parse_tree.arg<0>(expr)))){
-                //DESIGN QUAGMIRE (ERRORS): what is error handling strategy?
-                warnings.push_back(Error(parse_tree.getSelection(expr), ErrorCode::UNUSED_EXPRESSION));
-                active_model->warnings.push_back(Error(parse_tree.getSelection(expr), ErrorCode::UNUSED_EXPRESSION));
+                error_stream.warn(
+                    settings().warningLevel<WARN_UNUSED_VARIABLE>(),
+                    parse_tree.getSelection(expr),
+                    getMessage(UNUSED_EXPRESSION),
+                    UNUSED_EXPRESSION);
                 parse_tree.setOp(pn, OP_DO_NOTHING);
             }
 
@@ -392,6 +393,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                 ParseNode imported_var = parse_tree.arg(pn, i);
                 ParseNode local_var = parse_tree.arg(pn, i+1);
 
+                //EVENTUALLY: this mechanism for auto completion is terrible
                 auto lookup = lexical_map.find(parse_tree.getSelection(imported_var));
                 if(lookup == lexical_map.end()){
                     parse_tree.setOp(imported_var, OP_ERROR);
@@ -400,7 +402,6 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
                     active_model->parser.parse_tree.setOp(imported_var - active_model->parse_node_offset, OP_ERROR);
 
                     ParseNode err = error(pn, imported_var, MODULE_FIELD_NOT_FOUND);
-                    errors.back().flag = reinterpret_cast<size_t>(&lexical_map);
                     active_model->errors.back().flag = reinterpret_cast<size_t>(&lexical_map);
                     return err;
                 }
@@ -544,7 +545,7 @@ ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_e
     if(rows_expected == UNKNOWN_SIZE) rows_expected = parse_tree.getRows(pn);
     if(cols_expected == UNKNOWN_SIZE) cols_expected = parse_tree.getCols(pn);
 
-    if(!errors.empty()) return pn;
+    if(!error_stream.noErrors()) return pn;
 
     switch (parse_tree.getOp(pn)) {
         case OP_LIMIT: return resolveLimit(pn);
@@ -1263,24 +1264,24 @@ Type StaticPass::instantiateSetOfFuncs(ParseNode call_node, Type fun_group, Call
     return expected;
 }
 
-size_t StaticPass::error(ParseNode pn, ParseNode sel, ErrorCode code) noexcept{
-    if(retry_at_recursion) parse_tree.setType(pn, RECURSIVE_CYCLE);
-    else if(errors.empty()){
-        Error err(parse_tree.getSelection(sel), code);
-        errors.push_back(err);
-        active_model->errors.push_back(err); //DESIGN QUAGMIRE (ERRORS): what is error handling strategy?
-    }
+size_t StaticPass::error(ParseNode pn, ParseNode sel, ErrorCode code) noexcept {
+    return error(pn, sel, getMessage(code), code);
+}
+
+size_t StaticPass::error(ParseNode pn, ParseNode sel, const std::string& msg, ErrorCode code) noexcept {
+    if(retry_at_recursion)
+        parse_tree.setType(pn, RECURSIVE_CYCLE);
+    else if(error_stream.noErrors())
+        error_stream.fail(parse_tree.getSelection(sel), msg, code);
     return pn;
 }
 
 size_t StaticPass::errorType(ParseNode pn, ErrorCode code) noexcept{
     if(retry_at_recursion) return RECURSIVE_CYCLE;
 
-    if(errors.empty()){
-        Error err(parse_tree.getSelection(pn), code);
-        errors.push_back(err);
-        active_model->errors.push_back(err);
-    }
+    if(error_stream.noErrors())
+        error_stream.fail(parse_tree.getSelection(pn), getMessage(code), code);
+
     return FAILURE;
 }
 
@@ -1502,7 +1503,12 @@ ParseNode StaticPass::resolveIdentity(ParseNode pn){
 
 ParseNode StaticPass::resolveInverse(ParseNode pn){
     ParseNode child = parse_tree.child(pn);
-    if(dimsDisagree(parse_tree.getRows(child), parse_tree.getCols(child))) return error(pn, pn, DIMENSION_MISMATCH);
+    const auto rows = parse_tree.getRows(child);
+    const auto cols = parse_tree.getCols(child);
+    if(dimsDisagree(rows, cols)){
+        const std::string msg = "Cannot invert non-square " + std::to_string(rows) + "×" + std::to_string(cols) + " matrix";
+        return error(pn, pn, msg, DIMENSION_MISMATCH);
+    }
     parse_tree.copyDims(pn, child);
     return pn;
 }
@@ -1739,20 +1745,14 @@ ParseNode StaticPass::resolvePower(ParseNode pn){
         }
 
         case OP_SPEED_OF_LIGHT:
-            warnings.push_back(Error(parse_tree.getSelection(rhs), COMPLEMENT_C));
+            //EVENTUALLY: warn this is COMPLEMENT_C
+            //warnings.push_back(Error(parse_tree.getSelection(rhs), COMPLEMENT_C));
             return error(pn, rhs, UNRECOGNIZED_SYMBOL);
             //return ast.setComplement(base);
 
         case OP_MAYBE_TRANSPOSE:
-            switch (settings().warningLevel<WARN_TRANSPOSE_T>()) {
-                case WarningLevel::ERROR:
-                    return error(pn, rhs, TRANSPOSE_T);
-                case WarningLevel::WARN:
-                    warnings.push_back(Error(parse_tree.getSelection(rhs), TRANSPOSE_T));
-                    active_model->warnings.push_back(Error(parse_tree.getSelection(rhs), TRANSPOSE_T));
-                    break;
-                default: break;
-            }
+            error_stream.warn(
+                settings().warningLevel<WARN_TRANSPOSE_T>(), parse_tree.getSelection(rhs), getMessage(TRANSPOSE_T), TRANSPOSE_T);
 
             parse_tree.setOp(pn, OP_TRANSPOSE);
             parse_tree.reduceNumArgs(pn, 1);
@@ -1919,10 +1919,9 @@ ParseNode StaticPass::resolveDefiniteIntegral(ParseNode pn) {
 
 ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
     ParseNode lhs = parse_tree.lhs(pn);
-    size_t num_errors = errors.size();
     ParseNode lhs_lvalue = resolveLValue(lhs);
     ParseNode field = parse_tree.arg<1>(pn);
-    if(errors.size() > num_errors) //DESIGN QUAGMIRE (ERRORS): there has to be a better way to check for errors
+    if(!error_stream.noErrors()) //EVENTUALLY: should support prior errors
         return error(pn, pn, NOT_A_SCOPE);
     size_t sym_id = parse_tree.getSymId(lhs_lvalue);
     Symbol& sym = *parse_tree.getSymbol(lhs_lvalue);
@@ -1933,9 +1932,9 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
         Typeset::Model* model = reinterpret_cast<Typeset::Model*>(sym.flag);
         const auto& lexical_map = model->symbol_builder.symbol_table.lexical_map;
         auto lookup = lexical_map.find(parse_tree.getSelection(field));
+        //EVENTUALLY: this mechanism is terrible!
         if(lookup == lexical_map.end()){
             ParseNode err = error(pn, field, MODULE_FIELD_NOT_FOUND);
-            errors.back().flag = reinterpret_cast<size_t>(&lexical_map);
             active_model->errors.back().flag = reinterpret_cast<size_t>(&lexical_map);
             return err;
         }
@@ -2116,18 +2115,7 @@ void StaticPass::finaliseSymbolTable(Typeset::Model* model) const noexcept {
 
     for(Symbol& sym : symbol_table.symbols)
         if(!sym.is_used)
-            switch (sym.use_level) {
-                case WarningLevel::ERROR:
-                    errors.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
-                    model->errors.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
-                    break;
-                case WarningLevel::WARN:
-                    warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
-                    model->warnings.push_back(Error(sym.firstOccurence(), UNUSED_VAR));
-                    break;
-                default:
-                    break;
-            }
+            error_stream.warn(static_cast<WarningLevel>(sym.use_level), sym.firstOccurence(), getMessage(UNUSED_VAR), UNUSED_VAR);
 
     for(const SymbolUsage& usage : symbol_table.symbol_usages){
         const Symbol& sym = *usage.symbol();
@@ -2145,7 +2133,7 @@ void StaticPass::finaliseSymbolTable(Typeset::Model* model) const noexcept {
     }
 
     #ifndef NDEBUG
-    if(!errors.empty()) return;
+    if(!error_stream.noErrors()) return;
     assert(parse_tree.inFinalState());
 
     #ifndef FORSCAPE_TYPESET_HEADLESS

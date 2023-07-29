@@ -30,7 +30,7 @@ typedef FORSCAPE_UNORDERED_MAP<std::pair<ParseNode, ParseNode>, ParseNode, PairH
 typedef FORSCAPE_UNORDERED_MAP<std::pair<ParseNode, double>, ParseNode> NumericSwitchMap;
 typedef FORSCAPE_UNORDERED_MAP<std::pair<ParseNode, std::string>, ParseNode> StringSwitchMap;
 
-struct Error;
+class ErrorStream;
 class ParseTree;
 class SymbolTable;
 struct Symbol;
@@ -129,8 +129,7 @@ private:
     public:
         StaticPass(
             ParseTree& parse_tree,
-            std::vector<Code::Error>& errors,
-            std::vector<Code::Error>& warnings) noexcept;
+            ErrorStream& error_stream) noexcept;
         void resolve(Typeset::Model* entry_point);
 
     private:
@@ -144,6 +143,7 @@ private:
         size_t implicitMult(size_t pn, size_t start = 0) noexcept;
         Type instantiateSetOfFuncs(ParseNode call_node, Type fun_group, CallSignature& sig);
         size_t error(ParseNode pn, ParseNode sel, ErrorCode code = ErrorCode::TYPE_ERROR) noexcept;
+        size_t error(ParseNode pn, ParseNode sel, const std::string& msg, ErrorCode code = ErrorCode::TYPE_ERROR) noexcept;
         size_t errorType(ParseNode pn, ErrorCode code = ErrorCode::TYPE_ERROR) noexcept;
         ParseNode getFuncFromCallSig(const CallSignature& sig) const noexcept;
         ParseNode getFuncFromDeclSig(const DeclareSignature& sig) const noexcept;
@@ -178,8 +178,7 @@ private:
         void finaliseSymbolTable(Typeset::Model* model) const noexcept;
 
         ParseTree& parse_tree;
-        std::vector<Error>& errors;
-        std::vector<Error>& warnings;
+        ErrorStream& error_stream;
         Typeset::Model* active_model  DEBUG_INIT_NULLPTR;
         std::vector<Typeset::Model*> imported_models;
 
