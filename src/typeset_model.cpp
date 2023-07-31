@@ -591,6 +591,7 @@ void Model::clearFormatting() noexcept{
 
     errors.clear();
     warnings.clear();
+    error_warning_buffer.clear();
     comma_separated_numbers.clear();
 }
 
@@ -600,9 +601,11 @@ void Model::performSemanticFormatting(){
     //EVENTUALLY: this should only run when a change has been made, like the layout calculations
 
     clearFormatting();
+    Program::instance()->error_stream.setBuffer(&error_warning_buffer);
     scanner.scanAll();
     parser.parseAll();
     symbol_builder.resolveSymbols();
+    Program::instance()->error_stream.setProgramBuffer();
     Program::instance()->runStaticPass();
 }
 

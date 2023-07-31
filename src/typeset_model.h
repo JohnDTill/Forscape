@@ -39,6 +39,7 @@ public:
     Code::SymbolLexicalPass symbol_builder = Code::SymbolLexicalPass(parser.parse_tree, this);
     std::vector<Code::Error> errors;
     std::vector<Code::Error> warnings;
+    std::string error_warning_buffer;
     std::filesystem::path path;
     bool notOnDisk() const noexcept { return path.empty(); }
     #ifdef QT_VERSION

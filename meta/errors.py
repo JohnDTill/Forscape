@@ -25,12 +25,10 @@ def main():
         header_writer.write(f"    {e.name.upper()},\n")
     header_writer.write("};\n\n")
 
-    header_writer.write("inline std::string getMessage(ErrorCode code){\n"
+    header_writer.write("inline std::string_view getMessage(ErrorCode code){\n"
                         "    switch(code){\n")
     for e in errors:
         header_writer.write(f"        case {e.name.upper()}: return \"{e.msg}")
-        if e.quote == "y":
-            header_writer.write(": ")
         header_writer.write("\";\n")
     header_writer.write("        default: assert(false); return \"\";\n")
     header_writer.write("    }\n}\n\n")

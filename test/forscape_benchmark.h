@@ -74,16 +74,17 @@ void runBenchmark(){
     sym_table.resolveSymbols();
 
     ParseTree parse_tree;
+    ErrorStream err_stream;
     m->parser.parse_tree = parser.parse_tree;
 
     startClock();
     for(size_t i = 0; i < ITER_STATIC_PASS; i++){
-        Code::StaticPass static_pass(parse_tree, m->errors, m->warnings);
+        Code::StaticPass static_pass(parse_tree, err_stream);
         static_pass.resolve(m);
     }
     report("StaticPass", ITER_STATIC_PASS);
 
-    Code::StaticPass static_pass(parse_tree, m->errors, m->warnings);
+    Code::StaticPass static_pass(parse_tree, err_stream);
     static_pass.resolve(m);
     Code::Interpreter interpreter;
 

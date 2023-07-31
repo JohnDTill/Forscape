@@ -37,6 +37,7 @@ public:
     bool isPhraseSelection() const noexcept;
     bool isEmpty() const noexcept;
     Line* getStartLine() const noexcept;
+    std::string getStartLineAsString() const alloc_except;
     Model* getModel() const noexcept;
     void search(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const;
 

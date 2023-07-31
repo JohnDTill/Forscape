@@ -29,10 +29,10 @@ inline bool testErrorAndNoCrash(const std::string& name){
     input->path = std::filesystem::canonical(std::filesystem::u8path(file_name));
     Forscape::Program::instance()->setProgramEntryPoint(input->path, input);
     input->postmutate();
-    bool had_error = !input->errors.empty();
+    bool had_error = !Forscape::Program::instance()->noErrors();
     if(!had_error){
         Forscape::Program::instance()->run();
-        had_error = !Forscape::Program::instance()->errors.empty();
+        had_error = !Forscape::Program::instance()->noErrors();
     }
 
     #ifndef NDEBUG
@@ -44,7 +44,7 @@ inline bool testErrorAndNoCrash(const std::string& name){
     #endif
 
     Program::instance()->freeFileMemory();
-    Program::instance()->errors.clear();
+    Program::instance()->clear();
 
     assert(had_error);
 

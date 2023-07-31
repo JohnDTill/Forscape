@@ -38,6 +38,11 @@ public:
         return static_cast<WarningLevel>(flags[setting]);
     }
 
+    WarningLevel warningLevel(SettingId setting) const noexcept {
+        assert(setting < NUM_CODE_SETTINGS);
+        return static_cast<WarningLevel>(flags[setting]);
+    }
+
     template<SettingId setting> void setWarningLevel(WarningLevel warning_level) alloc_except {
         static_assert(setting < NUM_CODE_SETTINGS);
         assert(warning_level < NUM_WARNING_LEVELS);

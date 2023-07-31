@@ -1545,10 +1545,12 @@ Editor::~Editor() {
 void Editor::runThread(){
     console->setModel(Typeset::Model::fromSerial("", true));
 
-    if(!model->errors.empty()){
-        Model* result = Code::Error::writeErrors(model->errors, this);
+    if(!Program::instance()->noErrors()){
+        Model* result = Code::Error::writeErrors(Program::instance()->error_stream.getErrors(), this);
         console->setModel(result);
     }else{
+        //EVENTUALLY: print warnings to console
+
         is_running = true;
         allow_write = false;
         Program::instance()->runThread();
@@ -1609,7 +1611,7 @@ void Forscape::Typeset::Editor::wheelEvent(QWheelEvent* e) {
 void Editor::resolveTooltip(double x, double y) noexcept {
     for(const Code::Error& err : model->errors){
         if(err.selection.containsWithEmptyMargin(x, y)){
-            setTooltipError(err.message());
+            setTooltipError(std::string(err.tooltipMessage()));
             showTooltip();
             return;
         }
@@ -1617,7 +1619,7 @@ void Editor::resolveTooltip(double x, double y) noexcept {
 
     for(const Code::Error& err : model->warnings){
         if(err.selection.containsWithEmptyMargin(x, y)){
-            setTooltipWarning(err.message());
+            setTooltipWarning(std::string(err.tooltipMessage()));
             showTooltip();
             return;
         }

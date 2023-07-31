@@ -14,11 +14,15 @@ Program* Program::instance() noexcept {
     return singleton_instance;
 }
 
+bool Program::noErrors() const noexcept {
+    return error_stream.noErrors();
+}
+
 void Program::clear() noexcept {
     source_files.clear();
     pending_project_browser_updates.clear();
-    errors.clear();
-    warnings.clear();
+    settings.reset();
+    error_stream.reset();
 }
 
 void Program::setProgramEntryPoint(std::filesystem::path path, Typeset::Model* model) {
@@ -128,8 +132,7 @@ void Program::runStaticPass() {
     if(running) return;
     running = true;
 
-    errors.clear();
-    warnings.clear();
+    error_stream.reset();
     settings.reset(); //EVENTUALLY: this should be an assert rather than an action
     program_entry_point->performSemanticFormatting();
     static_pass.resolve(program_entry_point);
@@ -203,7 +206,7 @@ Program::ptr_or_code Program::openFromRelativePathAutoExtension(std::filesystem:
 }
 
 std::string Program::run(){
-    assert(errors.empty());
+    assert(error_stream.noErrors());
 
     interpreter.run(
         parse_tree,
@@ -232,16 +235,18 @@ std::string Program::run(){
         }
 
     if(interpreter.error_code != Code::ErrorCode::NO_ERROR_FOUND){
-        Code::Error error(program_entry_point->parser.parse_tree.getSelection(interpreter.error_node), interpreter.error_code);
-        str += "\nLine " + error.line() + " - " + error.message();
-        errors.push_back(error);
+        const Typeset::Selection& sel = program_entry_point->parser.parse_tree.getSelection(interpreter.error_node);
+        const std::string msg(getMessage(interpreter.error_code));
+
+        str += "\nLine " + sel.getStartLineAsString() + " - " + msg;
+        error_stream.fail(sel, msg, interpreter.error_code);
     }
 
     return str;
 }
 
 void Program::runThread(){
-    assert(errors.empty());
+    assert(error_stream.noErrors());
     interpreter.runThread(
         parse_tree,
         static_pass.instantiation_lookup,

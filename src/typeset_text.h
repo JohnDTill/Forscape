@@ -132,7 +132,7 @@ class Text {
         #endif
 
     private:
-        Phrase* parent;
+        Phrase* parent  DEBUG_INIT_NULLPTR;
         double width = 0;
         std::string str;
 };

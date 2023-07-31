@@ -50,8 +50,7 @@ FORSCAPE_STATIC_MAP<std::string_view, Op> SymbolLexicalPass::predef {
 };
 
 SymbolLexicalPass::SymbolLexicalPass(ParseTree& parse_tree, Typeset::Model* model) noexcept
-    : errors(model->errors),
-      warnings(model->warnings),
+    : error_stream(Program::instance()->error_stream),
       parse_tree(parse_tree),
       model(model),
       symbol_table(parse_tree),
@@ -145,7 +144,7 @@ void SymbolLexicalPass::resolveStmt(ParseNode pn) alloc_except {
         case OP_RANGED_FOR: resolveRangedFor(pn); break;
         case OP_RETURN:
         case OP_RETURN_EMPTY:
-            if(closure_depth == 0) errors.push_back(Error(parse_tree.getSelection(pn), RETURN_OUTSIDE_FUNCTION));
+            if(closure_depth == 0) error(parse_tree.getSelection(pn), RETURN_OUTSIDE_FUNCTION);
             resolveDefault(pn);
             break;
         case OP_SETTINGS_UPDATE: resolveSettingsUpdate(pn); break;
@@ -186,7 +185,7 @@ void SymbolLexicalPass::resolveExpr(ParseNode pn) alloc_except {
 
 void SymbolLexicalPass::resolveEquality(ParseNode pn) alloc_except {
     if(parse_tree.getNumArgs(pn) != 2){
-        errors.push_back(Error(parse_tree.getSelection(pn), ErrorCode::TYPE_ERROR));
+        error(parse_tree.getSelection(pn), ErrorCode::TYPE_ERROR);
     }else{
         resolveExpr(parse_tree.rhs(pn));
         defineLocalScope(parse_tree.lhs(pn));
@@ -222,7 +221,7 @@ void SymbolLexicalPass::resolveAssignment(ParseNode pn) alloc_except {
             break;
 
         default:
-            errors.push_back(Error(parse_tree.getSelection(lhs), ASSIGN_EXPRESSION));
+            error(parse_tree.getSelection(lhs), ASSIGN_EXPRESSION);
     }
 }
 
@@ -230,7 +229,7 @@ void SymbolLexicalPass::resolveAssignmentId(ParseNode pn) alloc_except {
     ParseNode id = parse_tree.lhs(pn);
     Typeset::Selection c = parse_tree.getSelection(id);
     if(parse_tree.getOp(id) != OP_IDENTIFIER){
-        errors.push_back(Error(c, NON_LVALUE));
+        error(c, NON_LVALUE);
         return;
     }
 
@@ -241,7 +240,7 @@ void SymbolLexicalPass::resolveAssignmentId(ParseNode pn) alloc_except {
         SymbolIndex index = result.first->second;
         Symbol& sym = symbols[index];
         if(sym.is_const){
-            errors.push_back(Error(c, REASSIGN_CONSTANT));
+            error(c, REASSIGN_CONSTANT);
         }else{
             sym.is_reassigned = true;
             parse_tree.setOp(pn, OP_REASSIGN);
@@ -257,7 +256,7 @@ void SymbolLexicalPass::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs, 
     if(parse_tree.getOp(id) == OP_SCOPE_ACCESS){
         resolveScopeAccess(id);
     }else if(parse_tree.getOp(id) != OP_IDENTIFIER){
-        errors.push_back(Error(c, NON_LVALUE));
+        error(c, NON_LVALUE);
         return;
     }else{
         size_t symbol_index = symbolIndexFromSelection(c);
@@ -265,7 +264,7 @@ void SymbolLexicalPass::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs, 
             symbols[symbol_index].is_reassigned = true;
             resolveReference(id, symbol_index);
         }else{
-            errors.push_back(Error(c, BAD_READ));
+            error(c, BAD_READ);
         }
     }
 
@@ -286,7 +285,7 @@ void SymbolLexicalPass::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs, 
     if(!potential_loop_vars.empty() & only_trivial_slice){
         if(num_subscripts > 2){
             const Typeset::Selection& sel = parse_tree.getSelection(parse_tree.arg<3>(lhs));
-            errors.push_back(Error(sel, INDEX_OUT_OF_RANGE));
+            error(sel, INDEX_OUT_OF_RANGE);
             potential_loop_vars.clear();
             return;
         }
@@ -306,7 +305,7 @@ void SymbolLexicalPass::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs, 
             ParseNode var = potential_loop_vars[potential_loop_vars.size()-1];
             sym.is_ewise_index = true;
             if(!sym.is_used){
-                errors.push_back(Error(parse_tree.getSelection(var), UNUSED_ELEM_AGN_INDEX));
+                error(parse_tree.getSelection(var), UNUSED_ELEM_AGN_INDEX);
                 sym.is_used = true;
             }
         }
@@ -315,7 +314,7 @@ void SymbolLexicalPass::resolveAssignmentSubscript(ParseNode pn, ParseNode lhs, 
         potential_loop_vars.clear();
     }else if(!potential_loop_vars.empty()){
         for(ParseNode pn : potential_loop_vars)
-            errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ_OR_SUBSCRIPT));
+            error(parse_tree.getSelection(pn), BAD_READ_OR_SUBSCRIPT);
         potential_loop_vars.clear();
     }else{
         resolveExpr(rhs);
@@ -361,7 +360,7 @@ void SymbolLexicalPass::resolveReference(ParseNode pn) alloc_except {
                 else resolveScriptMult(pn, left, right);
             }
         }else{
-            errors.push_back(Error(c, BAD_READ));
+            error(c, BAD_READ);
             parse_tree.setOp(pn, OP_ERROR);
         }
     }else{
@@ -370,7 +369,7 @@ void SymbolLexicalPass::resolveReference(ParseNode pn) alloc_except {
 }
 
 void SymbolLexicalPass::resolveReference(ParseNode pn, size_t sym_id) alloc_except {
-    if(sym_id >= cutoff) errors.push_back(Error(parse_tree.getSelection(pn), BAD_DEFAULT_ARG));
+    if(sym_id >= cutoff) error(parse_tree.getSelection(pn), BAD_DEFAULT_ARG);
     symbol_table.resolveReference(pn, sym_id, closure_depth);
 }
 
@@ -388,14 +387,14 @@ void SymbolLexicalPass::resolveIdMult(ParseNode pn, Typeset::Marker left, Typese
         auto lookup = lexical_map.find(sel);
         if(lookup == lexical_map.end()){
             if(!sel.isTextSelection()){
-                errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
+                error(parse_tree.getSelection(pn), BAD_READ);
                 parse_tree.setOp(pn, OP_ERROR);
                 return;
             }
 
             auto predef_lookup = predef.find(sel.strView());
             if(predef_lookup == predef.end()){
-                errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
+                error(parse_tree.getSelection(pn), BAD_READ);
                 parse_tree.setOp(pn, OP_ERROR);
                 return;
             }else{
@@ -458,7 +457,7 @@ void SymbolLexicalPass::resolveScriptMult(ParseNode pn, Typeset::Marker left, Ty
     Typeset::Marker new_right = end;
     end.decrementGrapheme();
     if(left == end || predef.find(Typeset::Selection(end, new_right).strView()) != predef.end()){
-        errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
+        error(parse_tree.getSelection(pn), BAD_READ);
         parse_tree.setOp(pn, OP_ERROR);
         return;
     }
@@ -471,7 +470,7 @@ void SymbolLexicalPass::resolveScriptMult(ParseNode pn, Typeset::Marker left, Ty
         if(lookup == lexical_map.end()){
             auto predef_lookup = predef.find(sel.strView());
             if(predef_lookup == predef.end()){
-                errors.push_back(Error(parse_tree.getSelection(pn), BAD_READ));
+                error(parse_tree.getSelection(pn), BAD_READ);
                 parse_tree.setOp(pn, OP_ERROR);
                 return;
             }else{
@@ -594,7 +593,7 @@ void SymbolLexicalPass::resolveBody(
         case OP_EQUAL:
         case OP_ASSIGN:{
             Typeset::Selection c = parse_tree.getSelection(pn);
-            errors.push_back(Error(c, UNUSED_VAR));
+            error(c, UNUSED_VAR);
         }
     }
 }
@@ -646,7 +645,7 @@ void SymbolLexicalPass::resolveAlgorithm(ParseNode pn) alloc_except {
                 resolveReference(name, index);
                 parse_tree.setOp(pn, OP_DEFINE_PROTO);
             }else{
-                errors.push_back(Error(sel, TYPE_ERROR));
+                error(sel, TYPE_ERROR);
             }
         }else{
             appendEntry(name, lookup->second, true);
@@ -683,15 +682,11 @@ void SymbolLexicalPass::resolveAlgorithm(ParseNode pn) alloc_except {
             param = parse_tree.lhs(param);
             expect_default = true;
         }else if(expect_default){
-            errors.push_back(Error(parse_tree.getSelection(param), EXPECT_DEFAULT_ARG));
+            error(parse_tree.getSelection(param), EXPECT_DEFAULT_ARG);
         }
 
         bool success = defineLocalScope( param, false );
-        if(!success){
-            errors.pop_back();
-            errors.push_back(Error(parse_tree.getSelection(param), REDEFINE_PARAMETER));
-            parse_tree.setFlag(param, NONE);
-        }
+        if(!success) error(parse_tree.getSelection(param), REDEFINE_PARAMETER);
     }
     cutoff = std::numeric_limits<size_t>::max();
 
@@ -739,7 +734,7 @@ void SymbolLexicalPass::resolveClass(ParseNode pn) alloc_except {
                 resolveReference(name, index);
                 parse_tree.setOp(pn, OP_DEFINE_PROTO); //EVENTUALLY: can you prototype classes?
             }else{
-                errors.push_back(Error(sel, TYPE_ERROR));
+                error(sel, TYPE_ERROR);
             }
         }else{
             appendEntry(name, lookup->second, true);
@@ -847,7 +842,7 @@ void SymbolLexicalPass::resolveSetBuilder(ParseNode pn) noexcept {
     if(parse_tree.getOp(var) == OP_IN) var = parse_tree.lhs(var);
 
     if(parse_tree.getOp(var) != OP_IDENTIFIER){
-        errors.push_back(Error(parse_tree.getSelection(var), ErrorCode::NON_LVALUE));
+        error(parse_tree.getSelection(var), ErrorCode::NON_LVALUE);
     }else{
         defineLocalScope(parse_tree.arg<0>(pn), true, false);
         resolveExpr(parse_tree.arg<1>(pn));
@@ -917,7 +912,7 @@ void SymbolLexicalPass::resolveNamespace(ParseNode pn) alloc_except {
     ParseNode name = parse_tree.arg<0>(pn);
     ParseNode body = parse_tree.arg<1>(pn);
 
-    if(!errors.empty()) return; //EVENTUALLY: more resiliency here
+    if(!error_stream.noErrors()) return; //EVENTUALLY: more resiliency here
 
     const Typeset::Selection& sel = parse_tree.getSelection(name);
     const auto lookup = lexical_map.find(sel);
@@ -941,7 +936,7 @@ void SymbolLexicalPass::resolveNamespace(ParseNode pn) alloc_except {
     //First definition of this namespace
     const size_t sym_id = symbols.size();
     defineLocalScope(name);
-    if(!errors.empty()) return; //EVENTUALLY: more resiliency here
+    if(!error_stream.noErrors()) return; //EVENTUALLY: more resiliency here
     symbols[sym_id].previous_namespace_index = NONE;
     increaseLexicalDepth(SCOPE_NAME(parse_tree.str(name))  parse_tree.getLeft(body));
     resolveBlock(body);
@@ -1052,12 +1047,12 @@ bool SymbolLexicalPass::defineLocalScope(ParseNode pn, bool immutable, bool warn
     Typeset::Selection c = parse_tree.getSelection(pn);
 
     if(parse_tree.getOp(pn) == OP_SUBSCRIPT_ACCESS && !resolvePotentialIdSub(pn)){
-        errors.push_back(Error(c, ASSIGN_EXPRESSION));
+        error(c, ASSIGN_EXPRESSION);
         return false;
     }
 
     if(parse_tree.getOp(pn) != OP_IDENTIFIER){
-        errors.push_back(Error(c, ASSIGN_EXPRESSION));
+        error(c, ASSIGN_EXPRESSION);
         return false;
     }
 
@@ -1069,7 +1064,7 @@ bool SymbolLexicalPass::defineLocalScope(ParseNode pn, bool immutable, bool warn
         Symbol& sym = symbols[index];
         if(sym.declaration_lexical_depth == lexical_depth){
             bool CONST = sym.is_const;
-            errors.push_back(Error(c, CONST ? REASSIGN_CONSTANT : MUTABLE_CONST_ASSIGN));
+            error(c, CONST ? REASSIGN_CONSTANT : MUTABLE_CONST_ASSIGN);
             return false;
         }else{
             appendEntry(pn, result.first->second, immutable, warn_on_shadow);
@@ -1090,6 +1085,10 @@ size_t SymbolLexicalPass::symIndex(ParseNode pn) const noexcept{
 
 Settings& SymbolLexicalPass::settings() const noexcept {
     return Program::instance()->settings;
+}
+
+void SymbolLexicalPass::error(const Typeset::Selection& selection, ErrorCode code) alloc_except {
+    error_stream.fail(selection, code);
 }
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
@@ -1215,13 +1214,10 @@ void SymbolLexicalPass::makeEntry(const Typeset::Selection& c, ParseNode pn, boo
 
 void SymbolLexicalPass::appendEntry(ParseNode pn, size_t& old_entry, bool immutable, bool warn_on_shadow) alloc_except {
     if(warn_on_shadow){
-        const auto warning_level = settings().warningLevel<WARN_SHADOWING>();
-        const auto error = Error(parse_tree.getSelection(pn), SHADOWING_VAR);
-        switch (warning_level) {
-            case WARN: warnings.push_back(error); break;
-            case ERROR: errors.push_back(error); break;
-            default: break;
-        }
+        error_stream.warn(WARN_SHADOWING, parse_tree.getSelection(pn), SHADOWING_VAR);
+
+        //EVENTUALLY: how do you make an error message with multiple links?
+        error_stream.warn(WARN_SHADOWING, symbols[old_entry].sel(parse_tree), "Previous declaration here", SHADOWING_VAR);
     }
     symbol_table.addSymbol(pn, lexical_depth, closure_depth, old_entry, immutable);
     old_entry = symbols.size()-1;

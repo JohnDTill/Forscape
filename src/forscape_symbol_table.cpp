@@ -45,7 +45,7 @@ size_t Symbol::closureIndex() const noexcept{
     return declaration_closure_depth - 1;
 }
 
-const Typeset::Selection& Symbol::sel(const ParseTree& parse_tree) const noexcept{
+const Typeset::Selection& Symbol::sel(const ParseTree& parse_tree) const noexcept {
     return parse_tree.getSelection(flag);
 }
 

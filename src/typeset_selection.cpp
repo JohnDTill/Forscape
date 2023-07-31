@@ -191,6 +191,10 @@ Line* Selection::getStartLine() const noexcept{
     return tL->getLine();
 }
 
+std::string Selection::getStartLineAsString() const noexcept {
+    return std::to_string(getStartLine()->id + 1);
+}
+
 Model* Selection::getModel() const noexcept {
     assert(left.getModel() == right.getModel());
     return left.getModel();
