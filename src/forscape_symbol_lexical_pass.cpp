@@ -686,11 +686,7 @@ void SymbolLexicalPass::resolveAlgorithm(ParseNode pn) alloc_except {
         }
 
         bool success = defineLocalScope( param, false );
-        if(!success){
-            error_stream.reset(); //DO THIS: this is unacceptable
-            error(parse_tree.getSelection(param), REDEFINE_PARAMETER);
-            parse_tree.setFlag(param, NONE);
-        }
+        if(!success) error(parse_tree.getSelection(param), REDEFINE_PARAMETER);
     }
     cutoff = std::numeric_limits<size_t>::max();
 
@@ -1218,8 +1214,10 @@ void SymbolLexicalPass::makeEntry(const Typeset::Selection& c, ParseNode pn, boo
 
 void SymbolLexicalPass::appendEntry(ParseNode pn, size_t& old_entry, bool immutable, bool warn_on_shadow) alloc_except {
     if(warn_on_shadow){
-        const auto warning_level = settings().warningLevel<WARN_SHADOWING>();
-        error_stream.warn(warning_level, parse_tree.getSelection(pn), SHADOWING_VAR);
+        error_stream.warn(WARN_SHADOWING, parse_tree.getSelection(pn), SHADOWING_VAR);
+
+        //EVENTUALLY: how do you make an error message with multiple links?
+        error_stream.warn(WARN_SHADOWING, symbols[old_entry].sel(parse_tree), "Previous declaration here", SHADOWING_VAR);
     }
     symbol_table.addSymbol(pn, lexical_depth, closure_depth, old_entry, immutable);
     old_entry = symbols.size()-1;

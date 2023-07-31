@@ -863,8 +863,8 @@ ParseNode Parser::implicitMult() alloc_except {
             ParseNode pn = collectImplicitMult(n);
             return parse_tree.getNumArgs(pn) != 1 ? pn : parse_tree.child(pn);
         }
-        default:
-            return n;
+        case INTEGER: return error(TRAILING_CONSTANT);
+        default: return n;
     }
 }
 
@@ -1500,7 +1500,7 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
                 }
                 index = index_backup;
 
-                //DO THIS: you have to address this heinuous hack
+                //EVENTUALLY: you have to address this heinuous hack
                 model->errors.clear();
                 error_node = NONE;
             }
@@ -1618,7 +1618,7 @@ ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, ForscapeTo
     advance();
     if(match(ARGCLOSE)){
         consume(tt);
-        if(error_node != NONE) return error_node; //DO THIS: the parser error strategy is terrible
+        if(error_node != NONE) return error_node; //EVENTUALLY: the parser error strategy is terrible
         ParseNode id = isolatedIdentifier();
         if(error_node != NONE) return error_node;
         consume(ARGCLOSE);
@@ -2146,7 +2146,7 @@ const Typeset::Marker& Parser::rMarkPrev() const noexcept{
 
 bool Parser::noErrors() const noexcept{
     assert((error_node == NONE) == (model->errors.empty()));
-    return error_node == NONE; //DO THIS: a bit odd here
+    return error_node == NONE;
 }
 
 void Parser::recover() noexcept{

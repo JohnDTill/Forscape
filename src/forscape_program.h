@@ -44,7 +44,6 @@ public:
     FORSCAPE_UNORDERED_MAP<std::filesystem::path, Typeset::Model*> source_files; //May contain multiple entries per model
     Typeset::Model* program_entry_point = nullptr;
 
-    //DO THIS (ERRORS): define differences between model errors/warnings and program errors/warnings
     //DESIGN QUAGMIRE (AST): define difference between model parse_tree and program parse_tree
 
 private:

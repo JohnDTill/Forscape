@@ -3,6 +3,7 @@
 
 #include "typeset_construct.h"
 #include "typeset_line.h"
+#include "typeset_model.h"
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
 #include "typeset_view.h"
@@ -59,6 +60,10 @@ public:
         painter.setType(SEM_LINK);
         painter.drawText(x, y, "Line " + std::to_string(line_id+1) + ':');
         painter.drawLine(x, y+height(), width, 0);
+    }
+
+    std::string getTooltip(double x_local, double y_local) const alloc_except {
+        return model->path.u8string();
     }
     #endif
 };

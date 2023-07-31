@@ -255,10 +255,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
             ParseNode expr = resolveExprTop(parse_tree.child(pn));
             parse_tree.setArg<0>(pn, expr);
             if(parse_tree.getOp(expr) != OP_CALL || !isAbstractFunctionGroup(parse_tree.getType(parse_tree.arg<0>(expr)))){
-                error_stream.warn(
-                    settings().warningLevel<WARN_UNUSED_VARIABLE>(), //DO THIS: rather specify the setting, not fetch warning level
-                    parse_tree.getSelection(expr),
-                    UNUSED_EXPRESSION);
+                error_stream.warn(WARN_UNUSED_VARIABLE, parse_tree.getSelection(expr), UNUSED_EXPRESSION);
                 parse_tree.setOp(pn, OP_DO_NOTHING);
             }
 
@@ -1751,8 +1748,7 @@ ParseNode StaticPass::resolvePower(ParseNode pn){
             //return ast.setComplement(base);
 
         case OP_MAYBE_TRANSPOSE:
-            error_stream.warn(
-                settings().warningLevel<WARN_TRANSPOSE_T>(), parse_tree.getSelection(rhs), TRANSPOSE_T);
+            error_stream.warn(WARN_TRANSPOSE_T, parse_tree.getSelection(rhs), TRANSPOSE_T);
 
             parse_tree.setOp(pn, OP_TRANSPOSE);
             parse_tree.reduceNumArgs(pn, 1);

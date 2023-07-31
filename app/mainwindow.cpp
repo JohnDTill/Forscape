@@ -393,7 +393,7 @@ void MainWindow::run(){
     if(editor->isRunning()) return;
 
     editor->runThread();
-    if(editor->getModel()->errors.empty()){
+    if(Program::instance()->noErrors()){
         interpreter_poll_timer.start(INTERPETER_POLL_PERIOD);
 
         editor_had_focus = false;

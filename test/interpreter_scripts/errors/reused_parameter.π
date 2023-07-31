@@ -1,0 +1,1 @@
+alg reusedParameter(x, x) return x+x
