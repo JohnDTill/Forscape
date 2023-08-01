@@ -1501,7 +1501,6 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
 
                 //EVENTUALLY: you have to address this heinuous hack
                 model->errors.clear();
-                error_node = NONE;
             }
 
             return id;
