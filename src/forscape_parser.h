@@ -150,7 +150,7 @@ private:
     size_t index = 0;
     bool parsing_dims = false;
     size_t loops = 0;
-    size_t error_node;
+    size_t error_node = NONE; //DO THIS: replace with PARSE_ERROR
     ParseNode comment = NONE;
 };
 

@@ -3,6 +3,7 @@
 #include <code_parsenode_ops.h>
 #include "forscape_common.h"
 #include "forscape_static_pass.h"
+#include "typeset_model.h"
 #include "typeset_selection.h"
 
 #ifndef NDEBUG
@@ -15,7 +16,9 @@ namespace Forscape {
 
 namespace Code {
 
-static constexpr size_t UNKNOWN_SIZE = 0;
+ParseTree::ParseTree() noexcept {
+    clear(); //DO THIS: don't rely on clear to setup constant nodes
+}
 
 void ParseTree::clear() noexcept {
     data.clear();
@@ -25,7 +28,12 @@ void ParseTree::clear() noexcept {
 
     #ifndef NDEBUG
     created.clear();
+    created.insert(PARSE_ERROR);
     #endif
+
+    addNode<2>(OP_ERROR, Typeset::Selection(), {PARSE_ERROR, PARSE_ERROR});
+    setNumArgs(PARSE_ERROR, 0);
+    setFlag(PARSE_ERROR, PARSE_ERROR);
 }
 
 bool ParseTree::empty() const noexcept {

@@ -34,6 +34,7 @@ public:
     FORSCAPE_UNORDERED_MAP<std::string, std::unordered_set<std::string>> aliases;
     #endif
 
+    ParseTree() noexcept;
     void clear() noexcept;
     bool empty() const noexcept;
     const Typeset::Marker& getLeft(ParseNode pn) const noexcept;
