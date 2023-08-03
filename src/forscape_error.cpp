@@ -88,6 +88,7 @@ bool ErrorStream::noErrors() const noexcept {
 
 void ErrorStream::fail(const Typeset::Selection& selection, ErrorCode code) alloc_except {
     Typeset::Model* model = selection.getModel();
+    if(!model->errors.empty()) return;
 
     const size_t start = active_buffer->size();
     *active_buffer += getMessage(code);

@@ -73,12 +73,8 @@ void Parser::registerGrouping(const Typeset::Marker& l, const Typeset::Marker& r
 
 ParseNode Parser::checkedStatement() alloc_except {
     ParseNode n = statement();
-    if(noErrors()){
-        return n;
-    }else{
-        recover();
-        return n;
-    }
+    if(!noErrors()) recover(); //DO THIS: what is error recovery?
+    return n;
 }
 
 ParseNode Parser::statement() alloc_except {
@@ -484,7 +480,7 @@ ParseNode Parser::fromStatement() noexcept {
 }
 
 ParseNode Parser::filename() noexcept {
-    if(!peek(FILEPATH)) return PARSE_ERROR;
+    if(!peek(FILEPATH)) return error(EXPECTED_FILEPATH);
     const Typeset::Selection& sel = selection();
     ParseNode file = terminalAndAdvance(OP_FILE_REF);
 
@@ -523,8 +519,6 @@ ParseNode Parser::unknownsStatement() alloc_except {
     while(match(COMMA)){
         parse_tree.addNaryChild(isolatedIdentifier());
     }
-
-    if(!noErrors()) return PARSE_ERROR;
 
     ParseNode unknown_list = parse_tree.finishNary(OP_UNKNOWN_LIST, Typeset::Selection(left, rMarkPrev()));
 
@@ -573,7 +567,6 @@ ParseNode Parser::classStatement() noexcept {
         match(COMMA);
         skipNewline();
     }
-    if(!noErrors()) return PARSE_ERROR;
 
     Typeset::Selection sel(bracket_left, rMarkPrev());
     registerGrouping(sel);
@@ -621,7 +614,6 @@ ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
     advance();
 
     ParseNode expr = expression();
-    if(!noErrors()) return PARSE_ERROR;
     ParseNode body = parse_tree.addUnary(OP_RETURN, expr);
 
     ParseNode id = parse_tree.arg<0>(call);
@@ -659,10 +651,8 @@ ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
     parse_tree.reduceNumArgs(params, nargs);
     parse_tree.setOp(params, OP_LIST);
     ParseNode left = parse_tree.arg<0>(params);
-    if(left != PARSE_ERROR)
     parse_tree.setLeft(params, parse_tree.getLeft(left));
     ParseNode right = parse_tree.arg(params, nargs-1);
-    if(right != PARSE_ERROR)
     parse_tree.setRight(params, parse_tree.getRight(right));
 
     Typeset::Selection sel(parse_tree.getLeft(id), parse_tree.getRight(body));
@@ -877,7 +867,7 @@ ParseNode Parser::collectImplicitMult(ParseNode n) alloc_except {
     for(;;){
         if(!noErrors()){
             parse_tree.cancelNary();
-            return PARSE_ERROR;
+            return n; //DO THIS: this is the wrong response
         }
 
         switch (currentType()) {
@@ -926,14 +916,10 @@ ParseNode Parser::call_or_mult(ParseNode n) alloc_except {
         parse_tree.addNaryChild(disjunction());
     }
 
-    if(!noErrors()){
-        //EVENTUALLY:
-        //  Check if the user is typing here
-        //  If so, display a tooltip with the function parameters
-        //  This depends on doing the work to resolve the called function, despite errors
-
-        return PARSE_ERROR;
-    }
+    //EVENTUALLY:
+    //  Check if the user is typing here
+    //  If so, display a tooltip with the function parameters
+    //  This depends on doing the work to resolve the called function, despite errors
 
     const Typeset::Marker& right = rMarkPrev();
     registerGrouping(left, right);
@@ -1112,7 +1098,6 @@ ParseNode Parser::braceGrouping() noexcept {
     }
 
     consume(COMMA);
-    if(!noErrors()) return PARSE_ERROR;
 
     ParseNode end = disjunction();
 
@@ -1135,8 +1120,6 @@ ParseNode Parser::braceGrouping() noexcept {
         Op op = OP_INTERVAL_CLOSE_CLOSE;
         if(match(RIGHTPAREN)) op = OP_INTERVAL_CLOSE_OPEN;
         else consume(RIGHTBRACE);
-
-        if(!noErrors()) return PARSE_ERROR;
 
         Typeset::Selection sel(left, right);
         registerGrouping(sel);
@@ -1164,7 +1147,6 @@ ParseNode Parser::parenGrouping() alloc_except {
     parse_tree.addNaryChild(nested);
     do{
         consume(COMMA);
-        if(!noErrors()) break;
         match(NEWLINE);
         parse_tree.addNaryChild(disjunction());
         match(NEWLINE);
@@ -1222,12 +1204,9 @@ ParseNode Parser::paramList() alloc_except {
     }
     Typeset::Selection sel(left, rMark());
     consume(RIGHTPAREN);
-    if(noErrors()){
-        registerGrouping(sel);
-        return parse_tree.finishNary(OP_LIST, sel);
-    }else{
-        return PARSE_ERROR;
-    }
+
+    registerGrouping(sel);
+    return parse_tree.finishNary(OP_LIST, sel);
 }
 
 ParseNode Parser::captureList() alloc_except {
@@ -1242,12 +1221,8 @@ ParseNode Parser::captureList() alloc_except {
     Typeset::Selection sel(left, rMark());
     consume(RIGHTBRACE);
 
-    if(noErrors()){
-        registerGrouping(sel);
-        return parse_tree.finishNary(OP_LIST, sel);
-    }else{
-        return PARSE_ERROR;
-    }
+    registerGrouping(sel);
+    return parse_tree.finishNary(OP_LIST, sel);
 }
 
 ParseNode Parser::grouping(size_t type, ForscapeTokenType close) alloc_except {
@@ -1280,12 +1255,8 @@ ParseNode Parser::set() noexcept {
         consume(RIGHTBRACKET);
 
         Typeset::Selection sel(left, rMarkPrev());
-        if(noErrors()){
-            registerGrouping(sel);
-            return parse_tree.addNode<2>(OP_SET_BUILDER, sel, {first_element, predicate});
-        }else{
-            return PARSE_ERROR;
-        }
+        if(noErrors()) registerGrouping(sel);
+        return parse_tree.addNode<2>(OP_SET_BUILDER, sel, {first_element, predicate});
     }else{
         //Enumerated set
         parse_tree.prepareNary();
@@ -1293,17 +1264,12 @@ ParseNode Parser::set() noexcept {
 
         while(!match(RIGHTBRACKET)){
             consume(COMMA);
-            if(!noErrors()) return PARSE_ERROR;
             parse_tree.addNaryChild(expression());
         }
 
         Typeset::Selection sel(left, rMarkPrev());
-        if(noErrors()){
-            registerGrouping(sel);
-            return parse_tree.finishNary(OP_SET_ENUMERATED, sel);
-        }else{
-            return PARSE_ERROR;
-        }
+        registerGrouping(sel);
+        return parse_tree.finishNary(OP_SET_ENUMERATED, sel);
     }
 }
 
@@ -1527,13 +1493,10 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
                 advance();
                 parsing_dims = true;
                 ParseNode dim0 = expression();
-                if(!noErrors()) return PARSE_ERROR;
                 if(!match(TIMES)) return error(UNRECOGNIZED_EXPR, Typeset::Selection(rMarkPrev(), rMarkPrev()));
                 ParseNode dim1 = expression();
-                if(!noErrors()) return PARSE_ERROR;
                 if(!match(ARGCLOSE)) return error(UNRECOGNIZED_EXPR, Typeset::Selection(rMarkPrev(), rMarkPrev()));
                 ParseNode elem = expression();
-                if(!noErrors()) return PARSE_ERROR;
                 if(!match(ARGCLOSE)) return error(UNRECOGNIZED_EXPR, Typeset::Selection(rMarkPrev(), rMarkPrev()));
                 ParseNode n = parse_tree.addNode<3>(OP_UNIT_VECTOR, c, {elem, dim0, dim1});
                 #ifndef FORSCAPE_TYPESET_HEADLESS
@@ -1619,27 +1582,18 @@ ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, ForscapeTo
     advance();
     if(match(ARGCLOSE)){
         consume(tt);
-        if(!noErrors()) return PARSE_ERROR; //EVENTUALLY: the parser error strategy is terrible
         ParseNode id = isolatedIdentifier();
-        if(!noErrors()) return PARSE_ERROR;
         consume(ARGCLOSE);
-        if(!noErrors()) return PARSE_ERROR;
         ParseNode expr = multiplication();
-        if(!noErrors()) return PARSE_ERROR;
         Typeset::Selection sel(c.left, rMarkPrev());
         ParseNode val = parse_tree.addTerminal(OP_IDENTIFIER, Typeset::Selection(parse_tree.getSelection(id)));
         return parse_tree.addNode<3>(type, sel, {expr, id, val});
     }else{
         ParseNode expr = multiplication();
-        if(!noErrors()) return PARSE_ERROR;
         consume(ARGCLOSE);
-        if(!noErrors()) return PARSE_ERROR;
         consume(tt);
-        if(!noErrors()) return PARSE_ERROR;
         ParseNode id = isolatedIdentifier();
-        if(!noErrors()) return PARSE_ERROR;
         consume(ARGCLOSE);
-        if(!noErrors()) return PARSE_ERROR;
         ParseNode val = parse_tree.addTerminal(OP_IDENTIFIER, Typeset::Selection(parse_tree.getSelection(id)));
         return parse_tree.addNode<3>(type, c, {expr, id, val});
     }
@@ -1667,10 +1621,6 @@ ParseNode Parser::binomial() alloc_except{
 }
 
 ParseNode Parser::superscript(ParseNode lhs) alloc_except{
-    if(lhs == PARSE_ERROR){
-        while(!match(ARGCLOSE)) advance();
-        return PARSE_ERROR;
-    }
     Typeset::Marker left = parse_tree.getLeft(lhs);
     Typeset::Marker right = rMark();
     Typeset::Selection c(left, right);
@@ -1731,11 +1681,6 @@ ParseNode Parser::superscript(ParseNode lhs) alloc_except{
 }
 
 ParseNode Parser::subscript(ParseNode lhs, const Typeset::Marker& right) alloc_except{
-    if(lhs == PARSE_ERROR){
-        while(!match(ARGCLOSE)) advance();
-        return PARSE_ERROR;
-    }
-
     Typeset::Marker left = parse_tree.getLeft(lhs);
     Typeset::Selection selection(left, right);
     advance();
@@ -1763,11 +1708,6 @@ ParseNode Parser::subscript(ParseNode lhs, const Typeset::Marker& right) alloc_e
 }
 
 ParseNode Parser::dualscript(ParseNode lhs) alloc_except{
-    if(lhs == PARSE_ERROR){
-        while(!match(ARGCLOSE)) advance();
-        return PARSE_ERROR;
-    }
-
     Typeset::Marker left = parse_tree.getLeft(lhs);
     Typeset::Marker right = rMark();
     Typeset::Selection c(left, right);
@@ -1943,10 +1883,8 @@ ParseNode Parser::twoDims(Op type) alloc_except{
     advance();
     parsing_dims = true;
     ParseNode lhs = expression();
-    if(!noErrors()) return PARSE_ERROR;
     if(!match(TIMES)) return error(ErrorCode::INVALID_ARGS, Typeset::Selection(rMarkPrev(), rMarkPrev()));
     ParseNode pn = parse_tree.addNode<2>(type, c, {lhs, expression()});
-    if(!noErrors()) return PARSE_ERROR;
     if(!match(ARGCLOSE)) return error(ErrorCode::INVALID_ARGS, Typeset::Selection(rMarkPrev(), rMarkPrev()));
     parsing_dims = false;
 
@@ -1963,7 +1901,6 @@ ParseNode Parser::trig(Op type) alloc_except{
             consume(ARGCLOSE);
 
             ParseNode fn = parse_tree.addLeftUnary(type, left, arg());
-            if(fn == PARSE_ERROR) return PARSE_ERROR;
             const Typeset::Marker& right = parse_tree.getRight(fn);
             Typeset::Selection c(left, right);
             if(parse_tree.getOp(power) == OP_UNARY_MINUS)
@@ -1984,7 +1921,6 @@ ParseNode Parser::log() alloc_except{
             ParseNode base = expression();
             consume(ARGCLOSE);
             ParseNode child_arg = arg();
-            if(child_arg == PARSE_ERROR) return PARSE_ERROR;
             const Typeset::Marker& right = parse_tree.getRight(child_arg);
             Typeset::Selection c(left, right);
             return parse_tree.addNode<2>(OP_LOGARITHM_BASE, c, {child_arg, base});
@@ -2023,7 +1959,6 @@ ParseNode Parser::twoArgs(Op type) alloc_except{
     ParseNode b = expression();
     const Typeset::Marker& right = rMark();
     consume(RIGHTPAREN);
-    if(!noErrors()) return PARSE_ERROR;
     registerGrouping(left_grouping, right);
     Typeset::Selection c(left, right);
 
@@ -2048,9 +1983,7 @@ ParseNode Parser::big(Op type) alloc_except{
     ParseNode start = expression();
     ParseNode assign = parse_tree.addNode<2>(OP_ASSIGN, {id, start});
     consume(ARGCLOSE);
-    if(!noErrors()) return PARSE_ERROR;
     ParseNode body = expression();
-    if(!noErrors()) return PARSE_ERROR;
     const Typeset::Marker& right = rMarkPrev();
     Typeset::Selection sel(left, right);
 
@@ -2070,11 +2003,9 @@ ParseNode Parser::error(ErrorCode code) alloc_except {
 }
 
 ParseNode Parser::error(ErrorCode code, const Typeset::Selection& c) alloc_except {
-    if(noErrors()){
-        error_stream.fail(c, code);
-    }
+    error_stream.fail(c, code);
 
-    return PARSE_ERROR;
+    return parse_tree.addError(c);
 }
 
 void Parser::advance() noexcept{
@@ -2165,14 +2096,11 @@ bool Parser::noErrors() const noexcept{
 }
 
 void Parser::recover() noexcept{
-    //error_node = NONE;
     index = tokens.size()-1; //Give up for now //EVENTUALLY: improve error recovery
 }
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
 void Parser::registerParseNodeRegion(ParseNode pn, size_t token_index) alloc_except {
-    if(pn == PARSE_ERROR) return;
-
     assert(token_index < tokens.size());
     assert(parse_tree.isLastAllocatedNode(pn));
 

@@ -584,8 +584,6 @@ void SymbolLexicalPass::resolveBody(
         const std::string& name,
         #endif
         ParseNode pn) alloc_except {
-    if(pn == PARSE_ERROR) return;
-
     increaseLexicalDepth(SCOPE_NAME(name)  parse_tree.getLeft(pn));
     resolveStmt(pn);
     decreaseLexicalDepth(parse_tree.getRight(pn));
@@ -662,7 +660,6 @@ void SymbolLexicalPass::resolveAlgorithm(ParseNode pn) alloc_except {
         }
     }
 
-    if(body != PARSE_ERROR)
     increaseClosureDepth(SCOPE_NAME(sel.str())  parse_tree.getLeft(body), pn);
 
     for(size_t i = 0; i < val_cap_size; i++){
@@ -703,7 +700,6 @@ void SymbolLexicalPass::resolveAlgorithm(ParseNode pn) alloc_except {
         }
     }
 
-    if(body != PARSE_ERROR)
     decreaseClosureDepth(parse_tree.getRight(body));
 }
 
@@ -1045,8 +1041,6 @@ void SymbolLexicalPass::resolveScopeAccess(ParseNode pn) noexcept {
 }
 
 bool SymbolLexicalPass::defineLocalScope(ParseNode pn, bool immutable, bool warn_on_shadow) alloc_except {
-    if(pn == PARSE_ERROR) return false;
-
     Typeset::Selection c = parse_tree.getSelection(pn);
 
     if(parse_tree.getOp(pn) == OP_SUBSCRIPT_ACCESS && !resolvePotentialIdSub(pn)){
@@ -1091,7 +1085,7 @@ Settings& SymbolLexicalPass::settings() const noexcept {
 }
 
 void SymbolLexicalPass::error(ParseNode pn, ErrorCode code) noexcept {
-    if(pn != PARSE_ERROR) error(parse_tree.getSelection(pn), code);
+    error(parse_tree.getSelection(pn), code);
 }
 
 void SymbolLexicalPass::error(const Typeset::Selection& selection, ErrorCode code) alloc_except {

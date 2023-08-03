@@ -16,10 +16,6 @@ namespace Forscape {
 
 namespace Code {
 
-ParseTree::ParseTree() noexcept {
-    clear(); //DO THIS: don't rely on clear to setup constant nodes
-}
-
 void ParseTree::clear() noexcept {
     data.clear();
     nary_construction_stack.clear();
@@ -28,12 +24,7 @@ void ParseTree::clear() noexcept {
 
     #ifndef NDEBUG
     created.clear();
-    created.insert(PARSE_ERROR);
     #endif
-
-    addNode<2>(OP_ERROR, Typeset::Selection(), {PARSE_ERROR, PARSE_ERROR});
-    setNumArgs(PARSE_ERROR, 0);
-    setFlag(PARSE_ERROR, PARSE_ERROR);
 }
 
 bool ParseTree::empty() const noexcept {
@@ -41,25 +32,21 @@ bool ParseTree::empty() const noexcept {
 }
 
 const Typeset::Marker& ParseTree::getLeft(ParseNode pn) const noexcept {
-    assert(pn != PARSE_ERROR);
     assert(isNode(pn));
     return *reinterpret_cast<const Typeset::Marker*>(data.data()+pn+LEFT_MARKER_OFFSET);
 }
 
 void ParseTree::setLeft(ParseNode pn, const Typeset::Marker& m) noexcept {
-    assert(pn != PARSE_ERROR);
     assert(isNode(pn));
     *reinterpret_cast<Typeset::Marker*>(data.data()+pn+LEFT_MARKER_OFFSET) = m;
 }
 
 const Typeset::Marker& ParseTree::getRight(ParseNode pn) const noexcept {
-    assert(pn != PARSE_ERROR);
     assert(isNode(pn));
     return *reinterpret_cast<const Typeset::Marker*>(data.data()+pn+RIGHT_MARKER_OFFSET);
 }
 
 void ParseTree::setRight(ParseNode pn, const Typeset::Marker& m) noexcept {
-    assert(pn != PARSE_ERROR);
     assert(isNode(pn));
     *reinterpret_cast<Typeset::Marker*>(data.data()+pn+RIGHT_MARKER_OFFSET) = m;
 }
@@ -86,7 +73,7 @@ void ParseTree::reduceNumArgs(ParseNode pn, size_t sze) noexcept {
 }
 
 template<size_t index> void ParseTree::setArg(ParseNode pn, ParseNode val) noexcept {
-    assert(index < getNumArgs(pn));
+    assert(index < getNumArgs(pn) || (getOp(pn) == OP_ERROR) && index < 2);
     data[pn+FIXED_FIELDS+index] = val;
 }
 
@@ -216,6 +203,22 @@ std::string ParseTree::str(ParseNode pn) const alloc_except {
     return getSelection(pn).str();
 }
 
+ParseNode ParseTree::addError(const Typeset::Selection& sel) noexcept {
+    ParseNode pn = data.size();
+    #ifndef NDEBUG
+    created.insert(pn);
+    #endif
+    data.resize(data.size() + FIXED_FIELDS + 2);
+    setOp(pn, OP_ERROR);
+    setSelection(pn, sel);
+    setFlag(pn, pn);
+    setNumArgs(pn, 0);
+    setArg<0>(pn, pn);
+    setArg<1>(pn, pn);
+
+    return pn;
+}
+
 template<typename T> ParseNode ParseTree::addNode(Op type, const Selection& sel, const T& children) alloc_except {
     //assert(notInTree(sel)); //EVENTUALLY: I don't think this belongs
     assert(notInTree(children));
@@ -236,7 +239,6 @@ template<typename T> ParseNode ParseTree::addNode(Op type, const Selection& sel,
 }
 
 template<typename T> ParseNode ParseTree::addNode(Op type, const T& children) alloc_except {
-    if(children[0] == PARSE_ERROR || children.back() == PARSE_ERROR) return PARSE_ERROR;
     return addNode<T>(type, Selection(getLeft(children[0]), getRight(children.back())), children);
 }
 
@@ -262,12 +264,10 @@ ParseNode ParseTree::addUnary(Op type, size_t child) alloc_except {
 }
 
 ParseNode ParseTree::addLeftUnary(Op type, const Typeset::Marker& left, ParseNode child) alloc_except {
-    if(child == PARSE_ERROR) return PARSE_ERROR;
     return addNode<1>(type, Selection(left, getRight(child)), {child});
 }
 
 ParseNode ParseTree::addRightUnary(Op type, const Typeset::Marker& right, ParseNode child) alloc_except {
-    if(child == PARSE_ERROR) return PARSE_ERROR;
     return addNode<1>(type, Selection(getLeft(child), right), {child});
 }
 
@@ -399,14 +399,8 @@ ParseNode ParseTree::finishNary(Op type, const Selection& sel) alloc_except {
 
 ParseNode ParseTree::finishNary(Op type) alloc_except {
     assert(!nary_start.empty());
-    ParseNode left = nary_construction_stack[nary_start.back()];
-    ParseNode right = nary_construction_stack.back();
-    if(left == PARSE_ERROR || right == PARSE_ERROR){
-        cancelNary();
-        return PARSE_ERROR;
-    }else{
-        return finishNary(type, Selection(getLeft(left), getRight(right)));
-    }
+    return finishNary(type, Selection(
+        getLeft(nary_construction_stack[nary_start.back()]), getRight(nary_construction_stack.back())));
 }
 
 void ParseTree::cancelNary() noexcept {
