@@ -65,7 +65,7 @@ void Parser::registerGrouping(const Typeset::Selection& sel) alloc_except {
 
 void Parser::registerGrouping(const Typeset::Marker& l, const Typeset::Marker& r) alloc_except {
     #ifndef FORSCAPE_TYPESET_HEADLESS
-    if(!noErrors()) return;
+    //DO THIS: should have a list of allowed pairings, and assert one is used here
     open_symbols[l] = r;
     close_symbols[r] = l;
     #endif
@@ -955,7 +955,6 @@ ParseNode Parser::rightUnary(ParseNode n) alloc_except {
                     ParseNode blank = parse_tree.addTerminal(OP_ERROR, Typeset::Selection(m, m));
                     n = parse_tree.addNode<2>(OP_SCOPE_ACCESS, {n, blank}); break;
                 }
-                if(!noErrors()) return n;
                 n = parse_tree.addNode<2>(OP_SCOPE_ACCESS, {n, primary()}); break;
             default: return n;
         }
@@ -2122,8 +2121,6 @@ void Parser::startPatch() noexcept {
 }
 
 void Parser::finishPatch(ParseNode pn) noexcept {
-    if(!noErrors()) return;
-
     assert(!token_stack_frames.empty());
     size_t frame = token_stack_frames.back();
     token_stack_frames.pop_back();
