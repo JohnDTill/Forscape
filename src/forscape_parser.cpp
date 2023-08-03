@@ -57,7 +57,7 @@ void Parser::reset() noexcept {
     index = 0;
     parsing_dims = false;
     loops = 0;
-    error_node = model->errors.empty() ? NONE: parse_tree.addTerminal(model->errors.back().code, model->errors.back().selection);
+    error_node = model->errors.empty() ? NONE : PARSE_ERROR;
 }
 
 void Parser::registerGrouping(const Typeset::Selection& sel) alloc_except {
@@ -874,7 +874,7 @@ ParseNode Parser::collectImplicitMult(ParseNode n) alloc_except {
     for(;;){
         if(!noErrors()){
             parse_tree.cancelNary();
-            return error_node;
+            return PARSE_ERROR;
         }
 
         switch (currentType()) {
@@ -1664,6 +1664,10 @@ ParseNode Parser::binomial() alloc_except{
 }
 
 ParseNode Parser::superscript(ParseNode lhs) alloc_except{
+    if(lhs == PARSE_ERROR){
+        while(!match(ARGCLOSE)) advance();
+        return PARSE_ERROR;
+    }
     Typeset::Marker left = parse_tree.getLeft(lhs);
     Typeset::Marker right = rMark();
     Typeset::Selection c(left, right);
@@ -1724,6 +1728,11 @@ ParseNode Parser::superscript(ParseNode lhs) alloc_except{
 }
 
 ParseNode Parser::subscript(ParseNode lhs, const Typeset::Marker& right) alloc_except{
+    if(lhs == PARSE_ERROR){
+        while(!match(ARGCLOSE)) advance();
+        return PARSE_ERROR;
+    }
+
     Typeset::Marker left = parse_tree.getLeft(lhs);
     Typeset::Selection selection(left, right);
     advance();
@@ -1751,6 +1760,11 @@ ParseNode Parser::subscript(ParseNode lhs, const Typeset::Marker& right) alloc_e
 }
 
 ParseNode Parser::dualscript(ParseNode lhs) alloc_except{
+    if(lhs == PARSE_ERROR){
+        while(!match(ARGCLOSE)) advance();
+        return PARSE_ERROR;
+    }
+
     Typeset::Marker left = parse_tree.getLeft(lhs);
     Typeset::Marker right = rMark();
     Typeset::Selection c(left, right);
@@ -2153,6 +2167,8 @@ void Parser::recover() noexcept{
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
 void Parser::registerParseNodeRegion(ParseNode pn, size_t token_index) alloc_except {
+    if(pn == PARSE_ERROR) return;
+
     assert(token_index < tokens.size());
     assert(parse_tree.isLastAllocatedNode(pn));
 

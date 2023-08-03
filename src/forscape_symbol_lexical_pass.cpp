@@ -584,6 +584,8 @@ void SymbolLexicalPass::resolveBody(
         const std::string& name,
         #endif
         ParseNode pn) alloc_except {
+    if(pn == PARSE_ERROR) return;
+
     increaseLexicalDepth(SCOPE_NAME(name)  parse_tree.getLeft(pn));
     resolveStmt(pn);
     decreaseLexicalDepth(parse_tree.getRight(pn));
