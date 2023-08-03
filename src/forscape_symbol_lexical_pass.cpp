@@ -662,6 +662,7 @@ void SymbolLexicalPass::resolveAlgorithm(ParseNode pn) alloc_except {
         }
     }
 
+    if(body != PARSE_ERROR)
     increaseClosureDepth(SCOPE_NAME(sel.str())  parse_tree.getLeft(body), pn);
 
     for(size_t i = 0; i < val_cap_size; i++){
@@ -702,6 +703,7 @@ void SymbolLexicalPass::resolveAlgorithm(ParseNode pn) alloc_except {
         }
     }
 
+    if(body != PARSE_ERROR)
     decreaseClosureDepth(parse_tree.getRight(body));
 }
 
@@ -1043,6 +1045,8 @@ void SymbolLexicalPass::resolveScopeAccess(ParseNode pn) noexcept {
 }
 
 bool SymbolLexicalPass::defineLocalScope(ParseNode pn, bool immutable, bool warn_on_shadow) alloc_except {
+    if(pn == PARSE_ERROR) return false;
+
     Typeset::Selection c = parse_tree.getSelection(pn);
 
     if(parse_tree.getOp(pn) == OP_SUBSCRIPT_ACCESS && !resolvePotentialIdSub(pn)){

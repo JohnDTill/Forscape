@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-set(TEST_QT ON) #DO THIS: revert
+option(TEST_QT OFF)
 
 project(ForscapeTests LANGUAGES CXX)
 

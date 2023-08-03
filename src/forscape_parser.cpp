@@ -57,7 +57,6 @@ void Parser::reset() noexcept {
     index = 0;
     parsing_dims = false;
     loops = 0;
-    error_node = model->errors.empty() ? NONE : PARSE_ERROR;
 }
 
 void Parser::registerGrouping(const Typeset::Selection& sel) alloc_except {
@@ -659,8 +658,12 @@ ParseNode Parser::namedLambdaStmt(ParseNode call) alloc_except {
     }
     parse_tree.reduceNumArgs(params, nargs);
     parse_tree.setOp(params, OP_LIST);
-    parse_tree.setLeft(params, parse_tree.getLeft(parse_tree.arg<0>(params)));
-    parse_tree.setRight(params, parse_tree.getRight(parse_tree.arg(params, nargs-1)));
+    ParseNode left = parse_tree.arg<0>(params);
+    if(left != PARSE_ERROR)
+    parse_tree.setLeft(params, parse_tree.getLeft(left));
+    ParseNode right = parse_tree.arg(params, nargs-1);
+    if(right != PARSE_ERROR)
+    parse_tree.setRight(params, parse_tree.getRight(right));
 
     Typeset::Selection sel(parse_tree.getLeft(id), parse_tree.getRight(body));
     return parse_tree.addNode<5>(OP_ALGORITHM, sel, {val_captures, ref_upvalues, params, body, id});
@@ -1960,6 +1963,7 @@ ParseNode Parser::trig(Op type) alloc_except{
             consume(ARGCLOSE);
 
             ParseNode fn = parse_tree.addLeftUnary(type, left, arg());
+            if(fn == PARSE_ERROR) return PARSE_ERROR;
             const Typeset::Marker& right = parse_tree.getRight(fn);
             Typeset::Selection c(left, right);
             if(parse_tree.getOp(power) == OP_UNARY_MINUS)
@@ -1980,6 +1984,7 @@ ParseNode Parser::log() alloc_except{
             ParseNode base = expression();
             consume(ARGCLOSE);
             ParseNode child_arg = arg();
+            if(child_arg == PARSE_ERROR) return PARSE_ERROR;
             const Typeset::Marker& right = parse_tree.getRight(child_arg);
             Typeset::Selection c(left, right);
             return parse_tree.addNode<2>(OP_LOGARITHM_BASE, c, {child_arg, base});
@@ -2067,10 +2072,9 @@ ParseNode Parser::error(ErrorCode code) alloc_except {
 ParseNode Parser::error(ErrorCode code, const Typeset::Selection& c) alloc_except {
     if(noErrors()){
         error_stream.fail(c, code);
-        error_node = parse_tree.addTerminal(OP_ERROR, Typeset::Selection(c));
     }
 
-    return error_node;
+    return PARSE_ERROR;
 }
 
 void Parser::advance() noexcept{
