@@ -59,7 +59,7 @@ void SearchDialog::updateSelection(){
     ui->selectionOnlyLabel->setVisible(has_sel);
 }
 
-void SearchDialog::saveSettings(QSettings& settings) const{
+void SearchDialog::saveSettings(QSettings& settings) const {
     QBitArray to_save(3);
     to_save[CaseSensitive] = ui->caseBox->isChecked();
     to_save[WordOnly] = ui->wordBox->isChecked();
@@ -218,11 +218,11 @@ void SearchDialog::on_findAllButton_clicked(){
     out->updateModel();
 }
 
-std::string SearchDialog::searchStr() const{
+std::string SearchDialog::searchStr() const {
     return toCppString(ui->findEdit->text());
 }
 
-std::string SearchDialog::replaceStr() const{
+std::string SearchDialog::replaceStr() const {
     return toCppString(ui->replaceEdit->text());
 }
 

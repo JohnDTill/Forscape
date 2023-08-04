@@ -34,32 +34,32 @@ Subphrase* Construct::front() const noexcept {
     return args.empty() ? nullptr : args[0];
 }
 
-Subphrase* Construct::back() const noexcept{
+Subphrase* Construct::back() const noexcept {
     return args.empty() ? nullptr : args.back();
 }
 
-Text* Construct::frontText() const noexcept{
+Text* Construct::frontText() const noexcept {
     return args.empty() ? nullptr : args[0]->front();
 }
 
-Text* Construct::frontTextAsserted() const noexcept{
+Text* Construct::frontTextAsserted() const noexcept {
     assert(!args.empty());
     return args[0]->front();
 }
 
-Text* Construct::next() const noexcept{
+Text* Construct::next() const noexcept {
     return parent->nextTextInPhrase(this);
 }
 
-Text* Construct::prev() const noexcept{
+Text* Construct::prev() const noexcept {
     return parent->prevTextInPhrase(this);
 }
 
-Text* Construct::textEnteringFromLeft() const noexcept{
+Text* Construct::textEnteringFromLeft() const noexcept {
     return args.empty() ? next() : args[0]->front();
 }
 
-Text* Construct::textEnteringFromRight() const noexcept{
+Text* Construct::textEnteringFromRight() const noexcept {
     return args.empty() ? prev() : args.back()->front();
 }
 
@@ -68,20 +68,20 @@ Text* Construct::textRightOfSubphrase(const Subphrase* caller) const noexcept {
     else return args[caller->id+1]->front();
 }
 
-Text* Construct::textLeftOfSubphrase(const Subphrase* caller) const noexcept{
+Text* Construct::textLeftOfSubphrase(const Subphrase* caller) const noexcept {
     if(caller->id) return args[caller->id-1]->back();
     else return prev();
 }
 
-Text* Construct::textUp(const Subphrase*, double) const noexcept{
+Text* Construct::textUp(const Subphrase*, double) const noexcept {
     return prev();
 }
 
-Text* Construct::textDown(const Subphrase*, double) const noexcept{
+Text* Construct::textDown(const Subphrase*, double) const noexcept {
     return next();
 }
 
-size_t Construct::serialChars() const noexcept{
+size_t Construct::serialChars() const noexcept {
     size_t sze = 2 + dims() + args.size();
     for(Subphrase* subphrase : args) sze += subphrase->serialChars();
     return sze;
@@ -105,7 +105,7 @@ void Construct::writeArgs(std::string&, size_t&) const noexcept {
     assert(dims()==0); //Do nothing assuming fixed arity. Method should be overridden if n-ary.
 }
 
-std::string Construct::toString() const{
+std::string Construct::toString() const {
     std::string str;
     str.resize(serialChars());
     size_t curr = 0;
@@ -115,7 +115,7 @@ std::string Construct::toString() const{
 }
 
 #ifdef FORSCAPE_SEMANTIC_DEBUGGING
-std::string Construct::toStringWithSemanticTags() const{
+std::string Construct::toStringWithSemanticTags() const {
     std::string out;
     out.resize(2 + dims());
     out[0] = OPEN;
@@ -149,11 +149,11 @@ ParseNode Construct::parseNodeAt(double x, double y) const noexcept {
     return pn;
 }
 
-bool Construct::contains(double x, double y) const noexcept{
+bool Construct::contains(double x, double y) const noexcept {
     return (x >= this->x) & (x <= this->x + width) & (y >= this->y) & (y <= this->y + height());
 }
 
-Construct* Construct::constructAt(double x, double y) noexcept{
+Construct* Construct::constructAt(double x, double y) noexcept {
     if(Subphrase* s = argAt(x, y))
         if(Construct* c = s->constructAt(x, y))
             return c;
@@ -161,20 +161,20 @@ Construct* Construct::constructAt(double x, double y) noexcept{
     return this;
 }
 
-Subphrase* Construct::argAt(double x, double y) const noexcept{
+Subphrase* Construct::argAt(double x, double y) const noexcept {
     for(Subphrase* s : args) if(s->contains(x,y)) return s;
     return nullptr;
 }
 
-uint8_t Construct::scriptDepth() const noexcept{
+uint8_t Construct::scriptDepth() const noexcept {
     return parent->script_level;
 }
 
-bool Construct::increasesScriptDepth(uint8_t) const noexcept{
+bool Construct::increasesScriptDepth(uint8_t) const noexcept {
     return false;
 }
 
-void Construct::updateSize() noexcept{
+void Construct::updateSize() noexcept {
     for(Subphrase* s : args){
         s->script_level = parent->script_level + (increasesScriptDepth(static_cast<uint8_t>(s->id)) & (parent->script_level < 2));
         s->updateSize();
@@ -182,33 +182,33 @@ void Construct::updateSize() noexcept{
     updateSizeFromChildSizes();
 }
 
-void Construct::updateLayout() noexcept{
+void Construct::updateLayout() noexcept {
     updateChildPositions();
     for(Subphrase* s : args)
         s->updateLayout();
 }
 
-void Construct::paint(Painter& painter) const{
+void Construct::paint(Painter& painter) const {
     paintSpecific(painter);
     for(Subphrase* arg : args) arg->paint(painter);
 }
 
-double Construct::height() const noexcept{
+double Construct::height() const noexcept {
     return above_center + under_center;
 }
 
 #ifndef NDEBUG
-void Construct::invalidateWidth() noexcept{
+void Construct::invalidateWidth() noexcept {
     width = STALE;
     parent->invalidateWidth();
 }
 
-void Construct::invalidateDims() noexcept{
+void Construct::invalidateDims() noexcept {
     width = above_center = under_center = STALE;
     parent->invalidateDims();
 }
 
-void Construct::populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept{
+void Construct::populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept {
     for(Subphrase* s : args) s->populateDocMapParseNodes(nodes);
     if(pn != NONE) nodes.insert(pn); //EVENTUALLY: probably assert(pn != NONE)
 }
@@ -233,15 +233,15 @@ void Construct::paintSpecific(Painter&) const {
     // Default does nothing
 }
 
-void Construct::invalidateX() noexcept{
+void Construct::invalidateX() noexcept {
     x = std::numeric_limits<double>::quiet_NaN();
 }
 
-void Construct::invalidateY() noexcept{
+void Construct::invalidateY() noexcept {
     y = std::numeric_limits<double>::quiet_NaN();
 }
 
-void Construct::invalidatePos() noexcept{
+void Construct::invalidatePos() noexcept {
     invalidateX();
     invalidateY();
 }
@@ -270,11 +270,11 @@ void Construct::setupNAargs(uint16_t n){
     }
 }
 
-size_t Construct::numArgs() const noexcept{
+size_t Construct::numArgs() const noexcept {
     return args.size();
 }
 
-bool Construct::sameContent(const Construct* other) const noexcept{
+bool Construct::sameContent(const Construct* other) const noexcept {
     if((constructCode() != other->constructCode()) || (numArgs() != other->numArgs()))
         return false;
     for(size_t i = 0; i < numArgs(); i++)
@@ -283,26 +283,26 @@ bool Construct::sameContent(const Construct* other) const noexcept{
     return true;
 }
 
-void Construct::search(const std::string& target, std::vector<Selection>& hits, bool use_case, bool word) const{
+void Construct::search(const std::string& target, std::vector<Selection>& hits, bool use_case, bool word) const {
     for(Subphrase* arg : args) arg->search(target, hits, use_case, word);
 }
 
-Subphrase* Construct::child() const noexcept{
+Subphrase* Construct::child() const noexcept {
     assert(args.size() == 1);
     return args[0];
 }
 
-Subphrase* Construct::first() const noexcept{
+Subphrase* Construct::first() const noexcept {
     assert(args.size() == 2);
     return args[0];
 }
 
-Subphrase* Construct::second() const noexcept{
+Subphrase* Construct::second() const noexcept {
     assert(args.size() == 2);
     return args[1];
 }
 
-bool Construct::hasSmallChild() const noexcept{
+bool Construct::hasSmallChild() const noexcept {
     assert(args.size() == 1);
 
     Text* t = child()->front();
@@ -360,7 +360,7 @@ bool Construct::hasSmallChild() const noexcept{
     }
 }
 
-Subphrase* Construct::arg(size_t index) const noexcept{
+Subphrase* Construct::arg(size_t index) const noexcept {
     return args[index];
 }
 
@@ -368,7 +368,7 @@ void Construct::setArg(size_t index, Subphrase* p) noexcept {
     args[index] = p;
 }
 
-size_t Construct::getSubphraseIndex(const Subphrase* s) const noexcept{
+size_t Construct::getSubphraseIndex(const Subphrase* s) const noexcept {
     auto in_vec = std::find(args.begin(), args.end(), s);
     assert(in_vec != args.end());
     return in_vec - args.begin();

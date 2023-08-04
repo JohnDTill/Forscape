@@ -15,7 +15,7 @@ namespace Code {
 Forscape::Code::SymbolTableLinker::SymbolTableLinker(Forscape::Code::ParseTree& parse_tree) noexcept
     : parse_tree(parse_tree) {}
 
-void SymbolTableLinker::link() noexcept{
+void SymbolTableLinker::link() noexcept {
     resolveBlock(parse_tree.root);
 }
 

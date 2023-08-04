@@ -5,7 +5,7 @@
 #include <sstream>
 #include "report.h"
 
-static size_t bytesInCodepoint(char ch) noexcept{
+static size_t bytesInCodepoint(char ch) noexcept {
     if(ch >> 7 == 0) return 1;
     assert((ch & (1 << 6)) != 0);
     if((ch & (1 << 5)) == 0) return 2;
@@ -59,10 +59,13 @@ inline bool testTypesetController(){
     }
 
     delete model;
+
+    #ifndef NDEBUG
     if(!allTypesetElementsFreed()){
         printf("Unfreed typeset elements\n");
         passing = false;
     }
+    #endif
 
     report("Typeset controller", passing);
     return passing;

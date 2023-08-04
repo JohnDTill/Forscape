@@ -229,7 +229,7 @@ ParseNode Parser::enumStatement() alloc_except {
     // enums also have a scoped access, e.g. COLOUR::RED
 }
 
-ParseNode Parser::settingsStatement() noexcept {
+ParseNode Parser::settingsStatement() alloc_except {
     Typeset::Construct* c = lMark().text->nextConstructAsserted();
     ParseNode pn = terminalAndAdvance(OP_SETTINGS_UPDATE);
     parse_tree.setFlag(pn, reinterpret_cast<size_t>(c));
@@ -441,7 +441,7 @@ ParseNode Parser::plotStatement() alloc_except {
     return parse_tree.addNode<5>(OP_PLOT, sel, {title, x_label, x, y_label, y});
 }
 
-ParseNode Parser::importStatement() noexcept {
+ParseNode Parser::importStatement() alloc_except {
     const Typeset::Marker& left = lMark();
     advance();
 
@@ -453,7 +453,7 @@ ParseNode Parser::importStatement() noexcept {
     return import_stmt;
 }
 
-ParseNode Parser::fromStatement() noexcept {
+ParseNode Parser::fromStatement() alloc_except {
     const Typeset::Marker& left = lMark();
     advance();
 
@@ -481,7 +481,7 @@ ParseNode Parser::fromStatement() noexcept {
     return parse_tree.finishNary(OP_FROM_IMPORT, Typeset::Selection(left, rMarkPrev()));
 }
 
-ParseNode Parser::filename() noexcept {
+ParseNode Parser::filename() alloc_except {
     if(!peek(FILEPATH)) return error(EXPECTED_FILEPATH);
     const Typeset::Selection& sel = selection();
     ParseNode file = terminalAndAdvance(OP_FILE_REF);
@@ -502,7 +502,7 @@ ParseNode Parser::filename() noexcept {
     return file;
 }
 
-ParseNode Parser::namespaceStatement() noexcept {
+ParseNode Parser::namespaceStatement() alloc_except {
     const Typeset::Marker& left = lMark();
 
     advance();
@@ -532,7 +532,7 @@ ParseNode Parser::unknownsStatement() alloc_except {
     return unknown_list;
 }
 
-ParseNode Parser::classStatement() noexcept {
+ParseNode Parser::classStatement() alloc_except {
     const Typeset::Marker& left = lMark();
 
     advance();
@@ -672,7 +672,7 @@ ParseNode Parser::assignment(ParseNode lhs) alloc_except {
     return pn;
 }
 
-ParseNode Parser::expression() noexcept{
+ParseNode Parser::expression() alloc_except {
     return addition();
 }
 
@@ -1071,12 +1071,12 @@ ParseNode Parser::primary() alloc_except {
     }
 }
 
-ParseNode Parser::string() noexcept{
+ParseNode Parser::string() alloc_except {
     ParseNode pn = terminalAndAdvance(OP_STRING);
     return pn;
 }
 
-ParseNode Parser::braceGrouping() noexcept {
+ParseNode Parser::braceGrouping() alloc_except {
     Typeset::Marker left = lMark();
     advance();
     if(peek(RIGHTBRACE)){
@@ -1239,7 +1239,7 @@ ParseNode Parser::grouping(size_t type, ForscapeTokenType close) alloc_except {
     }
 }
 
-ParseNode Parser::set() noexcept {
+ParseNode Parser::set() alloc_except {
     Typeset::Marker left = lMark();
     advance();
     if(match(RIGHTBRACKET)){
@@ -1275,7 +1275,7 @@ ParseNode Parser::set() noexcept {
 }
 
 template<Op basic, Op positive, Op negative>
-ParseNode Parser::setWithSigns() noexcept {
+ParseNode Parser::setWithSigns() alloc_except {
     advance();
     if(!match(TOKEN_SUPERSCRIPT)) return parse_tree.addTerminal(basic, selectionPrev());
 
@@ -1311,7 +1311,7 @@ ParseNode Parser::setWithSigns() noexcept {
     return pn;
 }
 
-ParseNode Parser::generalSet(Op op) noexcept {
+ParseNode Parser::generalSet(Op op) alloc_except {
     advance();
     if(!match(TOKEN_SUPERSCRIPT)) return parse_tree.addTerminal(op, selectionPrev());
 
@@ -1333,7 +1333,7 @@ ParseNode Parser::generalSet(Op op) noexcept {
     return pn;
 }
 
-Forscape::ParseNode Forscape::Code::Parser::integerRange() noexcept {
+Forscape::ParseNode Forscape::Code::Parser::integerRange() alloc_except {
     Typeset::Marker left = lMark();
     advance();
     ParseNode start = expression();
@@ -1442,14 +1442,14 @@ ParseNode Parser::integer() alloc_except {
     }
 }
 
-ParseNode Parser::identifier() alloc_except{
+ParseNode Parser::identifier() alloc_except {
     ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
     parse_tree.setSymbol(id, nullptr);
     registerParseNodeRegion(id, index-1);
     return identifierFollowOn(id);
 }
 
-ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
+ParseNode Parser::identifierFollowOn(ParseNode id) alloc_except {
     switch (currentType()) {
         case MAPSTO: return lambda(parse_tree.addUnary(OP_LIST, id));
         case TOKEN_SUBSCRIPT:
@@ -1513,7 +1513,7 @@ ParseNode Parser::identifierFollowOn(ParseNode id) noexcept{
     }
 }
 
-ParseNode Parser::isolatedIdentifier() alloc_except{
+ParseNode Parser::isolatedIdentifier() alloc_except {
     if(!peek(IDENTIFIER)) return error(UNRECOGNIZED_SYMBOL);
     ParseNode id = terminalAndAdvance(OP_IDENTIFIER);
     parse_tree.setSymbol(id, nullptr);
@@ -1548,12 +1548,12 @@ ParseNode Parser::isolatedIdentifier() alloc_except{
     }
 }
 
-ParseNode Parser::param() alloc_except{
+ParseNode Parser::param() alloc_except {
     ParseNode id = isolatedIdentifier();
     return match(EQUALS) ? parse_tree.addNode<2>(OP_EQUAL, {id, expression()}) : id;
 }
 
-ParseNode Parser::lambda(ParseNode params) alloc_except{
+ParseNode Parser::lambda(ParseNode params) alloc_except {
     advance();
 
     Typeset::Marker left = parse_tree.getLeft(params);
@@ -1568,7 +1568,7 @@ ParseNode Parser::lambda(ParseNode params) alloc_except{
     return parse_tree.addNode<4>(OP_LAMBDA, sel, {capture_list, referenced_upvalues, params, e});
 }
 
-ParseNode Parser::fraction() alloc_except{
+ParseNode Parser::fraction() alloc_except {
     Typeset::Selection c = selection();
     advance();
 
@@ -1579,7 +1579,7 @@ ParseNode Parser::fraction() alloc_except{
     }
 }
 
-ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, ForscapeTokenType tt) alloc_except{
+ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, ForscapeTokenType tt) alloc_except {
     advance();
     if(match(ARGCLOSE)){
         consume(tt);
@@ -1600,7 +1600,7 @@ ParseNode Parser::fractionDeriv(const Typeset::Selection& c, Op type, ForscapeTo
     }
 }
 
-ParseNode Parser::fractionDefault(const Typeset::Selection& c) alloc_except{
+ParseNode Parser::fractionDefault(const Typeset::Selection& c) alloc_except {
     ParseNode num = expression();
     consume(ARGCLOSE);
     ParseNode den = expression();
@@ -1609,7 +1609,7 @@ ParseNode Parser::fractionDefault(const Typeset::Selection& c) alloc_except{
     return parse_tree.addNode<2>(OP_FRACTION, c, {num, den});
 }
 
-ParseNode Parser::binomial() alloc_except{
+ParseNode Parser::binomial() alloc_except {
     Typeset::Selection c = selection();
     advance();
 
@@ -1621,7 +1621,7 @@ ParseNode Parser::binomial() alloc_except{
     return parse_tree.addNode<2>(OP_BINOMIAL, c, {n, k});
 }
 
-ParseNode Parser::superscript(ParseNode lhs) alloc_except{
+ParseNode Parser::superscript(ParseNode lhs) alloc_except {
     Typeset::Marker left = parse_tree.getLeft(lhs);
     Typeset::Marker right = rMark();
     Typeset::Selection c(left, right);
@@ -1681,7 +1681,7 @@ ParseNode Parser::superscript(ParseNode lhs) alloc_except{
     return n;
 }
 
-ParseNode Parser::subscript(ParseNode lhs, const Typeset::Marker& right) alloc_except{
+ParseNode Parser::subscript(ParseNode lhs, const Typeset::Marker& right) alloc_except {
     Typeset::Marker left = parse_tree.getLeft(lhs);
     Typeset::Selection selection(left, right);
     advance();
@@ -1708,7 +1708,7 @@ ParseNode Parser::subscript(ParseNode lhs, const Typeset::Marker& right) alloc_e
     return parse_tree.finishNary(OP_SUBSCRIPT_ACCESS, selection);
 }
 
-ParseNode Parser::dualscript(ParseNode lhs) alloc_except{
+ParseNode Parser::dualscript(ParseNode lhs) alloc_except {
     Typeset::Marker left = parse_tree.getLeft(lhs);
     Typeset::Marker right = rMark();
     Typeset::Selection c(left, right);
@@ -1744,7 +1744,7 @@ ParseNode Parser::dualscript(ParseNode lhs) alloc_except{
 }
 
 template<bool first_arg>
-ParseNode Parser::subExpr() alloc_except{
+ParseNode Parser::subExpr() alloc_except {
     ParseNode first;
 
     if(first_arg && match(BAR)){
@@ -1774,7 +1774,7 @@ ParseNode Parser::subExpr() alloc_except{
     else return parse_tree.addNode<3>(OP_SLICE, {first, second, expression()});
 }
 
-ParseNode Parser::matrix() alloc_except{
+ParseNode Parser::matrix() alloc_except {
     const Typeset::Selection& c = selection();
     advance();
     size_t argc = c.getConstructArgSize();
@@ -1795,7 +1795,7 @@ ParseNode Parser::matrix() alloc_except{
     return m;
 }
 
-ParseNode Parser::cases() alloc_except{
+ParseNode Parser::cases() alloc_except {
     const Typeset::Selection& c = selection();
     advance();
     size_t argc = c.getConstructArgSize();
@@ -1809,7 +1809,7 @@ ParseNode Parser::cases() alloc_except{
     return parse_tree.finishNary(OP_CASES, c);
 }
 
-ParseNode Parser::squareRoot() alloc_except{
+ParseNode Parser::squareRoot() alloc_except {
     const Typeset::Selection& c = selection();
     advance();
     ParseNode n = parse_tree.addUnary(OP_SQRT, c, expression());
@@ -1818,7 +1818,7 @@ ParseNode Parser::squareRoot() alloc_except{
     return n;
 }
 
-ParseNode Parser::nRoot() alloc_except{
+ParseNode Parser::nRoot() alloc_except {
     const Typeset::Selection& c = selection();
     advance();
     ParseNode base = expression();
@@ -1842,7 +1842,7 @@ ParseNode Parser::limit() alloc_except {
     return parse_tree.addNode<3>(OP_LIMIT, sel, {id, lim, expr});
 }
 
-ParseNode Parser::indefiniteIntegral() noexcept {
+ParseNode Parser::indefiniteIntegral() alloc_except {
     const Typeset::Marker& left = lMark();
     advance();
     ParseNode kernel = expression();
@@ -1868,7 +1868,7 @@ ParseNode Parser::definiteIntegral() alloc_except {
     return parse_tree.addNode<4>(OP_DEFINITE_INTEGRAL, sel, {var, tf, t0, kernel});
 }
 
-ParseNode Parser::oneDim(Op type) alloc_except{
+ParseNode Parser::oneDim(Op type) alloc_except {
     Typeset::Selection c(lMarkPrev(), rMark());
     advance();
     parsing_dims = true;
@@ -1879,7 +1879,7 @@ ParseNode Parser::oneDim(Op type) alloc_except{
     return pn;
 }
 
-ParseNode Parser::twoDims(Op type) alloc_except{
+ParseNode Parser::twoDims(Op type) alloc_except {
     Typeset::Selection c(lMarkPrev(), rMark());
     advance();
     parsing_dims = true;
@@ -1892,7 +1892,7 @@ ParseNode Parser::twoDims(Op type) alloc_except{
     return pn;
 }
 
-ParseNode Parser::trig(Op type) alloc_except{
+ParseNode Parser::trig(Op type) alloc_except {
     const Typeset::Marker& left = lMark();
     advance();
     switch (currentType()) {
@@ -1913,7 +1913,7 @@ ParseNode Parser::trig(Op type) alloc_except{
     }
 }
 
-ParseNode Parser::log() alloc_except{
+ParseNode Parser::log() alloc_except {
     const Typeset::Marker& left = lMark();
     advance();
     switch(currentType()){
@@ -1931,7 +1931,7 @@ ParseNode Parser::log() alloc_except{
     }
 }
 
-ParseNode Parser::oneArgRequireParen(Op type) noexcept {
+ParseNode Parser::oneArgRequireParen(Op type) alloc_except {
     Typeset::Marker start = lMark();
     advance();
     Typeset::Marker group_start = lMark();
@@ -1944,13 +1944,13 @@ ParseNode Parser::oneArgRequireParen(Op type) noexcept {
     return parse_tree.addUnary(type, Typeset::Selection(start, rMarkPrev()), child);
 }
 
-ParseNode Parser::oneArg(Op type) alloc_except{
+ParseNode Parser::oneArg(Op type) alloc_except {
     advance();
 
     return parse_tree.addUnary(type, arg());
 }
 
-ParseNode Parser::twoArgs(Op type) alloc_except{
+ParseNode Parser::twoArgs(Op type) alloc_except {
     const Typeset::Marker& left = lMark();
     advance();
     const Typeset::Marker& left_grouping = lMark();
@@ -1966,12 +1966,12 @@ ParseNode Parser::twoArgs(Op type) alloc_except{
     return parse_tree.addNode<2>(type, c, {a, b});
 }
 
-ParseNode Parser::arg() alloc_except{
+ParseNode Parser::arg() alloc_except {
     if(peek(LEFTPAREN)) return grouping(OP_GROUP_PAREN, RIGHTPAREN);
     else return leftUnary();
 }
 
-ParseNode Parser::big(Op type) alloc_except{
+ParseNode Parser::big(Op type) alloc_except {
     const Typeset::Marker& left = lMark();
     Typeset::Selection err_sel = selection();
     advance();
@@ -1991,7 +1991,7 @@ ParseNode Parser::big(Op type) alloc_except{
     return parse_tree.addNode<3>(type, sel, {assign, end, body});
 }
 
-ParseNode Parser::oneArgConstruct(Op type) alloc_except{
+ParseNode Parser::oneArgConstruct(Op type) alloc_except {
     Typeset::Selection sel = selection();
     advance();
     ParseNode child = disjunction();
@@ -2009,11 +2009,11 @@ ParseNode Parser::error(ErrorCode code, Typeset::Selection c) alloc_except {
     return parse_tree.addError(c);
 }
 
-void Parser::advance() noexcept{
+void Parser::advance() noexcept {
     index++;
 }
 
-bool Parser::match(ForscapeTokenType type) noexcept{
+bool Parser::match(ForscapeTokenType type) noexcept {
     if(tokens[index].type == type){
         advance();
         return true;
@@ -2022,20 +2022,20 @@ bool Parser::match(ForscapeTokenType type) noexcept{
     }
 }
 
-bool Parser::peek(ForscapeTokenType type) const noexcept{
+bool Parser::peek(ForscapeTokenType type) const noexcept {
     return tokens[index].type == type;
 }
 
-bool Parser::lookahead(ForscapeTokenType type) const noexcept{
+bool Parser::lookahead(ForscapeTokenType type) const noexcept {
     assert(index+1 < tokens.size());
     return tokens[index+1].type == type;
 }
 
-void Parser::require(ForscapeTokenType type) noexcept{
+void Parser::require(ForscapeTokenType type) noexcept {
     if(tokens[index].type != type) error(CONSUME);
 }
 
-void Parser::consume(ForscapeTokenType type) noexcept{
+void Parser::consume(ForscapeTokenType type) noexcept {
     if(tokens[index].type == type){
         advance();
     }else{
@@ -2043,16 +2043,16 @@ void Parser::consume(ForscapeTokenType type) noexcept{
     }
 }
 
-void Parser::skipNewlines() noexcept{
+void Parser::skipNewlines() noexcept {
     while(tokens[index].type == NEWLINE || tokens[index].type == COMMENT) index++;
 }
 
-void Parser::skipNewline() noexcept{
+void Parser::skipNewline() noexcept {
     if(tokens[index].type == COMMENT) index+=2;
     else if(tokens[index].type == NEWLINE) index++;
 }
 
-ForscapeTokenType Parser::currentType() const noexcept{
+ForscapeTokenType Parser::currentType() const noexcept {
     return tokens[index].type;
 }
 
@@ -2067,36 +2067,36 @@ ParseNode Parser::terminalAndAdvance(size_t type) alloc_except {
     return pn;
 }
 
-const Typeset::Selection Parser::selection() const noexcept{
+const Typeset::Selection Parser::selection() const noexcept {
     if(tokens[index].type == ARGCLOSE) return Typeset::Selection(tokens[index].sel.left, tokens[index].sel.left);
     return tokens[index].sel;
 }
 
-const Typeset::Selection Parser::selectionPrev() const noexcept{
+const Typeset::Selection Parser::selectionPrev() const noexcept {
     return tokens[index-1].sel;
 }
 
-const Typeset::Marker& Parser::lMark() const noexcept{
+const Typeset::Marker& Parser::lMark() const noexcept {
     return tokens[index].sel.left;
 }
 
-const Typeset::Marker& Parser::rMark() const noexcept{
+const Typeset::Marker& Parser::rMark() const noexcept {
     return tokens[index].sel.right;
 }
 
-const Typeset::Marker& Parser::lMarkPrev() const noexcept{
+const Typeset::Marker& Parser::lMarkPrev() const noexcept {
     return tokens[index-1].sel.left;
 }
 
-const Typeset::Marker& Parser::rMarkPrev() const noexcept{
+const Typeset::Marker& Parser::rMarkPrev() const noexcept {
     return tokens[index-1].sel.right;
 }
 
-bool Parser::noErrors() const noexcept{
+bool Parser::noErrors() const noexcept {
     return model->errors.empty();
 }
 
-void Parser::recover() noexcept{
+void Parser::recover() noexcept {
     index = tokens.size()-1; //Give up for now //EVENTUALLY: improve error recovery
 }
 
@@ -2118,7 +2118,7 @@ void Parser::registerParseNodeRegionToPatch(size_t token_index) alloc_except {
     token_map_stack.push_back(std::make_pair(token_index, tag_index));
 }
 
-void Parser::startPatch() noexcept {
+void Parser::startPatch() alloc_except {
     token_stack_frames.push_back(token_map_stack.size());
 }
 

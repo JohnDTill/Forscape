@@ -8,7 +8,7 @@
 
 namespace Forscape {
 
-inline constexpr size_t codepointSize(uint8_t ch) noexcept{
+inline constexpr size_t codepointSize(uint8_t ch) noexcept {
     if(ch >> 7 == 0) return 1;
     assert((ch & (1 << 6)) != 0);
     if((ch & (1 << 5)) == 0) return 2;
@@ -24,52 +24,52 @@ inline constexpr bool isContinuationCharacter(uint32_t ch) noexcept {
     return ch >> 6 == 2;
 }
 
-inline constexpr bool isAscii(char ch) noexcept{
+inline constexpr bool isAscii(char ch) noexcept {
     return ch >> 7 == 0;
 }
 
-inline constexpr bool seventhBitSet(char ch) noexcept{
+inline constexpr bool seventhBitSet(char ch) noexcept {
     return (ch & (1 << 6));
 }
 
-inline constexpr bool sixthBitSet(char ch) noexcept{
+inline constexpr bool sixthBitSet(char ch) noexcept {
     return (ch & (1 << 5));
 }
 
-inline constexpr bool sixthBitUnset(char ch) noexcept{
+inline constexpr bool sixthBitUnset(char ch) noexcept {
     return !(ch & (1 << 5));
 }
 
-inline constexpr bool fifthBitSet(char ch) noexcept{
+inline constexpr bool fifthBitSet(char ch) noexcept {
     return (ch & (1 << 4));
 }
 
-inline constexpr bool fifthBitUnset(char ch) noexcept{
+inline constexpr bool fifthBitUnset(char ch) noexcept {
     return !(ch & (1 << 4));
 }
 
-inline constexpr bool isNumeric(char ch) noexcept{
+inline constexpr bool isNumeric(char ch) noexcept {
     return (ch >= '0') & (ch <= '9');
 }
 
-inline constexpr bool isAlpha(char ch) noexcept{
+inline constexpr bool isAlpha(char ch) noexcept {
     return ((ch >= 'a') & (ch <= 'z')) |
            ((ch >= 'A') & (ch <= 'Z')) |
             (ch == '_');
 }
 
-inline constexpr bool isAlphaNumeric(char ch) noexcept{
+inline constexpr bool isAlphaNumeric(char ch) noexcept {
     return ((ch >= 'a') & (ch <= 'z')) |
            ((ch >= 'A') & (ch <= 'Z')) |
            ((ch >= '0') & (ch <= '9')) |
             (ch == '_');
 }
 
-inline constexpr bool isPathChar(char ch) noexcept{
+inline constexpr bool isPathChar(char ch) noexcept {
     return ch != ' ';
 }
 
-static uint32_t expand(char ch) noexcept{
+static uint32_t expand(char ch) noexcept {
     return static_cast<uint32_t>(static_cast<uint8_t>(ch));
 }
 

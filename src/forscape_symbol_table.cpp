@@ -40,7 +40,7 @@ Symbol::Symbol(size_t pn, size_t lexical_depth, size_t closure_depth, size_t sha
       flag(pn),
       is_const(is_const) {}
 
-size_t Symbol::closureIndex() const noexcept{
+size_t Symbol::closureIndex() const noexcept {
     assert(declaration_closure_depth != 0);
     return declaration_closure_depth - 1;
 }
@@ -99,7 +99,7 @@ ScopeSegment::ScopeSegment(
       #endif
       start_of_selection(start), fn(closure), parent_lexical_segment_index(parent), prev_lexical_segment_index(prev), first_sym_index(sym_begin), usage_begin(usage_begin) {}
 
-bool ScopeSegment::isStartOfScope() const noexcept{
+bool ScopeSegment::isStartOfScope() const noexcept {
     return prev_lexical_segment_index == NONE;
 }
 
@@ -114,7 +114,7 @@ void SymbolTable::addSymbol(size_t pn, size_t lexical_depth, size_t closure_dept
     symbol_usages.push_back(SymbolUsage(NONE, symbols.size()-1, pn, parse_tree.getSelection(pn)));
 }
 
-size_t SymbolTable::containingScope(const Typeset::Marker& m) const noexcept{
+size_t SymbolTable::containingScope(const Typeset::Marker& m) const noexcept {
     auto search_fn = [](const ScopeSegment& scope, const Typeset::Marker& m){
         return scope.start_of_selection.precedesInclusive(m);
     };
@@ -122,7 +122,7 @@ size_t SymbolTable::containingScope(const Typeset::Marker& m) const noexcept{
     return lookup - scope_segments.begin() - (lookup != scope_segments.begin());
 }
 
-void SymbolTable::getSuggestions(const Typeset::Marker& loc, std::vector<std::string>& suggestions) const{
+void SymbolTable::getSuggestions(const Typeset::Marker& loc, std::vector<std::string>& suggestions) const {
     FORSCAPE_UNORDERED_SET<std::string> suggestion_set;
 
     Typeset::Marker left = loc;
@@ -176,11 +176,11 @@ void SymbolTable::getSuggestions(const Typeset::Marker& loc, std::vector<std::st
     }
 }
 
-const Typeset::Selection& SymbolTable::getSel(size_t sym_index) const noexcept{
+const Typeset::Selection& SymbolTable::getSel(size_t sym_index) const noexcept {
     return symbols[sym_index].sel(parse_tree);
 }
 
-void SymbolTable::reset(const Typeset::Marker& doc_start) noexcept{
+void SymbolTable::reset(const Typeset::Marker& doc_start) noexcept {
     #ifndef NDEBUG
     for(Symbol& sym : symbols) all_symbols.erase(&sym);
     #endif
@@ -273,7 +273,7 @@ void SymbolTable::verifyIdentifier(ParseNode pn) const noexcept {
 }
 #endif
 
-void SymbolTable::resolveReference(ParseNode pn, size_t sym_id, size_t closure_depth) noexcept {
+void SymbolTable::resolveReference(ParseNode pn, size_t sym_id, size_t closure_depth) alloc_except {
     assert(parse_tree.getOp(pn) == OP_IDENTIFIER);
     Symbol& sym = symbols[sym_id];
     parse_tree.setSymId(pn, sym_id);

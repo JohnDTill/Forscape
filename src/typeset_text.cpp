@@ -30,7 +30,7 @@ Text::~Text() {
 }
 #endif
 
-void Text::setParent(Phrase* p) noexcept{
+void Text::setParent(Phrase* p) noexcept {
     parent = p;
 }
 
@@ -48,31 +48,31 @@ void Text::writeString(std::string& out, size_t& curr, size_t pos, size_t len) c
     curr += len;
 }
 
-bool Text::isTopLevel() const noexcept{
+bool Text::isTopLevel() const noexcept {
     return parent->isLine();
 }
 
-bool Text::isNested() const noexcept{
+bool Text::isNested() const noexcept {
     return !isTopLevel();
 }
 
-size_t Text::numChars() const noexcept{
+size_t Text::numChars() const noexcept {
     return str.size();
 }
 
-bool Text::empty() const noexcept{
+bool Text::empty() const noexcept {
     return str.empty();
 }
 
-void Text::setString(std::string_view str) noexcept {
+void Text::setString(std::string_view str) alloc_except {
     this->str = str;
 }
 
-void Text::setString(const char* ch, size_t sze) noexcept{
+void Text::setString(const char* ch, size_t sze) alloc_except {
     str = std::string_view(ch, sze);
 }
 
-void Text::append(std::string_view appended) noexcept{
+void Text::append(std::string_view appended) alloc_except {
     str += appended;
 }
 
@@ -96,69 +96,69 @@ void Text::overwrite(size_t start, const std::string& in) alloc_except {
     std::memcpy(str.data() + start, in.data(), in.size());
 }
 
-void Text::overwrite(size_t start, std::string_view in) noexcept{
+void Text::overwrite(size_t start, std::string_view in) alloc_except {
     str.resize(start + in.size());
     std::memcpy(str.data() + start, in.data(), in.size());
 }
 
-void Text::insert(size_t start, const std::string& in) noexcept{
+void Text::insert(size_t start, const std::string& in) alloc_except {
     str.insert(start, in);
 }
 
-void Text::erase(size_t start, const std::string& out) noexcept{
+void Text::erase(size_t start, const std::string& out) noexcept {
     assert(view(start, out.size()) == out);
     str.erase(start, out.size());
 }
 
-std::string_view Text::from(size_t index) const noexcept{
+std::string_view Text::from(size_t index) const noexcept {
     assert(index <= str.size());
     return std::string_view(str.data()+index, str.size()-index);
 }
 
-std::string_view Text::view(size_t start, size_t sze) const noexcept{
+std::string_view Text::view(size_t start, size_t sze) const noexcept {
     return std::string_view(str.data()+start, sze);
 }
 
-const std::string& Text::getString() const noexcept{
+const std::string& Text::getString() const noexcept {
     return str;
 }
 
-char Text::charAt(size_t index) const noexcept{
+char Text::charAt(size_t index) const noexcept {
     return str[index];
 }
 
-std::string_view Text::codepointAt(size_t index) const noexcept{
+std::string_view Text::codepointAt(size_t index) const noexcept {
     return std::string_view(str.data()+index, codepointSize(charAt(index)));
 }
 
-std::string_view Text::graphemeAt(size_t index) const noexcept{
+std::string_view Text::graphemeAt(size_t index) const noexcept {
     return std::string_view(str.data()+index, numBytesInGrapheme(str, index));
 }
 
-size_t Text::leadingSpaces() const noexcept{
+size_t Text::leadingSpaces() const noexcept {
     for(size_t i = 0; i < numChars(); i++)
         if(charAt(i) != ' ') return i;
     return numChars();
 }
 
-std::string_view Text::checkKeyword(size_t iR) const noexcept{
+std::string_view Text::checkKeyword(size_t iR) const noexcept {
     auto slash = str.rfind(syntax_cmd, iR);
     return slash == std::string::npos ?
            std::string_view() :
                 std::string_view(str.data()+slash+1, iR-(slash+1));
 }
 
-static constexpr bool notEqual(char a, char b, bool use_case) noexcept{
+static constexpr bool notEqual(char a, char b, bool use_case) noexcept {
     return a != b && (use_case ||
            ((a < 'a' || a > 'z' || a - ('a'-'A') != b) &&
            (b < 'a' || b > 'z' || b - ('a'-'A') != a)));
 }
 
-static constexpr bool alpha(char a) noexcept{
+static constexpr bool alpha(char a) noexcept {
     return (a >= 'a' && a <= 'z') || (a >= 'A' && a <= 'Z') || a == '_';
 }
 
-static constexpr bool alphaNumeric(char a) noexcept{
+static constexpr bool alphaNumeric(char a) noexcept {
     return (a >= 'a' && a <= 'z') || (a >= 'A' && a <= 'Z') || a == '_' || (a >= '0' && a <= '9');
 }
 
@@ -209,7 +209,7 @@ void Text::search(const std::string& target, std::vector<Selection>& hits, bool 
     return search(target, hits, 0, numChars(), use_case, word);
 }
 
-bool Text::precedes(Text* other) const noexcept{
+bool Text::precedes(Text* other) const noexcept {
     assert(getModel() == other->getModel());
     if(parent == other->parent) return id < other->id;
 
@@ -241,58 +241,58 @@ bool Text::precedes(Text* other) const noexcept{
     return t->parent->id < other->parent->id;
 }
 
-const char* Text::data() const noexcept{
+const char* Text::data() const noexcept {
     return str.data();
 }
 
-Phrase* Text::getParent() const noexcept{
+Phrase* Text::getParent() const noexcept {
     //Not great to expose this detail, but I can't find a better way, and it should be stable
     return parent;
 }
 
-Line* Text::getLine() const noexcept{
+Line* Text::getLine() const noexcept {
     Phrase* p = parent;
     while(!p->isLine()) p = static_cast<Subphrase*>(p)->parent->parent;
     return static_cast<Line*>(p);
 }
 
-Model* Text::getModel() const noexcept{
+Model* Text::getModel() const noexcept {
     return getLine()->parent;
 }
 
-Text* Text::nextTextInPhrase() const noexcept{
+Text* Text::nextTextInPhrase() const noexcept {
     return parent->nextTextInPhrase(this);
 }
 
-Text* Text::prevTextInPhrase() const noexcept{
+Text* Text::prevTextInPhrase() const noexcept {
     return parent->prevTextInPhrase(this);
 }
 
-Construct* Text::nextConstructInPhrase() const noexcept{
+Construct* Text::nextConstructInPhrase() const noexcept {
     return parent->nextConstructInPhrase(this);
 }
 
-Construct* Text::prevConstructInPhrase() const noexcept{
+Construct* Text::prevConstructInPhrase() const noexcept {
     return parent->prevConstructInPhrase(this);
 }
 
-Text* Text::nextTextAsserted() const noexcept{
+Text* Text::nextTextAsserted() const noexcept {
     return parent->nextTextAsserted(this);
 }
 
-Text* Text::prevTextAsserted() const noexcept{
+Text* Text::prevTextAsserted() const noexcept {
     return parent->prevTextAsserted(this);
 }
 
-Construct* Text::nextConstructAsserted() const noexcept{
+Construct* Text::nextConstructAsserted() const noexcept {
     return parent->nextConstructAsserted(this);
 }
 
-Construct* Text::prevConstructAsserted() const noexcept{
+Construct* Text::prevConstructAsserted() const noexcept {
     return parent->prevConstructAsserted(this);
 }
 
-SemanticType Text::getTypeLeftOf(size_t index) const noexcept{
+SemanticType Text::getTypeLeftOf(size_t index) const noexcept {
     if(tags.empty() || tags.front().index > index){
         return getTypePrev();
     }else{
@@ -303,7 +303,7 @@ SemanticType Text::getTypeLeftOf(size_t index) const noexcept{
     }
 }
 
-SemanticType Text::getTypePrev() const noexcept{
+SemanticType Text::getTypePrev() const noexcept {
     for(Text* t = prevTextInPhrase(); t != nullptr; t = t->prevTextInPhrase()){
         assert(t->parent == parent);
         if(!t->tags.empty())
@@ -343,7 +343,7 @@ void Text::tagBack(SemanticType type) alloc_except {
 }
 
 #ifdef FORSCAPE_SEMANTIC_DEBUGGING
-std::string Text::toSerialWithSemanticTags() const{
+std::string Text::toSerialWithSemanticTags() const {
     size_t start = 0;
     std::string out;
     for(const SemanticTag& tag : tags){
@@ -374,7 +374,7 @@ double Text::xLocal(size_t index) const noexcept {
     return CHARACTER_WIDTHS[scriptDepth()] * countGraphemes(std::string_view(str.data(), index));
 }
 
-double Text::xPhrase(size_t index) const{
+double Text::xPhrase(size_t index) const {
     double left = xLocal(index);
 
     const Text* t = this;
@@ -387,15 +387,15 @@ double Text::xPhrase(size_t index) const{
     return left;
 }
 
-double Text::xGlobal(size_t index) const{
+double Text::xGlobal(size_t index) const {
     return x + xLocal(index);
 }
 
-double Text::xRight() const noexcept{
+double Text::xRight() const noexcept {
     return x + getWidth();
 }
 
-double Text::yBot() const noexcept{
+double Text::yBot() const noexcept {
     return y + height();
 }
 
@@ -603,7 +603,7 @@ ParseNode Text::parseNodeAtX(double x) const noexcept {
 }
 
 #ifndef NDEBUG
-void Text::populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept{
+void Text::populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept {
     for(size_t i = 0; i < parse_nodes.size(); i++){
         const ParseNodeTag& tag = parse_nodes[i];
         nodes.insert(tag.pn);

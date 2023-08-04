@@ -53,7 +53,7 @@ void StaticPass::resolve(Typeset::Model* entry_point){
     for(Typeset::Model* m : imported_models) finaliseSymbolTable(m);
 }
 
-void StaticPass::reset() noexcept{
+void StaticPass::reset() noexcept {
     clear();
     memoized_abstract_function_groups.clear();
     declared_funcs.clear();
@@ -76,7 +76,7 @@ void StaticPass::reset() noexcept{
     #endif
 }
 
-ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept{
+ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept {
     if(!error_stream.noErrors()) return pn;
 
     assert(pn != NONE);
@@ -538,7 +538,7 @@ ParseNode StaticPass::resolveExprTop(size_t pn, size_t rows_expected, size_t col
     return pn;
 }
 
-ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_expected) noexcept{
+ParseNode StaticPass::resolveExpr(size_t pn, size_t rows_expected, size_t cols_expected) noexcept {
     assert(pn != NONE);
 
     if(rows_expected == UNKNOWN_SIZE) rows_expected = parse_tree.getRows(pn);
@@ -1122,7 +1122,7 @@ ParseNode StaticPass::patchSingleCharMult(ParseNode parent, ParseNode mult) noex
     return resolveMult(mult);
 }
 
-size_t StaticPass::callSite(size_t pn) noexcept{
+size_t StaticPass::callSite(size_t pn) noexcept {
     ParseNode lhs = parse_tree.arg<0>(pn);
     if(parse_tree.getOp(lhs) == OP_SINGLE_CHAR_MULT_PROXY) return patchSingleCharMult(pn, lhs);
 
@@ -1172,7 +1172,7 @@ size_t StaticPass::callSite(size_t pn) noexcept{
     return pn;
 }
 
-size_t StaticPass::implicitMult(size_t pn, size_t start) noexcept{
+size_t StaticPass::implicitMult(size_t pn, size_t start) noexcept {
     ParseNode lhs = resolveExpr(parse_tree.arg(pn, start));
     parse_tree.setArg(pn, start, lhs);
     Type tl = parse_tree.getType(lhs);
@@ -1275,7 +1275,7 @@ size_t StaticPass::error(ParseNode pn, ParseNode sel, const std::string& msg, Er
     return pn;
 }
 
-size_t StaticPass::errorType(ParseNode pn, ErrorCode code) noexcept{
+size_t StaticPass::errorType(ParseNode pn, ErrorCode code) noexcept {
     if(retry_at_recursion) return RECURSIVE_CYCLE;
 
     if(error_stream.noErrors())
@@ -1284,14 +1284,14 @@ size_t StaticPass::errorType(ParseNode pn, ErrorCode code) noexcept{
     return FAILURE;
 }
 
-ParseNode StaticPass::getFuncFromCallSig(const CallSignature& sig) const noexcept{
+ParseNode StaticPass::getFuncFromCallSig(const CallSignature& sig) const noexcept {
     size_t decl_index = sig[0];
     const DeclareSignature& dec = declared(decl_index);
 
     return getFuncFromDeclSig(dec);
 }
 
-ParseNode StaticPass::getFuncFromDeclSig(const DeclareSignature& sig) const noexcept{
+ParseNode StaticPass::getFuncFromDeclSig(const DeclareSignature& sig) const noexcept {
     return sig[0];
 }
 
@@ -2015,7 +2015,7 @@ ParseNode StaticPass::resolveBlock(ParseNode pn) {
     return pn;
 }
 
-ParseNode StaticPass::copyChildProperties(ParseNode pn) noexcept{
+ParseNode StaticPass::copyChildProperties(ParseNode pn) noexcept {
     ParseNode child = parse_tree.child(pn);
     parse_tree.setRows(pn, parse_tree.getRows(child));
     parse_tree.setCols(pn, parse_tree.getCols(child));
@@ -2391,7 +2391,7 @@ static constexpr std::string_view type_strs[] = {
     "Unknown",
 };
 
-std::string StaticPass::typeString(Type t) const{
+std::string StaticPass::typeString(Type t) const {
     if(isAbstractFunctionGroup(t)){
         return abstractFunctionSetString(t);
     }else{
@@ -2399,12 +2399,12 @@ std::string StaticPass::typeString(Type t) const{
     }
 }
 
-std::string StaticPass::typeString(const Symbol& sym) const{
+std::string StaticPass::typeString(const Symbol& sym) const {
     if(sym.type == NUMERIC) return numTypeString(sym.rows, sym.cols);
     else return typeString(sym.type);
 }
 
-Type StaticPass::makeFunctionSet(ParseNode pn) noexcept{
+Type StaticPass::makeFunctionSet(ParseNode pn) noexcept {
     std::vector<ParseNode> possible_fns = {pn};
 
     auto lookup = memoized_abstract_function_groups.insert({possible_fns, size()});
@@ -2462,36 +2462,36 @@ Type StaticPass::functionSetUnion(Type a, Type b){
     return lookup.first->second;
 }
 
-size_t StaticPass::numElements(size_t index) const noexcept{
+size_t StaticPass::numElements(size_t index) const noexcept {
     assert(v(index) == TYPE_FUNCTION_SET);
 
     return v(index+1);
 }
 
-ParseNode StaticPass::arg(size_t index, size_t n) const noexcept{
+ParseNode StaticPass::arg(size_t index, size_t n) const noexcept {
     assert(n < numElements(index));
     return v(index + 2 + n);
 }
 
-const StaticPass::DeclareSignature& StaticPass::declared(size_t index) const noexcept{
+const StaticPass::DeclareSignature& StaticPass::declared(size_t index) const noexcept {
     assert(index < declared_funcs.size());
     return declared_funcs[index];
 }
 
-size_t StaticPass::v(size_t index) const noexcept{
+size_t StaticPass::v(size_t index) const noexcept {
     return operator[](index);
 }
 
-size_t StaticPass::first(size_t index) const noexcept{
+size_t StaticPass::first(size_t index) const noexcept {
     return index+2;
 }
 
-size_t StaticPass::last(size_t index) const noexcept{
+size_t StaticPass::last(size_t index) const noexcept {
     index++;
     return index + v(index);
 }
 
-std::string StaticPass::abstractFunctionSetString(Type t) const{
+std::string StaticPass::abstractFunctionSetString(Type t) const {
     assert(v(t) == TYPE_FUNCTION_SET);
 
     if(numElements(t) == 1) return declFunctionString( v(first(t)) );
@@ -2547,7 +2547,7 @@ std::string StaticPass::numTypeString(size_t rows, size_t cols){
     return str;
 }
 
-std::string StaticPass::declFunctionString(size_t i) const{
+std::string StaticPass::declFunctionString(size_t i) const {
     assert(i < declared_funcs.size());
     const DeclareSignature& fn = declared_funcs[i];
     assert(!fn.empty());
@@ -2578,7 +2578,7 @@ std::string StaticPass::declFunctionString(size_t i) const{
     return str;
 }
 
-std::string StaticPass::instFunctionString(const CallSignature& sig) const{
+std::string StaticPass::instFunctionString(const CallSignature& sig) const {
     std::string str = declFunctionString(sig[0]);
     str += "(";
 
@@ -2598,7 +2598,7 @@ std::string StaticPass::instFunctionString(const CallSignature& sig) const{
 StaticPass::CachedInfo::CachedInfo(const Symbol& sym) noexcept
     : type(sym.type), rows(sym.rows), cols(sym.cols){}
 
-void StaticPass::CachedInfo::restore(Symbol& sym) const noexcept{
+void StaticPass::CachedInfo::restore(Symbol& sym) const noexcept {
     sym.type = type;
     sym.rows = rows;
     sym.cols = cols;

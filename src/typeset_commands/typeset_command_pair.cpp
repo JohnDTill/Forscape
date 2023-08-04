@@ -12,7 +12,7 @@ CommandPair::~CommandPair(){
     delete b;
 }
 
-bool CommandPair::isPairInsertion() const noexcept{
+bool CommandPair::isPairInsertion() const noexcept {
     return b->isCharacterInsertion();
 }
 

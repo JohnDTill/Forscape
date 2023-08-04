@@ -101,10 +101,12 @@ inline bool testInterpreter(){
         if(std::filesystem::is_regular_file(dir->path()))
             passing &= testCase(dir->path().stem().string());
 
+    #ifndef NDEBUG
     if(!allTypesetElementsFreed()){
         printf("Unfreed typeset elements\n");
         passing = false;
     }
+    #endif
 
     report("Code interpreter", passing);
     return passing;

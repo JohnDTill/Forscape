@@ -70,11 +70,11 @@ void Plot::setTitle(const std::string& str) noexcept {
     title = str;
 }
 
-void Plot::setXLabel(const std::string& str) noexcept{
+void Plot::setXLabel(const std::string& str) noexcept {
     x_label = str;
 }
 
-void Plot::setYLabel(const std::string& str) noexcept{
+void Plot::setYLabel(const std::string& str) noexcept {
     y_label = str;
 }
 

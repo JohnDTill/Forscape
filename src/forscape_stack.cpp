@@ -8,11 +8,11 @@ namespace Forscape {
 
 namespace Code {
 
-size_t Stack::size() const noexcept{
+size_t Stack::size() const noexcept {
     return std::vector<Value>::size();
 }
 
-void Stack::clear() noexcept{
+void Stack::clear() noexcept {
     std::vector<Value>::clear();
 
     #ifndef NDEBUG
@@ -27,14 +27,14 @@ void Stack::push(const Value& value   DEBUG_STACK_NAME){
     #endif
 }
 
-void Stack::pop() noexcept{
+void Stack::pop() noexcept {
     std::vector<Value>::pop_back();
     #ifndef NDEBUG
     stack_names.pop_back();
     #endif
 }
 
-Value& Stack::read(size_t offset   DEBUG_STACK_NAME) noexcept{
+Value& Stack::read(size_t offset   DEBUG_STACK_NAME) noexcept {
     assert(offset < size());
 
     #ifndef NDEBUG
@@ -53,7 +53,7 @@ Value& Stack::read(size_t offset   DEBUG_STACK_NAME) noexcept{
     return std::vector<Value>::operator[](offset);
 }
 
-Value& Stack::readReturn() noexcept{
+Value& Stack::readReturn() noexcept {
     assert(empty() || stack_names.back() == "%RETURN");
     #ifndef NDEBUG
     stack_names.back() = "%CLEARED_RETURN";
@@ -61,7 +61,7 @@ Value& Stack::readReturn() noexcept{
     return back();
 }
 
-void Stack::trim(size_t sze) noexcept{
+void Stack::trim(size_t sze) noexcept {
     assert(empty() || stack_names.back() != "%RETURN");
     assert(sze <= size());
 
@@ -73,11 +73,11 @@ void Stack::trim(size_t sze) noexcept{
     }
 }
 
-Value& Stack::back() noexcept{
+Value& Stack::back() noexcept {
     return std::vector<Value>::back();
 }
 
-Value& Stack::operator[](size_t index) noexcept{
+Value& Stack::operator[](size_t index) noexcept {
     return std::vector<Value>::operator[](index);
 }
 

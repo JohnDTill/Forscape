@@ -136,7 +136,7 @@ const std::vector<Construct::ContextAction>& Settings::getContextActions(Subphra
     return actions;
 }
 
-std::string Settings::getTooltip(double x_local, double y_local) const noexcept {
+std::string Settings::getTooltip(double x_local, double y_local) const alloc_except {
     if(!expanded) return str;
 
     if(y_local <= CHARACTER_HEIGHTS[scriptDepth()] + VSPACE/2 || y_local >= height()) return "";

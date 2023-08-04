@@ -10,7 +10,7 @@ namespace Typeset {
 InsertChars::InsertChars(Text* t, size_t index, const std::string& inserted)
     : t(t), index(index), inserted(inserted){}
 
-bool InsertChars::isCharacterInsertion() const noexcept{
+bool InsertChars::isCharacterInsertion() const noexcept {
     return true;
 }
 

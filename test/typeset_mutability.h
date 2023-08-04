@@ -111,10 +111,13 @@ inline bool testTypesetMutability(){
     }
 
     delete model;
+
+    #ifndef NDEBUG
     if(!allTypesetElementsFreed()){
         printf("Unfreed typeset elements\n");
         passing = false;
     }
+    #endif
 
     report("Typeset mutability", passing);
     return passing;

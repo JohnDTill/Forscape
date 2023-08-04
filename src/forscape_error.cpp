@@ -120,7 +120,7 @@ void ErrorStream::fail(const Typeset::Selection& selection, const std::string& s
     model->errors.push_back(error);
 }
 
-void Forscape::Code::ErrorStream::warn(SettingId setting, const Typeset::Selection& selection, ErrorCode code) noexcept {
+void Forscape::Code::ErrorStream::warn(SettingId setting, const Typeset::Selection& selection, ErrorCode code) alloc_except {
     warn(Program::instance()->settings.warningLevel(setting), selection, code);
 }
 
@@ -149,7 +149,7 @@ void ErrorStream::warn(WarningLevel warning_level, const Typeset::Selection& sel
     }
 }
 
-void ErrorStream::warn(SettingId setting, const Typeset::Selection& selection, const std::string& str, ErrorCode code) noexcept {
+void ErrorStream::warn(SettingId setting, const Typeset::Selection& selection, const std::string& str, ErrorCode code) alloc_except {
     warn(Program::instance()->settings.warningLevel(setting), selection, str, code);
 }
 

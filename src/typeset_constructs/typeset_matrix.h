@@ -158,7 +158,7 @@ public:
         }
     }
 
-    void removeRow(size_t row) noexcept{
+    void removeRow(size_t row) noexcept {
         size_t start = (row+1)*cols;
 
         //Move subsequent elements up
@@ -258,7 +258,7 @@ public:
                 c.setBothToBackOf(mat.arg(mat.cols*(row+1)-1)->back());
             }
 
-            void remove(Controller& c) noexcept{
+            void remove(Controller& c) noexcept {
                 owning = true;
                 mat.removeRow(row);
                 c.setBothToFrontOf(mat.arg(row > 0 ? mat.cols*(row-1) : 0)->front());
@@ -310,7 +310,7 @@ public:
             c.setBothToFrontOf(mat.arg(col)->front());
         }
 
-        void remove(Controller& c) noexcept{
+        void remove(Controller& c) noexcept {
             owning = true;
             mat.removeCol(col);
             if(col > 0) c.setBothToBackOf(mat.arg(col-1)->back());

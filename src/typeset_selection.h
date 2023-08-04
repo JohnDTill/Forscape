@@ -124,7 +124,7 @@ private:
 
 template <>
 struct std::hash<Forscape::Typeset::Selection>{
-    std::size_t operator()(const Forscape::Typeset::Selection& s) const{
+    std::size_t operator()(const Forscape::Typeset::Selection& s) const {
         return s.hashDesignedForIdentifiers();
     }
 };

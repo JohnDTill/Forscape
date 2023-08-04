@@ -378,7 +378,7 @@ void View::dispatchMousewheel(bool ctrl_held, bool up){
     update();
 }
 
-void View::resolveClick(double x, double y) noexcept{
+void View::resolveClick(double x, double y) noexcept {
     Line* l = model->nearestLine(y);
     controller.clickTo(l, x, y);
     updateXSetpoint();
@@ -483,7 +483,7 @@ void View::resolveWordClick(double x, double y){
     updateXSetpoint();
 }
 
-void View::resolveWordDrag(double x, double y) noexcept{
+void View::resolveWordDrag(double x, double y) noexcept {
     bool forward = controller.isForward();
 
     resolveShiftClick(x, y);
@@ -509,7 +509,7 @@ void View::resolveWordDrag(double x, double y) noexcept{
     updateXSetpoint();
 }
 
-void View::resolveTripleClick(double y) noexcept{
+void View::resolveTripleClick(double y) noexcept {
     Line* l = model->nearestLine(y);
     controller.selectLine(l);
     updateXSetpoint();
@@ -517,7 +517,7 @@ void View::resolveTripleClick(double y) noexcept{
     invalidateDoubleClickTime();
 }
 
-void View::resolveLineDrag(double y) noexcept{
+void View::resolveLineDrag(double y) noexcept {
     Line* active_line = model->nearestLine(y);
     Line* anchor_line = controller.anchorLine();
 
@@ -580,7 +580,7 @@ void View::resolveSelectionDrag(double x, double y){
     emit textChanged();
 }
 
-bool View::isInLineBox(double x) const noexcept{
+bool View::isInLineBox(double x) const noexcept {
     return x-h_scroll->value()/zoom < -MARGIN_LEFT;
 }
 
@@ -588,27 +588,27 @@ void View::updateXSetpoint() noexcept {
     x_setpoint = controller.xActive();
 }
 
-double View::xModel(double xScreen) const noexcept{
+double View::xModel(double xScreen) const noexcept {
     return xScreen/zoom - xOrigin();
 }
 
-double View::yModel(double yScreen) const noexcept{
+double View::yModel(double yScreen) const noexcept {
     return yScreen/zoom - yOrigin();
 }
 
-double View::xScreen(double xModel) const noexcept{
+double View::xScreen(double xModel) const noexcept {
     return zoom*(xModel + xOrigin());
 }
 
-double View::yScreen(double yModel) const noexcept{
+double View::yScreen(double yModel) const noexcept {
     return zoom*(yModel + yOrigin());
 }
 
-void View::zoomIn() noexcept{
+void View::zoomIn() noexcept {
     zoom = std::min(ZOOM_MAX, zoom*ZOOM_DELTA);
 }
 
-void View::zoomOut() noexcept{
+void View::zoomOut() noexcept {
     zoom = std::max(ZOOM_MIN, zoom/ZOOM_DELTA);
 }
 
@@ -654,7 +654,7 @@ void View::populateHighlightWordsFromParseNode(ParseNode pn){
     if(sym) sym->getAllOccurences(highlighted_words);
 }
 
-bool View::scrolledToBottom() const noexcept{
+bool View::scrolledToBottom() const noexcept {
     return v_scroll->value() == v_scroll->maximum();
 }
 
@@ -663,7 +663,7 @@ void View::scrollToBottom(){
     update();
 }
 
-bool View::lineNumbersShown() const noexcept{
+bool View::lineNumbersShown() const noexcept {
     return show_line_nums;
 }
 
@@ -675,15 +675,15 @@ void View::insertSerial(const std::string& str){
     controller.insertSerial(str);
 }
 
-size_t View::numLines() const noexcept{
+size_t View::numLines() const noexcept {
     return model->numLines();
 }
 
-size_t View::currentLine() const noexcept{
+size_t View::currentLine() const noexcept {
     return controller.activeLine()->id;
 }
 
-void View::ensureCursorVisible() noexcept{
+void View::ensureCursorVisible() noexcept {
     handleResize();
 
     double xModel = controller.xActive();
@@ -712,7 +712,7 @@ void View::ensureCursorVisible() noexcept{
     h_scroll->setValue(h_scroll->value() + translate_x);
 }
 
-void View::updateModel() noexcept{
+void View::updateModel() noexcept {
     model->updateLayout();
     update();
 }
@@ -733,7 +733,7 @@ void View::updateBackgroundColour() noexcept {
     repaint();
 }
 
-void View::updateAfterHighlightChange() noexcept{
+void View::updateAfterHighlightChange() noexcept {
     update();
     v_scroll->update();
 }
@@ -857,13 +857,13 @@ void View::dragMoveEvent(QDragMoveEvent* event) {
     event->setAccepted(can_drop);
 }
 
-void View::onBlink() noexcept{
+void View::onBlink() noexcept {
     show_cursor = !show_cursor && (hasFocus() || mock_focus);
     update();
     cursor_blink_timer->start(CURSOR_BLINK_INTERVAL);
 }
 
-void View::copy() const{
+void View::copy() const {
     if(!controller.hasSelection()) return;
     std::string str = controller.selectedText();
     QGuiApplication::clipboard()->setText(toQString(str));
@@ -1099,7 +1099,7 @@ void View::redo(){
     emit textChanged();
 }
 
-void View::selectAll() noexcept{
+void View::selectAll() noexcept {
     controller.selectAll();
 }
 
@@ -1259,7 +1259,7 @@ void View::paintEvent(QPaintEvent* event){
     qpainter.end();
 }
 
-QImage View::toPng() const{
+QImage View::toPng() const {
     return controller.selection().toPng();
 }
 
@@ -1420,7 +1420,7 @@ void Recommender::moveUp() noexcept {
     update();
 }
 
-void Recommender::take() noexcept{
+void Recommender::take() noexcept {
     if(recommend_typeset_phrase_size){
         std::string str = controller.selectedText();
         auto lookup = Keywords::lookup(str);

@@ -83,7 +83,7 @@ void SymbolLexicalPass::reset() noexcept {
     active_scope_id = 0;
 }
 
-ScopeSegment& SymbolLexicalPass::activeScope() noexcept{
+ScopeSegment& SymbolLexicalPass::activeScope() noexcept {
     return scope_segments[active_scope_id];
 }
 
@@ -104,7 +104,7 @@ void SymbolLexicalPass::addScope(
     added_segment.fn = closure;
 }
 
-void SymbolLexicalPass::closeScope(const Typeset::Marker& end) noexcept{
+void SymbolLexicalPass::closeScope(const Typeset::Marker& end) noexcept {
     symbol_table.closeScope(end);
 
     size_t sze = symbols.size();
@@ -117,11 +117,11 @@ void SymbolLexicalPass::closeScope(const Typeset::Marker& end) noexcept{
     added_segment.usage_begin = n_usages;
 }
 
-Symbol& SymbolLexicalPass::lastDefinedSymbol() noexcept{
+Symbol& SymbolLexicalPass::lastDefinedSymbol() noexcept {
     return symbols.back();
 }
 
-size_t SymbolLexicalPass::symbolIndexFromSelection(const Typeset::Selection& sel) const noexcept{
+size_t SymbolLexicalPass::symbolIndexFromSelection(const Typeset::Selection& sel) const noexcept {
     auto lookup = lexical_map.find(sel);
     return lookup == lexical_map.end() ? NONE : lookup->second;
 }
@@ -567,7 +567,7 @@ void SymbolLexicalPass::resolveSettingsUpdate(ParseNode pn) alloc_except {
     s.enact(settings_construct);
 }
 
-void SymbolLexicalPass::resolveSwitch(ParseNode pn) noexcept {
+void SymbolLexicalPass::resolveSwitch(ParseNode pn) alloc_except {
     resolveExpr(parse_tree.arg<0>(pn));
     for(size_t i = 1; i < parse_tree.getNumArgs(pn); i++){
         ParseNode a = parse_tree.arg(pn, i);
@@ -600,7 +600,7 @@ void SymbolLexicalPass::resolveBlock(ParseNode pn) alloc_except {
         resolveStmt( parse_tree.arg(pn, i) );
 }
 
-void SymbolLexicalPass::resolveLexicalScope(ParseNode pn) noexcept {
+void SymbolLexicalPass::resolveLexicalScope(ParseNode pn) alloc_except {
     increaseLexicalDepth(SCOPE_NAME("Anonymous")  parse_tree.getLeft(pn));
     resolveBlock(pn);
     decreaseLexicalDepth(parse_tree.getRight(pn));
@@ -801,7 +801,7 @@ void SymbolLexicalPass::resolveDerivative(ParseNode pn) alloc_except {
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-void SymbolLexicalPass::resolveLimit(ParseNode pn) noexcept {
+void SymbolLexicalPass::resolveLimit(ParseNode pn) alloc_except {
     resolveExpr(parse_tree.arg<1>(pn));
     increaseLexicalDepth(SCOPE_NAME("-limit-")  parse_tree.getLeft(pn));
 
@@ -811,7 +811,7 @@ void SymbolLexicalPass::resolveLimit(ParseNode pn) noexcept {
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-void SymbolLexicalPass::resolveIndefiniteIntegral(ParseNode pn) noexcept {
+void SymbolLexicalPass::resolveIndefiniteIntegral(ParseNode pn) alloc_except {
     increaseLexicalDepth(SCOPE_NAME("-indef_int-")  parse_tree.getLeft(pn));
 
     ParseNode id = parse_tree.arg<0>(pn);
@@ -821,7 +821,7 @@ void SymbolLexicalPass::resolveIndefiniteIntegral(ParseNode pn) noexcept {
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-void SymbolLexicalPass::resolveDefiniteIntegral(ParseNode pn) noexcept {
+void SymbolLexicalPass::resolveDefiniteIntegral(ParseNode pn) alloc_except {
     resolveExpr(parse_tree.arg<1>(pn));
     resolveExpr(parse_tree.arg<2>(pn));
     increaseLexicalDepth(SCOPE_NAME("-def_int-")  parse_tree.getLeft(pn));
@@ -832,7 +832,7 @@ void SymbolLexicalPass::resolveDefiniteIntegral(ParseNode pn) noexcept {
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-void SymbolLexicalPass::resolveSetBuilder(ParseNode pn) noexcept {
+void SymbolLexicalPass::resolveSetBuilder(ParseNode pn) alloc_except {
     increaseLexicalDepth(SCOPE_NAME("-set_builder-")  parse_tree.getLeft(pn));
 
     ParseNode var = parse_tree.arg<0>(pn);
@@ -848,7 +848,7 @@ void SymbolLexicalPass::resolveSetBuilder(ParseNode pn) noexcept {
     decreaseLexicalDepth(parse_tree.getRight(pn));
 }
 
-void SymbolLexicalPass::resolveUnknownDeclaration(ParseNode pn) noexcept {
+void SymbolLexicalPass::resolveUnknownDeclaration(ParseNode pn) alloc_except {
     for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
         defineLocalScope(parse_tree.arg(pn, i));
 }
@@ -940,7 +940,7 @@ void SymbolLexicalPass::resolveNamespace(ParseNode pn) alloc_except {
     unloadScope(body, sym_id);
 }
 
-void SymbolLexicalPass::loadScope(ParseNode pn, size_t sym_id) noexcept {
+void SymbolLexicalPass::loadScope(ParseNode pn, size_t sym_id) alloc_except {
     const Symbol& scope = symbols[sym_id];
 
     increaseLexicalDepth(SCOPE_NAME(scope.sel(parse_tree).str())  parse_tree.getLeft(pn));
@@ -972,7 +972,7 @@ void SymbolLexicalPass::loadScope(ParseNode pn, size_t sym_id) noexcept {
     //      C++ class implementation files. Otherwise the trade-off seems good.
 }
 
-void SymbolLexicalPass::unloadScope(ParseNode body, size_t scope_sym_id) noexcept {
+void SymbolLexicalPass::unloadScope(ParseNode body, size_t scope_sym_id) alloc_except {
     Symbol& scope = symbols[scope_sym_id];
     ScopeSegmentIndex scope_index = scope.previous_namespace_index;
     while(scope_index != NONE){
@@ -1023,7 +1023,7 @@ void SymbolLexicalPass::unloadScope(ParseNode body, size_t scope_sym_id) noexcep
     scope_segments[scope_index-1].is_end_of_scope = false;
 }
 
-void SymbolLexicalPass::resolveScopeAccess(ParseNode pn) noexcept {
+void SymbolLexicalPass::resolveScopeAccess(ParseNode pn) alloc_except {
     //Only resolve the leftmost part here
 
     ParseNode lhs = parse_tree.arg<0>(pn);
@@ -1071,11 +1071,11 @@ bool SymbolLexicalPass::defineLocalScope(ParseNode pn, bool immutable, bool warn
     return true;
 }
 
-bool SymbolLexicalPass::declared(ParseNode pn) const noexcept{
+bool SymbolLexicalPass::declared(ParseNode pn) const noexcept {
     return lexical_map.find(parse_tree.getSelection(pn)) != lexical_map.end();
 }
 
-size_t SymbolLexicalPass::symIndex(ParseNode pn) const noexcept{
+size_t SymbolLexicalPass::symIndex(ParseNode pn) const noexcept {
     const auto& lookup = lexical_map.find(parse_tree.getSelection(pn));
     return lookup == lexical_map.end() ? NONE : lookup->second;
 }
@@ -1084,7 +1084,7 @@ Settings& SymbolLexicalPass::settings() const noexcept {
     return Program::instance()->settings;
 }
 
-void SymbolLexicalPass::error(ParseNode pn, ErrorCode code) noexcept {
+void SymbolLexicalPass::error(ParseNode pn, ErrorCode code) alloc_except {
     error(parse_tree.getSelection(pn), code);
 }
 

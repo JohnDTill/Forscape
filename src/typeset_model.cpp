@@ -43,7 +43,7 @@ Model::~Model(){
     #endif
 }
 
-void Model::clear() noexcept{
+void Model::clear() noexcept {
     clearRedo();
     for(Command* cmd : undo_stack) delete cmd;
     undo_stack.clear();
@@ -181,7 +181,7 @@ std::vector<Line*> Model::linesFromSerial(const std::string& src){
 #undef TypesetSetupMatrix
 
 #ifdef FORSCAPE_SEMANTIC_DEBUGGING
-std::string Model::toSerialWithSemanticTags() const{
+std::string Model::toSerialWithSemanticTags() const {
     std::string out = lines[0]->toStringWithSemanticTags();
     for(size_t i = 1; i < lines.size(); i++){
         out += '\n';
@@ -200,24 +200,24 @@ Line* Model::appendLine(){
     return l;
 }
 
-Line* Model::lastLine() const noexcept{
+Line* Model::lastLine() const noexcept {
     return lines.back();
 }
 
-void Model::search(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const{
+void Model::search(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const {
     assert(!str.empty());
     for(Line* l : lines) l->search(str, hits, use_case, word);
 }
 
-bool Model::empty() const noexcept{
+bool Model::empty() const noexcept {
     return lines.size() == 1 && lines[0]->empty();
 }
 
-Text* Model::firstText() const noexcept{
+Text* Model::firstText() const noexcept {
     return lines[0]->front();
 }
 
-Text* Model::lastText() const noexcept{
+Text* Model::lastText() const noexcept {
     return lines.back()->back();
 }
 
@@ -227,7 +227,7 @@ size_t Model::serialChars() const noexcept {
     return serial_chars;
 }
 
-void Model::registerCommaSeparatedNumber(const Selection& sel) noexcept {
+void Model::registerCommaSeparatedNumber(const Selection& sel) alloc_except {
     comma_separated_numbers.push_back(sel);
 }
 
@@ -242,26 +242,26 @@ void Model::writeString(std::string& out) const noexcept {
     assert(isValidSerial(out));
 }
 
-Line* Model::nextLine(const Line* l) const noexcept{
+Line* Model::nextLine(const Line* l) const noexcept {
     return l->id+1 < lines.size() ? lines[l->id+1] : nullptr;
 }
 
-Line* Model::prevLine(const Line* l) const noexcept{
+Line* Model::prevLine(const Line* l) const noexcept {
     return l->id > 0 ? lines[l->id-1] : nullptr;
 }
 
-Line* Model::nextLineAsserted(const Line* l) const noexcept{
+Line* Model::nextLineAsserted(const Line* l) const noexcept {
     assert(l->id+1 < lines.size());
     return lines[l->id+1];
 }
 
-Line* Model::prevLineAsserted(const Line* l) const noexcept{
+Line* Model::prevLineAsserted(const Line* l) const noexcept {
     assert(l->id > 0);
     return lines[l->id-1];
 }
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
-Line* Model::nearestLine(double y) const noexcept{
+Line* Model::nearestLine(double y) const noexcept {
     auto search = std::lower_bound(
                     lines.rbegin(),
                     lines.rend(),
@@ -272,7 +272,7 @@ Line* Model::nearestLine(double y) const noexcept{
     return (search != lines.rend()) ? *search : lines[0];
 }
 
-Line* Model::nearestAbove(double y) const noexcept{
+Line* Model::nearestAbove(double y) const noexcept {
     auto search = std::lower_bound(
                     lines.rbegin(),
                     lines.rend(),
@@ -283,31 +283,31 @@ Line* Model::nearestAbove(double y) const noexcept{
     return (search != lines.rend()) ? *search : lines[0];
 }
 
-Construct* Model::constructAt(double x, double y) const noexcept{
+Construct* Model::constructAt(double x, double y) const noexcept {
     return nearestLine(y)->constructAt(x, y);
 }
 
-void Model::updateWidth() noexcept{
+void Model::updateWidth() noexcept {
     width = 0;
     for(Line* l : lines) width = std::max(width, l->width);
 }
 
-double Model::getWidth() noexcept{
+double Model::getWidth() noexcept {
     updateWidth();
     return width;
 }
 
-void Model::updateHeight() noexcept{
+void Model::updateHeight() noexcept {
     height = lines.back()->yBottom();
 }
 
-double Model::getHeight() noexcept{
+double Model::getHeight() noexcept {
     updateHeight();
     return height;
 }
 #endif
 
-size_t Model::numLines() const noexcept{
+size_t Model::numLines() const noexcept {
     return lines.size();
 }
 
@@ -427,15 +427,15 @@ void Model::resetUndoRedo() noexcept {
     redo_stack.clear();
 }
 
-bool Model::undoAvailable() const noexcept{
+bool Model::undoAvailable() const noexcept {
     return !undo_stack.empty();
 }
 
-bool Model::redoAvailable() const noexcept{
+bool Model::redoAvailable() const noexcept {
     return !redo_stack.empty();
 }
 
-void Model::remove(size_t start, size_t stop) noexcept{
+void Model::remove(size_t start, size_t stop) noexcept {
     lines.erase(lines.begin()+start, lines.begin()+stop);
     for(size_t i = start; i < lines.size(); i++)
         lines[i]->id = i;
@@ -447,7 +447,7 @@ void Model::insert(const std::vector<Line*>& l){
     lines.insert(lines.begin() + l.front()->id, l.begin(), l.end());
 }
 
-Marker Model::begin() const noexcept{
+Marker Model::begin() const noexcept {
     return Marker(firstText(), 0);
 }
 
@@ -471,7 +471,7 @@ void Model::updateLayout(){
     }
 }
 
-void Model::paint(Painter& painter, double xL, double yT, double xR, double yB) const{
+void Model::paint(Painter& painter, double xL, double yT, double xR, double yB) const {
     Line* start = nearestAbove(yT);
     Line* end = nearestLine(yB);
 
@@ -485,7 +485,7 @@ void Model::paint(Painter& painter, double xL, double yT, double xR, double yB) 
     }
 }
 
-void Model::paintGroupings(Painter& painter, const Marker& loc) const{
+void Model::paintGroupings(Painter& painter, const Marker& loc) const {
     auto open_lookup = parser.open_symbols.find(loc);
     if(open_lookup != parser.open_symbols.end()){
         loc.text->paintGrouping(painter, loc.index);
@@ -528,7 +528,7 @@ ParseNode Model::parseNodeAt(double x, double y) const noexcept {
 }
 
 #ifndef NDEBUG
-void Model::populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept{
+void Model::populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept {
     for(Line* l : lines) l->populateDocMapParseNodes(nodes);
 }
 #endif
@@ -540,7 +540,7 @@ std::string Model::parseTreeDot() const {
 }
 #endif
 
-Selection Model::find(const std::string& str) noexcept{
+Selection Model::find(const std::string& str) noexcept {
     Text* t = firstText();
     for(;;){
         auto it = t->getString().find(str);
@@ -566,7 +566,7 @@ Selection Model::find(const std::string& str) noexcept{
     return Selection();
 }
 
-void Model::clearFormatting() noexcept{
+void Model::clearFormatting() noexcept {
     Text* t = firstText();
     for(;;){
         t->tags.clear();
@@ -609,7 +609,7 @@ void Model::performSemanticFormatting(){
     Program::instance()->runStaticPass();
 }
 
-void Model::premutate() noexcept{
+void Model::premutate() noexcept {
     clearRedo();
     if(is_output) return;
     clearFormatting();
@@ -633,7 +633,7 @@ void Model::rename(const std::vector<Selection>& targets, const std::string& nam
     mutate(lst, c);
 }
 
-Code::ParseTree& Model::parseTree() noexcept{
+Code::ParseTree& Model::parseTree() noexcept {
     return parser.parse_tree;
 }
 

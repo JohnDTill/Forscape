@@ -3,7 +3,6 @@
 #include <code_parsenode_ops.h>
 #include "forscape_common.h"
 #include "forscape_static_pass.h"
-#include "typeset_model.h"
 #include "typeset_selection.h"
 
 #ifndef NDEBUG
@@ -120,7 +119,7 @@ void ParseTree::setSymId(ParseNode pn, size_t sym_id) noexcept {
     setFlag(pn, sym_id);
 }
 
-size_t ParseTree::getSymId(ParseNode pn) const noexcept{
+size_t ParseTree::getSymId(ParseNode pn) const noexcept {
     assert(isNode(pn));
     assert(getOp(pn) == OP_IDENTIFIER || getOp(pn) == OP_READ_UPVALUE);
     return getFlag(pn);
@@ -203,7 +202,7 @@ std::string ParseTree::str(ParseNode pn) const alloc_except {
     return getSelection(pn).str();
 }
 
-ParseNode ParseTree::addError(const Typeset::Selection& sel) noexcept {
+ParseNode ParseTree::addError(const Typeset::Selection& sel) alloc_except {
     assert(notAccessingDataWhileModifying(sel));
 
     ParseNode pn = data.size();
@@ -373,7 +372,7 @@ void ParseTree::addNaryChild(ParseNode pn) alloc_except {
     nary_construction_stack.push_back(pn);
 }
 
-ParseNode ParseTree::popNaryChild() noexcept{
+ParseNode ParseTree::popNaryChild() noexcept {
     ParseNode pn = nary_construction_stack.back();
     nary_construction_stack.pop_back();
     return pn;
@@ -510,7 +509,7 @@ template<typename T> bool ParseTree::notAccessingDataWhileModifying(const T& obj
     return potential_index < 0 || static_cast<size_t>(potential_index) >= data.size();
 }
 
-std::string ParseTree::toGraphviz() const{
+std::string ParseTree::toGraphviz() const {
     std::string src = "digraph {\n\trankdir=TB\n\n";
     size_t sze = 0;
     graphvizHelper(src, root, sze);
@@ -519,7 +518,7 @@ std::string ParseTree::toGraphviz() const{
     return src;
 }
 
-std::string ParseTree::toGraphviz(ParseNode pn) const{
+std::string ParseTree::toGraphviz(ParseNode pn) const {
     std::string src = "digraph {\n\trankdir=TB\n\n";
     size_t sze = 0;
     graphvizHelper(src, pn, sze);
@@ -528,7 +527,7 @@ std::string ParseTree::toGraphviz(ParseNode pn) const{
     return src;
 }
 
-void ParseTree::graphvizHelper(std::string& src, ParseNode n, size_t& size) const{
+void ParseTree::graphvizHelper(std::string& src, ParseNode n, size_t& size) const {
     std::string id = std::to_string(size++);
     src += "\tn" + id + " [label=";
     writeType(src, n);
