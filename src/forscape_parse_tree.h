@@ -105,7 +105,7 @@ public:
     bool isNode(ParseNode pn) const noexcept;
     bool isLastAllocatedNode(ParseNode pn) const noexcept;
     bool inFinalState() const noexcept;
-    template<typename T> bool notInTree(const T& obj) const noexcept;
+    template<typename T> bool notAccessingDataWhileModifying(const T& obj) const noexcept;
     std::string toGraphviz() const;
     std::string toGraphviz(ParseNode pn) const;
     #endif

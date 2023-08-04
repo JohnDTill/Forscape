@@ -204,6 +204,8 @@ std::string ParseTree::str(ParseNode pn) const alloc_except {
 }
 
 ParseNode ParseTree::addError(const Typeset::Selection& sel) noexcept {
+    assert(notAccessingDataWhileModifying(sel));
+
     ParseNode pn = data.size();
     #ifndef NDEBUG
     created.insert(pn);
@@ -220,8 +222,9 @@ ParseNode ParseTree::addError(const Typeset::Selection& sel) noexcept {
 }
 
 template<typename T> ParseNode ParseTree::addNode(Op type, const Selection& sel, const T& children) alloc_except {
-    //assert(notInTree(sel)); //EVENTUALLY: I don't think this belongs
-    assert(notInTree(children));
+    assert(type != OP_ERROR); //There is a specific method to create errors, not the general ones
+    assert(notAccessingDataWhileModifying(sel));
+    assert(notAccessingDataWhileModifying(children));
 
     ParseNode pn = data.size();
     #ifndef NDEBUG
@@ -378,7 +381,7 @@ ParseNode ParseTree::popNaryChild() noexcept{
 
 ParseNode ParseTree::finishNary(Op type, const Selection& sel) alloc_except {
     assert(!nary_start.empty());
-    assert(notInTree(sel));
+    assert(notAccessingDataWhileModifying(sel));
     size_t N = nary_construction_stack.size()-nary_start.back();
 
     ParseNode pn = data.size();
@@ -500,10 +503,10 @@ bool ParseTree::inFinalState() const noexcept {
     return nary_construction_stack.empty() && nary_start.empty();
 }
 
-template<typename T> bool ParseTree::notInTree(const T& obj) const noexcept {
+template<typename T> bool ParseTree::notAccessingDataWhileModifying(const T& obj) const noexcept {
     if(data.empty()) return true;
 
-    auto potential_index = reinterpret_cast<const size_t*>(&obj) - &data[0];
+    const auto potential_index = reinterpret_cast<const size_t*>(&obj) - &data[0];
     return potential_index < 0 || static_cast<size_t>(potential_index) >= data.size();
 }
 

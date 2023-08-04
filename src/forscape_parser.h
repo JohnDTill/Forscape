@@ -114,7 +114,7 @@ private:
     ParseNode big(Op type) alloc_except;
     ParseNode oneArgConstruct(Op type) alloc_except;
     ParseNode error(ErrorCode code) alloc_except;
-    ParseNode error(ErrorCode code, const Typeset::Selection& c) alloc_except;
+    ParseNode error(ErrorCode code, Typeset::Selection c) alloc_except;
     void advance() noexcept;
     bool match(ForscapeTokenType type) noexcept;
     bool peek(ForscapeTokenType type) const noexcept;

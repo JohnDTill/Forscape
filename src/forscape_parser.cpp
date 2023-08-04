@@ -261,7 +261,8 @@ ParseNode Parser::switchStatement() alloc_except {
                 consume(COLON);
                 match(NEWLINE);
                 if(peek(CASE) || peek(DEFAULT) || peek(RIGHTBRACKET)){
-                    ParseNode case_node = parse_tree.addNode<2>(OP_CASE, parse_tree.getSelection(case_key), {case_key, NONE});
+                    Typeset::Selection sel(parse_tree.getSelection(case_key));
+                    ParseNode case_node = parse_tree.addNode<2>(OP_CASE, sel, {case_key, NONE});
                     parse_tree.addNaryChild(case_node);
                 }else{
                     ParseNode case_codepath = blockStatement();
@@ -276,7 +277,8 @@ ParseNode Parser::switchStatement() alloc_except {
                 consume(COLON);
                 match(NEWLINE);
                 if(peek(CASE) || peek(DEFAULT) || peek(RIGHTBRACKET)){
-                    ParseNode case_node = parse_tree.addNode<2>(OP_DEFAULT, parse_tree.getSelection(default_label), {default_label, NONE});
+                    Typeset::Selection sel(parse_tree.getSelection(default_label));
+                    ParseNode case_node = parse_tree.addNode<2>(OP_DEFAULT, sel, {default_label, NONE});
                     parse_tree.addNaryChild(case_node);
                 }else{
                     ParseNode default_codepath = blockStatement();
@@ -952,7 +954,7 @@ ParseNode Parser::rightUnary(ParseNode n) alloc_except {
             case PERIOD: advance();
                 if(!peek(IDENTIFIER)){
                     const Typeset::Marker& m = rMarkPrev();
-                    ParseNode blank = parse_tree.addTerminal(OP_ERROR, Typeset::Selection(m, m));
+                    ParseNode blank = parse_tree.addError(Typeset::Selection(m, m));
                     n = parse_tree.addNode<2>(OP_SCOPE_ACCESS, {n, blank}); break;
                 }
                 n = parse_tree.addNode<2>(OP_SCOPE_ACCESS, {n, primary()}); break;
@@ -2001,7 +2003,7 @@ ParseNode Parser::error(ErrorCode code) alloc_except {
     return error(code, selection());
 }
 
-ParseNode Parser::error(ErrorCode code, const Typeset::Selection& c) alloc_except {
+ParseNode Parser::error(ErrorCode code, Typeset::Selection c) alloc_except {
     error_stream.fail(c, code);
 
     return parse_tree.addError(c);
