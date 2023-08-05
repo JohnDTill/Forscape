@@ -200,6 +200,11 @@ uint32_t Marker::codepointLeft() const noexcept {
     return m.scanGlyph();
 }
 
+uint32_t Marker::codepointRight() const noexcept {
+    Marker m = *this;
+    return m.scanGlyph();
+}
+
 bool Marker::onlySpacesLeft() const noexcept {
     if(!atFirstTextInPhrase()) return false;
     size_t i = index;

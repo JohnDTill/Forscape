@@ -3,6 +3,7 @@
 #include <code_parsenode_ops.h>
 #include <forscape_common.h>
 #include <forscape_program.h>
+#include <forscape_unicode.h>
 #include "typeset_construct.h"
 #include "typeset_model.h"
 
@@ -59,13 +60,35 @@ void Parser::reset() noexcept {
     loops = 0;
 }
 
+static constexpr uint64_t groupingPairingCode(uint32_t left, uint32_t right) noexcept {
+    return static_cast<uint64_t>(left) | (static_cast<uint64_t>(right) << 32uLL);
+}
+
+static constexpr std::array<uint64_t, 9> RECOGNISED_GROUPINGS = {
+    groupingPairingCode(codepointInt(std::string_view("(")), codepointInt(std::string_view(")"))),
+    groupingPairingCode(codepointInt(std::string_view("[")), codepointInt(std::string_view("]"))),
+    groupingPairingCode(codepointInt(std::string_view("{")), codepointInt(std::string_view("}"))),
+    groupingPairingCode(codepointInt(std::string_view("|")), codepointInt(std::string_view("|"))),
+    groupingPairingCode(codepointInt(std::string_view("‖")), codepointInt(std::string_view("‖"))),
+    groupingPairingCode(codepointInt(std::string_view("⌊")), codepointInt(std::string_view("⌋"))),
+    groupingPairingCode(codepointInt(std::string_view("⌈")), codepointInt(std::string_view("⌉"))),
+    groupingPairingCode(codepointInt(std::string_view("⟨")), codepointInt(std::string_view("⟩"))),
+    groupingPairingCode(codepointInt(std::string_view("⟦")), codepointInt(std::string_view("⟧"))),
+};
+
 void Parser::registerGrouping(const Typeset::Selection& sel) alloc_except {
     registerGrouping(sel.left, sel.right);
 }
 
 void Parser::registerGrouping(const Typeset::Marker& l, const Typeset::Marker& r) alloc_except {
     #ifndef FORSCAPE_TYPESET_HEADLESS
-    //DO THIS: should have a list of allowed pairings, and assert one is used here
+    if(l.atTextEnd() || r.atTextStart()) return;
+
+    const uint64_t grouping_code = groupingPairingCode(l.codepointRight(), r.codepointLeft());
+    const bool validGrouping = RECOGNISED_GROUPINGS.cend() != std::find(
+        RECOGNISED_GROUPINGS.cbegin(), RECOGNISED_GROUPINGS.cend(), grouping_code);
+
+    if(!validGrouping) return;
     open_symbols[l] = r;
     close_symbols[r] = l;
     #endif
@@ -73,7 +96,7 @@ void Parser::registerGrouping(const Typeset::Marker& l, const Typeset::Marker& r
 
 ParseNode Parser::checkedStatement() alloc_except {
     ParseNode n = statement();
-    if(!noErrors()) recover(); //DO THIS: what is error recovery?
+    if(!noErrors()) recover();
     return n;
 }
 
@@ -364,7 +387,7 @@ ParseNode Parser::blockStatement() alloc_except {
     }
 
     Typeset::Selection sel(left, rMarkPrev());
-    if(noErrors()) registerGrouping(sel);
+    registerGrouping(sel);
 
     return parse_tree.finishNary(OP_BLOCK, sel);
 }
@@ -381,7 +404,7 @@ ParseNode Parser::lexicalScopeStatement() alloc_except {
     }
 
     Typeset::Selection sel(left, rMarkPrev());
-    if(noErrors()) registerGrouping(sel);
+    registerGrouping(sel);
 
     return parse_tree.finishNary(OP_LEXICAL_SCOPE, sel);
 }
@@ -1112,7 +1135,7 @@ ParseNode Parser::braceGrouping() alloc_except {
         Typeset::Marker right = rMark();
         Typeset::Selection sel(left, right);
         consume(RIGHTBRACE);
-        if(noErrors()) registerGrouping(sel);
+        registerGrouping(sel);
         return parse_tree.finishNary(OP_LIST, sel);
     }else{
         //It's an interval
@@ -1160,10 +1183,8 @@ ParseNode Parser::parenGrouping() alloc_except {
         }
     } while(!peek(RIGHTPAREN) && noErrors());
     Typeset::Selection sel(left, rMark());
-    if(noErrors()){
-        registerGrouping(sel);
-        advance();
-    }
+    registerGrouping(sel);
+    if(noErrors()) advance();
 
     ParseNode list = parse_tree.finishNary(OP_LIST, sel);
 
@@ -1256,7 +1277,7 @@ ParseNode Parser::set() alloc_except {
         consume(RIGHTBRACKET);
 
         Typeset::Selection sel(left, rMarkPrev());
-        if(noErrors()) registerGrouping(sel);
+        registerGrouping(sel);
         return parse_tree.addNode<2>(OP_SET_BUILDER, sel, {first_element, predicate});
     }else{
         //Enumerated set
@@ -1674,7 +1695,6 @@ ParseNode Parser::superscript(ParseNode lhs, Typeset::Marker left) alloc_except 
             parse_tree.setFlag(n, TYPESET_RATHER_THAN_CARET);
     }
 
-    //DO THIS: this will result in invalid selections (read: crashes)
     consume(ARGCLOSE);
 
     return n;

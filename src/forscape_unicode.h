@@ -69,7 +69,7 @@ inline constexpr bool isPathChar(char ch) noexcept {
     return ch != ' ';
 }
 
-static uint32_t expand(char ch) noexcept {
+static constexpr uint32_t expand(char ch) noexcept {
     return static_cast<uint32_t>(static_cast<uint8_t>(ch));
 }
 
@@ -92,6 +92,26 @@ inline uint32_t codepointInt(StringType str, size_t index = 0) noexcept {
         uint32_t bit2 = expand(str[index+1]) << 8;
         uint32_t bit3 = expand(str[index+2]) << 16;
         uint32_t bit4 = expand(str[index+3]) << 24;
+        return ch | bit2 | bit3 | bit4;
+    }
+}
+
+inline constexpr uint32_t codepointInt(std::string_view str) noexcept {
+    uint8_t ch = str[0];
+
+    if(isAscii(ch)){
+        return ch;
+    }else if(sixthBitUnset(ch)){
+        uint32_t bit2 = expand(str[1]) << 8;
+        return ch | bit2;
+    }else if(fifthBitUnset(ch)){
+        uint32_t bit2 = expand(str[1]) << 8;
+        uint32_t bit3 = expand(str[2]) << 16;
+        return ch | bit2 | bit3;
+    }else{
+        uint32_t bit2 = expand(str[1]) << 8;
+        uint32_t bit3 = expand(str[2]) << 16;
+        uint32_t bit4 = expand(str[3]) << 24;
         return ch | bit2 | bit3 | bit4;
     }
 }
