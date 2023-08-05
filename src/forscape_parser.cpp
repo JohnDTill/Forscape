@@ -892,7 +892,7 @@ ParseNode Parser::collectImplicitMult(ParseNode n) alloc_except {
     for(;;){
         if(!noErrors()){
             parse_tree.cancelNary();
-            return n; //DO THIS: this is the wrong response
+            return n; //EVENTUALLY: this is probably the wrong response
         }
 
         switch (currentType()) {

@@ -27,7 +27,7 @@ jobs:
              export CFLAGS=-m32 &&
              export CXXFLAGS=-m32 &&
              export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig &&
-             cmake -B../build_test -S.
+             cmake -DCMAKE_BUILD_TYPE=Debug -B../build_test -S.
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build_test && make
       - id: run

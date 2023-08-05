@@ -29,10 +29,8 @@ include_directories(${CONSTRUCT})
 include_directories(${GEN})
 include_directories(${COMMAND})
 
-#DO THIS: what is linux's deal, man?
-#add_compile_definitions($<$<CONFIG:Debug>:TYPESET_MEMORY_DEBUG>)
-#add_compile_definitions($<$<CONFIG:Debug>:FORSCAPE_SEMANTIC_DEBUGGING>)
-add_compile_definitions(TYPESET_MEMORY_DEBUG FORSCAPE_SEMANTIC_DEBUGGING)
+add_compile_definitions($<$<CONFIG:Debug>:TYPESET_MEMORY_DEBUG>)
+add_compile_definitions($<$<CONFIG:Debug>:FORSCAPE_SEMANTIC_DEBUGGING>)
 add_compile_definitions(EIGEN_NO_AUTOMATIC_RESIZING)
 add_compile_definitions(BASE_TEST_DIR="../test/interpreter_scripts")
 add_compile_definitions(alloc_except=noexcept)
