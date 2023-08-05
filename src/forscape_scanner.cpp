@@ -158,11 +158,11 @@ void Scanner::endOfFile() alloc_except {
     createToken(ENDOFFILE);
 }
 
-void Scanner::incrementScope() noexcept{
+void Scanner::incrementScope() noexcept {
     scope_depth++;
 }
 
-void Scanner::decrementScope() noexcept{
+void Scanner::decrementScope() noexcept {
     if(scope_depth) scope_depth--;
 }
 

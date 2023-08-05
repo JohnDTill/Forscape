@@ -74,6 +74,7 @@ public:
     template<typename T> ParseNode addNode(Op type, const T& children) alloc_except;
     template<size_t N> ParseNode addNode(Op type, const Selection& sel, const std::array<ParseNode, N>& children) alloc_except;
     template<size_t N> ParseNode addNode(Op type, const std::array<ParseNode, N>& children) alloc_except;
+    ParseNode addError(const Selection& sel) alloc_except;
     ParseNode addTerminal(Op type, const Selection& c) alloc_except;
     ParseNode addUnary(Op type, const Selection& c, ParseNode child) alloc_except;
     ParseNode addUnary(Op type, ParseNode child) alloc_except;
@@ -104,7 +105,7 @@ public:
     bool isNode(ParseNode pn) const noexcept;
     bool isLastAllocatedNode(ParseNode pn) const noexcept;
     bool inFinalState() const noexcept;
-    template<typename T> bool notInTree(const T& obj) const noexcept;
+    template<typename T> bool notAccessingDataWhileModifying(const T& obj) const noexcept;
     std::string toGraphviz() const;
     std::string toGraphviz(ParseNode pn) const;
     #endif

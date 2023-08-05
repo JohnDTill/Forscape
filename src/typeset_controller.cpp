@@ -39,7 +39,7 @@ Controller::Controller(Model* model)
 Controller::Controller(const Selection& sel) noexcept
     : active(sel.right), anchor(sel.left) {}
 
-Controller& Controller::operator=(const Marker& marker) noexcept{
+Controller& Controller::operator=(const Marker& marker) noexcept {
     active = anchor = marker;
     return *this;
 }
@@ -47,19 +47,19 @@ Controller& Controller::operator=(const Marker& marker) noexcept{
 Controller::Controller(const Marker& anchor, const Marker& active)
     : active(active), anchor(anchor) {}
 
-const Marker& Controller::getAnchor() const noexcept{
+const Marker& Controller::getAnchor() const noexcept {
     return anchor;
 }
 
-const Marker& Controller::getActive() const noexcept{
+const Marker& Controller::getActive() const noexcept {
     return active;
 }
 
-bool Controller::hasSelection() const noexcept{
+bool Controller::hasSelection() const noexcept {
     return active != anchor;
 }
 
-void Controller::deselect() noexcept{
+void Controller::deselect() noexcept {
     consolidateToActive();
 }
 
@@ -78,7 +78,7 @@ void Controller::moveToNextChar() noexcept {
     }
 }
 
-void Controller::moveToPrevChar() noexcept{
+void Controller::moveToPrevChar() noexcept {
     if(hasSelection()){
         consolidateLeft();
     }else if(notAtTextStart()){
@@ -93,7 +93,7 @@ void Controller::moveToPrevChar() noexcept{
     }
 }
 
-void Controller::moveToNextWord() noexcept{
+void Controller::moveToNextWord() noexcept {
     if(hasSelection()){
         consolidateRight();
     }else if(notAtTextEnd()){
@@ -105,7 +105,7 @@ void Controller::moveToNextWord() noexcept{
     }
 }
 
-void Controller::moveToPrevWord() noexcept{
+void Controller::moveToPrevWord() noexcept {
     if(hasSelection()){
         consolidateLeft();
     }else if(notAtTextStart()){
@@ -117,19 +117,19 @@ void Controller::moveToPrevWord() noexcept{
     }
 }
 
-void Controller::moveToStartOfLine() noexcept{
+void Controller::moveToStartOfLine() noexcept {
     setBothToFrontOf(phrase()->front());
 }
 
-void Controller::moveToEndOfLine() noexcept{
+void Controller::moveToEndOfLine() noexcept {
     setBothToBackOf(phrase()->back());
 }
 
-void Controller::moveToStartOfDocument() noexcept{
+void Controller::moveToStartOfDocument() noexcept {
     setBothToFrontOf(getModel()->firstText());
 }
 
-void Controller::moveToEndOfDocument() noexcept{
+void Controller::moveToEndOfDocument() noexcept {
     setBothToBackOf(getModel()->lastText());
 }
 
@@ -143,7 +143,7 @@ void Controller::selectNextChar() noexcept {
     }
 }
 
-void Controller::selectPrevChar() noexcept{
+void Controller::selectPrevChar() noexcept {
     if(notAtTextStart()){
         decrementActiveGrapheme();
     }else if(Construct* c = active.text->prevConstructInPhrase()){
@@ -153,7 +153,7 @@ void Controller::selectPrevChar() noexcept{
     }
 }
 
-void Controller::selectNextWord() noexcept{
+void Controller::selectNextWord() noexcept {
     if(notAtTextEnd()){
         incrementToNextWord();
     }else if(Construct* c = active.text->nextConstructInPhrase()){
@@ -163,7 +163,7 @@ void Controller::selectNextWord() noexcept{
     }
 }
 
-void Controller::selectPrevWord() noexcept{
+void Controller::selectPrevWord() noexcept {
     if(notAtTextStart()){
         decrementToPrevWord();
     }else if(Construct* c = active.text->prevConstructInPhrase()){
@@ -173,70 +173,70 @@ void Controller::selectPrevWord() noexcept{
     }
 }
 
-void Controller::selectStartOfLine() noexcept{
+void Controller::selectStartOfLine() noexcept {
     active.setToFrontOf(phrase()->front());
 }
 
-void Controller::selectEndOfLine() noexcept{
+void Controller::selectEndOfLine() noexcept {
     active.setToBackOf(phrase()->back());
 }
 
-void Controller::selectStartOfDocument() noexcept{
+void Controller::selectStartOfDocument() noexcept {
     if(isTopLevel()) active.setToFrontOf(getModel()->firstText());
     else active.setToFrontOf(phrase()->front());
 }
 
-void Controller::selectEndOfDocument() noexcept{
+void Controller::selectEndOfDocument() noexcept {
     if(isTopLevel()) active.setToBackOf(getModel()->lastText());
     else active.setToBackOf(phrase()->back());
 }
 
-void Controller::selectAll() noexcept{
+void Controller::selectAll() noexcept {
     Model* m = getModel();
     anchor.setToFrontOf(m->firstText());
     active.setToBackOf(m->lastText());
 }
 
-std::string Controller::selectedText() const{
+std::string Controller::selectedText() const {
     return selection().str();
 }
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
-void Controller::moveToNextLine(double setpoint) noexcept{
+void Controller::moveToNextLine(double setpoint) noexcept {
     if(isNested()) active.setToLeftOf(subphrase()->textDown(setpoint), setpoint);
     else selectNextLine(setpoint);
     consolidateToActive();
 }
 
-void Controller::moveToPrevLine(double setpoint) noexcept{
+void Controller::moveToPrevLine(double setpoint) noexcept {
     if(isNested()) active.setToLeftOf(subphrase()->textUp(setpoint), setpoint);
     else selectPrevLine(setpoint);
     consolidateToActive();
 }
 
-void Controller::moveToNextPage(double setpoint, double page_height) noexcept{
+void Controller::moveToNextPage(double setpoint, double page_height) noexcept {
     selectNextPage(setpoint, page_height);
     consolidateToActive();
 }
 
-void Controller::moveToPrevPage(double setpoint, double page_height) noexcept{
+void Controller::moveToPrevPage(double setpoint, double page_height) noexcept {
     selectPrevPage(setpoint, page_height);
     consolidateToActive();
 }
 
-void Controller::selectNextLine(double setpoint) noexcept{
+void Controller::selectNextLine(double setpoint) noexcept {
     if(isTopLevel())
         if(Line* l = nextLine())
             active.setToLeftOf(l->textLeftOf(setpoint), setpoint);
 }
 
-void Controller::selectPrevLine(double setpoint) noexcept{
+void Controller::selectPrevLine(double setpoint) noexcept {
     if(isTopLevel())
         if(Line* l = prevLine())
             active.setToLeftOf(l->textLeftOf(setpoint), setpoint);
 }
 
-void Controller::selectNextPage(double setpoint, double page_height) noexcept{
+void Controller::selectNextPage(double setpoint, double page_height) noexcept {
     if(isNested()) return;
 
     Line* l = activeLine();
@@ -245,7 +245,7 @@ void Controller::selectNextPage(double setpoint, double page_height) noexcept{
     active.setToLeftOf(l->textLeftOf(setpoint), setpoint);
 }
 
-void Controller::selectPrevPage(double setpoint, double page_height) noexcept{
+void Controller::selectPrevPage(double setpoint, double page_height) noexcept {
     if(isNested()) return;
 
     Line* l = activeLine();
@@ -254,11 +254,11 @@ void Controller::selectPrevPage(double setpoint, double page_height) noexcept{
     active.setToLeftOf(l->textLeftOf(setpoint), setpoint);
 }
 
-bool Controller::contains(double x, double y) const{
+bool Controller::contains(double x, double y) const {
     return selection().contains(x, y);
 }
 
-void Controller::paintSelection(Painter& painter, double xL, double yT, double xR, double yB) const{
+void Controller::paintSelection(Painter& painter, double xL, double yT, double xR, double yB) const {
     selection().paintSelection(painter, xL, yT, xR, yB);
 }
 
@@ -272,7 +272,7 @@ void Controller::paintCursor(Painter& painter) const {
     painter.drawNarrowCursor(x, y, h);
 }
 
-void Controller::paintInsertCursor(Painter& painter, double xL, double yT, double xR, double yB) const{
+void Controller::paintInsertCursor(Painter& painter, double xL, double yT, double xR, double yB) const {
     Controller controller(*this);
     controller.consolidateToActive();
     controller.selectNextChar();
@@ -295,23 +295,23 @@ void Controller::paintInsertCursor(Painter& painter, double xL, double yT, doubl
 }
 #endif
 
-Model* Controller::getModel() const noexcept{
+Model* Controller::getModel() const noexcept {
     return active.text->getModel();
 }
 
-bool Controller::atStart() const noexcept{
+bool Controller::atStart() const noexcept {
     return atTextStart() && active.text == getModel()->firstText();
 }
 
-bool Controller::atEnd() const noexcept{
+bool Controller::atEnd() const noexcept {
     return atTextEnd() && active.text == getModel()->lastText();
 }
 
-bool Controller::atLineStart() const noexcept{
+bool Controller::atLineStart() const noexcept {
     return atTextStart() && active.text->id == 0 && isTopLevel();
 }
 
-void Controller::del() noexcept{
+void Controller::del() noexcept {
     if(hasSelection()){
         Command* cmd = deleteSelection();
         getModel()->mutate(cmd, *this);
@@ -327,7 +327,7 @@ void Controller::del() noexcept{
     }
 }
 
-void Controller::backspace() noexcept{
+void Controller::backspace() noexcept {
     if(hasSelection()){
         Command* cmd = deleteSelection();
         getModel()->mutate(cmd, *this);
@@ -345,7 +345,7 @@ void Controller::backspace() noexcept{
     }
 }
 
-void Controller::delWord() noexcept{
+void Controller::delWord() noexcept {
     if(hasSelection()){
         Command* cmd = deleteSelection();
         getModel()->mutate(cmd, *this);
@@ -358,7 +358,7 @@ void Controller::delWord() noexcept{
     }
 }
 
-void Controller::backspaceWord() noexcept{
+void Controller::backspaceWord() noexcept {
     if(hasSelection()){
         Command* cmd = deleteSelection();
         getModel()->mutate(cmd, *this);
@@ -371,7 +371,7 @@ void Controller::backspaceWord() noexcept{
     }
 }
 
-void Controller::newline() noexcept{
+void Controller::newline() noexcept {
     if(isNested()) return;
     std::string str = "\n" + std::string(INDENT_SIZE*activeLine()->scope_depth, ' ');
     getModel()->mutate(getInsertSerial(str), *this);
@@ -404,7 +404,7 @@ void Controller::tab(){
     }
 }
 
-void Controller::detab() noexcept{
+void Controller::detab() noexcept {
     if(hasSelection()){
         if(isPhraseSelection()){
             del();
@@ -526,139 +526,139 @@ void Controller::insertSerial(const std::string& src){
     getModel()->mutate(getInsertSerial(src), *this);
 }
 
-void Controller::setBothToFrontOf(Text* t) noexcept{
+void Controller::setBothToFrontOf(Text* t) noexcept {
     active.setToFrontOf(t);
     anchor = active;
 }
 
-void Controller::setBothToBackOf(Text* t) noexcept{
+void Controller::setBothToBackOf(Text* t) noexcept {
     active.setToBackOf(t);
     anchor = active;
 }
 
-Selection Controller::selection() const noexcept{
+Selection Controller::selection() const noexcept {
     return isForward() ? Selection(anchor, active) : Selection(active, anchor);
 }
 
-bool Controller::isTextSelection() const noexcept{
+bool Controller::isTextSelection() const noexcept {
     return active.text == anchor.text;
 }
 
-void Controller::selectConstruct(const Construct* c) noexcept{
+void Controller::selectConstruct(const Construct* c) noexcept {
     active.setToFrontOf(c->next());
     anchor.setToBackOf(c->prev());
 }
 
-void Controller::consolidateToActive() noexcept{
+void Controller::consolidateToActive() noexcept {
     anchor = active;
 }
 
-void Controller::consolidateToAnchor() noexcept{
+void Controller::consolidateToAnchor() noexcept {
     active = anchor;
 }
 
-void Controller::consolidateRight() noexcept{
+void Controller::consolidateRight() noexcept {
     if(isForward()) consolidateToActive();
     else consolidateToAnchor();
 }
 
-void Controller::consolidateLeft() noexcept{
+void Controller::consolidateLeft() noexcept {
     if(isForward()) consolidateToAnchor();
     else consolidateToActive();
 }
 
-bool Controller::isForward() const noexcept{
+bool Controller::isForward() const noexcept {
     if(isTextSelection()) return active.index > anchor.index;
     else if(isPhraseSelection()) return active.text->id > anchor.text->id;
     else return activeLine()->id > anchorLine()->id;
 }
 
-bool Controller::isTopLevel() const noexcept{
+bool Controller::isTopLevel() const noexcept {
     return active.text->isTopLevel();
 }
 
-bool Controller::isNested() const noexcept{
+bool Controller::isNested() const noexcept {
     return active.text->isNested();
 }
 
-bool Controller::isPhraseSelection() const noexcept{
+bool Controller::isPhraseSelection() const noexcept {
     return active.phrase() == anchor.phrase();
 }
 
-char Controller::charRight() const noexcept{
+char Controller::charRight() const noexcept {
     return active.charRight();
 }
 
-char Controller::charLeft() const noexcept{
+char Controller::charLeft() const noexcept {
     return active.charLeft();
 }
 
-Phrase* Controller::phrase() const noexcept{
+Phrase* Controller::phrase() const noexcept {
     return active.phrase();
 }
 
-Subphrase* Controller::subphrase() const noexcept{
+Subphrase* Controller::subphrase() const noexcept {
     assert(isPhraseSelection());
     return active.subphrase();
 }
 
-Line* Controller::activeLine() const noexcept{
+Line* Controller::activeLine() const noexcept {
     return active.parentAsLine();
 }
 
-Line* Controller::anchorLine() const noexcept{
+Line* Controller::anchorLine() const noexcept {
     return anchor.parentAsLine();
 }
 
-Line* Controller::nextLine() const noexcept{
+Line* Controller::nextLine() const noexcept {
     return activeLine()->next();
 }
 
-Line* Controller::prevLine() const noexcept{
+Line* Controller::prevLine() const noexcept {
     return activeLine()->prev();
 }
 
-bool Controller::atTextEnd() const noexcept{
+bool Controller::atTextEnd() const noexcept {
     return active.atTextEnd();
 }
 
-bool Controller::atTextStart() const noexcept{
+bool Controller::atTextStart() const noexcept {
     return active.atTextStart();
 }
 
-bool Controller::notAtTextEnd() const noexcept{
+bool Controller::notAtTextEnd() const noexcept {
     return active.notAtTextEnd();
 }
 
-bool Controller::notAtTextStart() const noexcept{
+bool Controller::notAtTextStart() const noexcept {
     return active.notAtTextStart();
 }
 
-void Controller::incrementActiveCodepoint() noexcept{
+void Controller::incrementActiveCodepoint() noexcept {
     active.incrementCodepoint();
 }
 
-void Controller::decrementActiveCodepoint() noexcept{
+void Controller::decrementActiveCodepoint() noexcept {
     active.decrementCodepoint();
 }
 
-void Controller::incrementActiveGrapheme() noexcept{
+void Controller::incrementActiveGrapheme() noexcept {
     active.incrementGrapheme();
 }
 
-void Controller::decrementActiveGrapheme() noexcept{
+void Controller::decrementActiveGrapheme() noexcept {
     active.decrementGrapheme();
 }
 
-void Controller::incrementToNextWord() noexcept{
+void Controller::incrementToNextWord() noexcept {
     active.incrementToNextWord();
 }
 
-void Controller::decrementToPrevWord() noexcept{
+void Controller::decrementToPrevWord() noexcept {
     active.decrementToPrevWord();
 }
 
-void Controller::selectLine(const Line* l) noexcept{
+void Controller::selectLine(const Line* l) noexcept {
     anchor.setToFrontOf(l);
     if(Line* n = l->next()) active.setToFrontOf(n);
     else active.setToBackOf(l);
@@ -776,7 +776,7 @@ Command* Controller::insertSerialNoSelection(const std::string& str){
 }
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
-void Controller::clickTo(const Phrase* p, double x, double y) noexcept{
+void Controller::clickTo(const Phrase* p, double x, double y) noexcept {
     if(x <= p->x){
         setBothToFrontOf(p->front());
     }else if(x >= p->x + p->width){
@@ -795,12 +795,12 @@ void Controller::clickTo(const Phrase* p, double x, double y) noexcept{
     }
 }
 
-void Controller::clickTo(Construct* c, double x, double y) noexcept{
+void Controller::clickTo(Construct* c, double x, double y) noexcept {
     if(Subphrase* s = c->argAt(x, y)) clickTo(s, x, y);
     else c->onClick(*this, x - c->x, y - c->y);
 }
 
-void Controller::shiftClick(const Phrase* p, double x) noexcept{
+void Controller::shiftClick(const Phrase* p, double x) noexcept {
     if(x <= p->x) active.setToFrontOf(p);
     else if(x >= p->x + p->width) active.setToBackOf(p);
     else{
@@ -811,30 +811,30 @@ void Controller::shiftClick(const Phrase* p, double x) noexcept{
     }
 }
 
-double Controller::xActive() const{
+double Controller::xActive() const {
     return active.x();
 }
 
-double Controller::xAnchor() const{
+double Controller::xAnchor() const {
     return anchor.x();
 }
 #endif
 
-uint32_t Controller::advance() noexcept{
+uint32_t Controller::advance() noexcept {
     assert(notAtTextEnd());
     return static_cast<uint8_t>(active.text->charAt(active.index++));
 }
 
-bool Controller::peek(char ch) const noexcept{
+bool Controller::peek(char ch) const noexcept {
     return notAtTextEnd() && charRight() == ch;
 }
 
-void Controller::skipWhitespace() noexcept{
+void Controller::skipWhitespace() noexcept {
     while(notAtTextEnd() && (charRight() == ' ')) active.index++;
     consolidateToActive();
 }
 
-uint32_t Controller::scan() noexcept{
+uint32_t Controller::scan() noexcept {
     if(notAtTextEnd()){
         return scanGlyph();
     }else if(Construct* c = active.text->nextConstructInPhrase()){
@@ -851,7 +851,7 @@ uint32_t Controller::scan() noexcept{
     }
 }
 
-uint32_t Controller::scanGlyph() noexcept{
+uint32_t Controller::scanGlyph() noexcept {
     uint32_t ch = advance();
     if(isAscii(ch)){
         return ch;
@@ -869,15 +869,15 @@ uint32_t Controller::scanGlyph() noexcept{
     }
 }
 
-void Controller::selectToIdentifierEnd() noexcept{
+void Controller::selectToIdentifierEnd() noexcept {
     while(notAtTextEnd() && isAlphaNumeric(charRight())) active.index++;
 }
 
-void Controller::selectToNumberEnd() noexcept{
+void Controller::selectToNumberEnd() noexcept {
     while(notAtTextEnd() && isNumeric(charRight())) active.index++;
 }
 
-bool Controller::selectToStringEnd() noexcept{
+bool Controller::selectToStringEnd() noexcept {
     for(;;){
         if(active.index >= active.text->numChars()){
             if(Text* t = active.text->nextTextInPhrase()){
@@ -901,42 +901,42 @@ void Controller::selectToPathEnd() noexcept {
     while(notAtTextEnd() && isPathChar(charRight())) active.index++;
 }
 
-std::string_view Controller::selectedFlatText() const noexcept{
+std::string_view Controller::selectedFlatText() const noexcept {
     return std::string_view(anchor.text->data() + anchor.index, active.index-anchor.index);
 }
 
 Controller::Controller(const Controller& lhs, const Controller& rhs)
     : active(rhs.active), anchor(lhs.anchor) {}
 
-void Controller::formatBasicIdentifier() const noexcept{
+void Controller::formatBasicIdentifier() const noexcept {
     formatSimple(SEM_ID);
 }
 
-void Controller::formatComment() const noexcept{
+void Controller::formatComment() const noexcept {
     formatSimple(SEM_COMMENT);
 }
 
-void Controller::formatKeyword() const noexcept{
+void Controller::formatKeyword() const noexcept {
     formatSimple(SEM_KEYWORD);
 }
 
-void Controller::formatNumber() const noexcept{
+void Controller::formatNumber() const noexcept {
     active.text->tag(SEM_NUMBER, anchor.index, active.index);
 }
 
-void Controller::formatMutableId() const noexcept{
+void Controller::formatMutableId() const noexcept {
     active.text->tag(SEM_ID_FUN_IMPURE, anchor.index, active.index);
 }
 
-void Controller::formatString() const noexcept{
+void Controller::formatString() const noexcept {
     formatSimple(SEM_STRING);
 }
 
-void Controller::format(SemanticType type) const noexcept{
+void Controller::format(SemanticType type) const noexcept {
     active.text->tag(type, anchor.index, active.index);
 }
 
-void Controller::formatSimple(SemanticType type) const noexcept{
+void Controller::formatSimple(SemanticType type) const noexcept {
     if(!anchor.text->tags.empty() && anchor.text->tags.back().index == anchor.index)
         anchor.text->tags.back().type = type;
     else

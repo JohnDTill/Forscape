@@ -50,19 +50,19 @@ Selection::Selection(Text* t, size_t l, size_t r) noexcept
     assert(inValidState());
 }
 
-std::string Selection::str() const{
+std::string Selection::str() const {
     if(isTextSelection()) return selectedTextSelection();
     else if(isPhraseSelection()) return selectedPhrase();
     else return selectedLines();
 }
 
-std::string_view Selection::strView() const noexcept{
+std::string_view Selection::strView() const noexcept {
     assert(isTextSelection());
     assert(iR >= iL);
     return std::string_view(tL->getString().data()+iL, characterSpan());
 }
 
-bool Selection::operator==(const Selection& other) const noexcept{
+bool Selection::operator==(const Selection& other) const noexcept {
     if(isTextSelection()){
         return other.isTextSelection() && strView() == other.strView();
     }else if(isPhraseSelection()){
@@ -117,11 +117,11 @@ bool Selection::operator==(const Selection& other) const noexcept{
     }
 }
 
-bool Selection::operator!=(const Selection& other) const noexcept{
+bool Selection::operator!=(const Selection& other) const noexcept {
     return !(*this == other);
 }
 
-bool Selection::startsWith(const Selection& other) const noexcept{
+bool Selection::startsWith(const Selection& other) const noexcept {
     if(other.isTextSelection()){
         auto prefix = other.strView();
         if(isTextSelection()){
@@ -153,7 +153,7 @@ bool Selection::startsWith(const Selection& other) const noexcept{
     }
 }
 
-size_t Selection::hashDesignedForIdentifiers() const noexcept{
+size_t Selection::hashDesignedForIdentifiers() const noexcept {
     //The vast majority of identifiers will be text selections.
     if(isTextSelection()) return std::hash<std::string_view>()(strView());
 
@@ -167,31 +167,31 @@ size_t Selection::hashDesignedForIdentifiers() const noexcept{
     return h;
 }
 
-bool Selection::isTopLevel() const noexcept{
+bool Selection::isTopLevel() const noexcept {
     return tL->isTopLevel();
 }
 
-bool Selection::isNested() const noexcept{
+bool Selection::isNested() const noexcept {
     return tL->isNested();
 }
 
-bool Selection::isTextSelection() const noexcept{
+bool Selection::isTextSelection() const noexcept {
     return tL == tR;
 }
 
-bool Selection::isPhraseSelection() const noexcept{
+bool Selection::isPhraseSelection() const noexcept {
     return left.phrase() == right.phrase();
 }
 
-bool Selection::isEmpty() const noexcept{
+bool Selection::isEmpty() const noexcept {
     return left == right;
 }
 
-Line* Selection::getStartLine() const noexcept{
+Line* Selection::getStartLine() const noexcept {
     return tL->getLine();
 }
 
-std::string Selection::getStartLineAsString() const noexcept {
+std::string Selection::getStartLineAsString() const alloc_except {
     return std::to_string(getStartLine()->id + 1);
 }
 
@@ -200,7 +200,7 @@ Model* Selection::getModel() const noexcept {
     return left.getModel();
 }
 
-void Selection::search(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const{
+void Selection::search(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const {
     assert(!str.empty());
 
     if(isTextSelection()) return searchText(str, hits, use_case, word);
@@ -208,14 +208,14 @@ void Selection::search(const std::string& str, std::vector<Selection>& hits, boo
     else return searchLines(str, hits, use_case, word);
 }
 
-size_t Selection::getConstructArgSize() const noexcept{
+size_t Selection::getConstructArgSize() const noexcept {
     assert(isPhraseSelection());
     assert(tR->id == tL->id+1);
 
     return tL->nextConstructAsserted()->numArgs();
 }
 
-size_t Selection::getMatrixRows() const noexcept{
+size_t Selection::getMatrixRows() const noexcept {
     assert(isPhraseSelection());
     assert(tR->id == tL->id+1);
     assert(tL->nextConstructAsserted()->constructCode() == MATRIX);
@@ -223,31 +223,31 @@ size_t Selection::getMatrixRows() const noexcept{
     return static_cast<Typeset::Matrix*>(tL->nextConstructAsserted())->rows;
 }
 
-void Selection::formatBasicIdentifier() const noexcept{
+void Selection::formatBasicIdentifier() const noexcept {
     formatSimple(SEM_ID);
 }
 
-void Selection::formatComment() const noexcept{
+void Selection::formatComment() const noexcept {
     formatSimple(SEM_COMMENT);
 }
 
-void Selection::formatKeyword() const noexcept{
+void Selection::formatKeyword() const noexcept {
     formatSimple(SEM_KEYWORD);
 }
 
-void Selection::formatNumber() const noexcept{
+void Selection::formatNumber() const noexcept {
     tL->tag(SEM_NUMBER, iL, iR);
 }
 
-void Selection::formatMutableId() const noexcept{
+void Selection::formatMutableId() const noexcept {
     tL->tag(SEM_ID_FUN_IMPURE, iL, iR);
 }
 
-void Selection::formatString() const noexcept{
+void Selection::formatString() const noexcept {
     formatSimple(SEM_STRING);
 }
 
-void Selection::format(SemanticType type) const noexcept{
+void Selection::format(SemanticType type) const noexcept {
     if(isTextSelection()) tL->tag(type, iL, iR);
     else if(isPhraseSelection()){
         tL->tag(type, iL, tL->numChars());
@@ -256,7 +256,7 @@ void Selection::format(SemanticType type) const noexcept{
     }
 }
 
-void Selection::formatSimple(SemanticType type) const noexcept{
+void Selection::formatSimple(SemanticType type) const noexcept {
     if(!tL->tags.empty() && tL->tags.back().index == iL)
         tL->tags.back().type = type;
     else
@@ -265,7 +265,7 @@ void Selection::formatSimple(SemanticType type) const noexcept{
     tL->tags.push_back( SemanticTag(iR, SEM_DEFAULT) );
 }
 
-SemanticType Selection::getFormat() const noexcept{
+SemanticType Selection::getFormat() const noexcept {
     return tL->getTypeLeftOf(iL);
 }
 
@@ -284,7 +284,7 @@ size_t Selection::topLevelChars() const noexcept {
 }
 
 #ifdef QT_CORE_LIB
-QImage Selection::toPng() const{
+QImage Selection::toPng() const {
     constexpr double UPSCALE = 4;
 
     std::array<double, 4> dims = getDimensions();
@@ -301,7 +301,7 @@ QImage Selection::toPng() const{
     return image;
 }
 
-void Selection::toSvg(QSvgGenerator& generator) const{
+void Selection::toSvg(QSvgGenerator& generator) const {
     constexpr double UPSCALE = 1;
 
     std::array<double, 4> dims = getDimensions();
@@ -318,17 +318,17 @@ void Selection::toSvg(QSvgGenerator& generator) const{
 }
 #endif
 
-Phrase* Selection::phrase() const noexcept{
+Phrase* Selection::phrase() const noexcept {
     assert(isPhraseSelection());
     return left.phrase();
 }
 
-size_t Selection::characterSpan() const noexcept{
+size_t Selection::characterSpan() const noexcept {
     assert(isTextSelection());
     return iR-iL;
 }
 
-size_t Selection::textSpan() const noexcept{
+size_t Selection::textSpan() const noexcept {
     return right.index - left.index;
 }
 
@@ -336,7 +336,7 @@ std::string Selection::selectedTextSelection() const {
     return std::string(tR->view(iL, characterSpan()));
 }
 
-std::string Selection::selectedPhrase() const{
+std::string Selection::selectedPhrase() const {
     assert(isPhraseSelection());
     size_t serial_chars = (tL->numChars()-iL) + iR + tL->nextConstructInPhrase()->serialChars();
     for(Text* t = tL->nextTextInPhrase(); t != tR; t = t->nextTextInPhrase())
@@ -357,7 +357,7 @@ std::string Selection::selectedPhrase() const{
     return out;
 }
 
-std::string Selection::selectedLines() const{
+std::string Selection::selectedLines() const {
     assert(!isPhraseSelection());
 
     size_t serial_chars = (tL->numChars()-iL) + iR + 1;
@@ -394,11 +394,11 @@ std::string Selection::selectedLines() const{
     return out;
 }
 
-void Selection::searchText(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const{
+void Selection::searchText(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const {
     tL->search(str, hits, iL, iR, use_case, word);
 }
 
-void Selection::searchPhrase(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const{
+void Selection::searchPhrase(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const {
     tL->search(str, hits, iL, tL->numChars(), use_case, word);
 
     tL->nextConstructAsserted()->search(str, hits, use_case, word);
@@ -410,7 +410,7 @@ void Selection::searchPhrase(const std::string& str, std::vector<Selection>& hit
     tR->search(str, hits, 0, iR, use_case, word);
 }
 
-void Selection::searchLines(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const{
+void Selection::searchLines(const std::string& str, std::vector<Selection>& hits, bool use_case, bool word) const {
     tL->search(str, hits, iL, tL->numChars(), use_case, word);
 
     for(size_t i = tL->id+1; i < lL->numTexts(); i++){
@@ -431,13 +431,13 @@ void Selection::searchLines(const std::string& str, std::vector<Selection>& hits
 }
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
-std::array<double, 4> Selection::getDimensions() const noexcept{
+std::array<double, 4> Selection::getDimensions() const noexcept {
     if(isTextSelection()) return getDimensionsText();
     else if(isPhraseSelection()) return getDimensionsPhrase();
     else return getDimensionsLines();
 }
 
-std::array<double, 4> Selection::getDimensionsText() const noexcept{
+std::array<double, 4> Selection::getDimensionsText() const noexcept {
     double x = left.x();
     double y = tL->y;
     double h = tL->height();
@@ -446,7 +446,7 @@ std::array<double, 4> Selection::getDimensionsText() const noexcept{
     return {x, y, w, h};
 }
 
-std::array<double, 4> Selection::getDimensionsPhrase() const noexcept{
+std::array<double, 4> Selection::getDimensionsPhrase() const noexcept {
     double x = left.x();
     double w = right.x() - x;
 
@@ -463,7 +463,7 @@ std::array<double, 4> Selection::getDimensionsPhrase() const noexcept{
     return {x, y, w, h};
 }
 
-std::array<double, 4> Selection::getDimensionsLines() const noexcept{
+std::array<double, 4> Selection::getDimensionsLines() const noexcept {
     double above_center = tL->aboveCenter();
     for(size_t i = tL->id; i < lL->numConstructs(); i++)
         above_center = std::max(above_center, lL->construct(i)->above_center);
@@ -493,8 +493,23 @@ std::array<double, 4> Selection::getDimensionsLines() const noexcept{
 #endif
 
 #ifndef NDEBUG
-bool Selection::inValidState() const{
-    if(left.phrase() != right.phrase() && (left.isNested() || right.isNested())){
+bool Selection::inValidState(bool require_markers_on_same_level) const noexcept {
+    if(!left.inValidState()){
+        std::cout << "Left marker invalid" << std::endl;
+        return false;
+    }
+
+    if(!right.inValidState()){
+        std::cout << "Right marker invalid" << std::endl;
+        return false;
+    }
+
+    if(left.getModel() != right.getModel()){
+        std::cout << "Markers are not from same model" << std::endl;
+        return false;
+    }
+
+    if(require_markers_on_same_level && left.phrase() != right.phrase() && (left.isNested() || right.isNested())){
         std::cout << "Markers are not on same level" << std::endl;
         return false;
     }
@@ -508,20 +523,23 @@ bool Selection::inValidState() const{
         }
     }else if(isPhraseSelection()){
         return tR->id > tL->id;
-    }else{
+    }else if(!left.isNested() && !right.isNested()){
         return lR->id > lL->id;
+    }else{
+        assert(!require_markers_on_same_level);
+        return left.precedesInclusive(right);
     }
 }
 #endif
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
-bool Selection::contains(double x, double y) const noexcept{
+bool Selection::contains(double x, double y) const noexcept {
     if(isTextSelection()) return containsText(x, y);
     else if(isPhraseSelection()) return containsPhrase(x, y);
     else return containsLine(x, y);
 }
 
-bool Selection::containsWithEmptyMargin(double x, double y) const noexcept{
+bool Selection::containsWithEmptyMargin(double x, double y) const noexcept {
     if(right == left){
         double x_sel = left.x();
         return tR->containsY(y) && x >= x_sel && x <= x_sel + EMPTY_SUBPHRASE_MARGIN;
@@ -530,15 +548,15 @@ bool Selection::containsWithEmptyMargin(double x, double y) const noexcept{
     }
 }
 
-bool Selection::containsText(double x, double y) const noexcept{
+bool Selection::containsText(double x, double y) const noexcept {
     return tR->containsY(y) && tR->containsXInBounds(x, iL, iR);
 }
 
-bool Selection::containsPhrase(double x, double y) const noexcept{
+bool Selection::containsPhrase(double x, double y) const noexcept {
     return phrase()->containsY(y) && x >= xL && x <= xR;
 }
 
-bool Selection::containsLine(double x, double y) const noexcept{
+bool Selection::containsLine(double x, double y) const noexcept {
     if((y < lL->y) || (y > lR->yBottom())) return false;
 
     Line* l = lL->nearestLine(y);
@@ -548,7 +566,7 @@ bool Selection::containsLine(double x, double y) const noexcept{
     else return (x >= l->x) & (x <= l->x + l->width + NEWLINE_EXTRA);
 }
 
-void Selection::paint(Painter& painter) const{
+void Selection::paint(Painter& painter) const {
     if(isTextSelection()){
         tR->paintMid(painter, iL, iR);
     }else if(isPhraseSelection()){
@@ -562,7 +580,7 @@ void Selection::paint(Painter& painter) const{
     }
 }
 
-void Selection::paintSelectionText(Painter& painter, double xLeft, double xRight) const{
+void Selection::paintSelectionText(Painter& painter, double xLeft, double xRight) const {
     if(iL!=iR){
         double y = tR->y;
         double h = tR->height();
@@ -579,7 +597,7 @@ void Selection::paintSelectionText(Painter& painter, double xLeft, double xRight
     }
 }
 
-void Selection::paintSelectionPhrase(Painter& painter, double xLeft, double xRight) const{
+void Selection::paintSelectionPhrase(Painter& painter, double xLeft, double xRight) const {
     double y = phrase()->y;
     double h = phrase()->height();
 
@@ -665,18 +683,18 @@ void Selection::paintSelection(Painter& painter, double xLeft, double yT, double
     painter.exitSelectionMode();
 }
 
-void Selection::paintError(Painter& painter) const{
+void Selection::paintError(Painter& painter) const {
     if(isTextSelection() && iL==iR) paintErrorSelectionless(painter);
     else if(isTextSelection()) paintErrorText(painter);
     else if(isPhraseSelection()) paintErrorPhrase(painter);
     else paintErrorLines(painter);
 }
 
-void Selection::paintErrorSelectionless(Painter& painter) const{
+void Selection::paintErrorSelectionless(Painter& painter) const {
     painter.drawError(xR, tL->y, EMPTY_SUBPHRASE_MARGIN, tR->height());
 }
 
-void Selection::paintErrorText(Painter& painter) const{
+void Selection::paintErrorText(Painter& painter) const {
     double x = tR->xGlobal(iL);
     double y = tR->y;
     double w = tR->xGlobal(iR) - x;
@@ -685,7 +703,7 @@ void Selection::paintErrorText(Painter& painter) const{
     painter.drawError(x, y, w, h);
 }
 
-void Selection::paintErrorPhrase(Painter& painter) const{
+void Selection::paintErrorPhrase(Painter& painter) const {
     double x = tL->xGlobal(iL);
     double y = phrase()->y;
     double w = tR->xGlobal(iR) - x;
@@ -695,7 +713,7 @@ void Selection::paintErrorPhrase(Painter& painter) const{
     phrase()->paintMid(painter, tL, iL, tR, iR);
 }
 
-void Selection::paintErrorLines(Painter& painter) const{
+void Selection::paintErrorLines(Painter& painter) const {
     double x = xL;
     double y = lL->y;
     double w = lL->width + NEWLINE_EXTRA - x;
@@ -722,14 +740,14 @@ void Selection::paintErrorLines(Painter& painter) const{
     }
 }
 
-void Selection::paintHighlight(Painter& painter) const{
+void Selection::paintHighlight(Painter& painter) const {
     assert(!isTextSelection() || iL != iR);
     if(isTextSelection()) paintHighlightText(painter);
     else if(isPhraseSelection()) paintHighlightPhrase(painter);
     else assert(false);
 }
 
-void Selection::paintHighlightText(Painter& painter) const{
+void Selection::paintHighlightText(Painter& painter) const {
     double x = tR->xGlobal(iL);
     double y = tR->y;
     double w = tR->xGlobal(iR) - x;
@@ -738,7 +756,7 @@ void Selection::paintHighlightText(Painter& painter) const{
     painter.drawHighlight(x, y, w, h);
 }
 
-void Selection::paintHighlightPhrase(Painter& painter) const{
+void Selection::paintHighlightPhrase(Painter& painter) const {
     double x = tL->xGlobal(iL);
     double y = phrase()->y;
     double w = tR->xGlobal(iR) - x;
@@ -747,23 +765,23 @@ void Selection::paintHighlightPhrase(Painter& painter) const{
     painter.drawHighlight(x, y, w, h);
 }
 
-double Selection::yTop() const noexcept{
+double Selection::yTop() const noexcept {
     if(isTextSelection()) return tL->y;
     else if(isPhraseSelection()) return phrase()->y;
     else return lL->y;
 }
 
-double Selection::yBot() const noexcept{
+double Selection::yBot() const noexcept {
     if(isTextSelection()) return tR->yBot();
     else if(isPhraseSelection()) return phrase()->yBottom();
     else return lR->yBottom();
 }
 
-double Selection::yTopPhrase() const noexcept{
+double Selection::yTopPhrase() const noexcept {
     return tL->getParent()->y;
 }
 
-double Selection::yBotPhrase() const noexcept{
+double Selection::yBotPhrase() const noexcept {
     return tL->getParent()->yBottom();
 }
 
@@ -773,7 +791,7 @@ bool Selection::overlapsY(double yT, double yB) const noexcept {
     return (yT_this >= yT && yT_this <= yB) || (yB_this >= yT && yB_this <= yB);
 }
 
-void Selection::mapConstructToParseNode(ParseNode pn) const noexcept{
+void Selection::mapConstructToParseNode(ParseNode pn) const noexcept {
     assert(isPhraseSelection());
     assert(tR->id == tL->id+1);
 

@@ -22,7 +22,7 @@ void Settings::updateInherited(size_t flag) const noexcept {
     c->inherited = flags;
 }
 
-void Settings::enact(size_t flag) noexcept {
+void Settings::enact(size_t flag) alloc_except {
     auto c = reinterpret_cast<Typeset::Settings*>(flag);
     for(const auto& update : c->updates)
         set(update.setting_id, update.prev_value);

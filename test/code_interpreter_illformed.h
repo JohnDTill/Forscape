@@ -58,10 +58,12 @@ inline bool testIllFormedPrograms(){
         if(std::filesystem::is_regular_file(dir->path()))
             passing &= testErrorAndNoCrash(dir->path().stem().string());
 
+    #ifndef NDEBUG
     if(!allTypesetElementsFreed()){
         printf("Unfreed typeset elements\n");
         passing = false;
     }
+    #endif
 
     report("Ill-formed programs", passing);
     return passing;

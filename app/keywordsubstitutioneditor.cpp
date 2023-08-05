@@ -138,12 +138,12 @@ std::vector<std::pair<std::string, std::string>> KeywordSubstitutionEditor::getS
     return entries;
 }
 
-KeywordSubstitutionEditor::KeywordSubstitutionLabel* KeywordSubstitutionEditor::getButtonLabel() const{
+KeywordSubstitutionEditor::KeywordSubstitutionLabel* KeywordSubstitutionEditor::getButtonLabel() const {
     QWidget* sender = focusWidget();
     return debug_cast<KeywordSubstitutionLabel*>(sender->parentWidget());
 }
 
-KeywordSubstitutionEditor::ModifiedLineEdit* KeywordSubstitutionEditor::getBottomEdit() const{
+KeywordSubstitutionEditor::ModifiedLineEdit* KeywordSubstitutionEditor::getBottomEdit() const {
     auto label = form->itemAt(form->count()-2)->widget();
     return debug_cast<KeywordSubstitutionLabel*>(label)->edit;
 }

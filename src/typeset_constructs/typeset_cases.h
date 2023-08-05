@@ -119,7 +119,7 @@ public:
         second->id = 2*row + 1;
     }
 
-    void removeRow(size_t row) noexcept{
+    void removeRow(size_t row) noexcept {
         for(size_t i = 2*row+2; i < args.size(); i++){
             args[i-2] = args[i];
             args[i]->id = i-2;
@@ -166,7 +166,7 @@ public:
                 c.setBothToBackOf(second->back());
             }
 
-            void remove(Controller& c) noexcept{
+            void remove(Controller& c) noexcept {
                 owning = true;
                 cases.removeRow(row);
                 c.setBothToFrontOf(cases.arg(2*(row-1))->front());

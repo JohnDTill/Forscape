@@ -1138,7 +1138,7 @@ void Interpreter::printNode(const ParseNode& pn){
     if(status == NORMAL) message_queue.enqueue(new PrintMessage(str));
 }
 
-double Interpreter::dot(const Eigen::MatrixXd& a, const Eigen::MatrixXd& b) noexcept{
+double Interpreter::dot(const Eigen::MatrixXd& a, const Eigen::MatrixXd& b) noexcept {
     assert(a.size() == b.size());
     assert(a.cols() == 1 || a.rows()==1);
 
@@ -1295,7 +1295,7 @@ Value Interpreter::definiteIntegral(ParseNode pn) {
     return accumulated;
 }
 
-double Interpreter::pNorm(const Eigen::MatrixXd& a, double b) noexcept{
+double Interpreter::pNorm(const Eigen::MatrixXd& a, double b) noexcept {
     //EVENTUALLY: eigen has a templated version of lpNorm<b>() for codegen
 
     double sum = 0;
@@ -1305,7 +1305,7 @@ double Interpreter::pNorm(const Eigen::MatrixXd& a, double b) noexcept{
     return std::pow(sum, 1/b);
 }
 
-void Interpreter::removeEscapes(std::string& str) noexcept{
+void Interpreter::removeEscapes(std::string& str) noexcept {
     size_t offset = 0;
     size_t i = 0;
     while(i < str.size()-1){

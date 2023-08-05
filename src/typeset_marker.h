@@ -53,6 +53,7 @@ struct Marker{
     size_t countSpacesLeft() const noexcept;
     std::string_view checkKeyword() const noexcept;
     uint32_t codepointLeft() const noexcept;
+    uint32_t codepointRight() const noexcept;
     bool onlySpacesLeft() const noexcept;
     std::string_view strRight() const noexcept;
     std::string_view strLeft() const noexcept;
@@ -67,6 +68,10 @@ struct Marker{
     double yBot() const noexcept;
     void setToPointOf(Text* t, double setpoint);
     void setToLeftOf(Text* t, double setpoint);
+    #endif
+
+    #ifndef NDEBUG
+    bool inValidState() const noexcept;
     #endif
 
     std::pair<ParseNode, ParseNode> parseNodesAround() const noexcept;

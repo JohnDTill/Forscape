@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - id: support_32bit
-        run: sudo apt-get install gcc-multilib g++-multilib
+        run: sudo dpkg --add-architecture i386 && sudo apt update && sudo apt-get install gcc-multilib g++-multilib -y
       - id: install_conan
         uses: turtlebrowser/get-conan@main
         with:
@@ -27,7 +27,7 @@ jobs:
              export CFLAGS=-m32 &&
              export CXXFLAGS=-m32 &&
              export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig &&
-             cmake -B../build_test -S.
+             cmake -DCMAKE_BUILD_TYPE=Debug -B../build_test -S.
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build_test && make
       - id: run

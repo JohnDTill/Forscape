@@ -30,7 +30,7 @@ namespace Forscape {
 
 namespace Typeset {
 
-uint8_t depthToFontSize(uint8_t depth) noexcept{
+uint8_t depthToFontSize(uint8_t depth) noexcept {
     switch (depth) {
         case 0: return 10;
         case 1: return 7;

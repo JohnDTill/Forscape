@@ -118,10 +118,13 @@ inline bool testScanner(){
 
     delete model;
     delete scanner;
+
+    #ifndef NDEBUG
     if(!allTypesetElementsFreed()){
         printf("Unfreed typeset elements\n");
         passing = false;
     }
+    #endif
 
     report("Code scanner", passing);
     return passing;

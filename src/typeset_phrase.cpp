@@ -45,7 +45,7 @@ void Phrase::appendConstruct(Construct* c, Text* t){
     texts.push_back(t);
 }
 
-size_t Phrase::serialChars() const noexcept{
+size_t Phrase::serialChars() const noexcept {
     size_t sze = 0;
     for(Text* t : texts) sze += t->numChars();
     for(Construct* c : constructs) sze += c->serialChars();
@@ -53,7 +53,7 @@ size_t Phrase::serialChars() const noexcept{
     return sze;
 }
 
-void Phrase::writeString(std::string& out, size_t& curr) const noexcept{
+void Phrase::writeString(std::string& out, size_t& curr) const noexcept {
     for(size_t i = 0; i < constructs.size(); i++){
         texts[i]->writeString(out, curr);
         constructs[i]->writeString(out, curr);
@@ -61,7 +61,7 @@ void Phrase::writeString(std::string& out, size_t& curr) const noexcept{
     texts.back()->writeString(out, curr);
 }
 
-std::string Phrase::toString() const{
+std::string Phrase::toString() const {
     std::string str;
     str.resize(serialChars());
     size_t curr = 0;
@@ -69,94 +69,94 @@ std::string Phrase::toString() const{
     return str;
 }
 
-Line* Phrase::asLine() noexcept{
+Line* Phrase::asLine() noexcept {
     assert(isLine());
     return static_cast<Line*>(this);
 }
 
-Subphrase* Phrase::asSubphrase() noexcept{
+Subphrase* Phrase::asSubphrase() noexcept {
     assert(!isLine());
     return static_cast<Subphrase*>(this);
 }
 
-Text* Phrase::text(size_t index) const noexcept{
+Text* Phrase::text(size_t index) const noexcept {
     assert(index < texts.size());
     assert(texts[index]->id == index);
     return texts[index];
 }
 
-Construct* Phrase::construct(size_t index) const noexcept{
+Construct* Phrase::construct(size_t index) const noexcept {
     assert(index < constructs.size());
     assert(constructs[index]->id == index);
     return constructs[index];
 }
 
-Text* Phrase::front() const noexcept{
+Text* Phrase::front() const noexcept {
     return text(0);
 }
 
-Text* Phrase::back() const noexcept{
+Text* Phrase::back() const noexcept {
     return texts.back();
 }
 
-Text* Phrase::nextTextInPhrase(const Construct* c) const noexcept{
+Text* Phrase::nextTextInPhrase(const Construct* c) const noexcept {
     return text(c->id+1);
 }
 
-Text* Phrase::nextTextInPhrase(const Text* t) const noexcept{
+Text* Phrase::nextTextInPhrase(const Text* t) const noexcept {
     return t->id < constructs.size() ? text(t->id+1) : nullptr;
 }
 
-Text* Phrase::prevTextInPhrase(const Construct* c) const noexcept{
+Text* Phrase::prevTextInPhrase(const Construct* c) const noexcept {
     return text(c->id);
 }
 
-Text* Phrase::prevTextInPhrase(const Text* t) const noexcept{
+Text* Phrase::prevTextInPhrase(const Text* t) const noexcept {
     return t->id ? text(t->id-1) : nullptr;
 }
 
-Construct* Phrase::nextConstructInPhrase(const Text *t) const noexcept{
+Construct* Phrase::nextConstructInPhrase(const Text *t) const noexcept {
     return t->id < constructs.size() ? construct(t->id) : nullptr;
 }
 
-Construct* Phrase::prevConstructInPhrase(const Text* t) const noexcept{
+Construct* Phrase::prevConstructInPhrase(const Text* t) const noexcept {
     return t->id ? constructs[t->id-1] : nullptr;
 }
 
-Text* Phrase::nextTextAsserted(const Text* t) const noexcept{
+Text* Phrase::nextTextAsserted(const Text* t) const noexcept {
     assert(t->id+1 < texts.size());
     return text(t->id+1);
 }
 
-Text* Phrase::prevTextAsserted(const Text* t) const noexcept{
+Text* Phrase::prevTextAsserted(const Text* t) const noexcept {
     assert(t->id);
     assert(text(t->id) == t);
     return text(t->id-1);
 }
 
-Construct* Phrase::nextConstructAsserted(const Text* t) const noexcept{
+Construct* Phrase::nextConstructAsserted(const Text* t) const noexcept {
     assert(t->id < constructs.size());
     return construct(t->id);
 }
 
-Construct* Phrase::prevConstructAsserted(const Text* t) const noexcept{
+Construct* Phrase::prevConstructAsserted(const Text* t) const noexcept {
     assert(t->id);
     return construct(t->id-1);
 }
 
-size_t Phrase::numTexts() const noexcept{
+size_t Phrase::numTexts() const noexcept {
     return texts.size();
 }
 
-size_t Phrase::numConstructs() const noexcept{
+size_t Phrase::numConstructs() const noexcept {
     return constructs.size();
 }
 
-void Phrase::remove(size_t start) noexcept{
+void Phrase::remove(size_t start) noexcept {
     remove(start, constructs.size());
 }
 
-void Phrase::remove(size_t start, size_t stop) noexcept{
+void Phrase::remove(size_t start, size_t stop) noexcept {
     constructs.erase(constructs.begin()+start, constructs.begin()+stop);
     texts.erase(texts.begin()+start+1, texts.begin()+stop+1);
     for(size_t i = start; i < constructs.size(); i++){
@@ -187,12 +187,12 @@ void Phrase::insert(size_t index, const std::vector<Construct*>& c, const std::v
     }
 }
 
-void Phrase::giveUpOwnership() noexcept{
+void Phrase::giveUpOwnership() noexcept {
     texts.clear();
     constructs.clear();
 }
 
-bool Phrase::sameContent(const Phrase* other) const noexcept{
+bool Phrase::sameContent(const Phrase* other) const noexcept {
     if(texts.size() != other->texts.size()) return false;
     for(size_t i = 0; i < texts.size(); i++)
         if(text(i)->getString() != other->text(i)->getString())
@@ -203,7 +203,7 @@ bool Phrase::sameContent(const Phrase* other) const noexcept{
     return true;
 }
 
-void Phrase::search(const std::string& target, std::vector<Selection>& hits, bool use_case, bool word) const{
+void Phrase::search(const std::string& target, std::vector<Selection>& hits, bool use_case, bool word) const {
     for(size_t i = 0; i < constructs.size(); i++){
         texts[i]->search(target, hits, use_case, word);
         constructs[i]->search(target, hits, use_case, word);
@@ -211,11 +211,11 @@ void Phrase::search(const std::string& target, std::vector<Selection>& hits, boo
     back()->search(target, hits, use_case, word);
 }
 
-bool Phrase::hasConstructs() const noexcept{
+bool Phrase::hasConstructs() const noexcept {
     return !constructs.empty();
 }
 
-size_t Phrase::nestingDepth() const noexcept{
+size_t Phrase::nestingDepth() const noexcept {
     const Phrase* p = this;
     size_t nesting_depth = 0;
     while(!p->isLine()){
@@ -225,12 +225,12 @@ size_t Phrase::nestingDepth() const noexcept{
     return nesting_depth;
 }
 
-bool Phrase::empty() const noexcept{
+bool Phrase::empty() const noexcept {
     return texts.size() == 1 && front()->empty();
 }
 
 #ifdef FORSCAPE_SEMANTIC_DEBUGGING
-std::string Phrase::toStringWithSemanticTags() const{
+std::string Phrase::toStringWithSemanticTags() const {
     std::string out = texts[0]->toSerialWithSemanticTags();
     for(size_t i = 0; i < constructs.size(); i++){
         out += constructs[i]->toStringWithSemanticTags();
@@ -242,7 +242,7 @@ std::string Phrase::toStringWithSemanticTags() const{
 #endif
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
-Text* Phrase::textLeftOf(double x) const noexcept{
+Text* Phrase::textLeftOf(double x) const noexcept {
     auto search = std::lower_bound(
                 texts.rbegin(),
                 texts.rend(),
@@ -253,13 +253,13 @@ Text* Phrase::textLeftOf(double x) const noexcept{
     return search != texts.rend() ? *search : texts.front();
 }
 
-Text* Phrase::textRightOf(double x) const noexcept{
+Text* Phrase::textRightOf(double x) const noexcept {
     Text* t = textLeftOf(x);
     if(t->xRight() > x || t == back()) return t;
     else return texts[t->id+1];
 }
 
-Construct* Phrase::constructAt(double x, double y) const noexcept{
+Construct* Phrase::constructAt(double x, double y) const noexcept {
     auto search = std::lower_bound(
                 constructs.rbegin(),
                 constructs.rend(),
@@ -271,7 +271,7 @@ Construct* Phrase::constructAt(double x, double y) const noexcept{
     else return *search;
 }
 
-void Phrase::updateSize() noexcept{
+void Phrase::updateSize() noexcept {
     text(0)->updateWidth();
     width = texts[0]->getWidth();
     above_center = texts[0]->aboveCenter();
@@ -290,7 +290,7 @@ void Phrase::updateSize() noexcept{
     if(width == 0 && !isLine()) width = EMPTY_PHRASE_WIDTH_RATIO*height();
 }
 
-void Phrase::updateLayout() noexcept{
+void Phrase::updateLayout() noexcept {
     double x_child = x;
     double y_child = y;
 
@@ -311,7 +311,7 @@ void Phrase::updateLayout() noexcept{
     }
 }
 
-void Phrase::paint(Painter& painter) const{
+void Phrase::paint(Painter& painter) const {
     #ifdef FORSCAPE_TYPESET_LAYOUT_DEBUG
     painter.drawDebugPhrase(x, y, width, above_center, under_center);
     #endif
@@ -325,7 +325,7 @@ void Phrase::paint(Painter& painter) const{
     }
 }
 
-void Phrase::paintUntil(Painter& painter, Text* t_end, size_t index) const{
+void Phrase::paintUntil(Painter& painter, Text* t_end, size_t index) const {
     assert(t_end->id < texts.size() && text(t_end->id) == t_end);
 
     for(size_t i = 0; i < t_end->id; i++){
@@ -338,7 +338,7 @@ void Phrase::paintUntil(Painter& painter, Text* t_end, size_t index) const{
     t_end->paintUntil(painter, index);
 }
 
-void Phrase::paintAfter(Painter& painter, Text* t_start, size_t index) const{
+void Phrase::paintAfter(Painter& painter, Text* t_start, size_t index) const {
     assert(t_start->id < texts.size() && text(t_start->id) == t_start);
 
     painter.setScriptLevel(script_level);
@@ -351,7 +351,7 @@ void Phrase::paintAfter(Painter& painter, Text* t_start, size_t index) const{
     }
 }
 
-void Phrase::paintMid(Painter& painter, Text* tL, size_t iL, Text* tR, size_t iR) const{
+void Phrase::paintMid(Painter& painter, Text* tL, size_t iL, Text* tR, size_t iR) const {
     assert(tL->getParent() == tR->getParent() && tL->id < tR->id);
 
     painter.setScriptLevel(script_level);
@@ -383,15 +383,15 @@ void Phrase::paint(Painter& painter, double xL, double xR) const {
     }
 }
 
-bool Phrase::contains(double x_test, double y_test) const noexcept{
+bool Phrase::contains(double x_test, double y_test) const noexcept {
     return (x_test >= x) & (x_test <= x+width) & containsY(y_test);
 }
 
-bool Phrase::containsY(double y_test) const noexcept{
+bool Phrase::containsY(double y_test) const noexcept {
     return (y_test >= y) & (y_test <= y+height());
 }
 
-Text* Phrase::textNearest(double x, double y) const{
+Text* Phrase::textNearest(double x, double y) const {
     if(x <= this->x){
         return texts.front();
     }else if(x >= this->x + width){
@@ -427,7 +427,7 @@ ParseNode Phrase::parseNodeAt(double x, double y) const noexcept {
 }
 
 #ifndef NDEBUG
-void Phrase::populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept{
+void Phrase::populateDocMapParseNodes(std::unordered_set<ParseNode>& nodes) const noexcept {
     for(size_t i = 0; i < constructs.size(); i++){
         text(i)->populateDocMapParseNodes(nodes);
         construct(i)->populateDocMapParseNodes(nodes);

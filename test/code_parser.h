@@ -44,12 +44,15 @@ static bool testFormatting(const std::string& src, const std::string& fmt){
     scanner.scanAll();
     Code::Parser parser(scanner, model);
     parser.parseAll();
+
+    #ifndef NDEBUG
     if(model->toSerialWithSemanticTags() != fmt){
         std::cout << "Line " << __LINE__ << ", Parser semantic tag mismatch:\n";
         std::cout << "Expected: " << fmt << '\n'
                   << "Actual:   " << model->toSerialWithSemanticTags() << std::endl;
         passing = false;
     }
+    #endif
 
     delete model;
 
@@ -102,10 +105,12 @@ inline bool testParser() {
 
     passing &= testFormatting(input, fmt);
 
+    #ifndef NDEBUG
     if(!allTypesetElementsFreed()){
         printf("Unfreed typeset elements\n");
         passing = false;
     }
+    #endif
 
     report("Code parser", passing);
     return passing;

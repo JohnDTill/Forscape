@@ -25,11 +25,11 @@ private:
         assert(isValidSerial(src));
     }
 
-    uint32_t advance(size_t& index) const noexcept{
+    uint32_t advance(size_t& index) const noexcept {
         return static_cast<uint8_t>(src[index++]);
     }
 
-    uint32_t getCode(size_t& index) const noexcept{
+    uint32_t getCode(size_t& index) const noexcept {
         uint32_t ch = advance(index);
         if(isAscii(ch)){
             return ch;
@@ -47,7 +47,7 @@ private:
         }
     }
 
-    bool superscriptFails(size_t& index) const noexcept{
+    bool superscriptFails(size_t& index) const noexcept {
         for(;;) switch (getCode(index)) {
             FORSCAPE_SUPERSCRIPTS_CASES
             case ' ':
@@ -61,7 +61,7 @@ private:
         }
     }
 
-    bool subscriptFails(size_t& index) const noexcept{
+    bool subscriptFails(size_t& index) const noexcept {
         for(;;) switch (getCode(index)) {
             FORSCAPE_SUBSCRIPTS_CASES
             case ' ':
@@ -75,7 +75,7 @@ private:
         }
     }
 
-    bool twoArgFails(size_t& index) const noexcept{
+    bool twoArgFails(size_t& index) const noexcept {
         char ch = src[index++];
         while(ch != CLOSE)
             if(ch == OPEN) return true;
@@ -87,7 +87,7 @@ private:
         return false;
     }
 
-    bool oneArgFails(size_t& index) const noexcept{
+    bool oneArgFails(size_t& index) const noexcept {
         char ch = src[index++];
         while(ch != CLOSE)
             if(ch == OPEN) return true;
@@ -95,7 +95,7 @@ private:
         return false;
     }
 
-    bool matrixFails(size_t& index) const noexcept{
+    bool matrixFails(size_t& index) const noexcept {
         uint8_t rows = src[index++];
         uint8_t cols = src[index++];
         uint16_t elems = static_cast<uint16_t>(rows)*cols;
@@ -103,7 +103,7 @@ private:
         return false;
     }
 
-    bool accentFails(size_t& index) const noexcept{
+    bool accentFails(size_t& index) const noexcept {
         uint8_t ch = src[index];
         if(ch == OPEN) return true;
         else if(ch == CLOSE) return true;
@@ -112,7 +112,7 @@ private:
         return src[index++] != CLOSE;
     }
 
-    bool canConvert() const noexcept{
+    bool canConvert() const noexcept {
         size_t index = 0;
         while(index < src.size()){
             if(src[index++] == OPEN){
@@ -371,7 +371,7 @@ private:
     }
 
 public:
-    static bool canConvert(const std::string& str) noexcept{
+    static bool canConvert(const std::string& str) noexcept {
         UnicodeConverter converter(str);
         return converter.canConvert();
     }

@@ -89,7 +89,7 @@ public:
     #endif
 
     #ifndef NDEBUG
-    bool inValidState() const;
+    bool inValidState(bool require_markers_on_same_level = true) const noexcept;
     #endif
 
     #ifdef QT_CORE_LIB
@@ -124,7 +124,7 @@ private:
 
 template <>
 struct std::hash<Forscape::Typeset::Selection>{
-    std::size_t operator()(const Forscape::Typeset::Selection& s) const{
+    std::size_t operator()(const Forscape::Typeset::Selection& s) const {
         return s.hashDesignedForIdentifiers();
     }
 };

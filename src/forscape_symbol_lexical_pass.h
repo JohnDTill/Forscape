@@ -117,6 +117,7 @@ private:
     bool declared(ParseNode pn) const noexcept;
     size_t symIndex(ParseNode pn) const noexcept;
     Settings& settings() const noexcept;
+    void error(ParseNode pn, ErrorCode code) alloc_except;
     void error(const Typeset::Selection& selection, ErrorCode code) alloc_except;
 
     #ifndef FORSCAPE_TYPESET_HEADLESS

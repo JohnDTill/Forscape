@@ -14,7 +14,7 @@ jobs:
       - id: run_conan
         run: cd ${GITHUB_WORKSPACE}/test && conan install --generator cmake_find_package --install-folder ../build_test/conan-dependencies .
       - id: cmake
-        run: cd ${GITHUB_WORKSPACE}/test && cmake -B../build_test -S.
+        run: cd ${GITHUB_WORKSPACE}/test && cmake -DCMAKE_BUILD_TYPE=Debug -B../build_test -S.
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build_test && make
       - id: run

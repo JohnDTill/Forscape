@@ -15,8 +15,6 @@ namespace Forscape {
 
 namespace Code {
 
-static constexpr size_t UNKNOWN_SIZE = 0;
-
 void ParseTree::clear() noexcept {
     data.clear();
     nary_construction_stack.clear();
@@ -34,20 +32,24 @@ bool ParseTree::empty() const noexcept {
 
 const Typeset::Marker& ParseTree::getLeft(ParseNode pn) const noexcept {
     assert(isNode(pn));
+    assert(reinterpret_cast<const Typeset::Marker*>(data.data()+pn+LEFT_MARKER_OFFSET)->inValidState());
     return *reinterpret_cast<const Typeset::Marker*>(data.data()+pn+LEFT_MARKER_OFFSET);
 }
 
 void ParseTree::setLeft(ParseNode pn, const Typeset::Marker& m) noexcept {
+    assert(m.inValidState());
     assert(isNode(pn));
     *reinterpret_cast<Typeset::Marker*>(data.data()+pn+LEFT_MARKER_OFFSET) = m;
 }
 
 const Typeset::Marker& ParseTree::getRight(ParseNode pn) const noexcept {
     assert(isNode(pn));
+    assert(reinterpret_cast<const Typeset::Marker*>(data.data()+pn+RIGHT_MARKER_OFFSET)->inValidState());
     return *reinterpret_cast<const Typeset::Marker*>(data.data()+pn+RIGHT_MARKER_OFFSET);
 }
 
 void ParseTree::setRight(ParseNode pn, const Typeset::Marker& m) noexcept {
+    assert(m.inValidState());
     assert(isNode(pn));
     *reinterpret_cast<Typeset::Marker*>(data.data()+pn+RIGHT_MARKER_OFFSET) = m;
 }
@@ -74,7 +76,7 @@ void ParseTree::reduceNumArgs(ParseNode pn, size_t sze) noexcept {
 }
 
 template<size_t index> void ParseTree::setArg(ParseNode pn, ParseNode val) noexcept {
-    assert(index < getNumArgs(pn));
+    assert(index < getNumArgs(pn) || (getOp(pn) == OP_ERROR) && index < 2);
     data[pn+FIXED_FIELDS+index] = val;
 }
 
@@ -121,7 +123,7 @@ void ParseTree::setSymId(ParseNode pn, size_t sym_id) noexcept {
     setFlag(pn, sym_id);
 }
 
-size_t ParseTree::getSymId(ParseNode pn) const noexcept{
+size_t ParseTree::getSymId(ParseNode pn) const noexcept {
     assert(isNode(pn));
     assert(getOp(pn) == OP_IDENTIFIER || getOp(pn) == OP_READ_UPVALUE);
     return getFlag(pn);
@@ -204,9 +206,28 @@ std::string ParseTree::str(ParseNode pn) const alloc_except {
     return getSelection(pn).str();
 }
 
+ParseNode ParseTree::addError(const Typeset::Selection& sel) alloc_except {
+    assert(notAccessingDataWhileModifying(sel));
+
+    ParseNode pn = data.size();
+    #ifndef NDEBUG
+    created.insert(pn);
+    #endif
+    data.resize(data.size() + FIXED_FIELDS + 2);
+    setOp(pn, OP_ERROR);
+    setSelection(pn, sel);
+    setFlag(pn, pn);
+    setNumArgs(pn, 0);
+    setArg<0>(pn, pn);
+    setArg<1>(pn, pn);
+
+    return pn;
+}
+
 template<typename T> ParseNode ParseTree::addNode(Op type, const Selection& sel, const T& children) alloc_except {
-    //assert(notInTree(sel)); //EVENTUALLY: I don't think this belongs
-    assert(notInTree(children));
+    assert(type != OP_ERROR); //There is a specific method to create errors, not the general ones
+    assert(notAccessingDataWhileModifying(sel));
+    assert(notAccessingDataWhileModifying(children));
 
     ParseNode pn = data.size();
     #ifndef NDEBUG
@@ -355,7 +376,7 @@ void ParseTree::addNaryChild(ParseNode pn) alloc_except {
     nary_construction_stack.push_back(pn);
 }
 
-ParseNode ParseTree::popNaryChild() noexcept{
+ParseNode ParseTree::popNaryChild() noexcept {
     ParseNode pn = nary_construction_stack.back();
     nary_construction_stack.pop_back();
     return pn;
@@ -363,7 +384,7 @@ ParseNode ParseTree::popNaryChild() noexcept{
 
 ParseNode ParseTree::finishNary(Op type, const Selection& sel) alloc_except {
     assert(!nary_start.empty());
-    assert(notInTree(sel));
+    assert(notAccessingDataWhileModifying(sel));
     size_t N = nary_construction_stack.size()-nary_start.back();
 
     ParseNode pn = data.size();
@@ -385,7 +406,7 @@ ParseNode ParseTree::finishNary(Op type, const Selection& sel) alloc_except {
 ParseNode ParseTree::finishNary(Op type) alloc_except {
     assert(!nary_start.empty());
     return finishNary(type, Selection(
-                          getLeft(nary_construction_stack[nary_start.back()]), getRight(nary_construction_stack.back())));
+        getLeft(nary_construction_stack[nary_start.back()]), getRight(nary_construction_stack.back())));
 }
 
 void ParseTree::cancelNary() noexcept {
@@ -485,14 +506,14 @@ bool ParseTree::inFinalState() const noexcept {
     return nary_construction_stack.empty() && nary_start.empty();
 }
 
-template<typename T> bool ParseTree::notInTree(const T& obj) const noexcept {
+template<typename T> bool ParseTree::notAccessingDataWhileModifying(const T& obj) const noexcept {
     if(data.empty()) return true;
 
-    auto potential_index = reinterpret_cast<const size_t*>(&obj) - &data[0];
+    const auto potential_index = reinterpret_cast<const size_t*>(&obj) - &data[0];
     return potential_index < 0 || static_cast<size_t>(potential_index) >= data.size();
 }
 
-std::string ParseTree::toGraphviz() const{
+std::string ParseTree::toGraphviz() const {
     std::string src = "digraph {\n\trankdir=TB\n\n";
     size_t sze = 0;
     graphvizHelper(src, root, sze);
@@ -501,7 +522,7 @@ std::string ParseTree::toGraphviz() const{
     return src;
 }
 
-std::string ParseTree::toGraphviz(ParseNode pn) const{
+std::string ParseTree::toGraphviz(ParseNode pn) const {
     std::string src = "digraph {\n\trankdir=TB\n\n";
     size_t sze = 0;
     graphvizHelper(src, pn, sze);
@@ -510,7 +531,7 @@ std::string ParseTree::toGraphviz(ParseNode pn) const{
     return src;
 }
 
-void ParseTree::graphvizHelper(std::string& src, ParseNode n, size_t& size) const{
+void ParseTree::graphvizHelper(std::string& src, ParseNode n, size_t& size) const {
     std::string id = std::to_string(size++);
     src += "\tn" + id + " [label=";
     writeType(src, n);

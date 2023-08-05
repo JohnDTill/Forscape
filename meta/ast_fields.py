@@ -52,11 +52,18 @@ def main():
             source_file.write(
                 f"{T} ParseTree::{getter}(ParseNode pn) const noexcept {{\n"
                 "    assert(isNode(pn));\n"
+            )
+            if field.property == "selection":
+                source_file.write(f"    assert(({const_ref}).inValidState());\n")
+            source_file.write(
                 f"    return {const_ref};\n"
                 "}\n\n"
             )
             source_file.write(
-                f"void ParseTree::{setter}(ParseNode pn, {T} {field.property}) noexcept {{\n"
+                f"void ParseTree::{setter}(ParseNode pn, {T} {field.property}) noexcept {{\n")
+            if field.property == "selection":
+                source_file.write("    assert(selection.inValidState(false));\n")
+            source_file.write(
                 "    assert(isNode(pn));\n"
                 f"    {ref} = {field.property};\n"
                 "}\n\n"

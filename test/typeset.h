@@ -39,8 +39,10 @@ inline Typeset::Model* loadModel(const std::string& filename){
     return Forscape::Typeset::Model::fromSerial( readFile(filename) );
 }
 
+#ifdef TYPESET_MEMORY_DEBUG
 inline bool allTypesetElementsFreed(){
     return Typeset::Text::all.empty() && Typeset::Construct::all.empty();
 }
+#endif
 
 #endif // TYPESET_H

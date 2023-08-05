@@ -26,46 +26,46 @@ bool Line::isLine() const noexcept {
     return true;
 }
 
-Line* Line::next() const noexcept{
+Line* Line::next() const noexcept {
     return parent->nextLine(this);
 }
 
-Line* Line::prev() const noexcept{
+Line* Line::prev() const noexcept {
     return parent->prevLine(this);
 }
 
-Line* Line::prevAsserted() const noexcept{
+Line* Line::prevAsserted() const noexcept {
     return parent->prevLineAsserted(this);
 }
 
-Line* Line::nextAsserted() const noexcept{
+Line* Line::nextAsserted() const noexcept {
     return parent->nextLineAsserted(this);
 }
 
-size_t Line::leadingSpaces() const noexcept{
+size_t Line::leadingSpaces() const noexcept {
     return front()->leadingSpaces();
 }
 
-const std::vector<Line*>& Line::lines() const noexcept{
+const std::vector<Line*>& Line::lines() const noexcept {
     return parent->lines;
 }
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
-Line* Line::nearestLine(double y) const noexcept{
+Line* Line::nearestLine(double y) const noexcept {
     return parent->nearestLine(y);
 }
 
-Line* Line::nearestAbove(double y) const noexcept{
+Line* Line::nearestAbove(double y) const noexcept {
     return parent->nearestAbove(y);
 }
 
 #ifndef NDEBUG
-void Line::invalidateWidth() noexcept{
+void Line::invalidateWidth() noexcept {
     width = STALE;
     if(parent) parent->width = STALE;
 }
 
-void Line::invalidateDims() noexcept{
+void Line::invalidateDims() noexcept {
     width = above_center = under_center = parent->height = STALE;
 }
 #endif

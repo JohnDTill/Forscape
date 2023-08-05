@@ -23,105 +23,105 @@ Marker::Marker(const Model* model) noexcept
 Marker::Marker(Text* t, size_t i) noexcept
     : text(t), index(i) {}
 
-bool Marker::precedesInclusive(const Marker& other) const noexcept{
+bool Marker::precedesInclusive(const Marker& other) const noexcept {
     assert(getModel() == other.getModel());
     if(text != other.text) return text->precedes(other.text);
     else return index <= other.index;
 }
 
-void Marker::setToFrontOf(Text* t) noexcept{
+void Marker::setToFrontOf(Text* t) noexcept {
     text = t;
     index = 0;
 }
 
-void Marker::setToBackOf(Text* t) noexcept{
+void Marker::setToBackOf(Text* t) noexcept {
     text = t;
     index = t->numChars();
 }
 
-void Marker::setToFrontOf(const Phrase* p) noexcept{
+void Marker::setToFrontOf(const Phrase* p) noexcept {
     setToFrontOf(p->front());
 }
 
-void Marker::setToBackOf(const Phrase* p) noexcept{
+void Marker::setToBackOf(const Phrase* p) noexcept {
     setToBackOf(p->back());
 }
 
-bool Marker::isTopLevel() const noexcept{
+bool Marker::isTopLevel() const noexcept {
     return text->isTopLevel();
 }
 
-bool Marker::isNested() const noexcept{
+bool Marker::isNested() const noexcept {
     return text->isNested();
 }
 
-char Marker::charRight() const noexcept{
+char Marker::charRight() const noexcept {
     assert(notAtTextEnd());
     return text->charAt(index);
 }
 
-char Marker::charLeft() const noexcept{
+char Marker::charLeft() const noexcept {
     assert(notAtTextStart());
     return text->charAt(index-1);
 }
 
-Phrase* Marker::phrase() const noexcept{
+Phrase* Marker::phrase() const noexcept {
     return text->getParent();
 }
 
-Subphrase* Marker::subphrase() const noexcept{
+Subphrase* Marker::subphrase() const noexcept {
     assert(!isTopLevel());
     return phrase()->asSubphrase();
 }
 
-Line* Marker::getLine() const noexcept{
+Line* Marker::getLine() const noexcept {
     return text->getLine();
 }
 
-Line* Marker::parentAsLine() const noexcept{
+Line* Marker::parentAsLine() const noexcept {
     assert(isTopLevel());
     return phrase()->asLine();
 }
 
-Line* Marker::nextLine() const noexcept{
+Line* Marker::nextLine() const noexcept {
     return parentAsLine()->next();
 }
 
-Line* Marker::prevLine() const noexcept{
+Line* Marker::prevLine() const noexcept {
     return parentAsLine()->prev();
 }
 
-bool Marker::atTextEnd() const noexcept{
+bool Marker::atTextEnd() const noexcept {
     return index == text->numChars();
 }
 
-bool Marker::atTextStart() const noexcept{
+bool Marker::atTextStart() const noexcept {
     return index == 0;
 }
 
-bool Marker::notAtTextEnd() const noexcept{
+bool Marker::notAtTextEnd() const noexcept {
     return index < text->numChars();
 }
 
-bool Marker::notAtTextStart() const noexcept{
+bool Marker::notAtTextStart() const noexcept {
     return index;
 }
 
-bool Marker::atFirstTextInPhrase() const noexcept{
+bool Marker::atFirstTextInPhrase() const noexcept {
     return text->id == 0;
 }
 
-void Marker::incrementCodepoint() noexcept{
+void Marker::incrementCodepoint() noexcept {
     assert(notAtTextEnd());
     index += codepointSize(charRight());
 }
 
-void Marker::decrementCodepoint() noexcept{
+void Marker::decrementCodepoint() noexcept {
     assert(notAtTextStart());
     do{ index--; } while(isContinuationCharacter(charRight()));
 }
 
-void Marker::incrementGrapheme() noexcept{
+void Marker::incrementGrapheme() noexcept {
     assert(notAtTextEnd());
 
     incrementCodepoint();
@@ -131,7 +131,7 @@ void Marker::incrementGrapheme() noexcept{
     index = backup;
 }
 
-void Marker::decrementGrapheme() noexcept{
+void Marker::decrementGrapheme() noexcept {
     assert(notAtTextStart());
 
     while(index && isZeroWidth(codepointLeft()))
@@ -139,7 +139,7 @@ void Marker::decrementGrapheme() noexcept{
     if(index) decrementCodepoint();
 }
 
-void Marker::incrementToNextWord() noexcept{
+void Marker::incrementToNextWord() noexcept {
     char ch = charRight();
 
     if(isAlphaNumeric(ch)){
@@ -153,7 +153,7 @@ void Marker::incrementToNextWord() noexcept{
     }
 }
 
-void Marker::decrementToPrevWord() noexcept{
+void Marker::decrementToPrevWord() noexcept {
     decrementGrapheme();
     char ch = charRight();
 
@@ -170,15 +170,15 @@ void Marker::decrementToPrevWord() noexcept{
     }
 }
 
-bool Marker::operator==(const Marker& other) const noexcept{
+bool Marker::operator==(const Marker& other) const noexcept {
     return (text == other.text) & (index == other.index);
 }
 
-bool Marker::operator!=(const Marker& other) const noexcept{
+bool Marker::operator!=(const Marker& other) const noexcept {
     return (text != other.text) | (index != other.index);
 }
 
-size_t Marker::countSpacesLeft() const noexcept{
+size_t Marker::countSpacesLeft() const noexcept {
     size_t i = index;
     for(;;){
         if(i == 0) return index - i;
@@ -187,11 +187,11 @@ size_t Marker::countSpacesLeft() const noexcept{
     }
 }
 
-std::string_view Marker::checkKeyword() const noexcept{
+std::string_view Marker::checkKeyword() const noexcept {
     return text->checkKeyword(index);
 }
 
-uint32_t Marker::codepointLeft() const noexcept{
+uint32_t Marker::codepointLeft() const noexcept {
     if(index == 0) return 0;
 
     Marker m = *this;
@@ -200,7 +200,12 @@ uint32_t Marker::codepointLeft() const noexcept{
     return m.scanGlyph();
 }
 
-bool Marker::onlySpacesLeft() const noexcept{
+uint32_t Marker::codepointRight() const noexcept {
+    Marker m = *this;
+    return m.scanGlyph();
+}
+
+bool Marker::onlySpacesLeft() const noexcept {
     if(!atFirstTextInPhrase()) return false;
     size_t i = index;
     while(i){
@@ -210,23 +215,23 @@ bool Marker::onlySpacesLeft() const noexcept{
     return true;
 }
 
-std::string_view Marker::strRight() const noexcept{
+std::string_view Marker::strRight() const noexcept {
     return std::string_view(text->data()+index);
 }
 
-std::string_view Marker::strLeft() const noexcept{
+std::string_view Marker::strLeft() const noexcept {
     return std::string_view(text->data(), index);
 }
 
-bool Marker::compareRight(const Marker& other) const noexcept{
+bool Marker::compareRight(const Marker& other) const noexcept {
     return strRight() == other.strRight();
 }
 
-bool Marker::compareLeft(const Marker& other) const noexcept{
+bool Marker::compareLeft(const Marker& other) const noexcept {
     return strLeft() == other.strLeft();
 }
 
-Model* Marker::getModel() const noexcept{
+Model* Marker::getModel() const noexcept {
     return text->getModel();
 }
 
@@ -260,8 +265,14 @@ bool Marker::goToCommandStart() noexcept {
     }
 }
 
+#ifndef NDEBUG
+bool Marker::inValidState() const noexcept {
+    return text != nullptr && index != NONE;
+}
+#endif
+
 #ifndef FORSCAPE_TYPESET_HEADLESS
-double Marker::x() const{
+double Marker::x() const {
     return text->xGlobal(index);
 }
 
@@ -283,17 +294,17 @@ void Marker::setToLeftOf(Text* t, double setpoint) {
     index = text->charIndexLeft(setpoint);
 }
 
-std::pair<ParseNode, ParseNode> Marker::parseNodesAround() const noexcept{
+std::pair<ParseNode, ParseNode> Marker::parseNodesAround() const noexcept {
     return std::make_pair(parseNodeLeft(), parseNodeRight());
 }
 
-ParseNode Marker::parseNodeLeft() const noexcept{
+ParseNode Marker::parseNodeLeft() const noexcept {
     if(index > 0) return text->parseNodeAtIndex(index-1);
     else if(text->id > 0) return text->prevConstructAsserted()->pn;
     else return NONE;
 }
 
-ParseNode Marker::parseNodeRight() const noexcept{
+ParseNode Marker::parseNodeRight() const noexcept {
     if(index < text->numChars()) return text->parseNodeAtIndex(index);
     else if(const Construct* c = text->nextConstructInPhrase()) return c->pn;
     else return NONE;
@@ -315,20 +326,20 @@ Marker Marker::fromAbsoluteIndex(const Phrase& p, size_t absolute_index) noexcep
 }
 #endif
 
-uint32_t Marker::advance() noexcept{
+uint32_t Marker::advance() noexcept {
     assert(notAtTextEnd());
     return static_cast<uint8_t>(text->charAt(index++));
 }
 
-bool Marker::peek(char ch) const noexcept{
+bool Marker::peek(char ch) const noexcept {
     return notAtTextEnd() && charRight() == ch;
 }
 
-void Marker::skipWhitespace() noexcept{
+void Marker::skipWhitespace() noexcept {
     while(notAtTextEnd() && (charRight() == ' ')) index++;
 }
 
-uint32_t Marker::scan() noexcept{
+uint32_t Marker::scan() noexcept {
     if(notAtTextEnd()){
         return scanGlyph();
     }else if(Construct* c = text->nextConstructInPhrase()){
@@ -345,7 +356,7 @@ uint32_t Marker::scan() noexcept{
     }
 }
 
-uint32_t Marker::scanGlyph() noexcept{
+uint32_t Marker::scanGlyph() noexcept {
     uint32_t ch = advance();
     if(isAscii(ch)){
         return ch;
@@ -363,15 +374,15 @@ uint32_t Marker::scanGlyph() noexcept{
     }
 }
 
-void Marker::selectToIdentifierEnd() noexcept{
+void Marker::selectToIdentifierEnd() noexcept {
     while(notAtTextEnd() && isAlphaNumeric(charRight())) index++;
 }
 
-void Marker::selectToNumberEnd() noexcept{
+void Marker::selectToNumberEnd() noexcept {
     while(notAtTextEnd() && isNumeric(charRight())) index++;
 }
 
-bool Marker::selectToStringEnd() noexcept{
+bool Marker::selectToStringEnd() noexcept {
     do {
         while(atTextEnd()){
             if(Text* t = text->nextTextInPhrase()) text = t;
