@@ -8,8 +8,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - id: support_32bit
-        run: sudo apt-get install gcc-multilib g++-multilib
       - id: install_conan
         uses: turtlebrowser/get-conan@main
         with:
