@@ -92,7 +92,7 @@ private:
     ParseNode fractionDeriv(const Typeset::Selection& c, Op type, ForscapeTokenType tt) alloc_except;
     ParseNode fractionDefault(const Typeset::Selection& c) alloc_except;
     ParseNode binomial() alloc_except;
-    ParseNode superscript(ParseNode lhs) alloc_except;
+    ParseNode superscript(ParseNode lhs, Typeset::Marker left) alloc_except;
     ParseNode subscript(ParseNode lhs, const Typeset::Marker& right) alloc_except;
     ParseNode dualscript(ParseNode lhs) alloc_except;
     template<bool first_arg = false> ParseNode subExpr() alloc_except;

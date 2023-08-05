@@ -260,6 +260,12 @@ bool Marker::goToCommandStart() noexcept {
     }
 }
 
+#ifndef NDEBUG
+bool Marker::inValidState() const noexcept {
+    return text != nullptr && index != NONE;
+}
+#endif
+
 #ifndef FORSCAPE_TYPESET_HEADLESS
 double Marker::x() const {
     return text->xGlobal(index);

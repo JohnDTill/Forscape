@@ -89,7 +89,7 @@ public:
     #endif
 
     #ifndef NDEBUG
-    bool inValidState() const;
+    bool inValidState() const noexcept;
     #endif
 
     #ifdef QT_CORE_LIB

@@ -493,7 +493,22 @@ std::array<double, 4> Selection::getDimensionsLines() const noexcept {
 #endif
 
 #ifndef NDEBUG
-bool Selection::inValidState() const {
+bool Selection::inValidState() const noexcept {
+    if(!left.inValidState()){
+        std::cout << "Left marker invalid" << std::endl;
+        return false;
+    }
+
+    if(!right.inValidState()){
+        std::cout << "Right marker invalid" << std::endl;
+        return false;
+    }
+
+    if(left.getModel() != right.getModel()){
+        std::cout << "Markers are not from same model" << std::endl;
+        return false;
+    }
+
     if(left.phrase() != right.phrase() && (left.isNested() || right.isNested())){
         std::cout << "Markers are not on same level" << std::endl;
         return false;

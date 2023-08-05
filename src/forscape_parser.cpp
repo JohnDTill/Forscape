@@ -241,7 +241,7 @@ ParseNode Parser::settingsStatement() alloc_except {
 }
 
 ParseNode Parser::switchStatement() alloc_except {
-    Typeset::Marker start;
+    Typeset::Marker start = lMark();
     advance();
     Typeset::Marker cond_l = lMark();
     if(!match(LEFTPAREN)) return error(EXPECT_LPAREN);
@@ -948,7 +948,7 @@ ParseNode Parser::rightUnary(ParseNode n) alloc_except {
                 ParseNode pn = parse_tree.addNode<2>(OP_POWER, {n, implicitMult()});
                 return pn;
             }
-            case TOKEN_SUPERSCRIPT: n = superscript(n); break;
+            case TOKEN_SUPERSCRIPT: n = superscript(n, parse_tree.getLeft(n)); break;
             case TOKEN_SUBSCRIPT: n = subscript(n, rMark()); break;
             case TOKEN_DUALSCRIPT: n = dualscript(n); break;
             case PERIOD: advance();
@@ -1621,10 +1621,7 @@ ParseNode Parser::binomial() alloc_except {
     return parse_tree.addNode<2>(OP_BINOMIAL, c, {n, k});
 }
 
-ParseNode Parser::superscript(ParseNode lhs) alloc_except {
-    Typeset::Marker left = parse_tree.getLeft(lhs);
-    Typeset::Marker right = rMark();
-    Typeset::Selection c(left, right);
+ParseNode Parser::superscript(ParseNode lhs, Typeset::Marker left) alloc_except {
     advance();
 
     ParseNode n;
@@ -1632,50 +1629,52 @@ ParseNode Parser::superscript(ParseNode lhs) alloc_except {
     switch (currentType()) {
         case TRANSPOSE:{
             advance();
-            n = parse_tree.addUnary(OP_TRANSPOSE, c, lhs);
+            n = parse_tree.addUnary(OP_TRANSPOSE, Typeset::Selection(left, rMark()), lhs);
             break;
         }
         case DAGGER:{
             advance();
-            n = parse_tree.addUnary(OP_DAGGER, c, lhs);
+            n = parse_tree.addUnary(OP_DAGGER, Typeset::Selection(left, rMark()), lhs);
             break;
         }
         case PLUS:{
             advance();
-            n = parse_tree.addUnary(OP_PSEUDO_INVERSE, c, lhs);
+            n = parse_tree.addUnary(OP_PSEUDO_INVERSE, Typeset::Selection(left, rMark()), lhs);
             break;
         }
         case CONJUNCTION:
         case CARET:{
             advance();
-            n = parse_tree.addUnary(OP_ACCENT_HAT, c, lhs);
+            n = parse_tree.addUnary(OP_ACCENT_HAT, Typeset::Selection(left, rMark()), lhs);
             break;
         }
         case DISJUNCTION:{
             advance();
-            n = parse_tree.addUnary(OP_BIJECTIVE_MAPPING, c, lhs);
+            n = parse_tree.addUnary(OP_BIJECTIVE_MAPPING, Typeset::Selection(left, rMark()), lhs);
             break;
         }
         case COMPLEMENT:{
             advance();
-            n = parse_tree.addUnary(OP_COMPLEMENT, c, lhs);
+            n = parse_tree.addUnary(OP_COMPLEMENT, Typeset::Selection(left, rMark()), lhs);
             break;
         }
         default:
             static constexpr size_t TYPESET_RATHER_THAN_CARET = 1;
             if(parse_tree.getOp(lhs) == OP_POWER && parse_tree.getFlag(lhs) == TYPESET_RATHER_THAN_CARET){
-                //Due to typesetting the precedence of adjacent scritps x^{a}^{b} would parse incorrectly
+                //Due to typesetting the precedence of adjacent scripts x^{a}^{b} would parse incorrectly
                 //as (x^{a})^{b}, except that we patch it here
                 index--;
-                ParseNode new_power = superscript(parse_tree.rhs(lhs));
+                ParseNode new_power = superscript(parse_tree.rhs(lhs), parse_tree.getRight(parse_tree.lhs(lhs)));
                 parse_tree.setArg<1>(lhs, new_power);
-                parse_tree.setRight(lhs, right);
+                parse_tree.setRight(lhs, rMark());
                 return lhs;
             }
-            n = parse_tree.addNode<2>(OP_POWER, c, {lhs, expression()});
+            ParseNode exponent = expression();
+            n = parse_tree.addNode<2>(OP_POWER, Typeset::Selection(left, rMark()), {lhs, exponent});
             parse_tree.setFlag(n, TYPESET_RATHER_THAN_CARET);
     }
 
+    //DO THIS: this will result in invalid selections (read: crashes)
     consume(ARGCLOSE);
 
     return n;
@@ -1778,7 +1777,6 @@ ParseNode Parser::matrix() alloc_except {
     const Typeset::Selection& c = selection();
     advance();
     size_t argc = c.getConstructArgSize();
-    if(argc == 1) return error(SCALAR_MATRIX, c);
 
     parse_tree.prepareNary();
     for(size_t i = 0; i < argc; i++){
@@ -1788,6 +1786,7 @@ ParseNode Parser::matrix() alloc_except {
 
     ParseNode m = parse_tree.finishNary(OP_MATRIX, c);
     parse_tree.setFlag(m, c.getMatrixRows());
+    if(argc == 1) return error(SCALAR_MATRIX, c);
     #ifndef FORSCAPE_TYPESET_HEADLESS
     if(noErrors()) c.mapConstructToParseNode(m);
     #endif

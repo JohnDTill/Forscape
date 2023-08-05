@@ -32,20 +32,24 @@ bool ParseTree::empty() const noexcept {
 
 const Typeset::Marker& ParseTree::getLeft(ParseNode pn) const noexcept {
     assert(isNode(pn));
+    assert(reinterpret_cast<const Typeset::Marker*>(data.data()+pn+LEFT_MARKER_OFFSET)->inValidState());
     return *reinterpret_cast<const Typeset::Marker*>(data.data()+pn+LEFT_MARKER_OFFSET);
 }
 
 void ParseTree::setLeft(ParseNode pn, const Typeset::Marker& m) noexcept {
+    assert(m.inValidState());
     assert(isNode(pn));
     *reinterpret_cast<Typeset::Marker*>(data.data()+pn+LEFT_MARKER_OFFSET) = m;
 }
 
 const Typeset::Marker& ParseTree::getRight(ParseNode pn) const noexcept {
     assert(isNode(pn));
+    assert(reinterpret_cast<const Typeset::Marker*>(data.data()+pn+RIGHT_MARKER_OFFSET)->inValidState());
     return *reinterpret_cast<const Typeset::Marker*>(data.data()+pn+RIGHT_MARKER_OFFSET);
 }
 
 void ParseTree::setRight(ParseNode pn, const Typeset::Marker& m) noexcept {
+    assert(m.inValidState());
     assert(isNode(pn));
     *reinterpret_cast<Typeset::Marker*>(data.data()+pn+RIGHT_MARKER_OFFSET) = m;
 }
