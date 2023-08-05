@@ -493,7 +493,7 @@ std::array<double, 4> Selection::getDimensionsLines() const noexcept {
 #endif
 
 #ifndef NDEBUG
-bool Selection::inValidState() const noexcept {
+bool Selection::inValidState(bool require_markers_on_same_level) const noexcept {
     if(!left.inValidState()){
         std::cout << "Left marker invalid" << std::endl;
         return false;
@@ -509,7 +509,7 @@ bool Selection::inValidState() const noexcept {
         return false;
     }
 
-    if(left.phrase() != right.phrase() && (left.isNested() || right.isNested())){
+    if(require_markers_on_same_level && left.phrase() != right.phrase() && (left.isNested() || right.isNested())){
         std::cout << "Markers are not on same level" << std::endl;
         return false;
     }
@@ -523,8 +523,11 @@ bool Selection::inValidState() const noexcept {
         }
     }else if(isPhraseSelection()){
         return tR->id > tL->id;
-    }else{
+    }else if(!left.isNested() && !right.isNested()){
         return lR->id > lL->id;
+    }else{
+        assert(!require_markers_on_same_level);
+        return left.precedesInclusive(right);
     }
 }
 #endif

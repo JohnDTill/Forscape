@@ -62,7 +62,7 @@ def main():
             source_file.write(
                 f"void ParseTree::{setter}(ParseNode pn, {T} {field.property}) noexcept {{\n")
             if field.property == "selection":
-                source_file.write("    //assert(selection.inValidState()); //DO THIS\n")
+                source_file.write("    assert(selection.inValidState(false));\n")
             source_file.write(
                 "    assert(isNode(pn));\n"
                 f"    {ref} = {field.property};\n"

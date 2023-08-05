@@ -89,7 +89,7 @@ public:
     #endif
 
     #ifndef NDEBUG
-    bool inValidState() const noexcept;
+    bool inValidState(bool require_markers_on_same_level = true) const noexcept;
     #endif
 
     #ifdef QT_CORE_LIB
