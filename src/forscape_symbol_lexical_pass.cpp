@@ -61,11 +61,8 @@ SymbolLexicalPass::SymbolLexicalPass(ParseTree& parse_tree, Typeset::Model* mode
 
 void SymbolLexicalPass::resolveSymbols() alloc_except {
     reset();
-    if(!parse_tree.empty()){ // Note: symbol resolution runs DESPITE parse errors, because the editor needs it
-        ParseNode n = parse_tree.root;
-        for(size_t i = 0; i < parse_tree.getNumArgs(n); i++)
-            resolveStmt(parse_tree.arg(n, i));
-    }
+    // Note: symbol resolution runs DESPITE parse errors, because the editor needs it
+    if(!parse_tree.empty()) resolveBlock(parse_tree.root);
 
     symbol_table.finalize();
     for(ParseNode pn : processed_refs) parse_tree.setSymbol(pn, symbols.data() + parse_tree.getSymId(pn));
@@ -596,6 +593,12 @@ void SymbolLexicalPass::resolveBody(
 }
 
 void SymbolLexicalPass::resolveBlock(ParseNode pn) alloc_except {
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
+        ParseNode child = parse_tree.arg(pn, i);
+        if(parse_tree.getOp(child) != OP_ALGORITHM) continue;
+        defineLocalScope(parse_tree.algName(child));
+    }
+
     for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
         resolveStmt( parse_tree.arg(pn, i) );
 }
@@ -632,24 +635,11 @@ void SymbolLexicalPass::resolveAlgorithm(ParseNode pn) alloc_except {
 
     const Typeset::Selection sel = parse_tree.getSelection(name);
     auto lookup = lexical_map.find(sel);
-    if(lookup == lexical_map.end()){
-        makeEntry(sel, name, true);
-    }else{
-        size_t index = lookup->second;
-        Symbol& sym = symbols[index];
-        if(sym.declaration_lexical_depth == lexical_depth){
-            if(sym.is_prototype){
-                resolveReference(name, index);
-                parse_tree.setOp(pn, OP_DEFINE_PROTO);
-            }else{
-                error(sel, TYPE_ERROR);
-            }
-        }else{
-            appendEntry(name, lookup->second, true);
-        }
-
-        sym.is_prototype = false;
-    }
+    assert(lookup != lexical_map.end());
+    size_t index = lookup->second;
+    Symbol& sym = symbols[index];
+    assert(sym.declaration_lexical_depth == lexical_depth);
+    sym.is_prototype = false;
 
     size_t val_cap_size = parse_tree.valListSize(val_cap);
     if(val_cap != NONE){

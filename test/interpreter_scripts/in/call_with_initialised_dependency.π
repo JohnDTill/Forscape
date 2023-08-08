@@ -1,0 +1,5 @@
+x = "Hello world!"
+callWithInitialisedDependency()
+alg callWithInitialisedDependency(){
+    print(x)
+}

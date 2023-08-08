@@ -2008,6 +2008,22 @@ ParseNode StaticPass::resolveScopeAccess(ParseNode pn, bool write) {
 }
 
 ParseNode StaticPass::resolveBlock(ParseNode pn) {
+    //Re-order so that algorithms come first
+    std::vector<ParseNode> algs;
+    for(size_t i = parse_tree.getNumArgs(pn); i-->0;){
+        ParseNode child = parse_tree.arg(pn, i);
+        if(parse_tree.getOp(child) == OP_ALGORITHM
+           && parse_tree.valCapList(child) == NONE
+           && parse_tree.getNumArgs(parse_tree.refCapList(child)) == 0){
+            algs.push_back(child);
+        }else{
+            parse_tree.setArg(pn, i+algs.size(), child);
+        }
+    }
+    for(size_t i = algs.size(); i-->0;){
+        parse_tree.setArg(pn, algs.size()-i-1, algs[i]);
+    }
+
     for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
         ParseNode stmt = resolveStmt(parse_tree.arg(pn, i));
         parse_tree.setArg(pn, i, stmt);

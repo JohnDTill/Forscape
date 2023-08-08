@@ -21,11 +21,15 @@ void SymbolTableLinker::link() noexcept {
 
 void SymbolTableLinker::resolveStmt(ParseNode pn) noexcept {
     switch (parse_tree.getOp(pn)) {
-        case OP_ALGORITHM: resolveAlgorithm(pn); break;
+        case OP_ALGORITHM:
+            resolveDeclaration(parse_tree.algName(pn));
+            if(parse_tree.valCapList(pn) != NONE || parse_tree.getNumArgs(parse_tree.refCapList(pn)) != 0)
+                resolveAlgorithm(pn);
+            break;
         case OP_ASSERT: resolveExpr(parse_tree.child(pn)); break;
         case OP_ASSIGN: resolveAssignment(pn); break;
         case OP_BLOCK: resolveBlock(pn); break;
-        case OP_DEFINE_PROTO: resolveAlgorithm(pn, false); break;
+        case OP_DEFINE_PROTO: resolveAlgorithm(pn); break;
         case OP_DO_NOTHING: break;
         case OP_ELEMENTWISE_ASSIGNMENT: resolveEWiseAssignment(pn); break;
         case OP_EQUAL: resolveAssignment(pn); break;
@@ -64,13 +68,7 @@ void SymbolTableLinker::resolveExpr(ParseNode pn) noexcept {
     }
 }
 
-void SymbolTableLinker::resolveAlgorithm(ParseNode pn, bool declare) noexcept {
-    if(parse_tree.getOp(pn) != OP_LAMBDA){
-        ParseNode name = parse_tree.algName(pn);
-        if(declare) resolveDeclaration(name);
-        else resolveReference(name);
-    }
-
+void SymbolTableLinker::resolveAlgorithm(ParseNode pn) noexcept {
     increaseClosureDepth(pn);
     ParseNode param_list = parse_tree.paramList(pn);
     for(size_t i = 0; i < parse_tree.getNumArgs(param_list); i++){
@@ -98,6 +96,15 @@ void SymbolTableLinker::resolveBlock(ParseNode pn) noexcept {
     assert(parse_tree.getOp(pn) == OP_BLOCK);
     for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
         resolveStmt(parse_tree.arg(pn, i));
+
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
+        ParseNode child = parse_tree.arg(pn, i);
+        //if(parse_tree.getOp(child) != OP_ALGORITHM) break; //DO THIS: why is this not working?
+        if(parse_tree.getOp(child) != OP_ALGORITHM
+            || parse_tree.valCapList(child) != NONE
+            || parse_tree.getNumArgs(parse_tree.refCapList(child)) != 0) continue;
+        resolveAlgorithm(child);
+    }
 }
 
 void SymbolTableLinker::resolveEWiseAssignment(ParseNode pn) noexcept {
@@ -261,9 +268,19 @@ void SymbolTableLinker::resolveReference(ParseNode pn) noexcept {
         parse_tree.setOp(pn, OP_READ_UPVALUE);
         parse_tree.setClosureIndex(pn, sym->flag);
     }else if(sym->declaration_closure_depth == 0){
+        if(sym->flag >= stack_size){
+            //DO THIS: error
+            assert(false);
+        }
+
         parse_tree.setOp(pn, OP_READ_GLOBAL);
         parse_tree.setGlobalIndex(pn, sym->flag);
     }else{
+        if(sym->flag >= stack_size){
+            //DO THIS: error
+            assert(false);
+        }
+
         parse_tree.setStackOffset(pn, stack_size - 1 - sym->flag);
     }
 }

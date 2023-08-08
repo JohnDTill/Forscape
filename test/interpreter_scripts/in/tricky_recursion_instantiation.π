@@ -1,4 +1,3 @@
-alg h
 alg f(x){
     return h(x)
 }
