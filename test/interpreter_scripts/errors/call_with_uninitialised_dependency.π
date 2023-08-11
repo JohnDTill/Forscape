@@ -1,8 +1,5 @@
 callWithUninitialisedDependency()
 x = 2
 alg callWithUninitialisedDependency(){
-    //return x //DO THIS
-    //assert(false) //DO THIS: why does this crash?
-    return 1
+    return x
 }
-assert(false)

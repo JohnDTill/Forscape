@@ -59,6 +59,7 @@ public:
         const StringSwitchMap& string_switch);
     void execute();
     void stop();
+    Value error(ErrorCode code, ParseNode pn) noexcept;
 
 private:
     std::vector<size_t> frames;
@@ -70,7 +71,6 @@ private:
     Stack stack;
 
     void reset() noexcept;
-    Value error(ErrorCode code, ParseNode pn) noexcept;
     void interpretStmt(ParseNode pn);
     void interpretStmtIfNotNone(ParseNode pn);
     void printStmt(ParseNode pn);

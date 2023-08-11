@@ -748,9 +748,17 @@ Value& Interpreter::read(ParseNode pn) noexcept {
     }
 }
 
+static Value error_kludge;
+
 Value& Interpreter::readLocal(ParseNode pn) noexcept {
     assert(parse_tree.getOp(pn) == OP_IDENTIFIER);
     size_t stack_offset = parse_tree.getStackOffset(pn);
+
+    //This is a shameless kludge to support use-before-define before rewriting the backend
+    if(stack_offset >= stack.size()){
+        error_kludge = error(USE_BEFORE_DEFINE, pn);
+        return error_kludge;
+    }
 
     return stack.read(stack.size()-1-stack_offset   DEBUG_STACK_ARG(parse_tree.str(pn)));
 }
@@ -758,6 +766,12 @@ Value& Interpreter::readLocal(ParseNode pn) noexcept {
 Value& Interpreter::readGlobal(ParseNode pn) noexcept {
     assert(parse_tree.getOp(pn) == OP_READ_GLOBAL);
     size_t stack_offset = parse_tree.getGlobalIndex(pn);
+
+    //This is a shameless kludge to support use-before-define before rewriting the backend
+    if(stack_offset >= stack.size()){
+        error_kludge = error(USE_BEFORE_DEFINE, pn);
+        return error_kludge;
+    }
 
     return stack.read(stack_offset   DEBUG_STACK_ARG(parse_tree.str(pn)));
 }

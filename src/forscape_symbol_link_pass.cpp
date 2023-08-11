@@ -23,6 +23,9 @@ void SymbolTableLinker::resolveStmt(ParseNode pn) noexcept {
     switch (parse_tree.getOp(pn)) {
         case OP_ALGORITHM:
             resolveDeclaration(parse_tree.algName(pn));
+            //Non-capturing algorithms were moved to the top of their lexical scope,
+            //despite possibly being defined later. Resolve them last so their dependencies
+            //will definitely be marked with a stack slot.
             if(parse_tree.valCapList(pn) != NONE || parse_tree.getNumArgs(parse_tree.refCapList(pn)) != 0)
                 resolveAlgorithm(pn);
             break;
@@ -97,9 +100,11 @@ void SymbolTableLinker::resolveBlock(ParseNode pn) noexcept {
     for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
         resolveStmt(parse_tree.arg(pn, i));
 
+    //Non-capturing algorithms were moved to the top of their lexical scope,
+    //despite possibly being defined later. Resolve them last so their dependencies
+    //will definitely be marked with a stack slot.
     for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
         ParseNode child = parse_tree.arg(pn, i);
-        //if(parse_tree.getOp(child) != OP_ALGORITHM) break; //DO THIS: why is this not working?
         if(parse_tree.getOp(child) != OP_ALGORITHM
             || parse_tree.valCapList(child) != NONE
             || parse_tree.getNumArgs(parse_tree.refCapList(child)) != 0) continue;
@@ -268,19 +273,9 @@ void SymbolTableLinker::resolveReference(ParseNode pn) noexcept {
         parse_tree.setOp(pn, OP_READ_UPVALUE);
         parse_tree.setClosureIndex(pn, sym->flag);
     }else if(sym->declaration_closure_depth == 0){
-        if(sym->flag >= stack_size){
-            //DO THIS: error
-            assert(false);
-        }
-
         parse_tree.setOp(pn, OP_READ_GLOBAL);
         parse_tree.setGlobalIndex(pn, sym->flag);
     }else{
-        if(sym->flag >= stack_size){
-            //DO THIS: error
-            assert(false);
-        }
-
         parse_tree.setStackOffset(pn, stack_size - 1 - sym->flag);
     }
 }
