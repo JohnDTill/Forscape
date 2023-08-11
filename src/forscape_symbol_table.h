@@ -48,7 +48,6 @@ public:
     bool is_used = false;
     bool is_reassigned = false; //Used to determine if parameters are constant
     bool is_closure_nested = false;
-    bool is_prototype = false;
     bool is_ewise_index = false;
     bool is_captured_by_value = false;
     bool tied_to_file = false;

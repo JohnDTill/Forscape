@@ -32,7 +32,6 @@ void SymbolTableLinker::resolveStmt(ParseNode pn) noexcept {
         case OP_ASSERT: resolveExpr(parse_tree.child(pn)); break;
         case OP_ASSIGN: resolveAssignment(pn); break;
         case OP_BLOCK: resolveBlock(pn); break;
-        case OP_DEFINE_PROTO: resolveAlgorithm(pn); break;
         case OP_DO_NOTHING: break;
         case OP_ELEMENTWISE_ASSIGNMENT: resolveEWiseAssignment(pn); break;
         case OP_EQUAL: resolveAssignment(pn); break;
@@ -45,7 +44,6 @@ void SymbolTableLinker::resolveStmt(ParseNode pn) noexcept {
         case OP_NAMESPACE: resolveNamespace(pn); break;
         case OP_PLOT: resolveAllChildrenAsExpressions(pn); break;
         case OP_PRINT: resolveAllChildrenAsExpressions(pn); break;
-        case OP_PROTOTYPE_ALG: resolveDeclaration(parse_tree.child(pn)); break;
         case OP_RANGED_FOR: resolveRangedFor(pn); break;
         case OP_REASSIGN: resolveReassignment(pn); break;
         case OP_RETURN: resolveExpr(parse_tree.child(pn)); break;

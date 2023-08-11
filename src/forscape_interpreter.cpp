@@ -83,14 +83,13 @@ void Interpreter::interpretStmt(ParseNode pn){
     if(directive == STOP) status = RUNTIME_ERROR;
 
     switch (parse_tree.getOp(pn)) {
-        case OP_ALGORITHM: algorithmStmt(pn, false); break;
+        case OP_ALGORITHM: algorithmStmt(pn); break;
         case OP_ASSERT: assertStmt(pn); break;
         case OP_ASSIGN: assignStmt(pn); break;
         case OP_BLOCK: blockStmt(pn); break;
         case OP_BREAK: status = static_cast<Status>(status | BREAK); break;
         case OP_CLASS: break; //EVENTUALLY: implement OOP
         case OP_CONTINUE: status = static_cast<Status>(status | CONTINUE); break;
-        case OP_DEFINE_PROTO: algorithmStmt(pn, true); break;
         case OP_DO_NOTHING: break;
         case OP_ELEMENTWISE_ASSIGNMENT: elementWiseAssignment(pn); break;
         case OP_EQUAL: assignStmt(pn); break;
@@ -104,10 +103,6 @@ void Interpreter::interpretStmt(ParseNode pn){
         case OP_NAMESPACE: blockStmt(parse_tree.rhs(pn)); break;
         case OP_PLOT: plotStmt(pn); break;
         case OP_PRINT: printStmt(pn); break;
-        case OP_PROTOTYPE_ALG:
-            stack.push(static_cast<void*>(nullptr)
-                DEBUG_STACK_ARG(parse_tree.str(parse_tree.child(pn))));
-            break;
         case OP_RANGED_FOR: rangedForStmt(pn); break;
         case OP_REASSIGN: reassign(parse_tree.lhs(pn), parse_tree.rhs(pn)); break;
         case OP_RETURN: returnStmt(pn); break;
@@ -242,7 +237,7 @@ void Interpreter::switchStmtString(ParseNode pn) {
     if(codepath != NONE) interpretStmt(codepath);
 }
 
-void Interpreter::algorithmStmt(ParseNode pn, bool is_prototyped){
+void Interpreter::algorithmStmt(ParseNode pn){
     Algorithm alg(pn);
     Closure* list;
 
@@ -250,14 +245,8 @@ void Interpreter::algorithmStmt(ParseNode pn, bool is_prototyped){
     ParseNode captured = alg.valCap(parse_tree);
     ParseNode upvalues = alg.refCap(parse_tree);
 
-    if(is_prototyped){
-        Value& place = read(name);
-        place = alg;
-        list = &std::get<Algorithm>(place).closure;
-    }else{
-        stack.push(alg   DEBUG_STACK_ARG(parse_tree.str(name)));
-        list = &std::get<Algorithm>(stack.back()).closure;
-    }
+    stack.push(alg   DEBUG_STACK_ARG(parse_tree.str(name)));
+    list = &std::get<Algorithm>(stack.back()).closure;
 
     initClosure(*list, captured, upvalues);
 }

@@ -137,7 +137,6 @@ void SymbolLexicalPass::resolveStmt(ParseNode pn) alloc_except {
         case OP_IMPORT: resolveImport(pn); break;
         case OP_LEXICAL_SCOPE: resolveLexicalScope(pn); break;
         case OP_NAMESPACE: resolveNamespace(pn); break;
-        case OP_PROTOTYPE_ALG: resolvePrototype(pn); break;
         case OP_RANGED_FOR: resolveRangedFor(pn); break;
         case OP_RETURN:
         case OP_RETURN_EMPTY:
@@ -656,7 +655,6 @@ void SymbolLexicalPass::resolveAlgorithm(ParseNode pn) alloc_except {
     size_t index = lookup->second;
     Symbol& sym = symbols[index];
     assert(sym.declaration_lexical_depth == lexical_depth);
-    sym.is_prototype = false;
 
     size_t val_cap_size = parse_tree.valListSize(val_cap);
     if(val_cap != NONE){
@@ -710,11 +708,6 @@ void SymbolLexicalPass::resolveAlgorithm(ParseNode pn) alloc_except {
     decreaseClosureDepth(parse_tree.getRight(body));
 }
 
-void SymbolLexicalPass::resolvePrototype(ParseNode pn) alloc_except {
-    if(defineLocalScope(parse_tree.child(pn)))
-        lastDefinedSymbol().is_prototype = true;
-}
-
 void SymbolLexicalPass::resolveClass(ParseNode pn) alloc_except {
     ParseNode name = parse_tree.arg<0>(pn);
     ParseNode parents = parse_tree.arg<1>(pn);
@@ -734,17 +727,10 @@ void SymbolLexicalPass::resolveClass(ParseNode pn) alloc_except {
         size_t index = lookup->second;
         Symbol& sym = symbols[index];
         if(sym.declaration_lexical_depth == lexical_depth){
-            if(sym.is_prototype){
-                resolveReference(name, index);
-                parse_tree.setOp(pn, OP_DEFINE_PROTO); //EVENTUALLY: can you prototype classes?
-            }else{
-                error(sel, TYPE_ERROR);
-            }
+            error(sel, TYPE_ERROR);
         }else{
             appendEntry(name, lookup->second, true);
         }
-
-        sym.is_prototype = false;
     }
 
     increaseLexicalDepth(SCOPE_NAME(sel.str())  parse_tree.getLeft(members));

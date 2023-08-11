@@ -84,7 +84,7 @@ private:
     void blockStmt(ParseNode pn);
     void switchStmtNumeric(ParseNode pn);
     void switchStmtString(ParseNode pn);
-    void algorithmStmt(ParseNode pn, bool is_prototyped);
+    void algorithmStmt(ParseNode pn);
     void initClosure(Closure& closure, ParseNode val_cap, ParseNode ref_cap);
     void breakLocalClosureLinks(Closure& closure, ParseNode val_cap, ParseNode ref_cap);
     void returnStmt(ParseNode pn);

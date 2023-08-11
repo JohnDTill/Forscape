@@ -108,12 +108,12 @@ ParseNode ParseTree::child(ParseNode pn) const noexcept {
 }
 
 ParseNode ParseTree::valCapList(ParseNode pn) const noexcept {
-    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_DEFINE_PROTO || getOp(pn) == OP_LAMBDA);
+    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_LAMBDA);
     return arg<0>(pn);
 }
 
 ParseNode ParseTree::refCapList(ParseNode pn) const noexcept {
-    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_DEFINE_PROTO || getOp(pn) == OP_LAMBDA);
+    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_LAMBDA);
     return arg<1>(pn);
 }
 
@@ -150,27 +150,27 @@ Typeset::Model* ParseTree::getModel(ParseNode pn) const noexcept {
 }
 
 void ParseTree::setRefList(ParseNode fn, ParseNode list) noexcept {
-    assert(getOp(fn) == OP_ALGORITHM || getOp(fn) == OP_DEFINE_PROTO || getOp(fn) == OP_LAMBDA);
+    assert(getOp(fn) == OP_ALGORITHM || getOp(fn) == OP_LAMBDA);
     setArg<1>(fn, list);
 }
 
 ParseNode ParseTree::paramList(ParseNode pn) const noexcept {
-    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_DEFINE_PROTO || getOp(pn) == OP_LAMBDA);
+    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_LAMBDA);
     return arg<2>(pn);
 }
 
 ParseNode ParseTree::body(ParseNode pn) const noexcept {
-    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_DEFINE_PROTO || getOp(pn) == OP_LAMBDA);
+    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_LAMBDA);
     return arg<3>(pn);
 }
 
 void ParseTree::setBody(ParseNode pn, ParseNode body) noexcept {
-    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_DEFINE_PROTO || getOp(pn) == OP_LAMBDA);
+    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_LAMBDA);
     setArg<3>(pn, body);
 }
 
 ParseNode ParseTree::algName(ParseNode pn) const noexcept {
-    assert(getOp(pn) == OP_ALGORITHM || getOp(pn) == OP_DEFINE_PROTO);
+    assert(getOp(pn) == OP_ALGORITHM);
     return arg<4>(pn);
 }
 
@@ -287,7 +287,6 @@ ParseNode ParseTree::clone(ParseNode pn) alloc_except {
         case OP_READ_GLOBAL:
         case OP_READ_UPVALUE:
         case OP_ALGORITHM:
-        case OP_PROTOTYPE_ALG:
             cloned_vars.push_back(std::make_pair(pn, cloned));
     }
 
