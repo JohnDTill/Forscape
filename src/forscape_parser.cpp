@@ -418,7 +418,7 @@ ParseNode Parser::algStatement() alloc_except {
     if(comment != NONE) parse_tree.setFlag(id, parse_tree.addTerminal(OP_COMMENT, tokens[comment].sel));
 
     if(!peek(LEFTPAREN) && !peek(LEFTBRACE))
-        return parse_tree.addUnary(OP_PROTOTYPE_ALG, id);
+        return error(EXPECT_LPAREN);
 
     ParseNode val_captures = match(LEFTBRACE) ? captureList() : NONE;
 

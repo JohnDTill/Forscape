@@ -266,15 +266,7 @@ ParseNode StaticPass::resolveStmt(ParseNode pn) noexcept {
             return pn;
         }
 
-        case OP_ALGORITHM:
-        case OP_DEFINE_PROTO:
-            return resolveAlg(pn);
-
-        case OP_PROTOTYPE_ALG:{
-            Symbol& sym = *parse_tree.getSymbol(parse_tree.arg<0>(pn));
-            sym.type = UNINITIALISED;
-            return pn;
-        }
+        case OP_ALGORITHM: return resolveAlg(pn);
 
         case OP_BLOCK: return resolveBlock(pn);
         case OP_LEXICAL_SCOPE:

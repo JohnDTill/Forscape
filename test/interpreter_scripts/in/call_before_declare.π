@@ -1,0 +1,4 @@
+helloWorld()
+alg helloWorld(){
+    print("Hello world!")
+}

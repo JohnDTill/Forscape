@@ -21,11 +21,17 @@ void SymbolTableLinker::link() noexcept {
 
 void SymbolTableLinker::resolveStmt(ParseNode pn) noexcept {
     switch (parse_tree.getOp(pn)) {
-        case OP_ALGORITHM: resolveAlgorithm(pn); break;
+        case OP_ALGORITHM:
+            resolveDeclaration(parse_tree.algName(pn));
+            //Non-capturing algorithms were moved to the top of their lexical scope,
+            //despite possibly being defined later. Resolve them last so their dependencies
+            //will definitely be marked with a stack slot.
+            if(parse_tree.valCapList(pn) != NONE || parse_tree.getNumArgs(parse_tree.refCapList(pn)) != 0)
+                resolveAlgorithm(pn);
+            break;
         case OP_ASSERT: resolveExpr(parse_tree.child(pn)); break;
         case OP_ASSIGN: resolveAssignment(pn); break;
         case OP_BLOCK: resolveBlock(pn); break;
-        case OP_DEFINE_PROTO: resolveAlgorithm(pn, false); break;
         case OP_DO_NOTHING: break;
         case OP_ELEMENTWISE_ASSIGNMENT: resolveEWiseAssignment(pn); break;
         case OP_EQUAL: resolveAssignment(pn); break;
@@ -38,7 +44,6 @@ void SymbolTableLinker::resolveStmt(ParseNode pn) noexcept {
         case OP_NAMESPACE: resolveNamespace(pn); break;
         case OP_PLOT: resolveAllChildrenAsExpressions(pn); break;
         case OP_PRINT: resolveAllChildrenAsExpressions(pn); break;
-        case OP_PROTOTYPE_ALG: resolveDeclaration(parse_tree.child(pn)); break;
         case OP_RANGED_FOR: resolveRangedFor(pn); break;
         case OP_REASSIGN: resolveReassignment(pn); break;
         case OP_RETURN: resolveExpr(parse_tree.child(pn)); break;
@@ -64,13 +69,7 @@ void SymbolTableLinker::resolveExpr(ParseNode pn) noexcept {
     }
 }
 
-void SymbolTableLinker::resolveAlgorithm(ParseNode pn, bool declare) noexcept {
-    if(parse_tree.getOp(pn) != OP_LAMBDA){
-        ParseNode name = parse_tree.algName(pn);
-        if(declare) resolveDeclaration(name);
-        else resolveReference(name);
-    }
-
+void SymbolTableLinker::resolveAlgorithm(ParseNode pn) noexcept {
     increaseClosureDepth(pn);
     ParseNode param_list = parse_tree.paramList(pn);
     for(size_t i = 0; i < parse_tree.getNumArgs(param_list); i++){
@@ -98,6 +97,17 @@ void SymbolTableLinker::resolveBlock(ParseNode pn) noexcept {
     assert(parse_tree.getOp(pn) == OP_BLOCK);
     for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++)
         resolveStmt(parse_tree.arg(pn, i));
+
+    //Non-capturing algorithms were moved to the top of their lexical scope,
+    //despite possibly being defined later. Resolve them last so their dependencies
+    //will definitely be marked with a stack slot.
+    for(size_t i = 0; i < parse_tree.getNumArgs(pn); i++){
+        ParseNode child = parse_tree.arg(pn, i);
+        if(parse_tree.getOp(child) != OP_ALGORITHM
+            || parse_tree.valCapList(child) != NONE
+            || parse_tree.getNumArgs(parse_tree.refCapList(child)) != 0) continue;
+        resolveAlgorithm(child);
+    }
 }
 
 void SymbolTableLinker::resolveEWiseAssignment(ParseNode pn) noexcept {

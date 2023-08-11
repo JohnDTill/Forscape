@@ -42,7 +42,7 @@ Value& Stack::read(size_t offset   DEBUG_STACK_NAME) noexcept {
     if(name != actual){
         auto lookup = aliases.find(actual);
         if(lookup == aliases.end() || lookup->second.find(name) == lookup->second.end()){
-            std::cout << "Tried to read " << name << ", but read "
+            std::cout << "Tried to read " << name << " at index " << offset << ", but read "
                       << actual << '\n' << std::endl;
             print();
             assert(false);

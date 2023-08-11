@@ -1,0 +1,5 @@
+callWithUninitialisedDependency()
+x = 2
+alg callWithUninitialisedDependency(){
+    return x
+}

@@ -1,0 +1,5 @@
+alg callWithUndeclaredDependency(){
+    return x
+}
+x = 2
+callWithUndeclaredDependency()

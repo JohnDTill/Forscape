@@ -44,7 +44,7 @@ BAD_CONTINUE,,Continue statement not in loop
 AMBIGIOUS_TRIG_POWER,,Negative trig power is ambiguous. Use explicit power (sin(x)^-1 or csc(x)) or explicit inverse function (arcsin(x))
 LOG_ARG,,Logarithm argument must be positive
 LOG_BASE,,Logarithm base must be positive
-USE_BEFORE_DEFINE,y,Algorithm is used before it is defined
+USE_BEFORE_DEFINE,y,Variable is used before it is defined
 EMPTY_BIG_SYMBOL,,Big symbol must have 2 arguments
 BIG_SYMBOL_ARG,,Big symbol argument must be an integer
 BIG_SYMBOL_RANGE,,Big symbol range must increase

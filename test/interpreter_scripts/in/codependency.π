@@ -1,5 +1,3 @@
-alg isOdd
-
 alg isEven(x){
     if(x ≤ 1) return x = 0
     else return isOdd(x-1)

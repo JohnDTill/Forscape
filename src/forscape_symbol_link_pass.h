@@ -24,7 +24,7 @@ private:
     void resolveExpr(ParseNode pn) noexcept;
 
     //Statements
-    void resolveAlgorithm(ParseNode pn, bool declare = true) noexcept;
+    void resolveAlgorithm(ParseNode pn) noexcept;
     void resolveAssignment(ParseNode pn) noexcept;
     void resolveBlock(ParseNode pn) noexcept;
     void resolveEWiseAssignment(ParseNode pn) noexcept;
