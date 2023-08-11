@@ -235,7 +235,7 @@ std::string Program::run(){
         }
 
     if(interpreter.error_code != Code::ErrorCode::NO_ERROR_FOUND){
-        const Typeset::Selection& sel = program_entry_point->parser.parse_tree.getSelection(interpreter.error_node);
+        const Typeset::Selection& sel = parse_tree.getSelection(interpreter.error_node);
         const std::string msg(getMessage(interpreter.error_code));
 
         str += "\nLine " + sel.getStartLineAsString() + " - " + msg;

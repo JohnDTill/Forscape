@@ -1,9 +1,9 @@
 alg cursedFactorial(n){
-    alg stop() return 1 //DO THIS: why is the order reversed?
     alg recursive(){
         next = cursedFactorial(n-1)
         return n*next()
     }
+    alg stop() return 1
     if(n > 1) return recursive
     else return stop
 }
