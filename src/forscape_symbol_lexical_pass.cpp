@@ -602,7 +602,7 @@ void SymbolLexicalPass::resolveBlock(ParseNode pn) alloc_except {
         resolveStmt( parse_tree.arg(pn, i) );
 
     //Re-order functions
-    std::vector<ParseNode> algs;
+    static std::vector<ParseNode> algs;
     for(size_t i = parse_tree.getNumArgs(pn); i-->0;){
         ParseNode child = parse_tree.arg(pn, i);
 
@@ -617,6 +617,7 @@ void SymbolLexicalPass::resolveBlock(ParseNode pn) alloc_except {
     }
     for(size_t i = algs.size(); i-->0;)
         parse_tree.setArg(pn, algs.size()-i-1, algs[i]);
+    algs.clear();
 }
 
 void SymbolLexicalPass::resolveLexicalScope(ParseNode pn) alloc_except {
