@@ -18,8 +18,6 @@ class ProjectBrowser;
 class SearchDialog;
 class QGroupBox;
 class QSplitter;
-class QTreeWidget;
-class QTreeWidgetItem;
 class Splitter;
 
 namespace Forscape{
@@ -40,6 +38,12 @@ public:
     QSettings settings;
     Forscape::Typeset::Editor* editor;
 
+public slots:
+    void viewModel(Forscape::Typeset::Model* model, size_t line);
+    void viewModel(Forscape::Typeset::Model* model);
+    void on_actionNew_triggered();
+    void hideProjectBrowser() noexcept;
+
 private:
     SearchDialog* search;
     Ui::MainWindow* ui;
@@ -49,7 +53,6 @@ private:
     QToolBar* action_toolbar;
     QToolBar* project_toolbar;
     ProjectBrowser* project_browser;
-    QTreeWidgetItem* project_browser_active_item;
     Splitter* horizontal_splitter;
     Splitter* vertical_splitter;
     Preferences* preferences;
@@ -86,7 +89,6 @@ private slots:
     void symbolTable();
     void github();
     void on_actionNew_Project_triggered();
-    void on_actionNew_triggered();
     void on_actionOpen_triggered();
     bool on_actionSave_triggered();
     void on_actionSave_As_triggered();
@@ -123,16 +125,10 @@ private slots:
     void onColourChanged();
     void on_actionGo_to_line_triggered();
     void onSplitterResize(int pos, int index);
-    void onFileClicked(QTreeWidgetItem* item, int column);
-    void onFileClicked();
-    void onShowInExplorer();
-    void onDeleteFile();
-    void onFileRightClicked(const QPoint& pos);
     void setHSplitterDefaultWidth();
     void setVSplitterDefaultHeight();
     void on_actionGoBack_triggered();
     void on_actionGoForward_triggered();
-    void viewModel(Forscape::Typeset::Model* model, size_t line);
     void viewSelection(const Forscape::Typeset::Selection& sel);
     bool on_actionSave_All_triggered();
     void on_actionReload_triggered();
@@ -155,15 +151,10 @@ private:
     void addSeries(const std::vector<std::pair<double, double>>& data) const alloc_except;
     QString getLastDir();
     void setEditorToModelAndLine(Forscape::Typeset::Model* model, size_t line);
-    void updateProjectBrowser();
-    void addProjectEntry(Forscape::Typeset::Model* model);
     void loadRecentProjects();
     void updateRecentProjectsFromList();
     void updateRecentProjectsFromCurrent();
-    void linkFileToAncestor(QTreeWidgetItem* file_item, const std::filesystem::path file_path);
-    void linkItemToExistingAncestor(QTreeWidgetItem* item, std::filesystem::path path);
 
-    FORSCAPE_UNORDERED_MAP<std::filesystem::path, QTreeWidgetItem*> project_browser_entries;
     FORSCAPE_UNORDERED_SET<Forscape::Typeset::Model*> modified_files;
     QStringList recent_projects;
     static constexpr int MAX_DISPLAYED_RECENT_PROJECTS = 20;
