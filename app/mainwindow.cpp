@@ -37,6 +37,7 @@
 #include "mathtoolbar.h"
 #include "plot.h"
 #include "preferences.h"
+#include "projectbrowser.h"
 #include "searchdialog.h"
 #include "splitter.h"
 #include "symboltreeview.h"
@@ -76,6 +77,8 @@
 #define LAST_DIRECTORY "last_dir"
 #define RECENT_PROJECTS "recent"
 
+//DO THIS: set toolbar rightclick names
+
 using namespace Forscape;
 
 static QTimer* external_change_timer;
@@ -114,14 +117,10 @@ MainWindow::MainWindow(QWidget* parent)
     external_change_timer->start(CHANGE_CHECK_PERIOD_MS);
 
     horizontal_splitter = new Splitter(Qt::Horizontal, this);
-    project_browser = new QTreeWidget(horizontal_splitter);
-    project_browser->setHeaderHidden(true);
-    project_browser->setIndentation(10);
-    project_browser->setMinimumWidth(120);
+    project_browser = new ProjectBrowser(horizontal_splitter);
     connect(project_browser, SIGNAL(itemActivated(QTreeWidgetItem*, int)), this, SLOT(onFileClicked(QTreeWidgetItem*, int)));
     project_browser->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(project_browser, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onFileRightClicked(const QPoint&)));
-    project_browser->setRootIsDecorated(false);
     project_browser_active_item = project_browser->invisibleRootItem();
     ui->actionGoBack->setIcon(QIcon(":/fonts/arrow_back.svg"));
     ui->actionGoForward->setIcon(QIcon(":/fonts/arrow_forward.svg"));
@@ -1310,8 +1309,24 @@ void MainWindow::onShowInExplorer() {
     process->start("explorer.exe", args);
 }
 
+void MainWindow::onDeleteFile() {
+    QTreeWidgetItem* item = project_browser->currentItem();
+    auto m = model(item);
+    assert(item->childCount() == 0);
+    if(!m->notOnDisk()) std::filesystem::remove(m->path);
+
+    assert(m != Program::instance()->program_entry_point);
+    delete m;
+    delete item;
+
+    //TODO: this has implications for the viewing buffer
+
+    editor->updateModel();
+}
+
 void MainWindow::onFileRightClicked(const QPoint& pos) {
     QMenu menu(this);
+    menu.setToolTipsVisible(true);
 
     QTreeWidgetItem* item = project_browser->itemAt(pos);
     if(item == nullptr){
@@ -1325,19 +1340,30 @@ void MainWindow::onFileRightClicked(const QPoint& pos) {
         open_file->setToolTip(tr("Open the selected file in the editor"));
         connect(open_file, SIGNAL(triggered(bool)), this, SLOT(onFileClicked()));
 
-        //EVENTUALLY - support project-wide rename
-
         if(isSavedToDisk(item)){
             QAction* show_in_explorer = menu.addAction(tr("Show in Explorer"));
             show_in_explorer->setToolTip(tr("Show in the OS file browser"));
             connect(show_in_explorer, SIGNAL(triggered(bool)), this, SLOT(onShowInExplorer()));
         }
-    }else{
-        //EVENTUALLY - support project-wide rename
 
+        auto m = model(item);
+        if(m != Program::instance()->program_entry_point){
+            QAction* delete_file = menu.addAction(tr("Delete"));
+            delete_file->setToolTip(tr("Erase this file"));
+            connect(delete_file, SIGNAL(triggered(bool)), this, SLOT(onDeleteFile()));
+        }
+
+        QAction* rename_file = menu.addAction(tr("Rename"));
+        rename_file->setToolTip("Change the filename");
+        //DO THIS
+    }else{
         QAction* show_in_explorer = menu.addAction(tr("Show in Explorer"));
         show_in_explorer->setToolTip(tr("Show in the OS file browser"));
         connect(show_in_explorer, SIGNAL(triggered(bool)), this, SLOT(onShowInExplorer()));
+
+        QAction* rename_folder = menu.addAction(tr("Rename"));
+        rename_folder->setToolTip("Change the directory name");
+        //DO THIS
     }
 
     menu.exec(project_browser->mapToGlobal(pos));

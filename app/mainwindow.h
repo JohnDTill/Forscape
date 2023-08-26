@@ -14,6 +14,7 @@ QT_END_NAMESPACE
 class MathToolbar;
 class Plot;
 class Preferences;
+class ProjectBrowser;
 class SearchDialog;
 class QGroupBox;
 class QSplitter;
@@ -47,7 +48,7 @@ private:
     MathToolbar* math_toolbar;
     QToolBar* action_toolbar;
     QToolBar* project_toolbar;
-    QTreeWidget* project_browser;
+    ProjectBrowser* project_browser;
     QTreeWidgetItem* project_browser_active_item;
     Splitter* horizontal_splitter;
     Splitter* vertical_splitter;
@@ -125,6 +126,7 @@ private slots:
     void onFileClicked(QTreeWidgetItem* item, int column);
     void onFileClicked();
     void onShowInExplorer();
+    void onDeleteFile();
     void onFileRightClicked(const QPoint& pos);
     void setHSplitterDefaultWidth();
     void setVSplitterDefaultHeight();
