@@ -148,8 +148,7 @@ void ProjectBrowser::saveModel(Forscape::Typeset::Model* saved_model, const std:
     if(create_new_file || rename_file){
         saved_model->path = std_path;
         FileEntry* item = debug_cast<FileEntry*>(entries[std_path]);
-        item->setText(0, toQString(std_path.filename()));
-        item->setData(0, Qt::UserRole, reinterpret_cast<size_t>(saved_model));
+        item->setModel(*saved_model);
         auto result = entries.insert({std_path, item});
         if(!result.second){
             //Saving over existing project file
