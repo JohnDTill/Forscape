@@ -2,7 +2,6 @@
 #define PROJECTBROWSER_H
 
 #include <QTreeWidget>
-#include <QApplication>
 #include <filesystem>
 #include <forscape_common.h>
 
