@@ -9,31 +9,87 @@
 #include <QAction>
 #include <QDir>
 #include <QFileIconProvider>
+#include <QInputDialog>
 #include <QMenu>
+#include <QMessageBox>
 #include <QProcess>
 
 //DO THIS: the project view is unintuitive. Allow multiple open projects?
 //DO THIS: need assurance that the viewing history remains valid as files are deleted, renamed, w/e
 //DO THIS: the project browser should probably have an undo stack
+//DO THIS: add copy path option
+//DO THIS: import from absolute path is broken (should probably warn)
+//DO THIS: import from folder up is broken
 
 Q_DECLARE_METATYPE(Forscape::Typeset::Model*); //EVENTUALLY: this is only for compability with old versions
+
+namespace Forscape {
 
 static QIcon main_icon;
 static QIcon file_icon;
 static QIcon folder_icon;
 
-static Forscape::Typeset::Model* getModelForEntry(const QTreeWidgetItem* item) noexcept {
-    assert(item->childCount() == 0);
-    return item->data(0, Qt::UserRole).value<Forscape::Typeset::Model*>();
+class ProjectBrowser::FileEntry : public QTreeWidgetItem {
+public:
+    Forscape::Typeset::Model* model = nullptr;
+    std::filesystem::path path;
+    FileEntry(QTreeWidgetItem* parent);
+    FileEntry();
+    void setModel(Forscape::Typeset::Model& m) noexcept;
+    bool isSavedToDisk() const noexcept;
+    const std::filesystem::path& getPath() const noexcept;
+};
+
+ProjectBrowser::FileEntry::FileEntry(QTreeWidgetItem* parent) : QTreeWidgetItem(parent) {
+    setIcon(0, file_icon);
+}
+
+ProjectBrowser::FileEntry::FileEntry() : QTreeWidgetItem() {
+    setIcon(0, file_icon);
+}
+
+void ProjectBrowser::FileEntry::setModel(Forscape::Typeset::Model& m) noexcept {
+    model = &m;
+    path = m.path;
+    setText(0, isSavedToDisk() ? toQString(path.filename()) : "untitled");
+}
+
+bool ProjectBrowser::FileEntry::isSavedToDisk() const noexcept {
+    return !model->notOnDisk();
+}
+
+const std::filesystem::path& ProjectBrowser::FileEntry::getPath() const noexcept {
+    if(model) assert(path == model->path);
+    return path;
 }
 
 static bool itemIsFile(const QTreeWidgetItem* item) noexcept {
     return item->childCount() == 0;
 }
 
-static bool isSavedToDisk(const QTreeWidgetItem* item) noexcept {
-    return !getModelForEntry(item)->path.empty();
+static bool itemIsDirectory(const QTreeWidgetItem* item) noexcept {
+    return item->childCount() > 0;
 }
+
+class ProjectBrowser::DirectoryEntry : public QTreeWidgetItem {
+private:
+    std::filesystem::path path;
+
+public:
+    DirectoryEntry() : QTreeWidgetItem() {
+        setIcon(0, folder_icon);
+        setExpanded(true);
+    }
+
+    void setPath(const std::filesystem::path& p) {
+        path = p;
+        setText(0, toQString(p.filename()));
+    }
+
+    const std::filesystem::path& getPath() const noexcept {
+        return path;
+    }
+};
 
 ProjectBrowser::ProjectBrowser(QWidget* parent, MainWindow* main_window)
     : QTreeWidget(parent), main_window(main_window) {
@@ -55,14 +111,12 @@ void ProjectBrowser::setProject(Forscape::Typeset::Model* model) {
     clear();
     const std::filesystem::path& std_path = model->path;
     QTreeWidgetItem* root = invisibleRootItem();
-    QTreeWidgetItem* main_file = new QTreeWidgetItem(root);
-    main_file->setText(0, toQString(std_path.filename()));
+    FileEntry* main_file = new FileEntry(root);
     main_file->setIcon(0, main_icon);
-    main_file->setData(0, Qt::UserRole, QVariant::fromValue(model));
-    model->project_browser_entry = main_file;
-    project_browser_entries[std_path] = main_file;
+    main_file->setModel(*model);
+    entries[std_path] = main_file;
     const std::filesystem::path parent_path = std_path.parent_path();
-    project_browser_entries[parent_path] = root;
+    entries[parent_path] = root;
     root->setData(0, Qt::UserRole, toQString(parent_path));
     currently_viewed_item = main_file;
     QFont normal_font = font();
@@ -72,12 +126,11 @@ void ProjectBrowser::setProject(Forscape::Typeset::Model* model) {
 }
 
 void ProjectBrowser::addFile(Forscape::Typeset::Model* model) {
-    QTreeWidgetItem* item = new QTreeWidgetItem(this);
+    FileEntry* item = new FileEntry();
     item->setText(0, "untitled");
     item->setIcon(0, file_icon);
-    item->setData(0, Qt::UserRole, QVariant::fromValue(model));
+    item->model = model;
     sortItems(0, Qt::SortOrder::AscendingOrder);
-    model->project_browser_entry = item;
 }
 
 void ProjectBrowser::saveModel(Forscape::Typeset::Model* saved_model, const std::filesystem::path& std_path) {
@@ -88,20 +141,21 @@ void ProjectBrowser::saveModel(Forscape::Typeset::Model* saved_model, const std:
     if(rename_file){
         //EVENTUALLY: this is a hacky solution to keep the old file, which is likely referenced in code
         Forscape::Program::instance()->source_files.erase(old_path);
-        project_browser_entries.erase(old_path);
+        entries.erase(old_path);
         Forscape::Program::instance()->openFromAbsolutePath(old_path);
     }
 
     if(create_new_file || rename_file){
         saved_model->path = std_path;
-        QTreeWidgetItem* item = saved_model->project_browser_entry;
+        FileEntry* item = debug_cast<FileEntry*>(entries[std_path]);
         item->setText(0, toQString(std_path.filename()));
-        auto result = project_browser_entries.insert({std_path, item});
+        item->setData(0, Qt::UserRole, reinterpret_cast<size_t>(saved_model));
+        auto result = entries.insert({std_path, item});
         if(!result.second){
             //Saving over existing project file
             QTreeWidgetItem* overwritten = result.first->second;
-            Forscape::Typeset::Model* overwritten_model = getModelForEntry(overwritten);
-            delete overwritten_model;
+            //Forscape::Typeset::Model* overwritten_model = getModelForEntry(overwritten);
+            //delete overwritten_model;
             /* DO THIS
             modified_files.erase(overwritten_model);
             for(auto& entry : viewing_chain)
@@ -131,15 +185,11 @@ void ProjectBrowser::updateProjectBrowser() {
 
 void ProjectBrowser::addProjectEntry(Forscape::Typeset::Model* model) {
     std::filesystem::path path = model->path;
-    assert(project_browser_entries.find(path) == project_browser_entries.end());
+    assert(entries.find(path) == entries.end());
 
-    QTreeWidgetItem* tree_item = new QTreeWidgetItem;
-    model->project_browser_entry = tree_item;
-    tree_item->setData(0, Qt::UserRole, QVariant::fromValue(model));
-    tree_item->setText(0, toQString(path.filename()));
-    tree_item->setIcon(0, file_icon);
-    project_browser_entries[path] = tree_item;
-
+    FileEntry* tree_item = new FileEntry();
+    tree_item->setModel(*model);
+    entries[path] = tree_item;
     model->write_time = std::filesystem::file_time_type::clock::now();
 
     linkFileToAncestor(tree_item, path);
@@ -147,12 +197,11 @@ void ProjectBrowser::addProjectEntry(Forscape::Typeset::Model* model) {
 
 void ProjectBrowser::populateWithNewProject(Forscape::Typeset::Model* model) {
     clear();
-    QTreeWidgetItem* item = new QTreeWidgetItem(this);
+    FileEntry* item = new FileEntry();
     item->setText(0, "untitled");
     item->setIcon(0, main_icon);
     item->setData(0, Qt::UserRole, QVariant::fromValue(model));
     sortItems(0, Qt::SortOrder::AscendingOrder);
-    model->project_browser_entry = item;
     currently_viewed_item = item;
     item->setSelected(true);
     QFont f = font();
@@ -169,18 +218,17 @@ void ProjectBrowser::setCurrentlyViewed(Forscape::Typeset::Model* model) {
     currently_viewed_item->setFont(0, QFont());
 
     //Highlight the new item
-    currently_viewed_item = model->project_browser_entry;
     currently_viewed_item->setFont(0, bold_font);
     setCurrentItem(currently_viewed_item);
 }
 
 void ProjectBrowser::clear() noexcept {
     QTreeWidget::clear();
-    project_browser_entries.clear();
+    entries.clear();
 }
 
 void ProjectBrowser::onFileClicked(QTreeWidgetItem* item, int column) {
-    if(itemIsFile(item)) main_window->viewModel(getModelForEntry(item));
+    if(itemIsFile(item)) main_window->viewModel(debug_cast<FileEntry*>(item)->model);
 }
 
 void ProjectBrowser::onFileClicked() {
@@ -192,13 +240,13 @@ void ProjectBrowser::onShowInExplorer() {
 
     QStringList args;
 
-    if(item->childCount() == 0){
-        assert(isSavedToDisk(item));
-        auto m = getModelForEntry(item);
-        args << "/select," << QDir::toNativeSeparators(toQString(m->path));
+    if(itemIsFile(item)){
+        const FileEntry& file_item = getSelectedFileEntry();
+        assert(file_item.isSavedToDisk());
+        args << "/select," << QDir::toNativeSeparators(toQString(file_item.path));
     }else{
-        QString q_path = item->data(0, Qt::UserRole).toString();
-        args << QDir::toNativeSeparators(q_path);
+        const DirectoryEntry& directory_item = getSelectedDirectory();
+        args << QDir::toNativeSeparators(toQString(directory_item.getPath()));
     }
 
     QProcess* process = new QProcess(this);
@@ -206,13 +254,11 @@ void ProjectBrowser::onShowInExplorer() {
 }
 
 void ProjectBrowser::onDeleteFile() {
-    QTreeWidgetItem* item = currentItem();
-    auto m = getModelForEntry(item);
-    assert(itemIsFile(item));
-    if(!m->notOnDisk()) std::filesystem::remove(m->path);
+    FileEntry* item = debug_cast<FileEntry*>(currentItem());
+    if(item->isSavedToDisk()) std::filesystem::remove(item->path);
 
-    assert(m != Forscape::Program::instance()->program_entry_point);
-    delete m;
+    assert(item->model != Forscape::Program::instance()->program_entry_point);
+    delete item->model;
     delete item;
 
     //DO THIS: this has implications for the viewing buffer
@@ -233,19 +279,20 @@ void ProjectBrowser::onRightClick(const QPoint& pos) {
         QAction* hide = menu.addAction(tr("Hide project browser"));
         hide->setToolTip(tr("Remove the project browser from view"));
         connect(hide, SIGNAL(triggered(bool)), main_window, SLOT(hideProjectBrowser()));
-    }else if(item->childCount() == 0){
+    }else if(itemIsFile(item)){
         //Item is file
+        FileEntry* file_item = debug_cast<FileEntry*>(item);
         QAction* open_file = menu.addAction(tr("Open File"));
         open_file->setToolTip(tr("Open the selected file in the editor"));
         connect(open_file, SIGNAL(triggered(bool)), this, SLOT(onFileClicked()));
 
-        if(isSavedToDisk(item)){
+        if(file_item->isSavedToDisk()){
             QAction* show_in_explorer = menu.addAction(tr("Show in Explorer"));
             show_in_explorer->setToolTip(tr("Show in the OS file browser"));
             connect(show_in_explorer, SIGNAL(triggered(bool)), this, SLOT(onShowInExplorer()));
         }
 
-        auto m = getModelForEntry(item);
+        auto m = file_item->model;
         if(m != Forscape::Program::instance()->program_entry_point){
             QAction* delete_file = menu.addAction(tr("Delete"));
             delete_file->setToolTip(tr("Erase this file"));
@@ -253,22 +300,107 @@ void ProjectBrowser::onRightClick(const QPoint& pos) {
         }
 
         QAction* rename_file = menu.addAction(tr("Rename"));
-        rename_file->setToolTip("Change the filename");
-        //DO THIS
+        rename_file->setToolTip(tr("Change the filename"));
+        connect(rename_file, SIGNAL(triggered(bool)), this, SLOT(onFileRenamed()));
     }else{
         QAction* show_in_explorer = menu.addAction(tr("Show in Explorer"));
         show_in_explorer->setToolTip(tr("Show in the OS file browser"));
         connect(show_in_explorer, SIGNAL(triggered(bool)), this, SLOT(onShowInExplorer()));
 
         QAction* rename_folder = menu.addAction(tr("Rename"));
-        rename_folder->setToolTip("Change the directory name");
-        //DO THIS
+        rename_folder->setToolTip(tr("Change the directory name"));
+        connect(rename_folder, SIGNAL(triggered(bool)), this, SLOT(onDirectoryRenamed()));
+
+        QAction* expand = menu.addAction(item->isExpanded() ? tr("Collapse") : tr("Expand"));
+        connect(expand, SIGNAL(triggered(bool)), this, SLOT(expandDirectory()));
     }
 
     menu.exec(mapToGlobal(pos));
 }
 
-void ProjectBrowser::linkFileToAncestor(QTreeWidgetItem* file_item, const std::filesystem::path file_path) {
+void ProjectBrowser::onDirectoryRenamed() {
+    DirectoryEntry& entry = getSelectedDirectory();
+    const QString old_name = currentItem()->text(0);
+
+    bool ok;
+    QString text = QInputDialog::getText(
+                this,
+                tr("Rename folder ") + '"' + old_name + '"',
+                tr("New name:"),
+                QLineEdit::Normal,
+                "",
+                &ok
+                );
+    if(!ok) return;
+
+    const std::filesystem::path old_path = entry.getPath();
+    const std::filesystem::path new_path = old_path.parent_path() / toCppString(text);
+    std::error_code rename_error;
+    std::filesystem::rename(old_path, new_path, rename_error);
+
+    if(rename_error){
+        QMessageBox messageBox;
+        messageBox.critical(nullptr, tr("Error"), tr("Failed to rename directory ") + '"' + old_name + '"');
+        messageBox.setFixedSize(500,200);
+        return;
+    }
+
+    entry.setPath(new_path);
+
+    //DO THIS: update all the child paths
+    //DO THIS: refactor paths in the code
+    //std::string name = toCppString(text);
+}
+
+void ProjectBrowser::onFileRenamed() {
+    FileEntry& entry = getSelectedFileEntry();
+    const QString old_name = currentItem()->text(0);
+
+    bool ok;
+    QString text = QInputDialog::getText(
+                this,
+                tr("Rename file ") + '"' + old_name + '"',
+                tr("New name:"),
+                QLineEdit::Normal,
+                "",
+                &ok
+                );
+    if(!ok) return;
+
+    const std::filesystem::path old_path = entry.getPath();
+    std::filesystem::path new_path = old_path;
+    new_path.replace_filename(toCppString(text));
+    new_path.replace_extension(old_path.extension());
+    std::error_code rename_error;
+    std::filesystem::rename(old_path, new_path, rename_error);
+
+    if(rename_error){
+        QMessageBox messageBox;
+        messageBox.critical(nullptr, tr("Error"), tr("Failed to rename file ") + '"' + old_name + '"');
+        messageBox.setFixedSize(500,200);
+        return;
+    }
+
+    entry.setText(0, text);
+    entry.path = new_path;
+
+    //DO THIS: refactor paths in the code
+}
+
+void ProjectBrowser::expandDirectory() {
+    assert(itemIsDirectory(currentItem()));
+    currentItem()->setExpanded(!currentItem()->isExpanded());
+}
+
+ProjectBrowser::FileEntry& ProjectBrowser::getSelectedFileEntry() const noexcept {
+    return *debug_cast<ProjectBrowser::FileEntry*>(currentItem());
+}
+
+ProjectBrowser::DirectoryEntry& ProjectBrowser::getSelectedDirectory() const noexcept {
+    return *debug_cast<ProjectBrowser::DirectoryEntry*>(currentItem());
+}
+
+void ProjectBrowser::linkFileToAncestor(FileEntry* file_item, const std::filesystem::path file_path) {
     assert(std::filesystem::is_regular_file(file_path));
 
     QTreeWidgetItem* root = invisibleRootItem();
@@ -277,8 +409,8 @@ void ProjectBrowser::linkFileToAncestor(QTreeWidgetItem* file_item, const std::f
     std::filesystem::path folder_path = file_path.parent_path();
 
     //Link the file to it's folder
-    auto result = project_browser_entries.find(folder_path);
-    if(result != project_browser_entries.end()){
+    auto result = entries.find(folder_path);
+    if(result != entries.end()){
         //Folder already exists
         QTreeWidgetItem* preexisting_folder_entry = result->second;
         preexisting_folder_entry->addChild(file_item);
@@ -292,7 +424,7 @@ void ProjectBrowser::linkFileToAncestor(QTreeWidgetItem* file_item, const std::f
         //Browser already showing different drives, do nothing
     }else if(stale_root_path.root_name() != file_path.root_name()){
         //These files come from different drives; change root to nothing since no common ancestor
-        project_browser_entries.erase(stale_root_path);
+        entries.erase(stale_root_path);
         root->setData(0, Qt::UserRole, QString());
         taken_children = root->takeChildren();
     }else{
@@ -317,8 +449,8 @@ void ProjectBrowser::linkFileToAncestor(QTreeWidgetItem* file_item, const std::f
             }
 
             taken_children = root->takeChildren();
-            project_browser_entries.erase(stale_root_path);
-            project_browser_entries[new_root_path] = root;
+            entries.erase(stale_root_path);
+            entries[new_root_path] = root;
             root->setData(0, Qt::UserRole, toQString(new_root_path));
         }
     }
@@ -328,7 +460,7 @@ void ProjectBrowser::linkFileToAncestor(QTreeWidgetItem* file_item, const std::f
     if(!taken_children.empty()){
         linkItemToExistingAncestor(taken_children.back(), stale_root_path / "fake");
         taken_children.pop_back();
-        QTreeWidgetItem* entry_for_stale_root = project_browser_entries[stale_root_path];
+        QTreeWidgetItem* entry_for_stale_root = entries[stale_root_path];
         entry_for_stale_root->addChildren(taken_children);
         setCurrentItem(currently_viewed_item);
     }
@@ -336,21 +468,18 @@ void ProjectBrowser::linkFileToAncestor(QTreeWidgetItem* file_item, const std::f
 
 void ProjectBrowser::linkItemToExistingAncestor(QTreeWidgetItem* item, std::filesystem::path path) {
     path = path.parent_path();
-    auto parent_result = project_browser_entries.insert({path, nullptr});
+    auto parent_result = entries.insert({path, nullptr});
     while(parent_result.second){
-        QTreeWidgetItem* new_item = new QTreeWidgetItem;
+        DirectoryEntry* new_item = new DirectoryEntry;
         new_item->addChild(item);
         item = new_item;
-        item->setText(0, toQString(path.filename()));
-        item->setData(0, Qt::UserRole, toQString(path));
-        item->setIcon(0, folder_icon);
-        item->setExpanded(true);
+        new_item->setPath(path);
         parent_result.first->second = item;
 
         auto parent_path = path.parent_path();
         if(parent_path != path){ //has_parent_path() lies, causing an infinite loop
             path = parent_path;
-            parent_result = project_browser_entries.insert({path, nullptr});
+            parent_result = entries.insert({path, nullptr});
         }else{
             invisibleRootItem()->addChild(item);
             item->setText(0, toQString(*path.begin()));
@@ -359,4 +488,6 @@ void ProjectBrowser::linkItemToExistingAncestor(QTreeWidgetItem* item, std::file
     }
 
     parent_result.first->second->addChild(item);
+}
+
 }

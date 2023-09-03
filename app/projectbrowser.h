@@ -7,6 +7,8 @@
 
 class MainWindow;
 
+namespace Forscape {
+
 class ProjectBrowser : public QTreeWidget {
     Q_OBJECT
 
@@ -29,14 +31,23 @@ private slots:
     void onShowInExplorer();
     void onDeleteFile();
     void onRightClick(const QPoint& pos);
+    void onDirectoryRenamed();
+    void onFileRenamed();
+    void expandDirectory();
 
 private:
-    void linkFileToAncestor(QTreeWidgetItem* file_item, const std::filesystem::path file_path);
+    class FileEntry;
+    class DirectoryEntry;
+    FileEntry& getSelectedFileEntry() const noexcept;
+    DirectoryEntry& getSelectedDirectory() const noexcept;
+    void linkFileToAncestor(FileEntry* file_item, const std::filesystem::path file_path);
     void linkItemToExistingAncestor(QTreeWidgetItem* item, std::filesystem::path path);
 
-    FORSCAPE_UNORDERED_MAP<std::filesystem::path, QTreeWidgetItem*> project_browser_entries;
+    FORSCAPE_UNORDERED_MAP<std::filesystem::path, QTreeWidgetItem*> entries;
     QTreeWidgetItem* currently_viewed_item; //Used to give affordance
     MainWindow* main_window;
 };
+
+}
 
 #endif // PROJECTBROWSER_H

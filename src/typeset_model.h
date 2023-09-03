@@ -11,10 +11,6 @@
 #include "forscape_parser.h"
 #include "forscape_symbol_lexical_pass.h"
 
-#ifdef QT_VERSION
-class QTreeWidgetItem;
-#endif
-
 namespace Forscape {
 
 namespace Typeset {
@@ -43,7 +39,6 @@ public:
     std::filesystem::path path;
     bool notOnDisk() const noexcept { return path.empty(); }
     #ifdef QT_VERSION
-    QTreeWidgetItem* project_browser_entry  DEBUG_INIT_NULLPTR;
     std::filesystem::file_time_type write_time;
     #endif
     bool is_imported = false;

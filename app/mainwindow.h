@@ -14,13 +14,14 @@ QT_END_NAMESPACE
 class MathToolbar;
 class Plot;
 class Preferences;
-class ProjectBrowser;
 class SearchDialog;
 class QGroupBox;
 class QSplitter;
 class Splitter;
 
 namespace Forscape{
+class ProjectBrowser;
+
 namespace Typeset {
 class Console;
 class Editor;
@@ -52,7 +53,7 @@ private:
     MathToolbar* math_toolbar;
     QToolBar* action_toolbar;
     QToolBar* project_toolbar;
-    ProjectBrowser* project_browser;
+    Forscape::ProjectBrowser* project_browser;
     Splitter* horizontal_splitter;
     Splitter* vertical_splitter;
     Preferences* preferences;
