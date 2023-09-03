@@ -38,6 +38,7 @@ public:
     void setModel(Forscape::Typeset::Model& m) noexcept;
     bool isSavedToDisk() const noexcept;
     const std::filesystem::path& getPath() const noexcept;
+    void deleteFile() noexcept;
 };
 
 ProjectBrowser::FileEntry::FileEntry(QTreeWidgetItem* parent) : QTreeWidgetItem(parent) {
@@ -61,6 +62,12 @@ bool ProjectBrowser::FileEntry::isSavedToDisk() const noexcept {
 const std::filesystem::path& ProjectBrowser::FileEntry::getPath() const noexcept {
     if(model) assert(path == model->path);
     return path;
+}
+
+void ProjectBrowser::FileEntry::deleteFile() noexcept {
+    if(isSavedToDisk()) std::filesystem::remove(path);
+    delete model;
+    delete this;
 }
 
 static bool itemIsFile(const QTreeWidgetItem* item) noexcept {
@@ -214,8 +221,7 @@ void ProjectBrowser::setCurrentlyViewed(Forscape::Typeset::Model* model) {
     bold_font.setBold(true);
 
     //Remove highlighting on the old item
-    if(currently_viewed_file)
-        currently_viewed_file->setFont(0, QFont());
+    if(currently_viewed_file) currently_viewed_file->setFont(0, QFont());
 
     //Highlight the new item
     const auto lookup = entries.find(model->path);
@@ -257,16 +263,15 @@ void ProjectBrowser::onShowInExplorer() {
 }
 
 void ProjectBrowser::onDeleteFile() {
-    FileEntry* item = debug_cast<FileEntry*>(currentItem());
-    if(item->isSavedToDisk()) std::filesystem::remove(item->path);
-
-    assert(item->model != Forscape::Program::instance()->program_entry_point);
-    delete item->model;
-    delete item;
+    FileEntry& item = getSelectedFileEntry();
+    assert(item.model != Forscape::Program::instance()->program_entry_point);
+    entries.erase(item.path);
+    main_window->removeFile(item.model);
+    item.deleteFile();
 
     //DO THIS: this has implications for the viewing buffer
 
-    //editor->updateModel(); //DO THIS: update the model now that imports may be broken
+    main_window->reparse();
 }
 
 void ProjectBrowser::onRightClick(const QPoint& pos) {

@@ -651,7 +651,7 @@ void View::populateHighlightWordsFromParseNode(ParseNode pn){
     else if(parse_tree.getOp(pn) != Code::OP_IDENTIFIER) return;
 
     const Code::Symbol* const sym = parse_tree.getSymbol(pn);
-    if(sym) sym->getAllOccurences(highlighted_words);
+    if(sym) sym->getModelOccurences(highlighted_words, getModel());
 }
 
 bool View::scrolledToBottom() const noexcept {

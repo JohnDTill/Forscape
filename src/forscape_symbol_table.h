@@ -65,6 +65,7 @@ public:
     void getLocalOccurences(std::vector<Typeset::Selection>& found) const;
     void getExternalOccurences(std::vector<Typeset::Selection>& found) const;
     void getAllOccurences(std::vector<Typeset::Selection>& found) const;
+    void getModelOccurences(std::vector<Typeset::Selection>& found, Typeset::Model* model) const;
 };
 
 struct ScopeSegment {

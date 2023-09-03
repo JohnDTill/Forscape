@@ -36,6 +36,7 @@ public:
     MainWindow(QWidget* parent = nullptr);
     virtual ~MainWindow();
     void openProject(QString path);
+    void removeFile(Forscape::Typeset::Model* model) noexcept;
     QSettings settings;
     Forscape::Typeset::Editor* editor;
 
@@ -44,6 +45,7 @@ public slots:
     void viewModel(Forscape::Typeset::Model* model);
     void on_actionNew_triggered();
     void hideProjectBrowser() noexcept;
+    void reparse();
 
 private:
     SearchDialog* search;
@@ -78,6 +80,10 @@ private:
         JumpPoint() noexcept = default;
         JumpPoint(Forscape::Typeset::Model* model, size_t line) noexcept :
             model(model), line(line){}
+
+        bool operator==(const JumpPoint& other) const noexcept {
+            return model == other.model && line == other.line;
+        }
     };
     std::vector<JumpPoint> viewing_chain;
     size_t viewing_index = 0;

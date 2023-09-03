@@ -497,6 +497,12 @@ void MainWindow::hideProjectBrowser() noexcept {
     ui->actionShow_project_browser->setChecked(false);
 }
 
+void MainWindow::reparse() {
+    editor->getModel()->performSemanticFormatting();
+    editor->updateModel();
+    onTextChanged();
+}
+
 #ifdef FORSCAPE_WORKAROUND_QT_LINUX_FILETYPE_FILTER_BUG
 class FileFilterProxyModel : public QSortFilterProxyModel {
 protected:
@@ -749,6 +755,26 @@ void MainWindow::openProject(QString path){
     console->clearModel();
 
     onTextChanged();
+}
+
+void MainWindow::removeFile(Forscape::Typeset::Model* model) noexcept {
+    Forscape::Program::instance()->removeFile(model);
+
+    auto removed = std::remove_if(viewing_chain.begin(), viewing_chain.end(),
+        [model](const JumpPoint& v) noexcept { return v.model == model; });
+
+    while(removed != viewing_chain.end()){
+        viewing_chain.erase(removed);
+
+        for(size_t i = viewing_chain.size(); i-->1;)
+            if(viewing_chain[i] == viewing_chain[i-1])
+                viewing_chain[i].model = nullptr;
+
+        removed = std::remove_if(viewing_chain.begin(), viewing_chain.end(),
+            [](const JumpPoint& v) noexcept { return v.model == nullptr; });
+    }
+
+    updateViewJumpPointElements();
 }
 
 void MainWindow::addPlot(const std::string& title, const std::string& x_label, const std::string& y_label){

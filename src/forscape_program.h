@@ -31,6 +31,7 @@ public:
     void runStaticPass();
     void getFileSuggestions(std::vector<std::string>& suggestions, Typeset::Model* active) const;
     void getFileSuggestions(std::vector<std::string>& suggestions, std::string_view input, Typeset::Model* active) const;
+    void removeFile(Typeset::Model* model) noexcept;
     std::string run();
     void runThread();
     void stop();
