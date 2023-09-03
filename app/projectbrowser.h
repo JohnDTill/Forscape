@@ -44,7 +44,7 @@ private:
     void linkItemToExistingAncestor(QTreeWidgetItem* item, std::filesystem::path path);
 
     FORSCAPE_UNORDERED_MAP<std::filesystem::path, QTreeWidgetItem*> entries;
-    QTreeWidgetItem* currently_viewed_item; //Used to give affordance
+    FileEntry* currently_viewed_file; //Used to give affordance
     MainWindow* main_window;
 };
 

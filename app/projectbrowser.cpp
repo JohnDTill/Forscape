@@ -118,11 +118,11 @@ void ProjectBrowser::setProject(Forscape::Typeset::Model* model) {
     const std::filesystem::path parent_path = std_path.parent_path();
     entries[parent_path] = root;
     root->setData(0, Qt::UserRole, toQString(parent_path));
-    currently_viewed_item = main_file;
+    currently_viewed_file = main_file;
     QFont normal_font = font();
     QFont bold_font = normal_font;
     bold_font.setBold(true);
-    currently_viewed_item->setFont(0, bold_font);
+    currently_viewed_file->setFont(0, bold_font);
 }
 
 void ProjectBrowser::addFile(Forscape::Typeset::Model* model) {
@@ -201,7 +201,7 @@ void ProjectBrowser::populateWithNewProject(Forscape::Typeset::Model* model) {
     item->setIcon(0, main_icon);
     item->setData(0, Qt::UserRole, QVariant::fromValue(model));
     sortItems(0, Qt::SortOrder::AscendingOrder);
-    currently_viewed_item = item;
+    currently_viewed_file = item;
     item->setSelected(true);
     QFont f = font();
     f.setBold(true);
@@ -214,11 +214,15 @@ void ProjectBrowser::setCurrentlyViewed(Forscape::Typeset::Model* model) {
     bold_font.setBold(true);
 
     //Remove highlighting on the old item
-    currently_viewed_item->setFont(0, QFont());
+    if(currently_viewed_file)
+        currently_viewed_file->setFont(0, QFont());
 
     //Highlight the new item
-    currently_viewed_item->setFont(0, bold_font);
-    setCurrentItem(currently_viewed_item);
+    const auto lookup = entries.find(model->path);
+    if(lookup == entries.end()) return;
+    currently_viewed_file = debug_cast<FileEntry*>(lookup->second);
+    currently_viewed_file->setFont(0, bold_font);
+    setCurrentItem(currently_viewed_file);
 }
 
 void ProjectBrowser::clear() noexcept {
@@ -328,8 +332,8 @@ void ProjectBrowser::onDirectoryRenamed() {
                 tr("New name:"),
                 QLineEdit::Normal,
                 "",
-                &ok
-                );
+                &ok,
+                Qt::WindowFlags() & ~Qt::WindowContextHelpButtonHint);
     if(!ok) return;
 
     const std::filesystem::path old_path = entry.getPath();
@@ -362,8 +366,8 @@ void ProjectBrowser::onFileRenamed() {
                 tr("New name:"),
                 QLineEdit::Normal,
                 "",
-                &ok
-                );
+                &ok,
+                Qt::WindowFlags() & ~Qt::WindowContextHelpButtonHint);
     if(!ok) return;
 
     const std::filesystem::path old_path = entry.getPath();
@@ -461,7 +465,7 @@ void ProjectBrowser::linkFileToAncestor(FileEntry* file_item, const std::filesys
         taken_children.pop_back();
         QTreeWidgetItem* entry_for_stale_root = entries[stale_root_path];
         entry_for_stale_root->addChildren(taken_children);
-        setCurrentItem(currently_viewed_item);
+        setCurrentItem(currently_viewed_file);
     }
 }
 
