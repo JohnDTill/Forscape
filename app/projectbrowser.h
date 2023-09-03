@@ -1,9 +1,9 @@
 #ifndef PROJECTBROWSER_H
 #define PROJECTBROWSER_H
 
+#include <QTreeWidget>
 #include <filesystem>
 #include <forscape_common.h>
-#include <QTreeWidget>
 
 class MainWindow;
 
