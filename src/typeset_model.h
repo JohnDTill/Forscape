@@ -38,6 +38,7 @@ public:
     std::string error_warning_buffer;
     std::filesystem::path path;
     bool notOnDisk() const noexcept { return path.empty(); }
+    bool isSavedToDisk() const noexcept { return !notOnDisk(); }
     #ifdef QT_VERSION
     std::filesystem::file_time_type write_time;
     #endif

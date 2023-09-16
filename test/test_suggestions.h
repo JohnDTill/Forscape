@@ -92,7 +92,7 @@ inline bool testFileSuggestions(){
 
     std::vector<std::string> local_files;
     for(directory_iterator end, dir(BASE_TEST_DIR "/in"); dir != end; dir++)
-        if(std::filesystem::is_regular_file(dir->path()))
+        if(std::filesystem::is_regular_file(dir->path()) && dir->path() != mocked_file)
             local_files.push_back(dir->path().filename().u8string());
     std::sort(local_files.begin(), local_files.end());
 
@@ -119,9 +119,13 @@ inline bool testFileSuggestions(){
     #endif
 
     std::vector<std::string> parent_files;
-    for(directory_iterator end, dir(BASE_TEST_DIR); dir != end; dir++)
-        if(std::filesystem::is_regular_file(dir->path()) && dir->path() != mocked_file)
-            parent_files.push_back(".." SLASH + dir->path().filename().u8string());
+    for(directory_iterator end, dir(BASE_TEST_DIR); dir != end; dir++){
+        if(dir->path() == mocked_file) continue; //Don't expect self-import suggestion
+        if(dir->path().filename() == "in") continue; //Don't suggest return to same directory
+        if(dir->is_symlink()) continue; //Current implementation doesn't support symlinks
+        const std::string suffix = (std::filesystem::is_regular_file(dir->path()) ? "" : "/");
+        parent_files.push_back(".." SLASH + dir->path().filename().u8string() + suffix);
+    }
     std::sort(parent_files.begin(), parent_files.end());
 
     if(view->suggestions != parent_files){

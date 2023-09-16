@@ -1,0 +1,2 @@
+import ..\in\hello_world.π
+hello_world.helloWorld()

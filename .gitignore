@@ -6,6 +6,7 @@ src/generated/*
 *.dll
 **/config/lambda.ico
 **/com.automath.forscape/meta/LICENSE
+**/in/hello_world_import_abs_path.π
 
 #Qt
 *.pro.user*

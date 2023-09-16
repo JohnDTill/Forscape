@@ -457,12 +457,15 @@ void MainWindow::onKeyboardNew() {
     dialog.setWindowTitle("Creation Prompt");
     dialog.setLabelText(tr("Create new..."));
     dialog.setComboBoxItems({
-        "Project",
-        "File",
+        "Project (" + ui->actionNew_Project->shortcut().toString() + ")",
+        "File (" + ui->actionNew->shortcut().toString() + ")",
     });
 
+    const QComboBox* const combo_box = dialog.findChild<QComboBox*>();
+    assert( combo_box != nullptr );
+
     if(dialog.exec() != QDialog::Accepted) return;
-    switch( dialog.findChild<QComboBox*>()->currentIndex() ){
+    switch( combo_box->currentIndex() ){
         case 0: on_actionNew_Project_triggered(); break;
         case 1: on_actionNew_triggered(); break;
         default: assert(false);
@@ -481,6 +484,7 @@ void MainWindow::on_actionNew_Project_triggered() {
 
     ui->actionSave->setEnabled(false);
     ui->actionSave_All->setEnabled(false);
+    ui->actionReload->setEnabled(false);
 
     console->clearModel();
 
@@ -512,7 +516,7 @@ void MainWindow::on_actionNew_triggered(){
         Program::instance()->program_entry_point = model;
     setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
     active_file_path.clear();
-    project_browser->addFile(model);
+    project_browser->addUnsavedFile(model);
 
     viewModel(model, 0);
 }
