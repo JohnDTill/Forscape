@@ -20,6 +20,7 @@
 //DO THIS: add copy path option
 //DO THIS: import from absolute path is broken (should probably warn)
 //DO THIS: import from folder up is broken
+//DO THIS: start linting
 
 Q_DECLARE_METATYPE(Forscape::Typeset::Model*); //EVENTUALLY: this is only for compability with old versions
 

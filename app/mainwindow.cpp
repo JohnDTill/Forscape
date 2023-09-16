@@ -84,8 +84,6 @@ static constexpr int CHANGE_CHECK_PERIOD_MS = 500;
 static constexpr int FILE_BROWSER_WIDTH = 200;
 static bool program_control_of_hsplitter = false;
 
-//DO THIS: the CTRL+N action is counter intuitive
-
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow){
@@ -300,6 +298,14 @@ MainWindow::MainWindow(QWidget* parent)
         on_actionNew_triggered();
     }
     resetViewJumpPointElements();
+
+    QAction* new_keyboard_shortcut = new QAction(tr("Create new..."), this);
+    new_keyboard_shortcut->setShortcut(QKeySequence::New);
+    connect(new_keyboard_shortcut, SIGNAL(triggered()), this, SLOT(onKeyboardNew()));
+    addAction(new_keyboard_shortcut);
+
+    // By default there are options to hide the toolbars, but they don't play nicely with custom show/hide options
+    setContextMenuPolicy(Qt::NoContextMenu);
 }
 
 MainWindow::~MainWindow(){
@@ -424,7 +430,7 @@ void MainWindow::pollInterpreterThread(){
     }
 }
 
-void MainWindow::parseTree(){
+void MainWindow::parseTree() {
     #ifndef NDEBUG
     QString dot_src = toQString(editor->getModel()->parseTreeDot());
     dot_src.replace("\\n", "\\\\n");
@@ -432,7 +438,7 @@ void MainWindow::parseTree(){
     #endif
 }
 
-void MainWindow::symbolTable(){
+void MainWindow::symbolTable() {
     #ifndef NDEBUG
     Typeset::Model* m = editor->getModel();
     SymbolTreeView* view = new SymbolTreeView(m->symbol_builder.symbol_table, Forscape::Program::instance()->static_pass);
@@ -440,8 +446,30 @@ void MainWindow::symbolTable(){
     #endif
 }
 
-void MainWindow::github(){
+void MainWindow::github() {
     QDesktopServices::openUrl(QUrl("https://github.com/JohnDTill/Forscape"));
+}
+
+void MainWindow::onKeyboardNew() {
+    const QStringList options {
+        "Project",
+        "File",
+    };
+
+    //DO THIS: I don't like the appearance of this dialog, and the string comparison hurts me
+
+    bool success;
+    QString item = QInputDialog::getItem(this, tr("Creation Dialog"),
+                                         tr("Create new:"), options, 0, false, &success);
+    if(!success) return;
+
+    if(item == "Project"){
+        on_actionNew_Project_triggered();
+    }else if(item == "File"){
+        on_actionNew_triggered();
+    }else{
+        assert(false);
+    }
 }
 
 void MainWindow::on_actionNew_Project_triggered() {

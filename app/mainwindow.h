@@ -54,7 +54,6 @@ private:
     QGroupBox* group_box;
     MathToolbar* math_toolbar;
     QToolBar* action_toolbar;
-    QToolBar* project_toolbar;
     Forscape::ProjectBrowser* project_browser;
     Splitter* horizontal_splitter;
     Splitter* vertical_splitter;
@@ -95,6 +94,7 @@ private slots:
     void parseTree();
     void symbolTable();
     void github();
+    void onKeyboardNew();
     void on_actionNew_Project_triggered();
     void on_actionOpen_triggered();
     bool on_actionSave_triggered();

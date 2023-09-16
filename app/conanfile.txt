@@ -1,7 +1,7 @@
 [requires]
 eigen/3.4.0
-# gmp/6.2.1
-parallel-hashmap/1.35
+# gmp/6.3.0
+parallel-hashmap/1.37
 readerwriterqueue/1.0.6
 
 [generators]
