@@ -182,6 +182,11 @@ void Program::getFileSuggestions(std::vector<std::string>& suggestions, std::str
     }
 }
 
+void Program::removeFile(Typeset::Model* model) noexcept {
+    source_files.erase(model->path);
+    all_files.erase(std::remove(all_files.begin(), all_files.end(), model), all_files.end());
+}
+
 Program::ptr_or_code Program::openFromRelativePathSpecifiedExtension(std::filesystem::path rel_path){
     for(const std::filesystem::path& path_entry : project_path){
         std::filesystem::path abs_path = (path_entry / rel_path).lexically_normal();

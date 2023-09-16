@@ -17,26 +17,25 @@
 #include <QBuffer>
 #include <QClipboard>
 #include <QCloseEvent>
+#include <QComboBox>
 #include <QDesktopServices>
 #include <QFileDialog>
-#include <QFileIconProvider>
 #include <QGroupBox>
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QMimeData>
-#include <QProcess>
 #include <QSpinBox>
 #include <QSplitter>
 #include <QStandardPaths>
 #include <QTextStream>
 #include <QToolBar>
-#include <QTreeWidget>
 #include <QVariant>
 #include <QVBoxLayout>
 
 #include "mathtoolbar.h"
 #include "plot.h"
 #include "preferences.h"
+#include "projectbrowser.h"
 #include "searchdialog.h"
 #include "splitter.h"
 #include "symboltreeview.h"
@@ -56,6 +55,7 @@
 #endif
 
 #ifdef FORSCAPE_WORKAROUND_QT_LINUX_FILETYPE_FILTER_BUG
+#include <QFileIconProvider>
 #include <QFileSystemModel>
 #include <QSortFilterProxyModel>
 #define FORSCAPE_FILE_TYPE_DESC "Forscape script (*)"
@@ -85,17 +85,6 @@ static constexpr int CHANGE_CHECK_PERIOD_MS = 500;
 static constexpr int FILE_BROWSER_WIDTH = 200;
 static bool program_control_of_hsplitter = false;
 
-static QIcon main_icon;
-static QIcon file_icon;
-static QIcon folder_icon;
-
-static Forscape::Typeset::Model* model(QTreeWidgetItem* item) noexcept {
-    assert(item->childCount() == 0);
-    return item->data(0, Qt::UserRole).value<Forscape::Typeset::Model*>();
-}
-
-Q_DECLARE_METATYPE(Forscape::Typeset::Model*); //EVENTUALLY: this is only for compability with old versions
-
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow){
@@ -105,24 +94,13 @@ MainWindow::MainWindow(QWidget* parent)
     settings.clear(); // To check a fresh install boots; e.g. loading does not have a cache dependency
     #endif
 
-    main_icon = QIcon(":/fonts/anchor.svg");
-    file_icon = QIcon(":/fonts/pi_file.svg");
-    folder_icon = QFileIconProvider().icon(QFileIconProvider::Folder);
-
     external_change_timer = new QTimer(this);
     connect(external_change_timer, &QTimer::timeout, this, &MainWindow::checkForChanges);
     external_change_timer->start(CHANGE_CHECK_PERIOD_MS);
 
     horizontal_splitter = new Splitter(Qt::Horizontal, this);
-    project_browser = new QTreeWidget(horizontal_splitter);
-    project_browser->setHeaderHidden(true);
-    project_browser->setIndentation(10);
-    project_browser->setMinimumWidth(120);
-    connect(project_browser, SIGNAL(itemActivated(QTreeWidgetItem*, int)), this, SLOT(onFileClicked(QTreeWidgetItem*, int)));
-    project_browser->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(project_browser, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onFileRightClicked(const QPoint&)));
-    project_browser->setRootIsDecorated(false);
-    project_browser_active_item = project_browser->invisibleRootItem();
+    project_browser = new ProjectBrowser(horizontal_splitter, this);
+
     ui->actionGoBack->setIcon(QIcon(":/fonts/arrow_back.svg"));
     ui->actionGoForward->setIcon(QIcon(":/fonts/arrow_forward.svg"));
     horizontal_splitter->addWidget(project_browser);
@@ -182,7 +160,7 @@ MainWindow::MainWindow(QWidget* parent)
     QFont glyph_font = QFont(family);
     glyph_font.setPointSize(18);
 
-    action_toolbar = addToolBar(tr("File"));
+    action_toolbar = addToolBar(tr("Action Toolbar"));
     action_toolbar->setObjectName("action_toolbar");
     QAction* run_act = new QAction("Œ", this);
     run_act->setToolTip(tr("Run script   Ctrl+R"));
@@ -239,11 +217,11 @@ MainWindow::MainWindow(QWidget* parent)
     connect(file_next, &QAction::triggered, this, &MainWindow::on_actionGoForward_triggered);
     action_toolbar->addAction(file_next);
 
-    connect(editor, SIGNAL(goToModel(Forscape::Typeset::Model*, size_t)),
-            this, SLOT(viewModel(Forscape::Typeset::Model*, size_t)));
+    connect(editor, SIGNAL(goToModel(Forscape::Typeset::Model*,size_t)),
+            this, SLOT(viewModel(Forscape::Typeset::Model*,size_t)));
 
-    connect(editor, SIGNAL(goToSelection(const Forscape::Typeset::Selection&)),
-            this, SLOT(viewSelection(const Forscape::Typeset::Selection&)));
+    connect(editor, SIGNAL(goToSelection(Forscape::Typeset::Selection)),
+            this, SLOT(viewSelection(Forscape::Typeset::Selection)));
 
     if(settings.contains(ACTION_TOOLBAR_VISIBLE)){
         bool visible = settings.value(ACTION_TOOLBAR_VISIBLE).toBool();
@@ -319,10 +297,16 @@ MainWindow::MainWindow(QWidget* parent)
         openProject(settings.value(PROJECT_ROOT_FILE).toString());
     }else{
         on_actionNew_triggered();
-        Forscape::Typeset::Model* model = editor->getModel();
-        model->project_browser_entry->setIcon(0, main_icon);
     }
     resetViewJumpPointElements();
+
+    QAction* new_keyboard_shortcut = new QAction(tr("Create new..."), this);
+    new_keyboard_shortcut->setShortcut(QKeySequence::New);
+    connect(new_keyboard_shortcut, SIGNAL(triggered()), this, SLOT(onKeyboardNew()));
+    addAction(new_keyboard_shortcut);
+
+    // By default there are options to hide the toolbars, but they don't play nicely with custom show/hide options
+    setContextMenuPolicy(Qt::NoContextMenu);
 }
 
 MainWindow::~MainWindow(){
@@ -447,7 +431,7 @@ void MainWindow::pollInterpreterThread(){
     }
 }
 
-void MainWindow::parseTree(){
+void MainWindow::parseTree() {
     #ifndef NDEBUG
     QString dot_src = toQString(editor->getModel()->parseTreeDot());
     dot_src.replace("\\n", "\\\\n");
@@ -455,7 +439,7 @@ void MainWindow::parseTree(){
     #endif
 }
 
-void MainWindow::symbolTable(){
+void MainWindow::symbolTable() {
     #ifndef NDEBUG
     Typeset::Model* m = editor->getModel();
     SymbolTreeView* view = new SymbolTreeView(m->symbol_builder.symbol_table, Forscape::Program::instance()->static_pass);
@@ -463,8 +447,26 @@ void MainWindow::symbolTable(){
     #endif
 }
 
-void MainWindow::github(){
+void MainWindow::github() {
     QDesktopServices::openUrl(QUrl("https://github.com/JohnDTill/Forscape"));
+}
+
+void MainWindow::onKeyboardNew() {
+    QInputDialog dialog(this);
+    dialog.setWindowFlags(dialog.windowFlags() & ~Qt::WindowContextHelpButtonHint);
+    dialog.setWindowTitle("Creation Prompt");
+    dialog.setLabelText(tr("Create new..."));
+    dialog.setComboBoxItems({
+        "Project",
+        "File",
+    });
+
+    if(dialog.exec() != QDialog::Accepted) return;
+    switch( dialog.findChild<QComboBox*>()->currentIndex() ){
+        case 0: on_actionNew_Project_triggered(); break;
+        case 1: on_actionNew_triggered(); break;
+        default: assert(false);
+    }
 }
 
 void MainWindow::on_actionNew_Project_triggered() {
@@ -476,7 +478,6 @@ void MainWindow::on_actionNew_Project_triggered() {
 
     modified_files.clear();
     project_browser->clear();
-    project_browser_entries.clear();
 
     ui->actionSave->setEnabled(false);
     ui->actionSave_All->setEnabled(false);
@@ -490,22 +491,10 @@ void MainWindow::on_actionNew_Project_triggered() {
     active_file_path.clear();
     project_path.clear();
 
-    project_browser->clear();
-    QTreeWidgetItem* item = new QTreeWidgetItem(project_browser);
-    item->setText(0, "untitled");
-    item->setIcon(0, main_icon);
-    item->setData(0, Qt::UserRole, QVariant::fromValue(model));
-    project_browser->sortItems(0, Qt::SortOrder::AscendingOrder);
-    model->project_browser_entry = item;
-    project_browser_active_item = item;
-    item->setSelected(true);
-    QFont font = project_browser->font();
-    font.setBold(true);
-    item->setFont(0, font);
-
     Forscape::Program::instance()->setProgramEntryPoint("", model);
     model->performSemanticFormatting();
     editor->setModel(model);
+    project_browser->populateWithNewProject(model);
 
     if(recent_projects.empty()) recent_projects.push_back(project_path);
 
@@ -523,15 +512,20 @@ void MainWindow::on_actionNew_triggered(){
         Program::instance()->program_entry_point = model;
     setWindowTitle(NEW_SCRIPT_TITLE WINDOW_TITLE_SUFFIX);
     active_file_path.clear();
-
-    QTreeWidgetItem* item = new QTreeWidgetItem(project_browser);
-    item->setText(0, "untitled");
-    item->setIcon(0, file_icon);
-    item->setData(0, Qt::UserRole, QVariant::fromValue(model));
-    project_browser->sortItems(0, Qt::SortOrder::AscendingOrder);
-    model->project_browser_entry = item;
+    project_browser->addFile(model);
 
     viewModel(model, 0);
+}
+
+void MainWindow::hideProjectBrowser() noexcept {
+    horizontal_splitter->setSizes({0, width()});
+    ui->actionShow_project_browser->setChecked(false);
+}
+
+void MainWindow::reparse() {
+    editor->getModel()->performSemanticFormatting();
+    editor->updateModel();
+    onTextChanged();
 }
 
 #ifdef FORSCAPE_WORKAROUND_QT_LINUX_FILETYPE_FILTER_BUG
@@ -710,42 +704,8 @@ bool MainWindow::saveAs(QString path, Forscape::Typeset::Model* saved_model) {
     settings.setValue(LAST_DIRECTORY, QFileInfo(path).absoluteDir().absolutePath());
 
     //Re-jig the project browser
-    std::filesystem::path old_path = saved_model->path;
     std::filesystem::path std_path = std::filesystem::canonical(toCppPath(active_file_path));
-    const bool create_new_file = old_path.empty();
-    const bool rename_file = saved_model->path != std_path && !create_new_file;
-
-    if(rename_file){
-        //EVENTUALLY: this is a hacky solution to keep the old file, which is likely referenced in code
-        Forscape::Program::instance()->source_files.erase(old_path);
-        project_browser_entries.erase(old_path);
-        Forscape::Program::instance()->openFromAbsolutePath(old_path);
-    }
-
-    if(create_new_file || rename_file){
-        saved_model->path = std_path;
-        QTreeWidgetItem* item = saved_model->project_browser_entry;
-        item->setText(0, toQString(std_path.filename()));
-        auto result = project_browser_entries.insert({std_path, item});
-        if(!result.second){
-            //Saving over existing project file
-            QTreeWidgetItem* overwritten = result.first->second;
-            Forscape::Typeset::Model* overwritten_model = model(overwritten);
-            delete overwritten_model;
-            modified_files.erase(overwritten_model);
-            for(auto& entry : viewing_chain)
-                if(entry.model == overwritten_model)
-                    entry.model = saved_model;
-            project_browser->removeItemWidget(overwritten, 0);
-            delete overwritten;
-            result.first->second = item;
-        }else{
-            //New file created
-            project_browser->invisibleRootItem()->removeChild(item);
-            linkFileToAncestor(item, std_path);
-        }
-    }
-    project_browser->sortItems(0, Qt::SortOrder::AscendingOrder);
+    project_browser->saveModel(saved_model, std_path);
 
     saved_model->write_time = std::filesystem::file_time_type::clock::now();
 
@@ -801,23 +761,7 @@ void MainWindow::openProject(QString path){
     editor->setModel(model);
 
     modified_files.clear();
-    project_browser->clear();
-    project_browser_entries.clear();
-    QTreeWidgetItem* root = project_browser->invisibleRootItem();
-    QTreeWidgetItem* main_file = new QTreeWidgetItem(root);
-    main_file->setText(0, toQString(std_path.filename()));
-    main_file->setIcon(0, main_icon);
-    main_file->setData(0, Qt::UserRole, QVariant::fromValue(model));
-    model->project_browser_entry = main_file;
-    project_browser_entries[std_path] = main_file;
-    std_path = std_path.parent_path();
-    project_browser_entries[std_path] = root;
-    root->setData(0, Qt::UserRole, toQString(std_path));
-    project_browser_active_item = main_file;
-    QFont normal_font = project_browser->font();
-    QFont bold_font = normal_font;
-    bold_font.setBold(true);
-    project_browser_active_item->setFont(0, bold_font);
+    project_browser->setProject(model);
 
     setWindowTitle(QFile(path).fileName() + WINDOW_TITLE_SUFFIX);
     settings.setValue(PROJECT_ROOT_FILE, path);
@@ -836,6 +780,26 @@ void MainWindow::openProject(QString path){
     console->clearModel();
 
     onTextChanged();
+}
+
+void MainWindow::removeFile(Forscape::Typeset::Model* model) noexcept {
+    Forscape::Program::instance()->removeFile(model);
+
+    auto removed = std::remove_if(viewing_chain.begin(), viewing_chain.end(),
+        [model](const JumpPoint& v) noexcept { return v.model == model; });
+
+    while(removed != viewing_chain.end()){
+        viewing_chain.erase(removed);
+
+        for(size_t i = viewing_chain.size(); i-->1;)
+            if(viewing_chain[i] == viewing_chain[i-1])
+                viewing_chain[i].model = nullptr;
+
+        removed = std::remove_if(viewing_chain.begin(), viewing_chain.end(),
+            [](const JumpPoint& v) noexcept { return v.model == nullptr; });
+    }
+
+    updateViewJumpPointElements();
 }
 
 void MainWindow::addPlot(const std::string& title, const std::string& x_label, const std::string& y_label){
@@ -862,41 +826,9 @@ QString MainWindow::getLastDir(){
 void MainWindow::setEditorToModelAndLine(Forscape::Typeset::Model* model, size_t line){
     editor->setModel(model);
     editor->goToLine(line);
-
-    QFont normal_font = project_browser->font();
-    QFont bold_font = normal_font;
-    bold_font.setBold(true);
-    project_browser_active_item->setFont(0, QFont());
-    project_browser_active_item = model->project_browser_entry;
-    project_browser_active_item->setFont(0, bold_font);
-    project_browser->setCurrentItem(project_browser_active_item);
+    project_browser->setCurrentlyViewed(model);
 
     if(search->isVisible()) search->updateSelection();
-}
-
-void MainWindow::updateProjectBrowser() {
-    const auto& parsed_files = Forscape::Program::instance()->getPendingProjectBrowserUpdates();
-    if(parsed_files.empty()) return;
-
-    for(const auto& entry : parsed_files) addProjectEntry(entry);
-    Forscape::Program::instance()->clearPendingProjectBrowserUpdates();
-    project_browser->sortByColumn(0, Qt::AscendingOrder);
-}
-
-void MainWindow::addProjectEntry(Forscape::Typeset::Model* model) {
-    std::filesystem::path path = model->path;
-    assert(project_browser_entries.find(path) == project_browser_entries.end());
-
-    QTreeWidgetItem* tree_item = new QTreeWidgetItem;
-    model->project_browser_entry = tree_item;
-    tree_item->setData(0, Qt::UserRole, QVariant::fromValue(model));
-    tree_item->setText(0, toQString(path.filename()));
-    tree_item->setIcon(0, file_icon);
-    project_browser_entries[path] = tree_item;
-
-    model->write_time = std::filesystem::file_time_type::clock::now();
-
-    linkFileToAncestor(tree_item, path);
 }
 
 void MainWindow::on_actionFind_Replace_triggered(){
@@ -1083,7 +1015,7 @@ void MainWindow::onTextChanged(){
 
     ui->actionSave->setEnabled(saveable);
 
-    updateProjectBrowser();
+    project_browser->updateProjectBrowser();
 
     if(changed_from_save) modified_files.insert(model);
     else modified_files.erase(model);
@@ -1193,7 +1125,7 @@ void MainWindow::on_actionShow_typesetting_toolbar_toggled(bool show){
 void MainWindow::on_actionShow_project_browser_toggled(bool show){
     if(program_control_of_hsplitter) return;
     else if(show) setHSplitterDefaultWidth();
-    else horizontal_splitter->setSizes({0, width()});
+    else hideProjectBrowser();
 }
 
 void MainWindow::checkForChanges(){
@@ -1278,71 +1210,6 @@ void MainWindow::onSplitterResize(int pos, int index) {
     program_control_of_hsplitter = false;
 }
 
-static bool isSavedToDisk(QTreeWidgetItem* item) noexcept {
-    return !model(item)->path.empty();
-}
-
-void MainWindow::onFileClicked(QTreeWidgetItem* item, int column) {
-    if(item->childCount() != 0) return;
-    auto m = model(item);
-    if(m != editor->getModel()) viewModel(m, 0);
-}
-
-void MainWindow::onFileClicked() {
-    onFileClicked(project_browser->currentItem(), 0);
-}
-
-void MainWindow::onShowInExplorer() {
-    QTreeWidgetItem* item = project_browser->currentItem();
-
-    QStringList args;
-
-    if(item->childCount() == 0){
-        assert(isSavedToDisk(item));
-        auto m = model(item);
-        args << "/select," << QDir::toNativeSeparators(toQString(m->path));
-    }else{
-        QString q_path = item->data(0, Qt::UserRole).toString();
-        args << QDir::toNativeSeparators(q_path);
-    }
-
-    QProcess* process = new QProcess(this);
-    process->start("explorer.exe", args);
-}
-
-void MainWindow::onFileRightClicked(const QPoint& pos) {
-    QMenu menu(this);
-
-    QTreeWidgetItem* item = project_browser->itemAt(pos);
-    if(item == nullptr){
-        item = project_browser->invisibleRootItem();
-        QAction* new_file = menu.addAction(tr("Add New File"));
-        new_file->setToolTip(tr("Create a new file for the project"));
-        connect(new_file, SIGNAL(triggered(bool)), this, SLOT(on_actionNew_triggered()));
-    }else if(item->childCount() == 0){
-        //Item is file
-        QAction* open_file = menu.addAction(tr("Open File"));
-        open_file->setToolTip(tr("Open the selected file in the editor"));
-        connect(open_file, SIGNAL(triggered(bool)), this, SLOT(onFileClicked()));
-
-        //EVENTUALLY - support project-wide rename
-
-        if(isSavedToDisk(item)){
-            QAction* show_in_explorer = menu.addAction(tr("Show in Explorer"));
-            show_in_explorer->setToolTip(tr("Show in the OS file browser"));
-            connect(show_in_explorer, SIGNAL(triggered(bool)), this, SLOT(onShowInExplorer()));
-        }
-    }else{
-        //EVENTUALLY - support project-wide rename
-
-        QAction* show_in_explorer = menu.addAction(tr("Show in Explorer"));
-        show_in_explorer->setToolTip(tr("Show in the OS file browser"));
-        connect(show_in_explorer, SIGNAL(triggered(bool)), this, SLOT(onShowInExplorer()));
-    }
-
-    menu.exec(project_browser->mapToGlobal(pos));
-}
-
 void MainWindow::setHSplitterDefaultWidth() {
     horizontal_splitter->setSizes({FILE_BROWSER_WIDTH, width()-FILE_BROWSER_WIDTH});
     ui->actionShow_project_browser->setChecked(true);
@@ -1375,6 +1242,11 @@ void MainWindow::viewModel(Forscape::Typeset::Model* model, size_t line) {
     viewing_index = viewing_chain.size()-1;
     setEditorToModelAndLine(model, line);
     updateViewJumpPointElements();
+    project_browser->setCurrentlyViewed(model);
+}
+
+void MainWindow::viewModel(Forscape::Typeset::Model* model) {
+    if(model != editor->getModel()) viewModel(model, 0);
 }
 
 void MainWindow::viewSelection(const Forscape::Typeset::Selection& sel) {
@@ -1533,99 +1405,6 @@ void MainWindow::updateRecentProjectsFromCurrent() {
         if(recent_projects.size() > MAX_STORED_RECENT_PROJECTS) recent_projects.pop_back();
         updateRecentProjectsFromList();
     }
-}
-
-void MainWindow::linkFileToAncestor(QTreeWidgetItem* file_item, const std::filesystem::path file_path) {
-    assert(std::filesystem::is_regular_file(file_path));
-
-    QTreeWidgetItem* root = project_browser->invisibleRootItem();
-    QString stale_root_path_str = root->data(0, Qt::UserRole).toString();
-    std::filesystem::path stale_root_path = toCppPath(stale_root_path_str);
-    std::filesystem::path folder_path = file_path.parent_path();
-
-    //Link the file to it's folder
-    auto result = project_browser_entries.find(folder_path);
-    if(result != project_browser_entries.end()){
-        //Folder already exists
-        QTreeWidgetItem* preexisting_folder_entry = result->second;
-        preexisting_folder_entry->addChild(file_item);
-        return;
-    }
-
-    QList<QTreeWidgetItem*> taken_children;
-
-    //Find common ancestor of root directory and folder
-    if(stale_root_path_str.isEmpty()){
-        //Browser already showing different drives, do nothing
-    }else if(stale_root_path.root_name() != file_path.root_name()){
-        //These files come from different drives; change root to nothing since no common ancestor
-        project_browser_entries.erase(stale_root_path);
-        root->setData(0, Qt::UserRole, QString());
-        taken_children = root->takeChildren();
-    }else{
-        //Check if the root needs to change
-        auto root_path_str = stale_root_path.u8string();
-        auto folder_path_str = folder_path.u8string();
-        const size_t root_path_size = root_path_str.size();
-
-        size_t uncommon_index = std::min(root_path_size, folder_path_str.size());
-        for(size_t i = 0; i < uncommon_index; i++)
-            if(root_path_str[i] != folder_path_str[i]){
-                uncommon_index = i;
-                break;
-            }
-
-        //Root needs to move up
-        if(uncommon_index < root_path_size){
-            std::filesystem::path new_root_path = stale_root_path.parent_path();
-            while(new_root_path.u8string().size() > uncommon_index){
-                assert(new_root_path.has_parent_path());
-                new_root_path = new_root_path.parent_path();
-            }
-
-            taken_children = root->takeChildren();
-            project_browser_entries.erase(stale_root_path);
-            project_browser_entries[new_root_path] = root;
-            root->setData(0, Qt::UserRole, toQString(new_root_path));
-        }
-    }
-
-    linkItemToExistingAncestor(file_item, file_path);
-
-    if(!taken_children.empty()){
-        linkItemToExistingAncestor(taken_children.back(), stale_root_path / "fake");
-        taken_children.pop_back();
-        QTreeWidgetItem* entry_for_stale_root = project_browser_entries[stale_root_path];
-        entry_for_stale_root->addChildren(taken_children);
-        project_browser->setCurrentItem(project_browser_active_item);
-    }
-}
-
-void MainWindow::linkItemToExistingAncestor(QTreeWidgetItem* item, std::filesystem::path path) {
-    path = path.parent_path();
-    auto parent_result = project_browser_entries.insert({path, nullptr});
-    while(parent_result.second){
-        QTreeWidgetItem* new_item = new QTreeWidgetItem;
-        new_item->addChild(item);
-        item = new_item;
-        item->setText(0, toQString(path.filename()));
-        item->setData(0, Qt::UserRole, toQString(path));
-        item->setIcon(0, folder_icon);
-        item->setExpanded(true);
-        parent_result.first->second = item;
-
-        auto parent_path = path.parent_path();
-        if(parent_path != path){ //has_parent_path() lies, causing an infinite loop
-            path = parent_path;
-            parent_result = project_browser_entries.insert({path, nullptr});
-        }else{
-            project_browser->invisibleRootItem()->addChild(item);
-            item->setText(0, toQString(*path.begin()));
-            return;
-        }
-    }
-
-    parent_result.first->second->addChild(item);
 }
 
 void MainWindow::on_actionGo_to_main_file_triggered() {

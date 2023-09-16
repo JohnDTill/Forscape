@@ -78,6 +78,12 @@ void Symbol::getAllOccurences(std::vector<Typeset::Selection>& found) const {
         found.push_back(usage->sel);
 }
 
+void Symbol::getModelOccurences(std::vector<Typeset::Selection>& found, Typeset::Model* model) const {
+    for(SymbolUsage* usage = last_external_usage; usage != nullptr; usage = usage->prevUsage())
+        if(usage->sel.getModel() == model)
+            found.push_back(usage->sel);
+}
+
 SymbolUsage::SymbolUsage() noexcept
     : prev_usage_index(NONE), symbol_index(NONE) {}
 

@@ -651,7 +651,7 @@ void View::populateHighlightWordsFromParseNode(ParseNode pn){
     else if(parse_tree.getOp(pn) != Code::OP_IDENTIFIER) return;
 
     const Code::Symbol* const sym = parse_tree.getSymbol(pn);
-    if(sym) sym->getAllOccurences(highlighted_words);
+    if(sym) sym->getModelOccurences(highlighted_words, getModel());
 }
 
 bool View::scrolledToBottom() const noexcept {
@@ -1713,19 +1713,14 @@ void Editor::clearTooltip(){
 }
 
 void Editor::rename(){
-    bool ok;
-    QString text = QInputDialog::getText(
-                this,
-                tr("Rename"),
-                tr("New name:"),
-                QLineEdit::Normal,
-                "",
-                &ok
-                );
+    QInputDialog dialog(this);
+    dialog.setWindowFlags(dialog.windowFlags() & ~Qt::WindowContextHelpButtonHint);
+    dialog.setWindowTitle(tr("Rename"));
+    dialog.setLabelText(tr("New name:"));
+    dialog.setInputMode(QInputDialog::InputMode::TextInput);
+    if(dialog.exec() != QDialog::Accepted) return;
 
-    if(!ok) return;
-
-    std::string name = toCppString(text);
+    const std::string name = toCppString(dialog.textValue());
 
     if(isIllFormedUtf8(name)){
         QMessageBox messageBox;

@@ -18,7 +18,7 @@ namespace Typeset {
 
 using namespace Forscape;
 
-class SearchDialog : public QDialog{
+class SearchDialog : public QDialog {
     Q_OBJECT
 
 public:

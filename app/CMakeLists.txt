@@ -118,6 +118,8 @@ set(PROJECT_SOURCES
     preferences.cpp
     preferences.h
     preferences.ui
+    projectbrowser.cpp
+    projectbrowser.h
     qgraphvizcall.h
     searchdialog.cpp
     searchdialog.h
