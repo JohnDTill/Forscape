@@ -1713,19 +1713,14 @@ void Editor::clearTooltip(){
 }
 
 void Editor::rename(){
-    bool ok;
-    QString text = QInputDialog::getText(
-                this,
-                tr("Rename"),
-                tr("New name:"),
-                QLineEdit::Normal,
-                "",
-                &ok
-                );
+    QInputDialog dialog(this);
+    dialog.setWindowFlags(dialog.windowFlags() & ~Qt::WindowContextHelpButtonHint);
+    dialog.setWindowTitle(tr("Rename"));
+    dialog.setLabelText(tr("New name:"));
+    dialog.setInputMode(QInputDialog::InputMode::TextInput);
+    if(dialog.exec() != QDialog::Accepted) return;
 
-    if(!ok) return;
-
-    std::string name = toCppString(text);
+    const std::string name = toCppString(dialog.textValue());
 
     if(isIllFormedUtf8(name)){
         QMessageBox messageBox;

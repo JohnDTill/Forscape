@@ -17,6 +17,7 @@
 #include <QBuffer>
 #include <QClipboard>
 #include <QCloseEvent>
+#include <QComboBox>
 #include <QDesktopServices>
 #include <QFileDialog>
 #include <QGroupBox>
@@ -451,24 +452,20 @@ void MainWindow::github() {
 }
 
 void MainWindow::onKeyboardNew() {
-    const QStringList options {
+    QInputDialog dialog(this);
+    dialog.setWindowFlags(dialog.windowFlags() & ~Qt::WindowContextHelpButtonHint);
+    dialog.setWindowTitle("Creation Prompt");
+    dialog.setLabelText(tr("Create new..."));
+    dialog.setComboBoxItems({
         "Project",
         "File",
-    };
+    });
 
-    //DO THIS: I don't like the appearance of this dialog, and the string comparison hurts me
-
-    bool success;
-    QString item = QInputDialog::getItem(this, tr("Creation Dialog"),
-                                         tr("Create new:"), options, 0, false, &success);
-    if(!success) return;
-
-    if(item == "Project"){
-        on_actionNew_Project_triggered();
-    }else if(item == "File"){
-        on_actionNew_triggered();
-    }else{
-        assert(false);
+    if(dialog.exec() != QDialog::Accepted) return;
+    switch( dialog.findChild<QComboBox*>()->currentIndex() ){
+        case 0: on_actionNew_Project_triggered(); break;
+        case 1: on_actionNew_triggered(); break;
+        default: assert(false);
     }
 }
 

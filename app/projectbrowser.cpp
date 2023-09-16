@@ -365,6 +365,8 @@ void ProjectBrowser::onFileRenamed() {
     FileEntry& entry = getSelectedFileEntry();
     const QString old_name = currentItem()->text(0);
 
+    //DO THIS: get rid of context menu hint
+
     bool ok;
     QString text = QInputDialog::getText(
                 this,
