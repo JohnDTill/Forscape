@@ -134,7 +134,7 @@ void ProjectBrowser::setProject(Forscape::Typeset::Model* model) {
 }
 
 void ProjectBrowser::addFile(Forscape::Typeset::Model* model) {
-    FileEntry* item = new FileEntry();
+    FileEntry* item = new FileEntry(invisibleRootItem());
     item->setText(0, "untitled");
     item->setIcon(0, file_icon);
     item->model = model;
@@ -204,13 +204,13 @@ void ProjectBrowser::addProjectEntry(Forscape::Typeset::Model* model) {
 
 void ProjectBrowser::populateWithNewProject(Forscape::Typeset::Model* model) {
     clear();
-    FileEntry* item = new FileEntry();
+    FileEntry* item = new FileEntry(invisibleRootItem());
     item->setText(0, "untitled");
     item->setIcon(0, main_icon);
     item->setData(0, Qt::UserRole, QVariant::fromValue(model));
     sortItems(0, Qt::SortOrder::AscendingOrder);
     currently_viewed_file = item;
-    item->setSelected(true);
+    setCurrentlyViewed(model);
     QFont f = font();
     f.setBold(true);
     item->setFont(0, f);
@@ -331,19 +331,15 @@ void ProjectBrowser::onDirectoryRenamed() {
     DirectoryEntry& entry = getSelectedDirectory();
     const QString old_name = currentItem()->text(0);
 
-    bool ok;
-    QString text = QInputDialog::getText(
-                this,
-                tr("Rename folder ") + '"' + old_name + '"',
-                tr("New name:"),
-                QLineEdit::Normal,
-                "",
-                &ok,
-                Qt::WindowFlags() & ~Qt::WindowContextHelpButtonHint);
-    if(!ok) return;
+    QInputDialog dialog(this);
+    dialog.setWindowFlags(dialog.windowFlags() & ~Qt::WindowContextHelpButtonHint);
+    dialog.setWindowTitle(tr("Rename folder ") + '"' + old_name + '"');
+    dialog.setLabelText(tr("New name:"));
+    dialog.setInputMode(QInputDialog::TextInput);
+    if(dialog.exec() != QDialog::Accepted) return;
 
     const std::filesystem::path old_path = entry.getPath();
-    const std::filesystem::path new_path = old_path.parent_path() / toCppString(text);
+    const std::filesystem::path new_path = old_path.parent_path() / toCppString(dialog.textValue());
     std::error_code rename_error;
     std::filesystem::rename(old_path, new_path, rename_error);
 
@@ -351,33 +347,27 @@ void ProjectBrowser::onDirectoryRenamed() {
         QMessageBox messageBox;
         messageBox.critical(nullptr, tr("Error"), tr("Failed to rename directory ") + '"' + old_name + '"');
         messageBox.setFixedSize(500,200);
-        return;
+    }else{
+        entry.setPath(new_path);
+
+        //DO THIS: update all the child paths
+        //DO THIS: refactor paths in the code
+        //std::string name = toCppString(text);
     }
-
-    entry.setPath(new_path);
-
-    //DO THIS: update all the child paths
-    //DO THIS: refactor paths in the code
-    //std::string name = toCppString(text);
 }
 
 void ProjectBrowser::onFileRenamed() {
     FileEntry& entry = getSelectedFileEntry();
     const QString old_name = currentItem()->text(0);
 
-    //DO THIS: get rid of context menu hint
+    QInputDialog dialog(this);
+    dialog.setWindowFlags(dialog.windowFlags() & ~Qt::WindowContextHelpButtonHint);
+    dialog.setWindowTitle(tr("Rename file ") + '"' + old_name + '"');
+    dialog.setLabelText(tr("New name:"));
+    dialog.setInputMode(QInputDialog::TextInput);
+    if(dialog.exec() != QDialog::Accepted) return;
 
-    bool ok;
-    QString text = QInputDialog::getText(
-                this,
-                tr("Rename file ") + '"' + old_name + '"',
-                tr("New name:"),
-                QLineEdit::Normal,
-                "",
-                &ok,
-                Qt::WindowFlags() & ~Qt::WindowContextHelpButtonHint);
-    if(!ok) return;
-
+    const QString text = dialog.textValue();
     const std::filesystem::path old_path = entry.getPath();
     std::filesystem::path new_path = old_path;
     new_path.replace_filename(toCppString(text));
@@ -389,13 +379,12 @@ void ProjectBrowser::onFileRenamed() {
         QMessageBox messageBox;
         messageBox.critical(nullptr, tr("Error"), tr("Failed to rename file ") + '"' + old_name + '"');
         messageBox.setFixedSize(500,200);
-        return;
+    }else{
+        entry.setText(0, text);
+        entry.path = new_path;
+
+        //DO THIS: update paths in the code
     }
-
-    entry.setText(0, text);
-    entry.path = new_path;
-
-    //DO THIS: refactor paths in the code
 }
 
 void ProjectBrowser::expandDirectory() {

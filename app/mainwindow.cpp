@@ -1242,6 +1242,7 @@ void MainWindow::viewModel(Forscape::Typeset::Model* model, size_t line) {
     viewing_index = viewing_chain.size()-1;
     setEditorToModelAndLine(model, line);
     updateViewJumpPointElements();
+    project_browser->setCurrentlyViewed(model);
 }
 
 void MainWindow::viewModel(Forscape::Typeset::Model* model) {
