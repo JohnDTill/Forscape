@@ -491,10 +491,10 @@ void MainWindow::on_actionNew_Project_triggered() {
     active_file_path.clear();
     project_path.clear();
 
-    project_browser->populateWithNewProject(model);
     Forscape::Program::instance()->setProgramEntryPoint("", model);
     model->performSemanticFormatting();
     editor->setModel(model);
+    project_browser->populateWithNewProject(model);
 
     if(recent_projects.empty()) recent_projects.push_back(project_path);
 

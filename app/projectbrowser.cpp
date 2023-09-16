@@ -207,7 +207,7 @@ void ProjectBrowser::populateWithNewProject(Forscape::Typeset::Model* model) {
     FileEntry* item = new FileEntry(invisibleRootItem());
     item->setText(0, "untitled");
     item->setIcon(0, main_icon);
-    item->setData(0, Qt::UserRole, QVariant::fromValue(model));
+    item->model = model;
     sortItems(0, Qt::SortOrder::AscendingOrder);
     currently_viewed_file = item;
     setCurrentlyViewed(model);
