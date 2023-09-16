@@ -14,13 +14,12 @@
 #include <QMessageBox>
 #include <QProcess>
 
-//DO THIS: the project view is unintuitive. Allow multiple open projects?
-//DO THIS: need assurance that the viewing history remains valid as files are deleted, renamed, w/e
-//DO THIS: the project browser should probably have an undo stack
-//DO THIS: add copy path option
-//DO THIS: import from absolute path is broken (should probably warn)
-//DO THIS: import from folder up is broken
-//DO THIS: start linting
+//PROJECT BROWSER UPDATE: the project view is unintuitive. Allow multiple open projects?
+//PROJECT BROWSER UPDATE: need assurance that the viewing history remains valid as files are deleted, renamed, w/e
+//PROJECT BROWSER UPDATE: the project browser should probably have an undo stack
+//PROJECT BROWSER UPDATE: add copy path option
+//PROJECT BROWSER UPDATE: import from absolute path is broken (should probably warn)
+//PROJECT BROWSER UPDATE: import from folder up is broken
 
 Q_DECLARE_METATYPE(Forscape::Typeset::Model*); //EVENTUALLY: this is only for compability with old versions
 
@@ -104,6 +103,7 @@ ProjectBrowser::ProjectBrowser(QWidget* parent, MainWindow* main_window)
     setHeaderHidden(true);
     setIndentation(10);
     setMinimumWidth(120);
+    //PROJECT BROWSER UPDATE: should only set this if there are no folders in the project
     setRootIsDecorated(false); //Hide a universal root entry, so the user has the illusion of multiple "top-level" entries
     setContextMenuPolicy(Qt::CustomContextMenu); //Needed to enable context menu
 
@@ -163,7 +163,7 @@ void ProjectBrowser::saveModel(Forscape::Typeset::Model* saved_model, const std:
             QTreeWidgetItem* overwritten = result.first->second;
             //Forscape::Typeset::Model* overwritten_model = getModelForEntry(overwritten);
             //delete overwritten_model;
-            /* DO THIS
+            /* PROJECT BROWSER UPDATE
             modified_files.erase(overwritten_model);
             for(auto& entry : viewing_chain)
                 if(entry.model == overwritten_model)
@@ -270,7 +270,7 @@ void ProjectBrowser::onDeleteFile() {
     main_window->removeFile(item.model);
     item.deleteFile();
 
-    //DO THIS: this has implications for the viewing buffer
+    //PROJECT BROWSER UPDATE: this has implications for the viewing buffer
 
     main_window->reparse();
 }
@@ -350,8 +350,8 @@ void ProjectBrowser::onDirectoryRenamed() {
     }else{
         entry.setPath(new_path);
 
-        //DO THIS: update all the child paths
-        //DO THIS: refactor paths in the code
+        //PROJECT BROWSER UPDATE: update all the child paths
+        //PROJECT BROWSER UPDATE: refactor paths in the code
         //std::string name = toCppString(text);
     }
 }
@@ -383,7 +383,7 @@ void ProjectBrowser::onFileRenamed() {
         entry.setText(0, text);
         entry.path = new_path;
 
-        //DO THIS: update paths in the code
+        //PROJECT BROWSER UPDATE: update paths in the code
     }
 }
 
