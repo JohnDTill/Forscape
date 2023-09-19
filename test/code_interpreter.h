@@ -19,6 +19,20 @@ using std::filesystem::directory_iterator;
 using namespace Forscape;
 using namespace Code;
 
+inline void writeAbsoluteImportTest() {
+    const std::string import_filename = BASE_TEST_DIR "/in/hello_world.π";
+    const std::filesystem::path import_abs_path = std::filesystem::canonical(std::filesystem::u8path(import_filename));
+    const std::string test_filename = BASE_TEST_DIR "/in/hello_world_import_abs_path.π";
+    const std::filesystem::path test_path = std::filesystem::u8path(test_filename);
+
+    std::ofstream ofs(test_path);
+    ofs << "import " << import_abs_path.u8string() << "\n"
+           "hello_world.helloWorld()";
+    ofs.close();
+
+    assert(std::filesystem::is_regular_file(test_path));
+}
+
 inline bool testExpression(const std::string& in, const std::string& expect){
     Typeset::Model* input = Typeset::Model::fromSerial("print(" + in + ")");
     Forscape::Program::instance()->setProgramEntryPoint("", input);
@@ -97,6 +111,7 @@ inline bool testInterpreter(){
     passing &= testExpression("2^2", "4");
     passing &= testExpression("4^0.5", "2");
 
+    writeAbsoluteImportTest();
     for(directory_iterator end, dir(BASE_TEST_DIR "/in"); dir != end; dir++)
         if(std::filesystem::is_regular_file(dir->path()))
             passing &= testCase(dir->path().stem().string());

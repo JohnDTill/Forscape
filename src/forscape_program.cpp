@@ -151,8 +151,9 @@ void Program::getFileSuggestions(std::vector<std::string>& suggestions, Typeset:
         if(std::filesystem::exists(path_entry)){
             for(auto const& dir_entry : std::filesystem::directory_iterator{path_entry}){
                 const std::string candidate = dir_entry.path().filename().u8string();
-                if(notPiFile(candidate) && candidate != model_filename) continue;
-                suggestions.push_back(candidate);
+                const bool is_candidate_dir = dir_entry.is_directory();
+                if((notPiFile(candidate) && !is_candidate_dir) || (candidate == model_filename)) continue;
+                suggestions.push_back(candidate + (is_candidate_dir ? "/" : ""));
             }
         }
     }
@@ -171,13 +172,18 @@ void Program::getFileSuggestions(std::vector<std::string>& suggestions, std::str
         for(const auto& dir_entry : std::filesystem::directory_iterator{dir_of_input}){
             const std::filesystem::path candidate_path = dir_entry.path();
             const std::string candidate_filename = candidate_path.filename().u8string();
+            const bool is_candidate_dir = dir_entry.is_directory(); //EVENTUALLY: doesn't work with symbolic links to directories
 
-            if(candidate_filename.size() < input_filename.size() ||
-               notPiFile(candidate_filename) ||
-               std::string_view(candidate_filename.data(), input_filename.size()) != input_filename) continue;
+            if(candidate_filename.size() < input_filename.size() || //Abort early; search term is larger than candidate
+               (notPiFile(candidate_filename) && !is_candidate_dir) || //Not the right file type
+               std::string_view(candidate_filename.data(), input_filename.size()) != input_filename //Doesn't match search term
+               ) continue;
 
             std::filesystem::path rel_path = std::filesystem::relative(candidate_path, path_entry);
-            if(rel_path != model_rel_path) suggestions.push_back(rel_path.u8string());
+            if( rel_path == "." || //Do not suggest same directory, e.g. "../dir_we_came_from/" resolves to "./"
+                rel_path == model_rel_path //Do not suggest self import
+               ) continue;
+            suggestions.push_back(rel_path.u8string() + (is_candidate_dir ? "/" : ""));
         }
     }
 }

@@ -1427,11 +1427,10 @@ void Recommender::take() noexcept {
         editor->getController().anchor.index -= recommend_typeset_phrase_size;
         editor->insertSerial(lookup);
         editor->updateModel();
+        hide();
     }else{
         editor->takeRecommendation(controller.selectedText());
     }
-
-    hide();
 }
 
 void Recommender::sizeToFit() {
@@ -2034,6 +2033,8 @@ void Editor::suggestModuleFields(const Code::Error& err) {
 }
 
 void Editor::takeRecommendation(const std::string& str){
+    bool recommend_again = false;
+
     if(recommend_without_hint){
         if(controller.charLeft() != ' ')
             controller.insertSerial(' ' + str);
@@ -2042,6 +2043,7 @@ void Editor::takeRecommendation(const std::string& str){
     }else if(filename_start){
         controller.anchor = *filename_start;
         controller.insertSerial(str);
+        recommend_again = (str[str.size()-1] == '/');
     }else{
         //EVENTUALLY: mechanism for deciding when to erase the recommender candidate is janky
         std::string copy = str;
@@ -2057,8 +2059,6 @@ void Editor::takeRecommendation(const std::string& str){
     model->performSemanticFormatting();
     updateXSetpoint();
     updateModel();
-    recommender->hide();
-    setFocus();
 
     ensureCursorVisible();
     updateHighlightingFromCursorLocation();
@@ -2067,6 +2067,11 @@ void Editor::takeRecommendation(const std::string& str){
     qApp->processEvents();
 
     emit textChanged();
+
+    if(!recommend_again){
+        recommender->hide();
+        setFocus();
+    } else recommend();
 }
 
 void Tooltip::leaveEvent(QEvent* event) {
