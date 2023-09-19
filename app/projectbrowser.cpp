@@ -218,6 +218,7 @@ void ProjectBrowser::addProjectEntry(Forscape::Typeset::Model* model) {
 void ProjectBrowser::populateWithNewProject(Forscape::Typeset::Model* model) {
     clear();
     FileEntry* item = new FileEntry(invisibleRootItem());
+    files_in_memory[model] = item;
     item->setText(0, "untitled");
     item->setIcon(0, main_icon);
     item->model = model;
