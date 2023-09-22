@@ -709,9 +709,8 @@ bool MainWindow::saveAs(QString path, Forscape::Typeset::Model* saved_model) {
 
     //Re-jig the project browser
     std::filesystem::path std_path = std::filesystem::canonical(toCppPath(active_file_path));
-    project_browser->saveModel(saved_model, std_path);
-
     saved_model->write_time = std::filesystem::file_time_type::clock::now();
+    project_browser->saveModel(saved_model, std_path);
 
     updateRecentProjectsFromCurrent();
 

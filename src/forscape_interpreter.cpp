@@ -1318,6 +1318,9 @@ void Interpreter::removeEscapes(std::string& str) noexcept {
             switch (str[i+1]) {
                 case 'n': str[i-offset] = '\n'; i++; offset++; break;
                 case '"': str[i-offset] = '"'; i++; offset++; break;
+                default: break;
+                    //EVENTUALLY: maybe warn here
+                    //It's a scientific language- don't be overbearing and demand "\\" be used
             }
         }
 

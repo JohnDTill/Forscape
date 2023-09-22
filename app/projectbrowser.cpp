@@ -156,41 +156,57 @@ void ProjectBrowser::addUnsavedFile(Forscape::Typeset::Model* model) {
 void ProjectBrowser::saveModel(Forscape::Typeset::Model* saved_model, const std::filesystem::path& std_path) {
     std::filesystem::path old_path = saved_model->path;
     const bool create_new_file = old_path.empty();
-    const bool rename_file = saved_model->path != std_path && !create_new_file;
-
-    if(rename_file){
-        //EVENTUALLY: this is a hacky solution to keep the old file, which is likely referenced in code
-        Forscape::Program::instance()->source_files.erase(old_path);
-        files_in_filesystem.erase(old_path);
-        Forscape::Program::instance()->openFromAbsolutePath(old_path);
-    }
+    const bool rename_file = old_path != std_path && !create_new_file;
 
     if(create_new_file || rename_file){
-        saved_model->path = std_path;
-        FileEntry* item = debug_cast<FileEntry*>(files_in_filesystem[std_path]);
-        item->setModel(*saved_model);
-        auto result = files_in_filesystem.insert({std_path, item});
-        if(!result.second){
+        auto file_with_same_path = files_in_filesystem.find(std_path);
+        if(file_with_same_path != files_in_filesystem.end()){
+            Typeset::Model* cloned_model = Typeset::Model::fromSerial(saved_model->toSerial());
+            cloned_model->write_time = std::filesystem::file_time_type::clock::now();
+            cloned_model->path = std_path;
+
             //Saving over existing project file
-            QTreeWidgetItem* overwritten = result.first->second;
-            //Forscape::Typeset::Model* overwritten_model = getModelForEntry(overwritten);
-            //delete overwritten_model;
-            /* PROJECT BROWSER UPDATE
-            modified_files.erase(overwritten_model);
-            for(auto& entry : viewing_chain)
-                if(entry.model == overwritten_model)
-                    entry.model = saved_model;
-            */
-            removeItemWidget(overwritten, 0);
-            delete overwritten;
-            result.first->second = item;
+            FileEntry* existing_file_entry = debug_cast<FileEntry*>(file_with_same_path->second);
+
+            //The overwritten model is removed
+            Forscape::Typeset::Model* overwritten_model = existing_file_entry->model;
+            delete overwritten_model;
+            bool success = files_in_memory.erase(overwritten_model);
+            assert(success);
+
+            //The previous file entry is repurposed
+            existing_file_entry->model = cloned_model;
+            const auto result = files_in_memory.insert({cloned_model, existing_file_entry});
+            assert(result.second);
+
+            main_window->viewModel(cloned_model);
+            main_window->reparse();
+        }else if(create_new_file){
+            auto entry = files_in_memory.find(saved_model);
+            assert(entry != files_in_memory.end());
+            FileEntry* existing_file_entry = debug_cast<FileEntry*>(entry->second);
+            files_in_filesystem[std_path] = existing_file_entry;
+            saved_model->path = std_path;
+
+            for(int i = 0; i < invisibleRootItem()->childCount(); i++)
+                if(invisibleRootItem()->child(i)->childCount() > 0){
+                    //Entry moves from unnamed column to parent under directory
+                    invisibleRootItem()->removeChild(existing_file_entry);
+                    linkFileToAncestor(existing_file_entry, std_path);
+                }else{
+                    existing_file_entry->setModel(*saved_model);
+                }
         }else{
             //New file created
-            invisibleRootItem()->removeChild(item);
-            linkFileToAncestor(item, std_path);
+            Typeset::Model* cloned_model = Typeset::Model::fromSerial(saved_model->toSerial());
+            cloned_model->write_time = std::filesystem::file_time_type::clock::now();
+            cloned_model->path = std_path;
+            addProjectEntry(cloned_model);
+
+            main_window->viewModel(cloned_model);
+            main_window->reparse();
         }
     }
-    sortItems(0, Qt::SortOrder::AscendingOrder);
 }
 
 void ProjectBrowser::updateProjectBrowser() {
