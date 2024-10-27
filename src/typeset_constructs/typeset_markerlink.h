@@ -22,21 +22,16 @@ private:
 public:
     MarkerLink() : line_id(0), view(nullptr), model(nullptr) {}
     virtual char constructCode() const noexcept override { return MARKERLINK; }
+    virtual void writePrefix(std::string& out) const noexcept override { /* DO NOTHING */ }
 
     size_t serialChars() const noexcept override {
         return std::string("Line :").size() + std::to_string(line_id).size();
     }
 
-    virtual void writeString(std::string& out, size_t& curr) const noexcept override {
-        out[curr++] = 'L';
-        out[curr++] = 'i';
-        out[curr++] = 'n';
-        out[curr++] = 'e';
-
-        std::string num = std::to_string(line_id+1);
-        for(const char ch : num) out[curr++] = ch;
-
-        out[curr++] = ':';
+    virtual void writeString(std::string& out) const noexcept override {
+        out += "Line";
+        out += std::to_string(line_id+1);
+        out += ':';
     }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS

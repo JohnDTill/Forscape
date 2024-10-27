@@ -1,5 +1,6 @@
 #include "typeset_text.h"
 
+#include "forscape_serial.h"
 #include "forscape_unicode.h"
 #include "typeset_construct.h"
 #include "typeset_line.h"
@@ -34,18 +35,19 @@ void Text::setParent(Phrase* p) noexcept {
     parent = p;
 }
 
-void Text::writeString(std::string& out, size_t& curr) const noexcept {
-    memcpy(&out[curr], str.data(), numChars());
-    curr += numChars();
+void Text::writeString(std::string& out) const noexcept {
+    typesetEscape(out, std::string_view(str));
 }
 
-void Text::writeString(std::string& out, size_t& curr, size_t pos) const noexcept {
-    writeString(out, curr, pos, numChars()-pos);
+void Text::writeString(std::string& out, size_t pos) const noexcept {
+    assert(pos <= str.size());
+    typesetEscape(out, std::string_view(str.data()+pos, str.size()-pos));
 }
 
-void Text::writeString(std::string& out, size_t& curr, size_t pos, size_t len) const noexcept {
-    memcpy(&out[curr], &str[pos], len);
-    curr += len;
+void Text::writeString(std::string& out, size_t pos, size_t len) const noexcept {
+    assert(pos <= str.size());
+    assert(len <= str.size()-pos);
+    typesetEscape(out, std::string_view(str.data()+pos, len));
 }
 
 bool Text::isTopLevel() const noexcept {
@@ -68,8 +70,17 @@ void Text::setString(std::string_view str) alloc_except {
     this->str = str;
 }
 
-void Text::setString(const char* ch, size_t sze) alloc_except {
-    str = std::string_view(ch, sze);
+void Text::setStringAndRemoveEscapes(const char* ch, size_t sze) alloc_except {
+    str.clear();
+    for(size_t i = 0; i < sze; i++){
+        if(isUnicodeChar<CONSTRUCT_STRVIEW>(&ch[i])){
+            i += codepointSize(CON_0);
+            assert(isUnicodeChar<CONSTRUCT_STRVIEW>(&ch[i])
+                   || isUnicodeChar<OPEN_STRVIEW>(&ch[i])
+                   || isUnicodeChar<CLOSE_STRVIEW>(&ch[i]));
+        }
+        str += ch[i];
+    }
 }
 
 void Text::append(std::string_view appended) alloc_except {

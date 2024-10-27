@@ -1,7 +1,7 @@
-Text with a misplaced close:  oh no!
-A superscript without a close: x2
-A superscript with extra close: x2
-A dualscript missing a close: x2*
-A case missing a close: δ(x) = 1x = 00x ≠ 0
-A mat missing a close: I = 1001
-A mat with an extra entry: I = 10011
+Text with a misplaced close: ⏵ oh no!
+A superscript without a close: x⁜^⏴2
+A superscript with extra close: x⁜^⏴2⏵⏵
+A dualscript missing a close: x⁜Δ⏴2⏵⏴*
+A case missing a close: δ(x) = ⁜{2⏴1⏵⏴x = 0⏵⏴0⏵⏴x ≠ 0
+A mat missing a close: I = ⁜[2x2]⏴1⏵⏴0⏵⏴0⏵⏴1
+A mat with an extra entry: I = ⁜[2x2]⏴1⏵⏴0⏵⏴0⏵⏴1⏵⏴1⏵

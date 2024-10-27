@@ -1,20 +1,20 @@
 alg mult(a, b){
-    n = len(a:,0)
-    m = len(a0,:)
-    assert(m = len(b:,0))
-    p = len(b0,:)
-    c ← 0n×p
-    ci,j ← mk=0ai,k × bk,j
+    n = len(a⁜_⏴:,0⏵)
+    m = len(a⁜_⏴0,:⏵)
+    assert(m = len(b⁜_⏴:,0⏵))
+    p = len(b⁜_⏴0,:⏵)
+    c ← 0⁜_⏴n×p⏵
+    c⁜_⏴i,j⏵ ← ⁜sum2⏴m⏵⏴k=0⏵a⁜_⏴i,k⏵ × b⁜_⏴k,j⏵
     return c
 }
 
 print(mult(2,2), "\n")
-print(mult( 12, 12⊤), "\n")
-print(mult( 12⊤, 12), "\n")
+print(mult( ⁜[1x2]⏴1⏵⏴2⏵, ⁜[1x2]⏴1⏵⏴2⏵⁜^⏴⊤⏵), "\n")
+print(mult( ⁜[1x2]⏴1⏵⏴2⏵⁜^⏴⊤⏵, ⁜[1x2]⏴1⏵⏴2⏵), "\n")
 
 alg factorial(n){
     if(n = 0) return 1
-    else return 	n+1i=1 i
+    else return ⁜prod2⏴n+1⏵⏴i=1⏵ i
 }
 
 for(i ← 0; i ≤ 5; i ← i + 1)

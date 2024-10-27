@@ -12,6 +12,10 @@ AccentBar::AccentBar(){
 
 char AccentBar::constructCode() const noexcept { return ACCENTBAR; }
 
+void AccentBar::writePrefix(std::string& out) const noexcept {
+    out += ACCENTBAR_STR;
+}
+
 #ifndef FORSCAPE_TYPESET_HEADLESS
 void AccentBar::updateSizeFromChildSizes() noexcept {
     width = child()->width;

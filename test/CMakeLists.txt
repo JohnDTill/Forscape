@@ -100,7 +100,6 @@ set(SOURCES
     ${TEST}/test_suggestions.h
     ${TEST}/test_unicode.h
     ${TEST}/typeset.h
-    ${TEST}/typeset_control.h
     ${TEST}/typeset_loadsave.h
     ${TEST}/typeset_mutability.h
     ${GEN_FILES}

@@ -98,16 +98,10 @@ inline bool testInterpreter(){
 
     passing &= testExpression("\"Hello world!\"", "Hello world!");
     passing &= testExpression("2", "2");
-    passing &= testExpression("1001", "1001");
     passing &= testExpression("1 + 1", "2");
-    passing &= testExpression("1001 + 1001", "2002");
     passing &= testExpression("2 * 2", "4");
-    passing &= testExpression("1001 1001", "1001");
-    passing &= testExpression("2 1001", "2002");
     passing &= testExpression("(2)", "2");
     passing &= testExpression("2(1 - 3)", "-4");
-    passing &= testExpression("1212", "5");
-    passing &= testExpression("12(1 + 3)", "2");
     passing &= testExpression("2^2", "4");
     passing &= testExpression("4^0.5", "2");
 

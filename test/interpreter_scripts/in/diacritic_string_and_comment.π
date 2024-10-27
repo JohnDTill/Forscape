@@ -1,2 +1,2 @@
 //A mass spring damper system has mẍ + cẋ + kx = F
-print("ẍ = F - cẋ - kxm")
+print("ẍ = ⁜f⏴F - cẋ - kx⏵⏴m⏵")

@@ -347,7 +347,7 @@ uint32_t Marker::scan() noexcept {
         return constructScannerCode(c->constructCode());
     }else if(isNested()){
         setToFrontOf(subphrase()->textRightOfSubphrase());
-        return CLOSE;
+        return 3;
     }else if(Line* l = nextLine()){
         setToFrontOf(l->front());
         return '\n';

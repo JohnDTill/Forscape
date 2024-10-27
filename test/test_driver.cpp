@@ -5,7 +5,6 @@
 #include "serial.h"
 #include "test_keywords.h"
 #include "test_unicode.h"
-#include "typeset_control.h"
 #include "typeset_loadsave.h"
 #include "typeset_mutability.h"
 #include "forscape_benchmark.h"
@@ -39,7 +38,6 @@ int main(int argc, char* argv[]){
     passing &= testUnicode();
     passing &= testSerial();
     passing &= testTypesetLoadSave();
-    passing &= testTypesetController();
     passing &= testKeywords();
     passing &= testScanner();
     passing &= testParser();

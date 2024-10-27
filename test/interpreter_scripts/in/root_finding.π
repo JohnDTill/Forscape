@@ -1,20 +1,20 @@
-alg getJ(f, x, r, δ=10-6){
-    J ← 0len(r)×len(x)
+alg getJ(f, x, r, δ=10⁜^⏴-6⏵){
+    J ← 0⁜_⏴len(r)×len(x)⏵
     for(i←0; i<len(x); i←i+1){
         x_incr ← x
-        x_incri ← xi + δ
-        J:,i ← f(x_incr) - rδ //First-order finite difference
+        x_incr⁜_⏴i⏵ ← x⁜_⏴i⏵ + δ
+        J⁜_⏴:,i⏵ ← ⁜f⏴f(x_incr) - r⏵⏴δ⏵ //First-order finite difference
     }
     return J
 }
-alg findRoot(f, x, tol=10-12, λ=10-3){
+alg findRoot(f, x, tol=10⁜^⏴-12⏵, λ=10⁜^⏴-3⏵){
     for(r ← f(x); r⋅r ≥ tol;  r ← f(x)){
         J = getJ(f, x, r)
-        x ← x - (J⊤J + λIlen(x)×len(x))-1 J⊤r //Levenberg-Marquardt step
+        x ← x - (J⁜^⏴⊤⏵J + λI⁜_⏴len(x)×len(x)⏵)⁜^⏴-1⏵ J⁜^⏴⊤⏵r //Levenberg-Marquardt step
     }
     return x
 }
-print("Root of x^2 - 4x + 3 with guess 0:  x=", findRoot((x ↦ x2 - 4x + 3), 0))
-print("\nRoot of x^2 - 4x + 3 with guess 10:  x=", findRoot((x ↦ x2 - 4x + 3), 10))
-x = findRoot(x ↦ 2341x - 7-1, 02×1)
-print("\nRoot of [2, 3; 4, 1]x - [7; -1] with guess [0; 0]:  x=[", x0, "; ", x1, "]")
+print("Root of x^2 - 4x + 3 with guess 0:  x=", findRoot((x ↦ x⁜^⏴2⏵ - 4x + 3), 0))
+print("\nRoot of x^2 - 4x + 3 with guess 10:  x=", findRoot((x ↦ x⁜^⏴2⏵ - 4x + 3), 10))
+x = findRoot(x ↦ ⁜[2x2]⏴2⏵⏴3⏵⏴4⏵⏴1⏵x - ⁜[2x1]⏴7⏵⏴-1⏵, 0⁜_⏴2×1⏵)
+print("\nRoot of [2, 3; 4, 1]x - [7; -1] with guess [0; 0]:  x=[", x⁜_⏴0⏵, "; ", x⁜_⏴1⏵, "]")

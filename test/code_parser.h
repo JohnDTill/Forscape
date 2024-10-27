@@ -98,10 +98,10 @@ inline bool testParser() {
 
     passing &= testFormatting(input, fmt);
 
-    input = "12 = 0.5 //Test formatting\nx^2 = x2 //Obviously";
+    input = "⁜f⏴1⏵⏴2⏵ = 0.5 //Test formatting\nx^2 = x⁜^⏴2⏵ //Obviously";
 
-    fmt = "<tag|4>1<tag|0><tag|4>2<tag|0> = <tag|4>0.5<tag|0> <tag|1>//Test formatting<tag|0>\n"
-          "<tag|6>x<tag|0>^<tag|4>2<tag|0> = <tag|6>x<tag|0><tag|4>2<tag|0> <tag|1>//Obviously<tag|0>";
+    fmt = "⁜f⏴<tag|4>1<tag|0>⏵⏴<tag|4>2<tag|0>⏵ = <tag|4>0.5<tag|0> <tag|1>//Test formatting<tag|0>\n"
+          "<tag|6>x<tag|0>^<tag|4>2<tag|0> = <tag|6>x<tag|0>⁜^⏴<tag|4>2<tag|0>⏵ <tag|1>//Obviously<tag|0>";
 
     passing &= testFormatting(input, fmt);
 

@@ -842,7 +842,7 @@ uint32_t Controller::scan() noexcept {
         return constructScannerCode(c->constructCode());
     }else if(isNested()){
         active.setToFrontOf(subphrase()->textRightOfSubphrase());
-        return CLOSE;
+        return 3;
     }else if(Line* l = nextLine()){
         active.setToFrontOf(l);
         return '\n';

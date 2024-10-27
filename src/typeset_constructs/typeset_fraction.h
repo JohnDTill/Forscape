@@ -15,6 +15,7 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return FRACTION; }
+    virtual void writePrefix(std::string& out) const noexcept override { out += FRACTION_STR; }
 
     static constexpr double hgap = 5;
     static constexpr double bar_margin = 0;

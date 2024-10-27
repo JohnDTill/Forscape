@@ -20,6 +20,7 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return INF; }
+    virtual void writePrefix(std::string& out) const noexcept override { out += INF_STR; }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }

@@ -1,5 +1,6 @@
 #include "typeset_selection.h"
 
+#include "forscape_serial.h"
 #include "typeset_construct.h"
 #include "typeset_line.h"
 #include <typeset_matrix.h>
@@ -333,7 +334,9 @@ size_t Selection::textSpan() const noexcept {
 }
 
 std::string Selection::selectedTextSelection() const {
-    return std::string(tR->view(iL, characterSpan()));
+    std::string str;
+    typesetEscape(str, tR->view(iL, characterSpan()));
+    return str;
 }
 
 std::string Selection::selectedPhrase() const {
@@ -343,16 +346,15 @@ std::string Selection::selectedPhrase() const {
         serial_chars += t->numChars() + t->nextConstructInPhrase()->serialChars();
 
     std::string out;
-    out.resize(serial_chars);
-    size_t curr = 0;
+    out.reserve(serial_chars);
 
-    tL->writeString(out, curr, iL);
-    tL->nextConstructAsserted()->writeString(out, curr);
+    tL->writeString(out, iL);
+    tL->nextConstructAsserted()->writeString(out);
     for(Text* t = tL->nextTextAsserted(); t != tR; t = t->nextTextAsserted()){
-        t->writeString(out, curr);
-        t->nextConstructAsserted()->writeString(out, curr);
+        t->writeString(out);
+        t->nextConstructAsserted()->writeString(out);
     }
-    tR->writeString(out, curr, 0, iR);
+    tR->writeString(out, 0, iR);
 
     return out;
 }
@@ -369,27 +371,26 @@ std::string Selection::selectedLines() const {
         serial_chars += t->numChars() + t->nextConstructAsserted()->serialChars();
 
     std::string out;
-    out.resize(serial_chars);
-    size_t curr = 0;
+    out.reserve(serial_chars);
 
-    tL->writeString(out, curr, iL);
+    tL->writeString(out, iL);
     for(Text* t = tL; t != lL->back();){
-        t->nextConstructAsserted()->writeString(out, curr);
+        t->nextConstructAsserted()->writeString(out);
         t = t->nextTextAsserted();
-        t->writeString(out, curr);
+        t->writeString(out);
     }
-    out[curr++] = '\n';
+    out += '\n';
 
     for(Line* l = lL->nextAsserted(); l != lR; l = l->nextAsserted()){
-        l->writeString(out, curr);
-        out[curr++] = '\n';
+        l->writeString(out);
+        out += '\n';
     }
 
     for(Text* t = lR->front(); t != tR; t = t->nextTextAsserted()){
-        t->writeString(out, curr);
-        t->nextConstructAsserted()->writeString(out, curr);
+        t->writeString(out);
+        t->nextConstructAsserted()->writeString(out);
     }
-    tR->writeString(out, curr, 0, iR);
+    tR->writeString(out, 0, iR);
 
     return out;
 }

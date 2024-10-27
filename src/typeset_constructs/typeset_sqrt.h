@@ -29,6 +29,7 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return SQRT; }
+    virtual void writePrefix(std::string& out) const noexcept override { out += SQRT_STR; }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     static constexpr double vgap = 1;

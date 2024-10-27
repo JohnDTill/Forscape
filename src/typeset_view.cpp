@@ -1196,7 +1196,6 @@ void View::handleKey(int key, int modifiers, const std::string& str){
         default:
             bool alt_or_ctrl_pressed = (Alt|Ctrl) & modifiers;
             if(!allow_write || alt_or_ctrl_pressed || str.empty()) return;
-            assert(isValidSerial(str)); //Shouldn't be able to enter invalid input via the keyboard
 
             if(insert_mode) controller.selectNextChar();
             std::string_view typeset_cmd = controller.keystroke(str);

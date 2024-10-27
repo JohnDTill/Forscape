@@ -65,10 +65,7 @@ Program::ptr_or_code Program::openFromAbsolutePath(const std::filesystem::path& 
     buffer << in.rdbuf();
 
     std::string src = buffer.str();
-    for(size_t i = 1; i < src.size(); i++)
-        if(src[i] == '\r' && src[i-1] != OPEN)
-            src[i] = '\0';
-    src.erase( std::remove(src.begin(), src.end(), '\0'), src.end() );
+    src.erase( std::remove(src.begin(), src.end(), '\r'), src.end() );
 
     if(!Forscape::isValidSerial(src)) return FILE_CORRUPTED;
 

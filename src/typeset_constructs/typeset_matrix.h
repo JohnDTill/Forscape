@@ -52,13 +52,14 @@ public:
         D.resize(rows);
     }
 
-    virtual void writeArgs(std::string& out, size_t& curr) const noexcept override {
-        out[curr++] = static_cast<uint8_t>(rows);
-        out[curr++] = static_cast<uint8_t>(cols);
-    }
-
-    virtual size_t dims() const noexcept override { return 2; }
     virtual char constructCode() const noexcept override { return MATRIX; }
+    virtual void writePrefix(std::string& out) const noexcept override {
+        out += '[';
+        out += std::to_string(rows);  // DO THIS: use efficient to_string
+        out += 'x';
+        out += std::to_string(cols);
+        out += ']';
+    }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual Text* textUp(const Subphrase* caller, double x) const noexcept override {

@@ -26,7 +26,7 @@ public:
     void appendConstruct(Construct* c);
     void appendConstruct(Construct* c, Text* t);
     size_t serialChars() const noexcept;
-    void writeString(std::string& out, size_t& curr) const noexcept;
+    void writeString(std::string& out) const noexcept;
     std::string toString() const;
     virtual bool isLine() const noexcept = 0;
     Line* asLine() noexcept;

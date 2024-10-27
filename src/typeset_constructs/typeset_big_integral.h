@@ -24,9 +24,33 @@ inline constexpr std::string_view getBigIntegralString(size_t type) noexcept {
 }
 
 template<size_t type>
+inline void writePrefixBigInt(std::string& out) noexcept {
+    switch(type){
+        case INTEGRAL0: out += INTEGRAL0_STR; break;
+        case INTEGRAL1: out += INTEGRAL1_STR; break;
+        case INTEGRAL2: out += INTEGRAL2_STR; break;
+        case DOUBLEINTEGRAL0: out += DOUBLEINTEGRAL0_STR; break;
+        case DOUBLEINTEGRAL1: out += DOUBLEINTEGRAL1_STR; break;
+        case TRIPLEINTEGRAL0: out += TRIPLEINTEGRAL0_STR; break;
+        case TRIPLEINTEGRAL1: out += TRIPLEINTEGRAL1_STR; break;
+        case INTEGRALCONV0: out += INTEGRALCONV0_STR; break;
+        case INTEGRALCONV1: out += INTEGRALCONV1_STR; break;
+        case INTEGRALCONV2: out += INTEGRALCONV2_STR; break;
+        case DOUBLEINTEGRALCONV0: out += DOUBLEINTEGRALCONV0_STR; break;
+        case DOUBLEINTEGRALCONV1: out += DOUBLEINTEGRALCONV1_STR; break;
+        case TRIPLEINTEGRALCONV0: out += TRIPLEINTEGRALCONV0_STR; break;
+        case TRIPLEINTEGRALCONV1: out += TRIPLEINTEGRALCONV1_STR; break;
+        default: assert(false);
+    }
+}
+
+template<size_t type>
 class BigIntegralSuper0 final : public Construct {
 public:
     virtual char constructCode() const noexcept override { return type; }
+    virtual void writePrefix(std::string& out) const noexcept override {
+        writePrefixBigInt<type>(out);
+    }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual void updateSizeFromChildSizes() noexcept override {
@@ -57,6 +81,9 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return type; }
+    virtual void writePrefix(std::string& out) const noexcept override {
+        writePrefixBigInt<type>(out);
+    }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }
@@ -118,6 +145,9 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return type; }
+    virtual void writePrefix(std::string& out) const noexcept override {
+        writePrefixBigInt<type>(out);
+    }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }

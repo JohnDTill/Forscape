@@ -2,6 +2,7 @@
 #include "ui_typeset_settings_dialog.h"
 
 #include "forscape_common.h"
+#include "forscape_program.h"
 #include <typeset_themes.h>
 #include <QComboBox>
 #include <QLabel>
@@ -48,10 +49,15 @@ SettingsDialog::~SettingsDialog() {
 void SettingsDialog::updateInherited(const std::array<SettingValue, NUM_CODE_SETTINGS>& inherited) alloc_except {
     if(instance == nullptr) instance = new SettingsDialog;
 
+    const bool no_errors = Program::instance()->noErrors();
     for(size_t i = 0; i < NUM_CODE_SETTINGS; i++) {
         QComboBox* combo_box = combo_boxes[i];
-        const SettingValue value = inherited[i];
-        combo_box->setItemText(0, QString("Unspecified (") + warning_labels[value].data() + ")");
+        if(no_errors){
+            const SettingValue value = inherited[i];
+            combo_box->setItemText(0, QString("Unspecified (") + warning_labels[value].data() + ")");
+        }else{
+            combo_box->setItemText(0, QString("Unspecified"));
+        }
     }
 }
 

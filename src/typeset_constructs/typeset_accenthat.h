@@ -22,6 +22,7 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return ACCENTHAT; }
+    virtual void writePrefix(std::string& out) const noexcept override { out += ACCENTHAT_STR; }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual void updateSizeFromChildSizes() noexcept override {

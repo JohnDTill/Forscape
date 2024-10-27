@@ -12,6 +12,10 @@
 #include <string>
 #include <string_view>
 
+// DO THIS: unicode conversion is very broken
+#define OPEN_CHAR 2
+#define CLOSE_CHAR 3
+
 namespace Forscape {
 
 class UnicodeConverter{
@@ -53,7 +57,7 @@ private:
             case ' ':
                 break;
 
-            case CLOSE:
+            case codepointInt<CLOSE_STRVIEW>():
                 return false;
 
             default:
@@ -67,7 +71,7 @@ private:
             case ' ':
                 break;
 
-            case CLOSE:
+            case codepointInt<CLOSE_STRVIEW>():
                 return false;
 
             default:
@@ -77,20 +81,20 @@ private:
 
     bool twoArgFails(size_t& index) const noexcept {
         char ch = src[index++];
-        while(ch != CLOSE)
-            if(ch == OPEN) return true;
+        while(ch != CLOSE_CHAR)
+            if(ch == OPEN_CHAR) return true;
             else ch = src[index++];
         ch = src[index++];
-        while(ch != CLOSE)
-            if(ch == OPEN) return true;
+        while(ch != CLOSE_CHAR)
+            if(ch == OPEN_CHAR) return true;
             else ch = src[index++];
         return false;
     }
 
     bool oneArgFails(size_t& index) const noexcept {
         char ch = src[index++];
-        while(ch != CLOSE)
-            if(ch == OPEN) return true;
+        while(ch != CLOSE_CHAR)
+            if(ch == OPEN_CHAR) return true;
             else ch = src[index++];
         return false;
     }
@@ -104,18 +108,20 @@ private:
     }
 
     bool accentFails(size_t& index) const noexcept {
-        uint8_t ch = src[index];
-        if(ch == OPEN) return true;
-        else if(ch == CLOSE) return true;
-        index += codepointSize(ch);
+        if(isUnicodeChar<CONSTRUCT_STRVIEW>(&src[index]) || isUnicodeChar<CLOSE_STRVIEW>(&src[index]))
+            return true;
+        index += codepointSize(src[index]);
 
-        return src[index++] != CLOSE;
+        if(!isUnicodeChar<CLOSE_STRVIEW>(&src[index])) return true;
+        index += codepointSize(CLOSE_0);
+        return false;
     }
 
     bool canConvert() const noexcept {
         size_t index = 0;
         while(index < src.size()){
-            if(src[index++] == OPEN){
+            if(isUnicodeChar<CONSTRUCT_STRVIEW>(&src[index++])){
+                index += (codepointSize(CON_0) - 1);
                 switch (src[index++]) {
                     case SUPERSCRIPT:
                         if(superscriptFails(index)) return false;
@@ -189,7 +195,7 @@ private:
         for(;;) switch (getCode(index)) {
             FORSCAPE_SUPERSCRIPTS_CONVERSION
             case ' ': out += ' '; break;
-            case CLOSE: return;
+            case codepointInt<CLOSE_STRVIEW>(): return;
             default: assert(false);
         }
     }
@@ -198,7 +204,7 @@ private:
         for(;;) switch (getCode(index)) {
             FORSCAPE_SUBSCRIPTS_CONVERSION
             case ' ': out += ' '; break;
-            case CLOSE: return;
+            case codepointInt<CLOSE_STRVIEW>(): return;
             default: assert(false);
         }
     }
@@ -211,8 +217,8 @@ private:
             out += src[index++];
         out += byte0;
         out += byte1;
-        assert(src[index] == CLOSE);
-        index++;
+        assert(isUnicodeChar<CLOSE_STRVIEW>(&src[index]));
+        index += codepointSize(CLOSE_0);
     }
 
     template<uint8_t byte0, uint8_t byte1, uint8_t byte2>
@@ -224,9 +230,9 @@ private:
     void writeBinomial(){
         out += '(';
         char ch;
-        while((ch = src[index++]) != CLOSE) out += ch;
+        while((ch = src[index++]) != CLOSE_CHAR) out += ch;
         out += " ¦ ";
-        while((ch = src[index++]) != CLOSE) out += ch;
+        while((ch = src[index++]) != CLOSE_CHAR) out += ch;
         out += ')';
     }
 
@@ -235,16 +241,16 @@ private:
         //            e.g. frac{1}{2} should not convert to (1)/(2)
         out += '(';
         char ch;
-        while((ch = src[index++]) != CLOSE) out += ch;
+        while((ch = src[index++]) != CLOSE_CHAR) out += ch;
         out += ")/(";
-        while((ch = src[index++]) != CLOSE) out += ch;
+        while((ch = src[index++]) != CLOSE_CHAR) out += ch;
         out += ')';
     }
 
     void writeSqrt(){
         out += "√(";
         char ch;
-        while((ch = src[index++]) != CLOSE) out += ch;
+        while((ch = src[index++]) != CLOSE_CHAR) out += ch;
         out += ')';
 
         //∛ and ∜ for n roots
@@ -252,9 +258,9 @@ private:
 
     void writeNrt(){
         char curr = src[index];
-        if(curr == '3' && src[index+1] == CLOSE){
+        if(curr == '3' && src[index+1] == CLOSE_CHAR){
             out += "∛(";
-        }else if(curr == '4' && src[index+1] == CLOSE){
+        }else if(curr == '4' && src[index+1] == CLOSE_CHAR){
             out += "∜(";
         }else{
             writeSuperscript();
@@ -264,17 +270,17 @@ private:
 
         index += 2;
         char ch;
-        while((ch = src[index++]) != CLOSE) out += ch;
+        while((ch = src[index++]) != CLOSE_CHAR) out += ch;
         out += ')';
     }
 
     void writeRow(uint8_t cols){
         char ch;
-        while((ch = src[index++]) != CLOSE) out += ch;
+        while((ch = src[index++]) != CLOSE_CHAR) out += ch;
         for(uint8_t j = 1; j < cols; j++){
             out += ", ";
             char ch;
-            while((ch = src[index++]) != CLOSE) out += ch;
+            while((ch = src[index++]) != CLOSE_CHAR) out += ch;
         }
     }
 
@@ -297,7 +303,7 @@ private:
 
         while(index < src.size()){
             char ch = src[index++];
-            if(ch == OPEN){
+            if(ch == OPEN_CHAR){
                 switch (src[index++]) {
                     case SUPERSCRIPT:
                         writeSuperscript(); break;

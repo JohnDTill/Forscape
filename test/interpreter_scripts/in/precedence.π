@@ -6,43 +6,43 @@ assert(5*3! = 5*(3!))
 
 //Basic implicit mult
 x = 2
-y = I1×2
-x* = 3
-xa = 3
+y = I⁜_⏴1×2⏵
+x⁜^⏴*⏵ = 3
+x⁜_⏴a⏵ = 3
 assert(4/2x = 4/(2x)) //Implicit binds tighter than normal mult
 assert(2x! = 2(x!)) //Factorial binds tighter
-assert(y y⊤ = y(y⊤)) //Superscript binds tighter
+assert(y y⁜^⏴⊤⏵ = y(y⁜^⏴⊤⏵)) //Superscript binds tighter
 
 //Grouping mult
-f(a) = a1
+f(a) = a⁜_⏴1⏵
 h(a) = 3/a
-assert(h(x)2 = (h(x))2) //Exponent applied after call
-assert(x(x)2 = x * x2) //Exponent applied before mult
-assert(f(y)0 = (f(y))0) //Access applied after call
-assert(y(y0) = y * y0) //Access applied before mult
+assert(h(x)⁜^⏴2⏵ = (h(x))⁜^⏴2⏵) //Exponent applied after call
+assert(x(x)⁜^⏴2⏵ = x * x⁜^⏴2⏵) //Exponent applied before mult
+assert(f(y)⁜_⏴0⏵ = (f(y))⁜_⏴0⏵) //Access applied after call
+assert(y(y⁜_⏴0⏵) = y * y⁜_⏴0⏵) //Access applied before mult
 assert(h(x)! = (h(x))!)
 assert(x(x)! = x(x!))
 assert(h(x)x = (h(x))*x)
 assert(h(x) h(x) = h(x) * h(x))
 
 //Keyword funcs
-assert(sin(x)2 = (sin(x))2)
-assert(log(x)2 = (log(x))2)
-assert(log2(x)2 = (log2(x))2)
+assert(sin(x)⁜^⏴2⏵ = (sin(x))⁜^⏴2⏵)
+assert(log(x)⁜^⏴2⏵ = (log(x))⁜^⏴2⏵)
+assert(log⁜_⏴2⏵(x)⁜^⏴2⏵ = (log⁜_⏴2⏵(x))⁜^⏴2⏵)
 assert(sin(x)x = sin(x)*x)
-assert(sin2(x)2 = (sin2x)2)
+assert(sin⁜^⏴2⏵(x)⁜^⏴2⏵ = (sin⁜^⏴2⏵x)⁜^⏴2⏵)
 
 //Single-char implicit mult
-assert(xx2 = x x2) //Exponent binds to last character
-assert(yy⊤ = y (y⊤)) //Transpose binds to last character
-assert(yy+ = y (y+)) //Pseudo-inv binds to last character
-assert(yy0 = y (y0)) //Access binds to last character
-assert(yy0,1 = y (y0,1)) //Access binds to last character
+assert(xx⁜^⏴2⏵ = x x⁜^⏴2⏵) //Exponent binds to last character
+assert(yy⁜^⏴⊤⏵ = y (y⁜^⏴⊤⏵)) //Transpose binds to last character
+assert(yy⁜^⏴+⏵ = y (y⁜^⏴+⏵)) //Pseudo-inv binds to last character
+assert(yy⁜_⏴0⏵ = y (y⁜_⏴0⏵)) //Access binds to last character
+assert(yy⁜_⏴0,1⏵ = y (y⁜_⏴0,1⏵)) //Access binds to last character
 assert(xx! = x (x!)) //Factorial binds to last character
 assert(xh(x) = x*h(x)) //Grouping binds to last character
-assert( xh(x)2 = x( (h(x))^2 ) )
-assert(xx*(x)2 = x * x* * x^2)
-assert(xx* = x x*) //Asterisk modifies last character
-assert(xxa = x xa) //Subscript id modifies last character
+assert( xh(x)⁜^⏴2⏵ = x( (h(x))^2 ) )
+assert(xx⁜^⏴*⏵(x)⁜^⏴2⏵ = x * x⁜^⏴*⏵ * x^2)
+assert(xx⁜^⏴*⏵ = x x⁜^⏴*⏵) //Asterisk modifies last character
+assert(xx⁜_⏴a⏵ = x x⁜_⏴a⏵) //Subscript id modifies last character
 
 print("PASS")

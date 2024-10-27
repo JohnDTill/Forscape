@@ -15,6 +15,7 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return BINOMIAL; }
+    virtual void writePrefix(std::string& out) const noexcept override { out += BINOMIAL_STR; }
 
     static constexpr double paren_width = 3;
     static constexpr double hgap = 1;

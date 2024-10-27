@@ -22,9 +22,34 @@ inline constexpr std::string_view getBigSymbolString(size_t type) noexcept {
 }
 
 template<size_t type>
+void writeBigSymPrefix(std::string& out) noexcept {
+    switch(type){
+        case BIGSUM0: out += BIGSUM0_STR; break;
+        case BIGSUM1: out += BIGSUM1_STR; break;
+        case BIGSUM2: out += BIGSUM2_STR; break;
+        case BIGPROD0: out += BIGPROD0_STR; break;
+        case BIGPROD1: out += BIGPROD1_STR; break;
+        case BIGPROD2: out += BIGPROD2_STR; break;
+        case BIGCOPROD0: out += BIGCOPROD0_STR; break;
+        case BIGCOPROD1: out += BIGCOPROD1_STR; break;
+        case BIGCOPROD2: out += BIGCOPROD2_STR; break;
+        case BIGUNION0: out += BIGUNION0_STR; break;
+        case BIGUNION1: out += BIGUNION1_STR; break;
+        case BIGUNION2: out += BIGUNION2_STR; break;
+        case BIGINTERSECTION0: out += BIGINTERSECTION0_STR; break;
+        case BIGINTERSECTION1: out += BIGINTERSECTION1_STR; break;
+        case BIGINTERSECTION2: out += BIGINTERSECTION2_STR; break;
+        default: assert(false);
+    }
+}
+
+template<size_t type>
 class BigSymbol0 final : public Construct {
 public:
     virtual char constructCode() const noexcept override { return type; }
+    virtual void writePrefix(std::string& out) const noexcept override {
+        writeBigSymPrefix<type>(out);
+    }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual void updateSizeFromChildSizes() noexcept override {
@@ -55,6 +80,9 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return type; }
+    virtual void writePrefix(std::string& out) const noexcept override {
+        writeBigSymPrefix<type>(out);
+    }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }
@@ -101,6 +129,9 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return type; }
+    virtual void writePrefix(std::string& out) const noexcept override {
+        writeBigSymPrefix<type>(out);
+    }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }

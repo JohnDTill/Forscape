@@ -27,10 +27,7 @@ inline std::string readFile(const std::string& filename){
     buffer << in.rdbuf();
 
     std::string str = buffer.str();
-    for(size_t i = 1; i < str.size(); i++)
-        if(str[i] == '\r' && str[i-1] != OPEN)
-            str[i] = '\0';
-    str.erase( std::remove(str.begin(), str.end(), '\0'), str.end() );
+    str.erase( std::remove(str.begin(), str.end(), '\r'), str.end() );
 
     return str;
 }

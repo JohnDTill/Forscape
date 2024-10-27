@@ -28,6 +28,7 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return NRT; }
+    virtual void writePrefix(std::string& out) const noexcept override { out += NRT_STR; }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t id) const noexcept override{

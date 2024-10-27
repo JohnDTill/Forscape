@@ -50,10 +50,9 @@ public:
     virtual Text* textUp(const Subphrase* caller, double x) const noexcept;
     virtual Text* textDown(const Subphrase* caller, double x) const noexcept;
     virtual size_t serialChars() const noexcept;
-    virtual size_t dims() const noexcept;
-    virtual void writeString(std::string& out, size_t& curr) const noexcept;
-    virtual void writeArgs(std::string& out, size_t& curr) const noexcept;
+    virtual void writeString(std::string& out) const noexcept;
     virtual char constructCode() const noexcept = 0;
+    virtual void writePrefix(std::string& out) const noexcept = 0;
     std::string toString() const;
     size_t numArgs() const noexcept;
     bool sameContent(const Construct* other) const noexcept;
