@@ -162,7 +162,7 @@ void Program::getFileSuggestions(std::vector<std::string>& suggestions, std::str
     for(const std::filesystem::path& path_entry : project_path){
         const std::string input_filename = std::filesystem::is_directory(path_entry / input_as_path) ? "" : input_as_path.filename().u8string();
         const std::filesystem::path dir_of_input = (path_entry / input_as_path).parent_path();
-        if(!std::filesystem::exists(dir_of_input)) continue;
+        if(!std::filesystem::is_directory(dir_of_input)) continue;
 
         const std::filesystem::path model_rel_path = std::filesystem::relative(active->path, path_entry);
 
