@@ -6,6 +6,8 @@
 #include <string>
 #include <unicode_zerowidth.h>
 
+#define SCANNER_NUMBER_END_CONSTRUCT 3
+
 namespace Forscape {
 
 inline constexpr size_t codepointSize(uint8_t ch) noexcept {

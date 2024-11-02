@@ -51,7 +51,7 @@ void Scanner::scanToken() alloc_except {
         case '_': scanIdentifier(); break;
         #endif
 
-        case 3: close(); break;
+        case SCANNER_NUMBER_END_CONSTRUCT: close(); break;
         case '\n': newline(); break;
         case '\0': endOfFile(); break;
 
