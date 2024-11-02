@@ -8,7 +8,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - id: Qt
-        uses: jurplel/install-qt-action@v3
+        uses: jurplel/install-qt-action@v4
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v5
         with:
