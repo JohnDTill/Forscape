@@ -312,7 +312,6 @@ void Model::writeString(std::string& out) const noexcept {
         lines[i]->writeString(out);
     }
 
-    if(!isValidSerial(out)) std::cout << out << std::endl;
     assert(isValidSerial(out));
 }
 

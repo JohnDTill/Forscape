@@ -966,6 +966,8 @@ void MainWindow::on_actionPNG_triggered(){
     if(!c.hasSelection()) c.selectAll();
 
     QImage img = c.selection().toPng();
+    img.setText("Description", toQString(c.selectedText()));
+    img.setText("Title", "ForscapeImage");
     QGuiApplication::clipboard()->setImage(img, QClipboard::Clipboard);
 }
 
