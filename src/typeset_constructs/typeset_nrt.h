@@ -29,6 +29,21 @@ public:
 
     virtual char constructCode() const noexcept override { return NRT; }
     virtual void writePrefix(std::string& out) const noexcept override { out += NRT_STR; }
+    virtual bool writeUnicode(std::string& out, int8_t script) const noexcept override {
+        if(script != 0) return false;
+        if(!first()->hasConstructs() && first()->front()->getString() == "3"){
+            out += "∛(";
+        }else if(!first()->hasConstructs() && first()->front()->getString() == "4"){
+            out += "∜(";
+        }else{
+            if(!first()->writeUnicode(out, 1)) return false;
+            out += "√(";
+        }
+
+        if(!second()->writeUnicode(out, 0)) return false;
+        out += ')';
+        return true;
+    }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t id) const noexcept override{

@@ -63,6 +63,42 @@ std::string_view Selection::strView() const noexcept {
     return std::string_view(tL->getString().data()+iL, characterSpan());
 }
 
+bool Selection::convertToUnicode(std::string& out) const noexcept {
+    if(isTextSelection()){
+        out += selectedTextSelection();
+        return true;
+    }else if(isPhraseSelection()){
+        tL->writeString(out, iL);
+        if(!tL->nextConstructAsserted()->writeUnicode(out, 0)) return false;
+        for(Text* t = tL->nextTextAsserted(); t != tR; t = t->nextTextAsserted()){
+            t->writeString(out);
+            if(!t->nextConstructAsserted()->writeUnicode(out, 0)) return false;
+        }
+        tR->writeString(out, 0, iR);
+        return true;
+    }else{
+        tL->writeString(out, iL);
+        for(Text* t = tL; t != lL->back();){
+            if(!t->nextConstructAsserted()->writeUnicode(out, 0)) return false;
+            t = t->nextTextAsserted();
+            t->writeString(out);
+        }
+        out += '\n';
+
+        for(Line* l = lL->nextAsserted(); l != lR; l = l->nextAsserted()){
+            if(!l->writeUnicode(out, 0)) return false;
+            out += '\n';
+        }
+
+        for(Text* t = lR->front(); t != tR; t = t->nextTextAsserted()){
+            t->writeString(out);
+            if(!t->nextConstructAsserted()->writeUnicode(out, 0)) return false;
+        }
+        tR->writeString(out, 0, iR);
+        return true;
+    }
+}
+
 bool Selection::operator==(const Selection& other) const noexcept {
     if(isTextSelection()){
         return other.isTextSelection() && strView() == other.strView();

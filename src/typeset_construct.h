@@ -54,6 +54,7 @@ public:
     virtual char constructCode() const noexcept = 0;
     virtual void writePrefix(std::string& out) const noexcept = 0;
     std::string toString() const;
+    virtual bool writeUnicode(std::string& out, int8_t script) const noexcept;
     size_t numArgs() const noexcept;
     bool sameContent(const Construct* other) const noexcept;
     void search(const std::string& target, std::vector<Selection>& hits, bool use_case, bool word) const;

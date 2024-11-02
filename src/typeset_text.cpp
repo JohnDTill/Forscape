@@ -1,6 +1,7 @@
 #include "typeset_text.h"
 
 #include "forscape_serial.h"
+#include "forscape_serial_unicode.h"
 #include "forscape_unicode.h"
 #include "typeset_construct.h"
 #include "typeset_line.h"
@@ -48,6 +49,10 @@ void Text::writeString(std::string& out, size_t pos, size_t len) const noexcept 
     assert(pos <= str.size());
     assert(len <= str.size()-pos);
     typesetEscape(out, std::string_view(str.data()+pos, len));
+}
+
+bool Text::writeUnicode(std::string& out, int8_t script) const noexcept {
+    return convertToUnicode(out, str, script);
 }
 
 bool Text::isTopLevel() const noexcept {

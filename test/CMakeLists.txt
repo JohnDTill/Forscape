@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
 
-# DO THIS:
-# - Fix conversion to unicode
-
 option(TEST_QT OFF)
 
 project(ForscapeTests LANGUAGES CXX)
@@ -99,6 +96,7 @@ set(SOURCES
     ${TEST}/forscape_benchmark.h
     ${TEST}/report.h
     ${TEST}/serial.h
+    ${TEST}/test_convert_to_unicode.h
     ${TEST}/test_highlighting.h
     ${TEST}/test_ide_interaction.h
     ${TEST}/test_keywords.h

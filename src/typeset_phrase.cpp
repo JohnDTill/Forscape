@@ -68,6 +68,14 @@ std::string Phrase::toString() const {
     return str;
 }
 
+bool Phrase::writeUnicode(std::string& out, int8_t script) const noexcept {
+    for(size_t i = 0; i < constructs.size(); i++){
+        if(!texts[i]->writeUnicode(out, script)) return false;
+        if(!constructs[i]->writeUnicode(out, script)) return false;
+    }
+    return texts.back()->writeUnicode(out, script);
+}
+
 Line* Phrase::asLine() noexcept {
     assert(isLine());
     return static_cast<Line*>(this);

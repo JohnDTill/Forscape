@@ -3,6 +3,7 @@
 #include "code_parser.h"
 #include "code_scanner.h"
 #include "serial.h"
+#include "test_convert_to_unicode.h"
 #include "test_keywords.h"
 #include "test_unicode.h"
 #include "typeset_loadsave.h"
@@ -40,6 +41,7 @@ int main(int argc, char* argv[]){
     passing &= testSerial();
     passing &= testTypesetLoadSave();
     passing &= testTypesetController();
+    passing &= testConvertToUnicode();
     passing &= testKeywords();
     passing &= testScanner();
     passing &= testParser();

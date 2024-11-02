@@ -50,6 +50,9 @@ public:
     virtual void writePrefix(std::string& out) const noexcept override {
         writeBigSymPrefix<type>(out);
     }
+    virtual bool writeUnicode(std::string& out, int8_t script) const noexcept override {
+        return convertToUnicode(out, getBigSymbolString(type), script);
+    }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual void updateSizeFromChildSizes() noexcept override {
@@ -82,6 +85,11 @@ public:
     virtual char constructCode() const noexcept override { return type; }
     virtual void writePrefix(std::string& out) const noexcept override {
         writeBigSymPrefix<type>(out);
+    }
+    virtual bool writeUnicode(std::string& out, int8_t script) const noexcept override {
+        if(script != 0) return false;
+        do_and_assert(convertToUnicode(out, getBigSymbolString(type), 0));
+        return child()->writeUnicode(out, -1);
     }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS

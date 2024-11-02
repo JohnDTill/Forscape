@@ -64,7 +64,8 @@ def main():
         "#define DECLARE_CONSTRUCT_CSTRINGS"
     )
     for con in constructs:
-        header_writer.write(f"\\\n    inline constexpr char {con.name.upper()}_CSTRING[] = \"{con.keyword}\";")
+        if con.encode_word:
+            header_writer.write(f"\\\n    inline constexpr char {con.name.upper()}_CSTRING[] = \"{con.encode_word}\";")
     header_writer.write("\n\n")
 
     header_writer.write(

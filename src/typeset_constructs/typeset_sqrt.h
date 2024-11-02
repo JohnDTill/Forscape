@@ -30,6 +30,13 @@ public:
 
     virtual char constructCode() const noexcept override { return SQRT; }
     virtual void writePrefix(std::string& out) const noexcept override { out += SQRT_STR; }
+    virtual bool writeUnicode(std::string& out, int8_t script) const noexcept override {
+        if(script != 0) return false;
+        out += "√(";
+        if(!child()->writeUnicode(out, 0)) return false;
+        out += ')';
+        return true;
+    }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     static constexpr double vgap = 1;

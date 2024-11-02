@@ -41,6 +41,7 @@ class Text {
         void writeString(std::string& out) const noexcept;
         void writeString(std::string& out, size_t pos) const noexcept;
         void writeString(std::string& out, size_t pos, size_t len) const noexcept;
+        bool writeUnicode(std::string& out, int8_t script) const noexcept;
         bool isTopLevel() const noexcept;
         bool isNested() const noexcept;
         size_t numChars() const noexcept;

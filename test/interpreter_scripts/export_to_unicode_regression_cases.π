@@ -1,0 +1,41 @@
+This test checks conversion of Forscape constructs to Unicode.
+Each line is a sub-test which should be successfully converted to Unicode.
+
+>Subscript: x⁜_⏴2⏵, x⁜_⏴n⏵, x⁜_⏴i⏵, x⁜_⏴(2+n+i)⏵, x⁜_⏴1:3⏵
+Expected: x₂, xₙ, xᵢ, x₍₂₊ₙ₊ᵢ₎, x₁܄₃
+
+>Superscript: x⁜^⏴2⏵, x⁜^⏴n⏵, x⁜^⏴i⏵, x⁜^⏴(2+n+i)⏵, A⁜^⏴-1⏵, A⁜^⏴⊤⏵, A⁜^⏴†⏵
+Expected: x², xⁿ, xⁱ, x⁽²⁺ⁿ⁺ⁱ⁾, A⁻¹, Aᵀ, Aᶧ
+
+>Matrix: ⁜[2x2]⏴1⏵⏴2⏵⏴3⏵⏴4⏵, ⁜[1x3]⏴1⏵⏴2⏵⏴3⏵, ⁜[3x1]⏴1⏵⏴2⏵⏴3⏵, A = ⁜[2x2]⏴A⁜_⏴1,1⏵⏵⏴A⁜_⏴1,2⏵⏵⏴A⁜_⏴2,1⏵⏵⏴A⁜_⏴2,2⏵⏵
+Expected: [1, 2; 3, 4], [1, 2, 3], [1; 2; 3], A = [A₁ˏ₁, A₁ˏ₂; A₂ˏ₁, A₂ˏ₂]
+
+>Fraction: ⁜f⏴1⏵⏴2⏵, ⁜f⏴x⁜^⏴2⏵⏵⏴m⁜_⏴1,2⏵⏵
+Expected: (1)/(2), (x²)/(m₁ˏ₂)
+
+>Superscript fraction: x⁜^⏴⁜f⏴1⏵⏴2⏵⏵
+Expected: x⁽¹⁾⸍⁽²⁾
+
+>Binomial: ⁜binom⏴n⏵⏴k⏵
+Expected: (n ¦ k)
+
+>Square root: ⁜sqrt⏴2⏵
+Expected: √(2)
+
+>Nth root: ⁜nrt⏴n⏵⏴2⏵, ⁜nrt⏴3⏵⏴2⏵, ⁜nrt⏴4⏵⏴2⏵
+Expected: ⁿ√(2), ∛(2), ∜(2)
+
+>Big symbols: ⁜sum0 ⁜prod0 ⁜coprod0 ⁜union0 ⁜intersection0 ⁜int0 ⁜iint0 ⁜iiint0 ⁜oint0 ⁜oiint0 ⁜oiiint0
+Expected: ∑ ∏ ∐ ∪ ∩ ∫ ∬ ∭ ∮ ∯ ∰
+
+>Big symbols with subscript: ⁜int1⏴v⏵ δ(v) ⅆv
+Expected: ∫ᵥ δ(v) ⅆv
+
+>Accents: ⁜hat⏴x⏵ ⁜bar⏴x⏵ ⁜tilde⏴x⏵ ⁜breve⏴x⏵ ⁜dot⏴x⏵ ⁜ddot⏴x⏵ ⁜dddot⏴x⏵
+Expected: x̂ x̅ x̃ x̆ ẋ ẍ x⃛
+
+>Double-char accents: ⁜bar⏴xy⏵ ⁜tilde⏴xy⏵ ⁜breve⏴xy⏵
+Expected: x͞y x͠y x͝y
+
+>Multi-char accent: ⁜bar⏴xyz⏵
+Expected: x͞y͞z

@@ -60,7 +60,7 @@ Text* Construct::textEnteringFromLeft() const noexcept {
 }
 
 Text* Construct::textEnteringFromRight() const noexcept {
-    return args.empty() ? prev() : args.back()->front();
+    return args.empty() ? prev() : args.back()->back();
 }
 
 Text* Construct::textRightOfSubphrase(const Subphrase* caller) const noexcept {
@@ -103,6 +103,10 @@ std::string Construct::toString() const {
     writeString(str);
 
     return str;
+}
+
+bool Construct::writeUnicode(std::string&, int8_t) const noexcept {
+    return false;
 }
 
 #ifdef FORSCAPE_SEMANTIC_DEBUGGING

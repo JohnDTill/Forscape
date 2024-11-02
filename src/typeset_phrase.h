@@ -28,6 +28,7 @@ public:
     size_t serialChars() const noexcept;
     void writeString(std::string& out) const noexcept;
     std::string toString() const;
+    bool writeUnicode(std::string& out, int8_t script) const noexcept;
     virtual bool isLine() const noexcept = 0;
     Line* asLine() noexcept;
     Subphrase* asSubphrase() noexcept;

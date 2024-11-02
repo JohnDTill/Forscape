@@ -991,10 +991,10 @@ void MainWindow::on_actionTeX_triggered(){
 }
 
 void MainWindow::on_actionUnicode_triggered(){
-    std::string str = editor->getController().selectedText();
-    if(UnicodeConverter::canConvert(str)){
-        std::string uni = UnicodeConverter::convert(str);
-        QApplication::clipboard()->setText(toQString(uni));
+    std::string str;
+    const bool success = editor->getController().selection().convertToUnicode(str);
+    if(success){
+        QApplication::clipboard()->setText(toQString(str));
     }else{
         QMessageBox messageBox;
         messageBox.warning(nullptr, "Warning", "Selected text cannot be converted to unicode.");

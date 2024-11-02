@@ -34,6 +34,12 @@ public:
         out += ':';
     }
 
+    virtual bool writeUnicode(std::string& out, int8_t script) const noexcept override {
+        assert(script == 0);
+        writeString(out);
+        return true;
+    }
+
     #ifndef FORSCAPE_TYPESET_HEADLESS
     MarkerLink(Line* line, View* view, Model* model) : line_id(line->id), view(view), model(model) {}
 

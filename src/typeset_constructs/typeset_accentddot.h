@@ -4,6 +4,8 @@
 #include "typeset_construct.h"
 #include "typeset_subphrase.h"
 
+#include "forscape_serial_unicode.h"
+
 namespace Forscape {
 
 namespace Typeset {
@@ -22,6 +24,20 @@ public:
 
     virtual char constructCode() const noexcept override { return ACCENTDDOT; }
     virtual void writePrefix(std::string& out) const noexcept override { out += ACCENTDDOT_STR; }
+    virtual bool writeUnicode(std::string& out, int8_t script) const noexcept override {
+        if(child()->hasConstructs()) return false;
+        const std::string& str = child()->front()->getString();
+        if(str.empty()){
+            out += "¨";
+            return true;
+        }
+        if(str.size() > codepointSize(str[0])) return false;
+        if(!convertToUnicode(out, str, script)) return false;
+        out += 0xCC;
+        out += 0x88;
+
+        return true;
+    }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual void updateSizeFromChildSizes() noexcept override {
