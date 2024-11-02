@@ -18,9 +18,9 @@ void Settings::writePrefix(std::string& out) const noexcept {
     bool subsequent = false;
     for(const Code::Settings::Update update : updates){
         if(subsequent) out += ',';
-        out += setting_id_labels[update.setting_id];  // DO THIS: these names are bad here
+        out += setting_names[update.setting_id];
         out += '=';
-        out += warning_labels[update.prev_value];
+        out += warning_names[update.prev_value];
         subsequent = true;
     }
     out += CLOSE_STR;

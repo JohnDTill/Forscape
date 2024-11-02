@@ -26,6 +26,7 @@ namespace Typeset {
 
 class Matrix final : public Construct { 
 public:
+    static constexpr uint16_t MAX_DIM_SIZE = 99;
     uint16_t rows;
     uint16_t cols;
 
@@ -55,7 +56,7 @@ public:
     virtual char constructCode() const noexcept override { return MATRIX; }
     virtual void writePrefix(std::string& out) const noexcept override {
         out += '[';
-        out += std::to_string(rows);  // DO THIS: use efficient to_string
+        out += std::to_string(rows);
         out += 'x';
         out += std::to_string(cols);
         out += ']';

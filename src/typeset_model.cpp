@@ -178,7 +178,7 @@ std::vector<Line*> Model::linesFromSerial(const std::string& src){
                     // Keywords
                     default:
                         // Scan to end of keyword
-                        const size_t start = index;
+                        start = index;
                         for(char ch = src[index]; ch != OPEN_0 && ch != '0'; ch = src[index]){
                             index++;
                             assert(index < src.size());
@@ -199,14 +199,17 @@ std::vector<Line*> Model::linesFromSerial(const std::string& src){
                                     else index--;
 
                                     // Parse setting
-                                    // DO THIS
-
-                                    // Parse setting - no validation of strings
+                                    start = index;
                                     for(char ch = src[index]; ch != '='; ch = src[index]) index++;
+                                    const std::string_view setting_str(src.data()+start, index-start);
+                                    const SettingId id = settingFromStr(setting_str);
+                                    start = ++index;
                                     for(char ch = src[index]; ch != ',' && ch != CLOSE_0; ch = src[index]) index++;
-                                    //SettingId id = static_cast<SettingId>(static_cast<uint8_t>(src[index++] - 1));
-                                    //SettingValue value = static_cast<uint8_t>(src[index++] - 1);
-                                    //settings->updates.push_back( Code::Settings::Update(id, value) );
+                                    const std::string_view value_str(src.data()+start, index-start);
+                                    const SettingValue value = warningFromStr(value_str);
+                                    if(id == SETTING_NONE) { /* EVENTUALLY: feedback */ assert(false); }
+                                    else if(value == WARNING_NONE) { /* EVENTUALLY: feedback */ assert(false); }
+                                    else settings->updates.push_back( Code::Settings::Update(id, value) );
                                     subsequent = true;
                                 }
                                 assert(isUnicodeChar<CLOSE_STRVIEW>(&src[index-1]));
@@ -219,7 +222,7 @@ std::vector<Line*> Model::linesFromSerial(const std::string& src){
                                 break;
                             }
                             FORSCAPE_TYPESET_PARSER_CASES
-                            default: assert( false);
+                            default: assert(false);
                         }
                 }
 

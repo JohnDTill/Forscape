@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 
+# DO THIS:
+# - Fix conversion to unicode
+
 option(TEST_QT OFF)
 
 project(ForscapeTests LANGUAGES CXX)
@@ -40,6 +43,8 @@ set(GEN_FILES
     ${GEN}/code_ast_fields.h
     ${GEN}/code_error_types.h
     ${GEN}/code_parsenode_ops.h
+    ${GEN}/code_settings_constants.cpp
+    ${GEN}/code_settings_constants.h
     ${GEN}/code_tokentype.h
     ${GEN}/construct_codes.h
     ${GEN}/forscape_interpreter_gen.cpp
@@ -100,6 +105,7 @@ set(SOURCES
     ${TEST}/test_suggestions.h
     ${TEST}/test_unicode.h
     ${TEST}/typeset.h
+    ${TEST}/typeset_control.h
     ${TEST}/typeset_loadsave.h
     ${TEST}/typeset_mutability.h
     ${GEN_FILES}

@@ -2,16 +2,11 @@
 #define FORSCAPE_SERIAL_H
 
 #include "construct_codes.h"
+#include "forscape_unicode.h"
 #include <cassert>
 #include <inttypes.h>
 #include <limits>
 #include <string>
-
-#ifndef NDEBUG
-#include "forscape_unicode.h"
-#endif
-
-#include <iostream>  // DO THIS: delete
 
 namespace Forscape {
 

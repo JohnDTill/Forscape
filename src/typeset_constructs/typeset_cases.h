@@ -34,7 +34,7 @@ public:
     virtual char constructCode() const noexcept override { return CASES; }
     virtual void writePrefix(std::string& out) const noexcept override {
         out += "{";
-        out += std::to_string(nRows());  // DO THIS: better to_string
+        out += std::to_string(nRows());
     }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS

@@ -1,5 +1,5 @@
-⁜settings⏴Unused Variable=Ignore⏵
+⁜settings⏴UNUSED_VARIABLE=NO_WARNING⏵
 {
-    ⁜settings⏴Unused Variable=Error⏵
+    ⁜settings⏴UNUSED_VARIABLE=ERROR⏵
 }
 x = I⁜_⏴3×3⏵

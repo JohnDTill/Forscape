@@ -49,6 +49,7 @@ def main():
     header_writer.finalize()
 
     with open("../src/generated/typeset_keywords.cpp", "w", encoding="utf-8") as codegen_file:
+        codegen_file.write("//CODEGEN\n\n")
         codegen_file.write("#include \"typeset_keywords.h\"\n\n")
 
         codegen_file.write("namespace Forscape {\n\n")
@@ -82,7 +83,7 @@ def main():
         codegen_file.write("};\n\n")
 
         codegen_file.write("FORSCAPE_UNORDERED_MAP<std::string, std::string> Keywords::map = defaults;\n\n"
-                           "}\n\n}\n\n")
+                           "}\n\n}\n")
 
 
 if __name__ == "__main__":
