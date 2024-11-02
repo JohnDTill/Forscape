@@ -31,11 +31,13 @@ extern inline constexpr double STALE = std::numeric_limits<double>::quiet_NaN();
 #define DEBUG_INIT_NULLPTR =nullptr
 #define DEBUG_INIT_UNITIALISED(type) =std::numeric_limits<type>::max()-1
 #define DEBUG_INIT_STALE =STALE
+#define do_and_assert(x) assert(x)
 #else
 #define DEBUG_INIT_NONE
 #define DEBUG_INIT_NULLPTR
 #define DEBUG_INIT_UNITIALISED(type)
 #define DEBUG_INIT_STALE
+#define do_and_assert(x) x
 #endif
 
 namespace Code {

@@ -1,3 +1,3 @@
-print(x0 xx)
-print(x0 x2x)
-print(x0 1x)
+print(⁜lim⏴x⏵⏴0⏵ ⁜f⏴x⏵⏴x⏵)
+print(⁜lim⏴x⏵⏴0⏵ ⁜f⏴x⁜^⏴2⏵⏵⏴x⏵)
+print(⁜lim⏴x⏵⏴0⏵ ⁜f⏴1⏵⏴x⏵)

@@ -102,9 +102,9 @@ void MathToolbar::setupSymbolTable(){
 }
 
 void MathToolbar::setupScripts(){
-    addAction(new TypesetAction("A", SYNTAX_CMD "_", OPEN_STR SUBSCRIPT_STR CLOSE_STR, this));
-    addAction(new TypesetAction("B", SYNTAX_CMD "^", OPEN_STR SUPERSCRIPT_STR CLOSE_STR, this));
-    addAction(new TypesetAction("C", SYNTAX_CMD "^_", OPEN_STR DUALSCRIPT_STR CLOSE_STR CLOSE_STR, this));
+    addAction(new TypesetAction("A", SYNTAX_CMD "_", CONSTRUCT_STR SUBSCRIPT_STR OPEN_STR CLOSE_STR, this));
+    addAction(new TypesetAction("B", SYNTAX_CMD "^", CONSTRUCT_STR SUPERSCRIPT_STR OPEN_STR CLOSE_STR, this));
+    addAction(new TypesetAction("C", SYNTAX_CMD "^_", CONSTRUCT_STR DUALSCRIPT_STR OPEN_STR CLOSE_STR CLOSE_STR, this));
 }
 
 void MathToolbar::setupAccents(){
@@ -113,35 +113,37 @@ void MathToolbar::setupAccents(){
     connect(accents, SIGNAL(triggered(QAction*)), accents, SLOT(setDefaultAction(QAction*)));
     addWidget(accents);
 
-    //accents->addAction(new EnclosedTypesetAction("J", SYNTAX_CMD "vec", "⁜→⏴", "", this));
-    accents->addAction(new EnclosedTypesetAction("K", SYNTAX_CMD "bar", OPEN_STR ACCENTBAR_STR, CLOSE_STR, this));
-    accents->addAction(new EnclosedTypesetAction("L", SYNTAX_CMD "breve", "0", "", this));
-    accents->addAction(new EnclosedTypesetAction("M", SYNTAX_CMD "dot", "1", "", this));
-    accents->addAction(new EnclosedTypesetAction("N", SYNTAX_CMD "ddot", "2", "", this));
-    accents->addAction(new EnclosedTypesetAction("O", SYNTAX_CMD "dddot", "3", "", this));
-    accents->addAction(new EnclosedTypesetAction("P", SYNTAX_CMD "hat", "-", "", this));
-    accents->addAction(new EnclosedTypesetAction("Q", SYNTAX_CMD "tilde", ".", "", this));
+    accents->addAction(new EnclosedTypesetAction("K", SYNTAX_CMD "bar", CONSTRUCT_STR ACCENTBAR_STR OPEN_STR, CLOSE_STR, this));
+    accents->addAction(new EnclosedTypesetAction("L", SYNTAX_CMD "breve", CONSTRUCT_STR ACCENTBREVE_STR OPEN_STR, CLOSE_STR, this));
+    accents->addAction(new EnclosedTypesetAction("M", SYNTAX_CMD "dot", CONSTRUCT_STR ACCENTDOT_STR OPEN_STR, CLOSE_STR, this));
+    accents->addAction(new EnclosedTypesetAction("N", SYNTAX_CMD "ddot", CONSTRUCT_STR ACCENTDDOT_STR OPEN_STR, CLOSE_STR, this));
+    accents->addAction(new EnclosedTypesetAction("O", SYNTAX_CMD "dddot", CONSTRUCT_STR ACCENTDDDOT_STR OPEN_STR, CLOSE_STR, this));
+    accents->addAction(new EnclosedTypesetAction("P", SYNTAX_CMD "hat", CONSTRUCT_STR ACCENTHAT_STR OPEN_STR, CLOSE_STR, this));
+    accents->addAction(new EnclosedTypesetAction("Q", SYNTAX_CMD "tilde", CONSTRUCT_STR ACCENTTILDE_STR OPEN_STR, CLOSE_STR, this));
 
     accents->setDefaultAction(accents->actions().front());
 }
 
 void MathToolbar::setupMisc(){
-    addAction(new EnclosedTypesetAction("D", SYNTAX_CMD "frac", OPEN_STR FRACTION_STR, CLOSE_STR CLOSE_STR, this));
-    addAction(new TypesetAction("E", SYNTAX_CMD "mat", "", this));
-    addAction(new TypesetAction("F", SYNTAX_CMD "cases", "", this));
-    addAction(new TypesetAction("G", SYNTAX_CMD "binom", "nk", this));
-    addAction(new EnclosedTypesetAction("I", SYNTAX_CMD "sqrt", "", CLOSE_STR, this));
+    addAction(new EnclosedTypesetAction("D", SYNTAX_CMD "frac", CONSTRUCT_STR FRACTION_STR OPEN_STR, CLOSE_STR CLOSE_STR, this));
+    addAction(new TypesetAction("E", SYNTAX_CMD "mat",
+        CONSTRUCT_STR "[2x2]" OPEN_STR CLOSE_STR CLOSE_STR CLOSE_STR CLOSE_STR, this));
+    addAction(new TypesetAction("F", SYNTAX_CMD "cases",
+        CONSTRUCT_STR "{2" OPEN_STR CLOSE_STR CLOSE_STR CLOSE_STR CLOSE_STR, this));
+    addAction(new TypesetAction("G", SYNTAX_CMD "binom",
+        CONSTRUCT_STR BINOMIAL_STR OPEN_STR "n" CLOSE_STR "k" CLOSE_STR, this));
+    addAction(new EnclosedTypesetAction("I", SYNTAX_CMD "sqrt", CONSTRUCT_STR SQRT_STR OPEN_STR, CLOSE_STR, this));
 
     QToolButton* words = new QToolButton(this);
     words->setPopupMode(QToolButton::MenuButtonPopup);
     connect(words, SIGNAL(triggered(QAction*)), words, SLOT(setDefaultAction(QAction*)));
     addWidget(words);
 
-    words->addAction(new TypesetAction("𐋏", SYNTAX_CMD "lim", "", this));
-    words->addAction(new TypesetAction("Ħ", SYNTAX_CMD "max", "", this));
-    words->addAction(new TypesetAction("ħ", SYNTAX_CMD "min", "", this));
-    words->addAction(new TypesetAction("Ĥ", SYNTAX_CMD "sup", "", this));
-    words->addAction(new TypesetAction("ĥ", SYNTAX_CMD "inf", "", this));
+    words->addAction(new TypesetAction("𐋏", SYNTAX_CMD "lim", CONSTRUCT_STR LIMIT_STR OPEN_STR CLOSE_STR CLOSE_STR, this));
+    words->addAction(new EnclosedTypesetAction("Ħ", SYNTAX_CMD "max", CONSTRUCT_STR MAX_STR OPEN_STR, CLOSE_STR, this));
+    words->addAction(new EnclosedTypesetAction("ħ", SYNTAX_CMD "min", CONSTRUCT_STR MIN_STR OPEN_STR, CLOSE_STR, this));
+    words->addAction(new EnclosedTypesetAction("Ĥ", SYNTAX_CMD "sup", CONSTRUCT_STR SUP_STR OPEN_STR, CLOSE_STR, this));
+    words->addAction(new EnclosedTypesetAction("ĥ", SYNTAX_CMD "inf", CONSTRUCT_STR INF_STR OPEN_STR, CLOSE_STR, this));
 
     words->setDefaultAction(words->actions().front());
 }
@@ -152,12 +154,12 @@ void MathToolbar::setupBigSymbols(){
     connect(bigs, SIGNAL(triggered(QAction*)), bigs, SLOT(setDefaultAction(QAction*)));
     addWidget(bigs);
 
-    bigs->addAction(new TypesetAction("∑", SYNTAX_CMD "sum2", "", this));
-    bigs->addAction(new TypesetAction("∏", SYNTAX_CMD "prod2", "\t", this));
-    bigs->addAction(new TypesetAction("∐", SYNTAX_CMD "coprod2", "\n", this));
-    bigs->addAction(new TypesetAction("⋂", SYNTAX_CMD "intersection2", "", this));
-    bigs->addAction(new TypesetAction("⋃", SYNTAX_CMD "union2", "", this));
-    //bigs->addAction(new TypesetAction("⊎", SYNTAX_CMD "biguplus", "⁜⨄", this));
+    bigs->addAction(new TypesetAction("∑", SYNTAX_CMD "sum2", CONSTRUCT_STR BIGSUM2_STR OPEN_STR CLOSE_STR CLOSE_STR, this));
+    bigs->addAction(new TypesetAction("∏", SYNTAX_CMD "prod2", CONSTRUCT_STR BIGPROD2_STR OPEN_STR CLOSE_STR CLOSE_STR, this));
+    bigs->addAction(new TypesetAction("∐", SYNTAX_CMD "coprod2", CONSTRUCT_STR BIGCOPROD2_STR OPEN_STR CLOSE_STR CLOSE_STR, this));
+    bigs->addAction(new TypesetAction("⋂", SYNTAX_CMD "intersection2",
+        CONSTRUCT_STR BIGINTERSECTION2_STR OPEN_STR CLOSE_STR CLOSE_STR, this));
+    bigs->addAction(new TypesetAction("⋃", SYNTAX_CMD "union2", CONSTRUCT_STR BIGUNION2_STR OPEN_STR CLOSE_STR CLOSE_STR, this));
 
     bigs->setDefaultAction(bigs->actions().front());
 }
@@ -168,12 +170,15 @@ void MathToolbar::setupIntegrals(){
     connect(ints, SIGNAL(triggered(QAction*)), ints, SLOT(setDefaultAction(QAction*)));
     addWidget(ints);
 
-    ints->addAction(new TypesetAction("ģ", SYNTAX_CMD "int2", "\r", this));
-    ints->addAction(new TypesetAction("Ģ", SYNTAX_CMD "iint1", "", this));
-    ints->addAction(new TypesetAction("ġ", SYNTAX_CMD "iiint1", "", this));
-    ints->addAction(new TypesetAction("Ġ", SYNTAX_CMD "oint2", "", this));
-    ints->addAction(new TypesetAction("ę", SYNTAX_CMD "oiint1", "", this));
-    ints->addAction(new TypesetAction("Ę", SYNTAX_CMD "oiiint1", " ", this));
+    ints->addAction(new TypesetAction("ģ", SYNTAX_CMD "int2", CONSTRUCT_STR INTEGRAL2_STR OPEN_STR CLOSE_STR CLOSE_STR, this));
+    ints->addAction(new TypesetAction("Ģ", SYNTAX_CMD "iint1", CONSTRUCT_STR DOUBLEINTEGRAL1_STR OPEN_STR CLOSE_STR, this));
+    ints->addAction(new TypesetAction("ġ", SYNTAX_CMD "iiint1", CONSTRUCT_STR TRIPLEINTEGRAL1_STR OPEN_STR CLOSE_STR, this));
+    ints->addAction(new TypesetAction("Ġ", SYNTAX_CMD "oint2",
+        CONSTRUCT_STR INTEGRALCONV2_STR OPEN_STR CLOSE_STR CLOSE_STR, this));
+    ints->addAction(new TypesetAction("ę", SYNTAX_CMD "oiint1",
+        CONSTRUCT_STR DOUBLEINTEGRALCONV1_STR OPEN_STR CLOSE_STR, this));
+    ints->addAction(new TypesetAction("Ę", SYNTAX_CMD "oiiint1",
+        CONSTRUCT_STR TRIPLEINTEGRALCONV1_STR OPEN_STR CLOSE_STR, this));
 
     ints->setDefaultAction(ints->actions().front());
 }

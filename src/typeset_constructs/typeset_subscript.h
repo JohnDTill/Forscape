@@ -15,6 +15,11 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return SUBSCRIPT; }
+    virtual void writePrefix(std::string& out) const noexcept override { out += SUBSCRIPT_STR; }
+    virtual bool writeUnicode(std::string& out, int8_t script) const noexcept override {
+        if(script != 0) return false;
+        return child()->writeUnicode(out, -1);
+    }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }

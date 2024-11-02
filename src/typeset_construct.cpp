@@ -60,7 +60,7 @@ Text* Construct::textEnteringFromLeft() const noexcept {
 }
 
 Text* Construct::textEnteringFromRight() const noexcept {
-    return args.empty() ? prev() : args.back()->front();
+    return args.empty() ? prev() : args.back()->back();
 }
 
 Text* Construct::textRightOfSubphrase(const Subphrase* caller) const noexcept {
@@ -82,49 +82,42 @@ Text* Construct::textDown(const Subphrase*, double) const noexcept {
 }
 
 size_t Construct::serialChars() const noexcept {
-    size_t sze = 2 + dims() + args.size();
+    size_t sze = 5 + 2*args.size();
     for(Subphrase* subphrase : args) sze += subphrase->serialChars();
     return sze;
 }
 
-size_t Construct::dims() const noexcept {
-    return 0;
-}
-
-void Construct::writeString(std::string& out, size_t& curr) const noexcept {
-    out[curr++] = OPEN;
-    out[curr++] = constructCode();
-    writeArgs(out, curr);
+void Construct::writeString(std::string& out) const noexcept {
+    out += CONSTRUCT_STR;
+    writePrefix(out);
     for(Subphrase* subphrase : args){
-        subphrase->writeString(out, curr);
-        out[curr++] = CLOSE;
+        out += OPEN_STR;
+        subphrase->writeString(out);
+        out += CLOSE_STR;
     }
-}
-
-void Construct::writeArgs(std::string&, size_t&) const noexcept {
-    assert(dims()==0); //Do nothing assuming fixed arity. Method should be overridden if n-ary.
 }
 
 std::string Construct::toString() const {
     std::string str;
-    str.resize(serialChars());
-    size_t curr = 0;
-    writeString(str, curr);
+    str.reserve(serialChars());
+    writeString(str);
 
     return str;
+}
+
+bool Construct::writeUnicode(std::string&, int8_t) const noexcept {
+    return false;
 }
 
 #ifdef FORSCAPE_SEMANTIC_DEBUGGING
 std::string Construct::toStringWithSemanticTags() const {
     std::string out;
-    out.resize(2 + dims());
-    out[0] = OPEN;
-    out[1] = constructCode();
-    size_t curr = 2;
-    writeArgs(out, curr);
+    out += CONSTRUCT_STR;
+    writePrefix(out);
     for(Subphrase* subphrase : args){
+        out += OPEN_STR;
         out += subphrase->toStringWithSemanticTags();
-        out += CLOSE;
+        out += CLOSE_STR;
     }
 
     return out;

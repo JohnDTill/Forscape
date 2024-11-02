@@ -65,10 +65,7 @@ Program::ptr_or_code Program::openFromAbsolutePath(const std::filesystem::path& 
     buffer << in.rdbuf();
 
     std::string src = buffer.str();
-    for(size_t i = 1; i < src.size(); i++)
-        if(src[i] == '\r' && src[i-1] != OPEN)
-            src[i] = '\0';
-    src.erase( std::remove(src.begin(), src.end(), '\0'), src.end() );
+    src.erase( std::remove(src.begin(), src.end(), '\r'), src.end() );
 
     if(!Forscape::isValidSerial(src)) return FILE_CORRUPTED;
 
@@ -165,7 +162,7 @@ void Program::getFileSuggestions(std::vector<std::string>& suggestions, std::str
     for(const std::filesystem::path& path_entry : project_path){
         const std::string input_filename = std::filesystem::is_directory(path_entry / input_as_path) ? "" : input_as_path.filename().u8string();
         const std::filesystem::path dir_of_input = (path_entry / input_as_path).parent_path();
-        if(!std::filesystem::exists(dir_of_input)) continue;
+        if(!std::filesystem::is_directory(dir_of_input)) continue;
 
         const std::filesystem::path model_rel_path = std::filesystem::relative(active->path, path_entry);
 

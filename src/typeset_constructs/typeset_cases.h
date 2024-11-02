@@ -31,12 +31,11 @@ public:
         setupNAargs(2*n);
     }
 
-    virtual void writeArgs(std::string& out, size_t& curr) const noexcept override {
-        out[curr++] = static_cast<uint8_t>(numArgs()/2);
-    }
-
-    virtual size_t dims() const noexcept override { return 1; }
     virtual char constructCode() const noexcept override { return CASES; }
+    virtual void writePrefix(std::string& out) const noexcept override {
+        out += "{";
+        out += std::to_string(nRows());
+    }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual Text* textUp(const Subphrase* caller, double x) const noexcept override {

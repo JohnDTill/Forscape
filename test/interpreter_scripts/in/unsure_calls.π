@@ -4,7 +4,7 @@ f ← add
 if(true) f ← mult
 print(f(3, 3), "\n")
 
-k = addfalsemulttrue
+k = ⁜{2⏴add⏵⏴false⏵⏴mult⏵⏴true⏵
 print(k(3, 3), "\n")
 
 alg getFun(){

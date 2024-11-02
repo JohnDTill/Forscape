@@ -1,6 +1,7 @@
 #include <cassert>
 #include <fstream>
 #include <construct_codes.h>
+#include "forscape_unicode.h"
 #include "typeset.h"
 #include <sstream>
 #include "report.h"
@@ -35,13 +36,16 @@ inline bool testTypesetController(){
     while(!controller.atEnd()){
         char ch = input[curr];
 
-        if(ch == OPEN){
-            curr++;
-            ch = input[curr++];
-            if(ch == CASES) curr++;
-            else if(ch == MATRIX) curr += 2;
+        if(isUnicodeChar<CONSTRUCT_STRVIEW>(&input[curr])){
+            curr += codepointSize(CON_0);
+            while(!isUnicodeChar<OPEN_STRVIEW>(&input[curr]) && input[curr] != '0') curr++;
+            curr += codepointSize(input[curr]);
             controller.moveToNextChar();
-        }else if(ch == CLOSE || ch == '\n'){
+        }else if(isUnicodeChar<CLOSE_STRVIEW>(&input[curr])){
+            curr += codepointSize(CLOSE_0);
+            if(isUnicodeChar<OPEN_STRVIEW>(&input[curr])) curr += codepointSize(OPEN_0);
+            controller.moveToNextChar();
+        }else if(ch == '\n'){
             curr++;
             controller.moveToNextChar();
         }else{

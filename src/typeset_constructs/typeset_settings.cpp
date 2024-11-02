@@ -13,18 +13,17 @@ static constexpr double INNER_COL_HSPACE = 5;
 
 char Settings::constructCode() const noexcept { return SETTINGS; }
 
-void Settings::writeArgs(std::string& out, size_t& curr) const noexcept {
+void Settings::writePrefix(std::string& out) const noexcept {
+    out += SETTINGS_STR OPEN_STR;
+    bool subsequent = false;
     for(const Code::Settings::Update update : updates){
-        static_assert(NUM_CODE_SETTINGS <= SETTINGS_END);
-        out[curr++] = static_cast<uint8_t>(update.setting_id) + 1;
-        static_assert(sizeof(SettingValue) <= sizeof(uint8_t));
-        out[curr++] = static_cast<uint8_t>(update.prev_value) + 1;
+        if(subsequent) out += ',';
+        out += setting_names[update.setting_id];
+        out += '=';
+        out += warning_names[update.prev_value];
+        subsequent = true;
     }
-    out[curr++] = SETTINGS_END;
-}
-
-size_t Settings::dims() const noexcept {
-    return 2 * updates.size() + 1;
+    out += CLOSE_STR;
 }
 
 #ifndef FORSCAPE_TYPESET_HEADLESS

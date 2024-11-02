@@ -1,13 +1,13 @@
 //Implicit multiplication rules enable standard robotics syntax
 c = θ ↦ cos(θ)
 s = θ ↦ sin(θ)
-Rz = θ ↦ cθ-sθ0sθcθ0001
-print(Rz(0), "\n")
-print(Rz(π/2), "\n")
-print(Rz(π/4), "\n")
+R⁜_⏴z⏵ = θ ↦ ⁜[3x3]⏴cθ⏵⏴-sθ⏵⏴0⏵⏴sθ⏵⏴cθ⏵⏴0⏵⏴0⏵⏴0⏵⏴1⏵
+print(R⁜_⏴z⏵(0), "\n")
+print(R⁜_⏴z⏵(π/2), "\n")
+print(R⁜_⏴z⏵(π/4), "\n")
 
 //Nestable matrices allow layers of abstraction
-R = Rz(π/2)
-p = 005⊤
-T = Rp01×31
+R = R⁜_⏴z⏵(π/2)
+p = ⁜[1x3]⏴0⏵⏴0⏵⏴5⏵⁜^⏴⊤⏵
+T = ⁜[2x2]⏴R⏵⏴p⏵⏴0⁜_⏴1×3⏵⏵⏴1⏵
 print(T)

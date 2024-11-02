@@ -71,7 +71,7 @@ inline bool testScanner(){
     delete model;
     delete scanner;
 
-    input = "x2";
+    input = "x⁜^⏴2⏵";
     expected = {IDENTIFIER, TOKEN_SUPERSCRIPT, INTEGER, ARGCLOSE, ENDOFFILE};
     model = Typeset::Model::fromSerial(input);
     scanner = new Scanner(model);

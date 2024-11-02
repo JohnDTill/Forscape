@@ -11,7 +11,7 @@ jobs:
       - id: install_conan
         uses: turtlebrowser/get-conan@main
         with:
-          version: 1.59.0
+          version: 1.65.0
       - id: run_conan
         run: cd ${GITHUB_WORKSPACE}/test && export CXX=/usr/bin/clang++ &&
              conan install -e CXX=/usr/bin/clang++ --generator cmake_find_package --install-folder ../build_test/conan-dependencies .

@@ -26,40 +26,42 @@ template<bool with_open>
 void parseArg(const std::string& src){
     if(with_open) failed |= (src[index++] != syntax_open);
     parseText(src);
-    substitution.push_back(CLOSE);
+    substitution += CLOSE_STR;
 }
 
-template<char ch>
+template<const char* encoding_keyword>
 void parseOne(const std::string& src){
-    substitution.push_back(OPEN);
-    substitution.push_back(ch);
+    substitution += CONSTRUCT_STR;
+    substitution += std::string_view(encoding_keyword);
+    substitution += OPEN_STR;
     if(src[index] == syntax_open){
         index++;
         parseArg<false>(src);
     }else{
-        substitution.push_back(CLOSE);
+        substitution += CLOSE_STR;
     }
 }
 
-template<char ch>
+template<const char* encoding_keyword>
 void parseTwo(const std::string& src){
-    substitution.push_back(OPEN);
-    substitution.push_back(ch);
+    substitution += CONSTRUCT_STR;
+    substitution += std::string_view(encoding_keyword);
+    substitution += OPEN_STR;
     if(src[index] == syntax_open){
         index++;
         parseArg<false>(src);
         parseArg<true>(src);
         assert(index < src.size());
     }else{
-        substitution.push_back(CLOSE);
-        substitution.push_back(CLOSE);
+        substitution += CLOSE_STR CLOSE_STR;
     }
 }
 
-template<char ch>
+template<const char* encoding_keyword>
 void parseReversed(const std::string& src){
-    substitution.push_back(OPEN);
-    substitution.push_back(ch);
+    substitution += CONSTRUCT_STR;
+    substitution += std::string_view(encoding_keyword);
+    substitution += OPEN_STR;
     if(src[index] == syntax_open){
         index++;
         size_t start = substitution.size();
@@ -69,24 +71,22 @@ void parseReversed(const std::string& src){
         parseArg<true>(src);
         substitution.insert(substitution.end(), str.begin(), str.end());
     }else{
-        substitution.push_back(CLOSE);
-        substitution.push_back(CLOSE);
+        substitution += CLOSE_STR CLOSE_STR;
     }
 }
 
-template<char ch>
+template<const char* encode_str>
 void parseScript(const std::string& src){
     //EVENTUALLY: don't need open/close?
-    return parseOne<ch>(src);
+    parseOne<encode_str>(src);
 }
 
 void parseCases(const std::string& src){
-    substitution.push_back(OPEN);
-    substitution.push_back(CASES);
+    substitution += CONSTRUCT_STR "{";
     if(src[index] == syntax_open){
         const size_t patch = substitution.size();
+        substitution += OPEN_STR;
         size_t nargs = 0;
-        substitution.push_back('0');
 
         do {
             nargs++;
@@ -96,24 +96,18 @@ void parseCases(const std::string& src){
             assert(index < src.size());
         } while(src[index] == syntax_open);
 
-        substitution[patch] = nargs;
+        substitution.insert(patch, std::to_string(nargs));
     }else{
-        substitution.push_back(2);
-        substitution.push_back(CLOSE);
-        substitution.push_back(CLOSE);
-        substitution.push_back(CLOSE);
-        substitution.push_back(CLOSE);
+        substitution += "2" OPEN_STR CLOSE_STR CLOSE_STR CLOSE_STR CLOSE_STR;
     }
 }
 
 void parseMatrix(const std::string& src){
-    substitution.push_back(OPEN);
-    substitution.push_back(MATRIX);
+    substitution += CONSTRUCT_STR "[";
     if(src[index] == syntax_open){
         index++;
-        const size_t dims = substitution.size();
-        substitution.push_back('0');
-        substitution.push_back('0');
+        const size_t dim_index = substitution.size();
+        substitution += OPEN_STR;
 
         size_t cols = 0;
         size_t rows = 1;
@@ -121,7 +115,7 @@ void parseMatrix(const std::string& src){
         do {
             cols++;
             parseText<true, true>(src);
-            substitution.push_back(CLOSE);
+            substitution += CLOSE_STR;
             assert(index < src.size());
         } while(src[index-1] == ',');
 
@@ -131,7 +125,7 @@ void parseMatrix(const std::string& src){
             do {
                 cols_here++;
                 parseText<true, true>(src);
-                substitution.push_back(CLOSE);
+                substitution += CLOSE_STR;
                 assert(index < src.size());
             } while(src[index-1] == ',');
             failed |= (cols_here != cols);
@@ -139,58 +133,54 @@ void parseMatrix(const std::string& src){
 
         failed |= (cols > 255 || rows > 255);
 
-        substitution[dims] = rows;
-        substitution[dims+1] = cols;
+        substitution.insert(dim_index, std::to_string(rows) + 'x' + std::to_string(cols) + ']');
     }else{
-        substitution.push_back(2);
-        substitution.push_back(2);
-        substitution.push_back(CLOSE);
-        substitution.push_back(CLOSE);
-        substitution.push_back(CLOSE);
-        substitution.push_back(CLOSE);
+        substitution += "2x2]" OPEN_STR CLOSE_STR CLOSE_STR CLOSE_STR CLOSE_STR;
     }
 }
 
+DECLARE_CONSTRUCT_CSTRINGS
+
 typedef void (*ParseRule)(const std::string&);
 FORSCAPE_STATIC_MAP<std::string, ParseRule> rules {
-    {"^", parseScript<SUPERSCRIPT>},
-    {"_", parseScript<SUBSCRIPT>},
-    {"^_", parseTwo<DUALSCRIPT>},
-    {"bar", parseOne<ACCENTBAR>},
-    {"binom", parseTwo<BINOMIAL>},
-    {"breve", parseOne<ACCENTBREVE>},
+    {"^", parseScript<SUPERSCRIPT_CSTRING>},
+    {"_", parseScript<SUBSCRIPT_CSTRING>},
+    {"^_", parseTwo<DUALSCRIPT_CSTRING>},
+    {"bar", parseOne<ACCENTBAR_CSTRING>},
+    {"binom", parseTwo<BINOMIAL_CSTRING>},
+    {"breve", parseOne<ACCENTBREVE_CSTRING>},
     {"cases", parseCases},
-    {"coprod1", parseOne<BIGCOPROD1>}, //EVENTUALLY: don't expose the user to argument numbers in commands
-    {"coprod2", parseReversed<BIGCOPROD2>},
-    {"dot", parseOne<ACCENTDOT>},
-    {"ddot", parseOne<ACCENTDDOT>},
-    {"dddot", parseOne<ACCENTDDDOT>},
-    {"frac", parseTwo<FRACTION>},
-    {"hat", parseOne<ACCENTHAT>},
-    {"iint1", parseOne<DOUBLEINTEGRAL1>},
-    {"iiint1", parseOne<TRIPLEINTEGRAL1>},
-    {"inf", parseOne<INF>},
-    {"int1", parseOne<INTEGRAL1>},
-    {"int2", parseReversed<INTEGRAL2>},
-    {"intersection1", parseOne<BIGINTERSECTION1>},
-    {"intersection2", parseReversed<BIGINTERSECTION2>},
-    {"lim", parseTwo<LIMIT>},
+    {"coprod1", parseOne<BIGCOPROD1_CSTRING>}, //EVENTUALLY: don't expose the user to argument numbers in commands
+    {"coprod2", parseReversed<BIGCOPROD2_CSTRING>},
+    {"dot", parseOne<ACCENTDOT_CSTRING>},
+    {"ddot", parseOne<ACCENTDDOT_CSTRING>},
+    {"dddot", parseOne<ACCENTDDDOT_CSTRING>},
+    {"frac", parseTwo<FRACTION_CSTRING>},
+    {"hat", parseOne<ACCENTHAT_CSTRING>},
+    {"iint1", parseOne<DOUBLEINTEGRAL1_CSTRING>},
+    {"iiint1", parseOne<TRIPLEINTEGRAL1_CSTRING>},
+    {"inf", parseOne<INF_CSTRING>},
+    {"int1", parseOne<INTEGRAL1_CSTRING>},
+    {"int2", parseReversed<INTEGRAL2_CSTRING>},
+    {"intersection1", parseOne<BIGINTERSECTION1_CSTRING>},
+    {"intersection2", parseReversed<BIGINTERSECTION2_CSTRING>},
+    {"lim", parseTwo<LIMIT_CSTRING>},
     {"mat", parseMatrix},
-    {"max", parseOne<MAX>},
-    {"min", parseOne<MIN>},
-    {"nrt", parseTwo<NRT>},
-    {"oint1", parseOne<INTEGRALCONV1>},
-    {"oiint1", parseOne<DOUBLEINTEGRALCONV1>},
-    {"oint2", parseReversed<INTEGRALCONV2>},
-    {"prod1", parseOne<BIGPROD1>},
-    {"prod2", parseReversed<BIGPROD2>},
-    {"sqrt", parseOne<SQRT>},
-    {"sum1", parseOne<BIGSUM1>},
-    {"sum2", parseReversed<BIGSUM2>},
-    {"sup", parseOne<SUP>},
-    {"tilde", parseOne<ACCENTTILDE>},
-    {"union1", parseOne<BIGUNION1>},
-    {"union2", parseReversed<BIGUNION2>},
+    {"max", parseOne<MAX_CSTRING>},
+    {"min", parseOne<MIN_CSTRING>},
+    {"nrt", parseTwo<NRT_CSTRING>},
+    {"oint1", parseOne<INTEGRALCONV1_CSTRING>},
+    {"oiint1", parseOne<DOUBLEINTEGRALCONV1_CSTRING>},
+    {"oint2", parseReversed<INTEGRALCONV2_CSTRING>},
+    {"prod1", parseOne<BIGPROD1_CSTRING>},
+    {"prod2", parseReversed<BIGPROD2_CSTRING>},
+    {"sqrt", parseOne<SQRT_CSTRING>},
+    {"sum1", parseOne<BIGSUM1_CSTRING>},
+    {"sum2", parseReversed<BIGSUM2_CSTRING>},
+    {"sup", parseOne<SUP_CSTRING>},
+    {"tilde", parseOne<ACCENTTILDE_CSTRING>},
+    {"union1", parseOne<BIGUNION1_CSTRING>},
+    {"union2", parseReversed<BIGUNION2_CSTRING>},
 };
 
 void parseCommand(const std::string& src){

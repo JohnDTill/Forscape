@@ -4,6 +4,8 @@
 #include "typeset_construct.h"
 #include "typeset_subphrase.h"
 
+#include "forscape_serial_unicode.h"
+
 namespace Forscape {
 
 namespace Typeset {
@@ -15,6 +17,22 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return FRACTION; }
+    virtual void writePrefix(std::string& out) const noexcept override { out += FRACTION_STR; }
+    virtual bool writeUnicode(std::string& out, int8_t script) const noexcept override {
+        //EVENTUALLY: better conversion with precedence to avoid stupid parenthesis
+        //            e.g. 1/2 should not convert to (1)/(2)
+
+        do_and_assert(convertToUnicode(out, "(", script));
+
+        if(!first()->writeUnicode(out, script)) return false;
+
+        do_and_assert(convertToUnicode(out, ")/(", script));
+
+        if(!second()->writeUnicode(out, script)) return false;
+        do_and_assert(convertToUnicode(out, ")", script));
+
+        return true;
+    }
 
     static constexpr double hgap = 5;
     static constexpr double bar_margin = 0;

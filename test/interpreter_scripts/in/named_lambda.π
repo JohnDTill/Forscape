@@ -1,10 +1,10 @@
-factorial(n) = n × factorial(n-1)n > 11n ≤ 1
+factorial(n) = ⁜{2⏴n × factorial(n-1)⏵⏴n > 1⏵⏴1⏵⏴n ≤ 1⏵
 print(factorial(5), "\n")
-f (x, y) = 4x2 + 6xy + 9y2
+f (x, y) = 4x⁜^⏴2⏵ + 6xy + 9y⁜^⏴2⏵
 print(f (1, 1))
 
-f*(x) = 2x
-assert(f*(2) = 4)
+f⁜^⏴*⏵(x) = 2x
+assert(f⁜^⏴*⏵(2) = 4)
 
-fc(x) = 2x
-assert(fc(2) = 4)
+f⁜_⏴c⏵(x) = 2x
+assert(f⁜_⏴c⏵(2) = 4)

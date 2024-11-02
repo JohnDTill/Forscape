@@ -1,10 +1,10 @@
 //Volume of a (very conveniently dimensioned) hollow cylinder
-ri = 5/π
-ro = 10/π
+r⁜_⏴i⏵ = 5/π
+r⁜_⏴o⏵ = 10/π
 h = π
-V = π(ro^2 - ri^2)h
+V = π(r⁜_⏴o⏵^2 - r⁜_⏴i⏵^2)h
 print("Volume: ", V, "\n")
 
 x = 2
-x* = 1
-print(x - x*)
+x⁜^⏴*⏵ = 1
+print(x - x⁜^⏴*⏵)

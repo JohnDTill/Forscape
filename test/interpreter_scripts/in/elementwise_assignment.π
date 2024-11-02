@@ -1,49 +1,49 @@
 //Mat column assignment
-J ← 03×3
-J:,i ← i00⊤
+J ← 0⁜_⏴3×3⏵
+J⁜_⏴:,i⏵ ← ⁜[1x3]⏴i⏵⏴0⏵⏴0⏵⁜^⏴⊤⏵
 print(J, "\n")
 
 //Mat row assignment
-Ji,: ← i00
+J⁜_⏴i,:⏵ ← ⁜[1x3]⏴i⏵⏴0⏵⏴0⏵
 print(J, "\n")
 
 //Mat element assignment
-Ji,j ← i+j
+J⁜_⏴i,j⏵ ← i+j
 print(J, "\n")
 
 //Col vec element assignment
-K ← 03×1
-Ki ← i
+K ← 0⁜_⏴3×1⏵
+K⁜_⏴i⏵ ← i
 print(K, "\n")
 
 //Col vec row assignment
-Ki,: ← i
+K⁜_⏴i,:⏵ ← i
 print(K, "\n")
 
 //Col vec col assignment
-K:,i ← i00⊤
+K⁜_⏴:,i⏵ ← ⁜[1x3]⏴i⏵⏴0⏵⏴0⏵⁜^⏴⊤⏵
 print(K, "\n")
 
 //Row vec element assignment
-L ← 01×3
-Li ← i
+L ← 0⁜_⏴1×3⏵
+L⁜_⏴i⏵ ← i
 print(L, "\n")
 
 //Row vec row assignment
-Li,: ← i00
+L⁜_⏴i,:⏵ ← ⁜[1x3]⏴i⏵⏴0⏵⏴0⏵
 print(L, "\n")
 
 //Row vec col assignment
-L:,i ← i
+L⁜_⏴:,i⏵ ← i
 print(L, "\n")
 
 //Scalar assignments
 M ← 0
-Mi,j ← i+j
+M⁜_⏴i,j⏵ ← i+j
 print(M, "\n")
-M:,i ← i
+M⁜_⏴:,i⏵ ← i
 print(M, "\n")
-Mi,: ← i
+M⁜_⏴i,:⏵ ← i
 print(M, "\n")
-Mi ← i
+M⁜_⏴i⏵ ← i
 print(M, "\n")

@@ -95,9 +95,9 @@ inline bool testTypesetMutability(){
         passing = false;
     }
 
-    controller.insertSerial("δ(x) = 1x = 00x ≠ 0");
+    controller.insertSerial("δ(x) = ⁜{2⏴1⏵⏴x = 0⏵⏴0⏵⏴x ≠ 0⏵");
 
-    if(model->toSerial() != "The delta function is: δ(x) = 1x = 00x ≠ 0"){
+    if(model->toSerial() != "The delta function is: δ(x) = ⁜{2⏴1⏵⏴x = 0⏵⏴0⏵⏴x ≠ 0⏵"){
         printf("Insert serial failed\n");
         passing = false;
     }

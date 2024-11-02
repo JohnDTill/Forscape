@@ -21,6 +21,7 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return LIMIT; }
+    virtual void writePrefix(std::string& out) const noexcept override { out += LIMIT_STR; }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual bool increasesScriptDepth(uint8_t) const noexcept override { return true; }

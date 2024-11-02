@@ -49,6 +49,7 @@ def main():
     header_writer.finalize()
 
     with open("../src/generated/typeset_keywords.cpp", "w", encoding="utf-8") as codegen_file:
+        codegen_file.write("//CODEGEN\n\n")
         codegen_file.write("#include \"typeset_keywords.h\"\n\n")
 
         codegen_file.write("namespace Forscape {\n\n")
@@ -63,26 +64,26 @@ def main():
                 if not c.keyword:
                     continue
                 if c.arity == "0":
-                    codegen_file.write(f"    {{\"{c.keyword}\", OPEN_STR {c.name.upper()}_STR}},\n")
+                    codegen_file.write(f"    {{\"{c.keyword}\", CONSTRUCT_STR {c.name.upper()}_STR}},\n")
                 elif c.arity == "1":
-                    codegen_file.write(f"    {{\"{c.keyword}\", OPEN_STR {c.name.upper()}_STR CLOSE_STR}},\n")
+                    codegen_file.write(f"    {{\"{c.keyword}\", CONSTRUCT_STR {c.name.upper()}_STR OPEN_STR CLOSE_STR}},\n")
                 elif c.arity == "2":
-                    codegen_file.write(f"    {{\"{c.keyword}\", OPEN_STR {c.name.upper()}_STR CLOSE_STR CLOSE_STR}},\n")
+                    codegen_file.write(f"    {{\"{c.keyword}\", CONSTRUCT_STR {c.name.upper()}_STR OPEN_STR CLOSE_STR CLOSE_STR}},\n")
                 elif not c.arity:
-                    codegen_file.write(f"    {{\"{c.keyword}\", OPEN_STR {c.name.upper()}_STR \"{c.default_args}\"}},\n")
-        codegen_file.write('    {"^T", OPEN_STR SUPERSCRIPT_STR "⊤" CLOSE_STR},\n')
-        codegen_file.write('    {"^+", OPEN_STR SUPERSCRIPT_STR "+" CLOSE_STR},\n')
-        codegen_file.write('    {"^*", OPEN_STR SUPERSCRIPT_STR "*" CLOSE_STR},\n')
-        codegen_file.write('    {"^-1", OPEN_STR SUPERSCRIPT_STR "-1" CLOSE_STR},\n')
-        codegen_file.write('    {"^dag", OPEN_STR SUPERSCRIPT_STR "†" CLOSE_STR},\n')
+                    codegen_file.write(f"    {{\"{c.keyword}\", CONSTRUCT_STR OPEN_STR {c.name.upper()}_STR \"{c.default_args}\"}},\n")
+        codegen_file.write('    {"^T", CONSTRUCT_STR SUPERSCRIPT_STR OPEN_STR "⊤" CLOSE_STR},\n')
+        codegen_file.write('    {"^+", CONSTRUCT_STR SUPERSCRIPT_STR OPEN_STR "+" CLOSE_STR},\n')
+        codegen_file.write('    {"^*", CONSTRUCT_STR SUPERSCRIPT_STR OPEN_STR "*" CLOSE_STR},\n')
+        codegen_file.write('    {"^-1", CONSTRUCT_STR SUPERSCRIPT_STR OPEN_STR "-1" CLOSE_STR},\n')
+        codegen_file.write('    {"^dag", CONSTRUCT_STR SUPERSCRIPT_STR OPEN_STR "†" CLOSE_STR},\n')
         codegen_file.write(
-            f'   {{"cases", OPEN_STR CASES_STR "\\{hex(2)[1:]}" CLOSE_STR CLOSE_STR CLOSE_STR CLOSE_STR}},\n')
+            f'   {{"cases", CONSTRUCT_STR "{{2" OPEN_STR CLOSE_STR CLOSE_STR CLOSE_STR CLOSE_STR}},\n')
         codegen_file.write(
-            f'   {{"mat", OPEN_STR MATRIX_STR "\\{hex(2)[1:]}\\{hex(2)[1:]}" CLOSE_STR CLOSE_STR CLOSE_STR CLOSE_STR}},\n')
+            f'   {{"mat", CONSTRUCT_STR "[2x2]" OPEN_STR CLOSE_STR CLOSE_STR CLOSE_STR CLOSE_STR}},\n')
         codegen_file.write("};\n\n")
 
         codegen_file.write("FORSCAPE_UNORDERED_MAP<std::string, std::string> Keywords::map = defaults;\n\n"
-                           "}\n\n}\n\n")
+                           "}\n\n}\n")
 
 
 if __name__ == "__main__":

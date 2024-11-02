@@ -1119,13 +1119,14 @@ void Interpreter::printNode(const ParseNode& pn){
 
         case MatrixXd_index:{
             auto mat = std::get<Eigen::MatrixXd>(val);
-            str += OPEN;
-            str += MATRIX;
-            str += mat.rows();
-            str += mat.cols();
+            str += CONSTRUCT_STR "[";
+            str += std::to_string(mat.rows());
+            str += 'x';
+            str += std::to_string(mat.cols());
+            str += "]";
             for(Eigen::Index i = 0; i < mat.rows(); i++)
                 for(Eigen::Index j = 0; j < mat.cols(); j++)
-                    str += formatted(mat(i,j)) + CLOSE;
+                    str += OPEN_STR + formatted(mat(i,j)) + CLOSE_STR;
             break;
         }
 

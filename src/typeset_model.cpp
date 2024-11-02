@@ -83,7 +83,7 @@ Model* Model::fromSerial(const std::string& src, bool is_output){
 
 std::string Model::toSerial() const {
     std::string out;
-    out.resize(serialChars());
+    out.reserve(serialChars());
     writeString(out);
 
     return out;
@@ -113,13 +113,30 @@ Model::Model(const std::string& src, bool is_output)
     text = construct->frontText(); \
     break; }
 
+#define PARSE_DIM(name, terminator) \
+    uint16_t name;\
+    {\
+        const char first_char = src[index++];\
+        assert(first_char >= '0' && first_char <= '9');\
+        const char second_char = src[index++];\
+        if(second_char == terminator) name = (first_char - '0');\
+        else{\
+            assert(second_char >= '0' && second_char <= '9' && src[index++] == terminator);\
+            name = (first_char - '0') * 10 + (second_char - '0');\
+        }\
+        assert(name != 0);\
+    }
+
 #define TypesetSetupMatrix(name) { \
-    uint16_t rows = static_cast<uint16_t>(src[index++]); \
-    uint16_t cols = static_cast<uint16_t>(src[index++]); \
+    index++; \
+    assert(index+7 < src.size()); \
+    PARSE_DIM(rows, 'x'); \
+    PARSE_DIM(cols, ']'); \
     name* construct = new name(rows, cols); \
     text->getParent()->appendConstruct(construct); \
     text = construct->frontText(); \
-    break; }
+    assert(isUnicodeChar<OPEN_STRVIEW>(&src[index])); \
+    index += codepointSize(OPEN_0); }
 
 std::vector<Line*> Model::linesFromSerial(const std::string& src){
     assert(isValidSerial(src));
@@ -131,39 +148,96 @@ std::vector<Line*> Model::linesFromSerial(const std::string& src){
     Text* text = lines.back()->front();
 
     while(index < src.size()){
-        auto ch = src[index++];
+        if(isUnicodeChar<CONSTRUCT_STRVIEW>(&src[index])){
+            index += codepointSize(CON_0);
 
-        if(ch == OPEN){
-            text->setString(&src[start], index-start-1);
+            // Escape characters
+            if(isUnicodeChar<CONSTRUCT_STRVIEW>(&src[index])) index += codepointSize(CON_0);
+            else if(isUnicodeChar<OPEN_STRVIEW>(&src[index])) index += codepointSize(OPEN_0);
+            else if(isUnicodeChar<CLOSE_STRVIEW>(&src[index])) index += codepointSize(CLOSE_0);
+            // Construct codes
+            else{
+                text->setStringAndRemoveEscapes(&src[start], index-start-codepointSize(CON_0));
 
-            switch (src[index++]) {
-                case SETTINGS: {
-                    Settings* settings = new Settings;
-                    while(static_cast<uint8_t>(src[index]) != SETTINGS_END) {
-                        SettingId id = static_cast<SettingId>(static_cast<uint8_t>(src[index++] - 1));
-                        SettingValue value = static_cast<uint8_t>(src[index++] - 1);
-                        settings->updates.push_back( Code::Settings::Update(id, value) );
+                switch (src[index]) {
+                    // Matrix
+                    case '[': { TypesetSetupMatrix(Matrix); break; }
+
+                    // Cases
+                    case '{': {
+                        index++;
+                        assert(index+3 < src.size());
+                        PARSE_DIM(rows, OPEN_0);
+                        assert(isUnicodeChar<OPEN_STRVIEW>(&src[index-1]));
+                        index+=2;
+                        assert(rows > 0);
+                        TypesetSetupConstruct(Cases, rows);
+                        break;
                     }
-                    index++;
-                    text->getParent()->appendConstruct(settings);
-                    #ifndef FORSCAPE_TYPESET_HEADLESS
-                    settings->updateString();
-                    #endif
-                    text = text->nextTextInPhrase();
-                    break;
-                }
-                FORSCAPE_TYPESET_PARSER_CASES
-                default: assert(false);
-            }
 
-            start = index;
-        }else if(ch == CLOSE){
-            text->setString(&src[start], index-start-1);
+                    // Keywords
+                    default:
+                        // Scan to end of keyword
+                        start = index;
+                        for(char ch = src[index]; ch != OPEN_0 && ch != '0'; ch = src[index]){
+                            index++;
+                            assert(index < src.size());
+                        }
+                        const size_t sze = index-start+(src[index]=='0');
+                        assert(sze > 0);
+                        const std::string_view keyword(src.data()+start, sze);
+                        index += codepointSize(src[index]);
+                        switch(encodingHash(keyword)){
+                            case encodingHash(SETTINGS_STR): {
+                                Settings* settings = new Settings;
+                                bool subsequent = false;
+                                for(;;){
+                                    assert(index < src.size());
+                                    const char ch = src[index++];
+                                    if(ch == CLOSE_0) break;
+                                    else if(subsequent) assert(ch == ',');
+                                    else index--;
+
+                                    // Parse setting
+                                    start = index;
+                                    for(char ch = src[index]; ch != '='; ch = src[index]) index++;
+                                    const std::string_view setting_str(src.data()+start, index-start);
+                                    const SettingId id = settingFromStr(setting_str);
+                                    start = ++index;
+                                    for(char ch = src[index]; ch != ',' && ch != CLOSE_0; ch = src[index]) index++;
+                                    const std::string_view value_str(src.data()+start, index-start);
+                                    const SettingValue value = warningFromStr(value_str);
+                                    if(id == SETTING_NONE) { /* EVENTUALLY: feedback */ assert(false); }
+                                    else if(value == WARNING_NONE) { /* EVENTUALLY: feedback */ assert(false); }
+                                    else settings->updates.push_back( Code::Settings::Update(id, value) );
+                                    subsequent = true;
+                                }
+                                assert(isUnicodeChar<CLOSE_STRVIEW>(&src[index-1]));
+                                index += (codepointSize(CLOSE_0) - 1);
+                                text->getParent()->appendConstruct(settings);
+                                #ifndef FORSCAPE_TYPESET_HEADLESS
+                                settings->updateString();
+                                #endif
+                                text = text->nextTextInPhrase();
+                                break;
+                            }
+                            FORSCAPE_TYPESET_PARSER_CASES
+                            default: assert(false);
+                        }
+                }
+
+                start = index;
+            }
+        }else if(isUnicodeChar<CLOSE_STRVIEW>(&src[index])){
+            text->setStringAndRemoveEscapes(&src[start], index-start);
+            index += codepointSize(CLOSE_0);
+            if(index < src.size() && isUnicodeChar<OPEN_STRVIEW>(&src[index])) index += codepointSize(OPEN_0);
             start = index;
             Subphrase* closed_subphrase = static_cast<Subphrase*>(text->getParent());
             text = closed_subphrase->textRightOfSubphrase();
-        }else if(ch == '\n' && text->isTopLevel()){
-            text->setString(&src[start], index-start-1);
+        }else if(src[index++] == '\n'){
+            assert(text->isTopLevel());
+            text->setStringAndRemoveEscapes(&src[start], index-start-1);
 
             start = index;
             lines.push_back(new Line());
@@ -171,7 +245,7 @@ std::vector<Line*> Model::linesFromSerial(const std::string& src){
         }
     }
 
-    text->setString(&src[start], index-start);
+    text->setStringAndRemoveEscapes(&src[start], index-start);
 
     return lines;
 }
@@ -232,13 +306,13 @@ void Model::registerCommaSeparatedNumber(const Selection& sel) alloc_except {
 }
 
 void Model::writeString(std::string& out) const noexcept {
-    size_t curr = 0;
-    lines.front()->writeString(out, curr);
+    lines.front()->writeString(out);
     for(size_t i = 1; i < lines.size(); i++){
-        out[curr++] = '\n';
-        lines[i]->writeString(out, curr);
+        out += '\n';
+        lines[i]->writeString(out);
     }
 
+    if(!isValidSerial(out)) std::cout << out << std::endl;
     assert(isValidSerial(out));
 }
 

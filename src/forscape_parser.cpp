@@ -1284,7 +1284,7 @@ ParseNode Parser::set() alloc_except {
         parse_tree.prepareNary();
         parse_tree.addNaryChild(first_element);
 
-        while(!match(RIGHTBRACKET)){
+        while(!match(RIGHTBRACKET) && noErrors()){
             consume(COMMA);
             parse_tree.addNaryChild(expression());
         }

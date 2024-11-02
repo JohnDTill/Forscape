@@ -735,10 +735,7 @@ void MainWindow::openProject(QString path){
     buffer << in.rdbuf();
 
     std::string src = buffer.str();
-    for(size_t i = 1; i < src.size(); i++)
-        if(src[i] == '\r' && src[i-1] != OPEN)
-            src[i] = '\0';
-    src.erase( std::remove(src.begin(), src.end(), '\0'), src.end() );
+    src.erase( std::remove(src.begin(), src.end(), '\r'), src.end() );
 
     if(isIllFormedUtf8(src)){
         QMessageBox messageBox;
@@ -951,7 +948,7 @@ void MainWindow::insertSerialSelection(const QString& A, const QString& B){
 }
 
 void MainWindow::insertSettings() {
-    insertSerial(OPEN_STR SETTINGS_STR "");
+    insertSerial(CONSTRUCT_STR SETTINGS_STR OPEN_STR CLOSE_STR);
     Typeset::Construct* settings = editor->getController().getActive().text->prevConstructAsserted();
     Typeset::Settings::changeSettings(settings, editor->getController());
     Typeset::Settings::expandCollapse(settings, editor->getController());
@@ -994,10 +991,10 @@ void MainWindow::on_actionTeX_triggered(){
 }
 
 void MainWindow::on_actionUnicode_triggered(){
-    std::string str = editor->getController().selectedText();
-    if(UnicodeConverter::canConvert(str)){
-        std::string uni = UnicodeConverter::convert(str);
-        QApplication::clipboard()->setText(toQString(uni));
+    std::string str;
+    const bool success = editor->getController().selection().convertToUnicode(str);
+    if(success){
+        QApplication::clipboard()->setText(toQString(str));
     }else{
         QMessageBox messageBox;
         messageBox.warning(nullptr, "Warning", "Selected text cannot be converted to unicode.");
@@ -1293,10 +1290,7 @@ void MainWindow::on_actionReload_triggered() {
     buffer << in.rdbuf();
 
     std::string src = buffer.str();
-    for(size_t i = 1; i < src.size(); i++)
-        if(src[i] == '\r' && src[i-1] != OPEN)
-            src[i] = '\0';
-    src.erase( std::remove(src.begin(), src.end(), '\0'), src.end() );
+    src.erase( std::remove(src.begin(), src.end(), '\r'), src.end() );
 
     if(isIllFormedUtf8(src)){
         QMessageBox messageBox;

@@ -1,6 +1,6 @@
-4
+⁜settings⏴UNUSED_VARIABLE=NO_WARNING⏵
 {
-    4
-    
-    x = I3×3
+    ⁜settings⏴UNUSED_VARIABLE=ERROR⏵
+
+    x = I⁜_⏴3×3⏵
 }

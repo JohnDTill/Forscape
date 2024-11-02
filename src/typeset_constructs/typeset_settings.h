@@ -28,8 +28,7 @@ public:
     std::vector<Code::Settings::Update> updates;
     std::array<SettingValue, NUM_CODE_SETTINGS> inherited;
     virtual char constructCode() const noexcept override;
-    virtual void writeArgs(std::string& out, size_t& curr) const noexcept override;
-    virtual size_t dims() const noexcept override;
+    virtual void writePrefix(std::string& out) const noexcept override;
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual void onClick(Controller& controller, double local_x, double local_y) noexcept override;

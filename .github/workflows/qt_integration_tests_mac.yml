@@ -8,16 +8,19 @@ jobs:
     runs-on: macos-latest
     steps:
       - id: Qt
-        uses: jurplel/install-qt-action@v3
+        uses: jurplel/install-qt-action@v4
       - uses: actions/checkout@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
       - id: install_conan
         uses: turtlebrowser/get-conan@main
         with:
-          version: 1.59.0
+          version: 1.65.0
       - id: run_conan
         run: cd ${GITHUB_WORKSPACE}/test && conan install --generator cmake_find_package --install-folder ../build_test/conan-dependencies .
       - id: cmake
-        run: cd ${GITHUB_WORKSPACE}/test && cmake -DCMAKE_BUILD_TYPE=Debug -DTEST_QT=ON -B../build_test -S.
+        run: cd ${GITHUB_WORKSPACE}/test && cmake -DCMAKE_BUILD_TYPE=Debug -DTEST_QT=ON -DCMAKE_OSX_ARCHITECTURES=x86_64 -B../build_test -S.
       - id: make
         run: cd ${GITHUB_WORKSPACE}/build_test && make
       - id: run

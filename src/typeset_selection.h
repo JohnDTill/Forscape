@@ -27,6 +27,7 @@ public:
     Selection& operator=(const Selection& other) noexcept = default;
     std::string str() const;
     std::string_view strView() const noexcept;
+    bool convertToUnicode(std::string& out) const noexcept;
     bool operator==(const Selection& other) const noexcept;
     bool operator!=(const Selection& other) const noexcept;
     bool startsWith(const Selection& other) const noexcept;

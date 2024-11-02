@@ -6,6 +6,8 @@
 #include <string>
 #include <unicode_zerowidth.h>
 
+#define SCANNER_NUMBER_END_CONSTRUCT 3
+
 namespace Forscape {
 
 inline constexpr size_t codepointSize(uint8_t ch) noexcept {
@@ -97,6 +99,27 @@ inline uint32_t codepointInt(StringType str, size_t index = 0) noexcept {
 }
 
 inline constexpr uint32_t codepointInt(std::string_view str) noexcept {
+    uint8_t ch = str[0];
+
+    if(isAscii(ch)){
+        return ch;
+    }else if(sixthBitUnset(ch)){
+        uint32_t bit2 = expand(str[1]) << 8;
+        return ch | bit2;
+    }else if(fifthBitUnset(ch)){
+        uint32_t bit2 = expand(str[1]) << 8;
+        uint32_t bit3 = expand(str[2]) << 16;
+        return ch | bit2 | bit3;
+    }else{
+        uint32_t bit2 = expand(str[1]) << 8;
+        uint32_t bit3 = expand(str[2]) << 16;
+        uint32_t bit4 = expand(str[3]) << 24;
+        return ch | bit2 | bit3 | bit4;
+    }
+}
+
+template<const char* str>
+inline constexpr uint32_t codepointInt() noexcept {
     uint8_t ch = str[0];
 
     if(isAscii(ch)){
@@ -255,6 +278,16 @@ inline bool isIllFormedUtf8(const std::string& str) noexcept {
     }
 
     return str.size() > 0 && isZeroWidth(codepointInt(str, 0)); //EVENTUALLY: should accommodate leading zero-width char?
+}
+
+template<const char* unicode_char>
+inline bool isUnicodeChar(const char* ch) noexcept {
+    static_assert(!isAscii(unicode_char[0]));
+    switch(codepointSize(unicode_char[0])){
+        case 2: return *ch == unicode_char[0] && ch[1] == unicode_char[1];
+        case 3: return *ch == unicode_char[0] && ch[1] == unicode_char[1] && ch[2] == unicode_char[2];
+        case 4: return *ch == unicode_char[0] && ch[1] == unicode_char[1] && ch[2] == unicode_char[2] && ch[3] == unicode_char[3];
+    }
 }
 
 }

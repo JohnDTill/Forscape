@@ -4,6 +4,8 @@
 #include "typeset_construct.h"
 #include "typeset_subphrase.h"
 
+#include "forscape_serial_unicode.h"
+
 namespace Forscape {
 
 namespace Typeset {
@@ -15,6 +17,20 @@ public:
     }
 
     virtual char constructCode() const noexcept override { return BINOMIAL; }
+    virtual void writePrefix(std::string& out) const noexcept override { out += BINOMIAL_STR; }
+    virtual bool writeUnicode(std::string& out, int8_t script) const noexcept override {
+        bool success = convertToUnicode(out, "(", script);
+        assert(success);
+        if(!args[0]->writeUnicode(out, script)) return false;
+        if(script == 0) out += " ¦ ";
+        else success = convertToUnicode(out, " | ", script);
+        assert(success);
+        if(!args[1]->writeUnicode(out, script)) return false;
+        success = convertToUnicode(out, ")", script);
+        assert(success);
+
+        return true;
+    }
 
     static constexpr double paren_width = 3;
     static constexpr double hgap = 1;

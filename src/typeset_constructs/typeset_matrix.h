@@ -6,6 +6,7 @@
 #include "typeset_controller.h"
 #include "typeset_model.h"
 #include "typeset_subphrase.h"
+#include "forscape_serial_unicode.h"
 
 #ifndef FORSCAPE_TYPESET_HEADLESS
 #include <QApplication>
@@ -26,6 +27,7 @@ namespace Typeset {
 
 class Matrix final : public Construct { 
 public:
+    static constexpr uint16_t MAX_DIM_SIZE = 99;
     uint16_t rows;
     uint16_t cols;
 
@@ -52,13 +54,39 @@ public:
         D.resize(rows);
     }
 
-    virtual void writeArgs(std::string& out, size_t& curr) const noexcept override {
-        out[curr++] = static_cast<uint8_t>(rows);
-        out[curr++] = static_cast<uint8_t>(cols);
+    virtual char constructCode() const noexcept override { return MATRIX; }
+    virtual void writePrefix(std::string& out) const noexcept override {
+        out += '[';
+        out += std::to_string(rows);
+        out += 'x';
+        out += std::to_string(cols);
+        out += ']';
     }
 
-    virtual size_t dims() const noexcept override { return 2; }
-    virtual char constructCode() const noexcept override { return MATRIX; }
+    virtual bool writeRow(std::string& out, uint16_t row) const noexcept {
+        size_t start = row*cols;
+        const size_t end = (row+1)*cols;
+        if(!args[start++]->writeUnicode(out, 0)) return false;
+        while(start < end){
+            out += ", ";
+            if(!args[start++]->writeUnicode(out, 0)) return false;
+        }
+
+        return true;
+    }
+
+    virtual bool writeUnicode(std::string& out, int8_t script) const noexcept override {
+        if(script != 0) return false;
+        out += '[';
+        if(!writeRow(out, 0)) return false;
+        for(uint8_t i = 1; i < rows; i++){
+            out += "; ";
+            if(!writeRow(out, i)) return false;
+        }
+        out += ']';
+
+        return true;
+    }
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual Text* textUp(const Subphrase* caller, double x) const noexcept override {

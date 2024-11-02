@@ -53,20 +53,27 @@ size_t Phrase::serialChars() const noexcept {
     return sze;
 }
 
-void Phrase::writeString(std::string& out, size_t& curr) const noexcept {
+void Phrase::writeString(std::string& out) const noexcept {
     for(size_t i = 0; i < constructs.size(); i++){
-        texts[i]->writeString(out, curr);
-        constructs[i]->writeString(out, curr);
+        texts[i]->writeString(out);
+        constructs[i]->writeString(out);
     }
-    texts.back()->writeString(out, curr);
+    texts.back()->writeString(out);
 }
 
 std::string Phrase::toString() const {
     std::string str;
-    str.resize(serialChars());
-    size_t curr = 0;
-    writeString(str, curr);
+    str.reserve(serialChars());
+    writeString(str);
     return str;
+}
+
+bool Phrase::writeUnicode(std::string& out, int8_t script) const noexcept {
+    for(size_t i = 0; i < constructs.size(); i++){
+        if(!texts[i]->writeUnicode(out, script)) return false;
+        if(!constructs[i]->writeUnicode(out, script)) return false;
+    }
+    return texts.back()->writeUnicode(out, script);
 }
 
 Line* Phrase::asLine() noexcept {

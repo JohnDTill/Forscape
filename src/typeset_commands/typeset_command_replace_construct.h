@@ -58,8 +58,8 @@ public:
         con2->parent = con1->parent;
         con2->id = con1->id;
 
-        con1->setArg(0, moved);
-        con2->setArg(1, fake);
+        moved = con1->arg(0);
+        fake = con2->arg(1);
 
         assert(con1->numArgs() == 1);
         assert(con2->numArgs() == 2);
@@ -72,8 +72,8 @@ public:
         con1->parent = con2->parent;
         con1->id = con2->id;
 
-        con2->setArg(1, moved);
-        con1->setArg(0, fake);
+        moved = con2->arg(1);
+        fake = con1->arg(0);
 
         assert(con1->numArgs() == 1);
         assert(con2->numArgs() == 2);

@@ -17,6 +17,8 @@ private:
 public:
     AccentBar();
     virtual char constructCode() const noexcept override;
+    virtual void writePrefix(std::string& out) const noexcept override;
+    virtual bool writeUnicode(std::string& out, int8_t script) const noexcept override;
 
     #ifndef FORSCAPE_TYPESET_HEADLESS
     virtual void updateSizeFromChildSizes() noexcept override;
