@@ -23,6 +23,10 @@ jobs:
           version: 1.65.0
       - id: build
         run: cd $Env:GITHUB_WORKSPACE/app/installer && ./createInstaller.bat 5.15.2
+      - id: debug
+        run: ls
+      - id: make_installer
+        run: binarycreator.exe --offline-only -c config/config.xml -p packages ForscapeInstaller_Win64.exe
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:

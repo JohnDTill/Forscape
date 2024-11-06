@@ -12,4 +12,3 @@ mkdir "packages\com.automath.forscape\data"
 robocopy ..\..\build\Release packages\com.automath.forscape\data Forscape.exe *.dll /S
 copy ..\lambda.ico config
 copy "..\..\LICENSE" "packages\com.automath.forscape\meta"
-binarycreator.exe --offline-only -c config/config.xml -p packages ForscapeInstaller_Win64.exe
