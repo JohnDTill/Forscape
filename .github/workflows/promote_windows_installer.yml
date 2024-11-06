@@ -10,7 +10,9 @@ jobs:
     steps:
       - id: Qt
         uses: jurplel/install-qt-action@v4
-        tools: qtinstallerframework
+        version: 5.15.2
+        tools: tools_cmake qtinstallerframework
+        add-tools-to-path: true
       - uses: actions/checkout@v3
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
@@ -19,7 +21,7 @@ jobs:
         with:
           version: 1.65.0
       - id: build
-        run: cd $Env:GITHUB_WORKSPACE/app/installer && ./createInstaller.bat
+        run: cd $Env:GITHUB_WORKSPACE/app/installer && ./createInstaller.bat 5.15.2
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
