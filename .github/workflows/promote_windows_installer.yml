@@ -5,14 +5,14 @@ on: push
 #  push:
 #    branches: main
 jobs:
-  build-and-test:
+  build-and-promote:
     runs-on: windows-latest
     steps:
       - id: Qt
         uses: jurplel/install-qt-action@v4
         with:
           version: 5.15.2
-          tools: tools_cmake qtinstallerframework
+          tools: tools_cmake tools_ifw
           add-tools-to-path: true
       - uses: actions/checkout@v3
       - name: Add msbuild to PATH
