@@ -1,0 +1,27 @@
+name: C++ Integration Tests (windows-latest msbuild)
+on: push
+#on:
+#  pull_request:
+#  push:
+#    branches: main
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    steps:
+      - id: Qt
+        uses: jurplel/install-qt-action@v4
+        tools: qtinstallerframework
+      - uses: actions/checkout@v3
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+      - id: install_conan
+        uses: turtlebrowser/get-conan@main
+        with:
+          version: 1.65.0
+      - id: build
+        run: cd $Env:GITHUB_WORKSPACE/app/installer && ./createInstaller.bat
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ForscapeInstaller_Win64.exe
+          path: ForscapeInstaller_Win64.exe
