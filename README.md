@@ -84,8 +84,9 @@ There is no documentation yet, either user or design docs. [Crafting Interpreter
 
 [![Qt Integration Tests (ubuntu-latest gcc)](https://github.com/JohnDTill/Forscape/actions/workflows/qt_integration_tests.yml/badge.svg)](https://github.com/JohnDTill/Forscape/actions/workflows/qt_integration_tests.yml)
 
-
 [![Qt Integration Tests (macos-latest)](https://github.com/JohnDTill/Forscape/actions/workflows/qt_integration_tests_mac.yml/badge.svg)](https://github.com/JohnDTill/Forscape/actions/workflows/qt_integration_tests_mac.yml)
+
+[![Qt Integration Tests (Qt6, ubuntu-latest gcc)](https://github.com/JohnDTill/Forscape/actions/workflows/qt_integration_tests_qt6.yml/badge.svg)](https://github.com/JohnDTill/Forscape/actions/workflows/qt_integration_tests_qt6.yml)
 
 [![Forscape App Compiles And Runs (ubuntu-latest gcc)](https://github.com/JohnDTill/Forscape/actions/workflows/app_compiles_and_runs.yml/badge.svg)](https://github.com/JohnDTill/Forscape/actions/workflows/app_compiles_and_runs.yml)
 

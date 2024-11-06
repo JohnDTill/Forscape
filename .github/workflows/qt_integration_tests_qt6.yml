@@ -1,0 +1,28 @@
+name: Qt Integration Tests (Qt6, ubuntu-latest gcc)
+on:
+  pull_request:
+  push:
+    branches: main
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - id: Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.0'
+      - uses: actions/checkout@v4
+      - id: install_conan
+        uses: turtlebrowser/get-conan@main
+        with:
+          version: 1.65.0
+      - id: patch_conan
+        run: conan profile new default --detect && conan profile update settings.compiler.libcxx=libstdc++11 default
+      - id: run_conan
+        run: cd ${GITHUB_WORKSPACE}/test && conan install --generator cmake_find_package --install-folder ../build_test/conan-dependencies .
+      - id: cmake
+        run: cd ${GITHUB_WORKSPACE}/test && cmake -DCMAKE_BUILD_TYPE=Debug -DTEST_QT=ON -B../build_test -S.
+      - id: make
+        run: cd ${GITHUB_WORKSPACE}/build_test && make
+      - id: run
+        run: cd ${GITHUB_WORKSPACE}/build_test && ./ForscapeTests -platform offscreen
