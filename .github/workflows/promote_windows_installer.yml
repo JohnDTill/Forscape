@@ -27,4 +27,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ForscapeInstaller_Win64.exe
-          path: ForscapeInstaller_Win64.exe
+          path: $Env:GITHUB_WORKSPACE/app/installer/ForscapeInstaller_Win64.exe
