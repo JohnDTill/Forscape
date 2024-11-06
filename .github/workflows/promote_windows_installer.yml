@@ -1,4 +1,4 @@
-name: C++ Integration Tests (windows-latest msbuild)
+name: "Artifact: Windows Installer"
 on: push
 #on:
 #  pull_request:
@@ -24,11 +24,14 @@ jobs:
       - id: build
         run: cd $Env:GITHUB_WORKSPACE/app/installer && ./createInstaller.bat 5.15.2
       - id: debug
-        run: ls
+        run: cd $Env:GITHUB_WORKSPACE/app/installer && ls
+      - id: debug2
+        run: cd $Env:GITHUB_WORKSPACE/app/installer/packages && ls -R
       - id: make_installer
-        run: binarycreator.exe --offline-only -c config/config.xml -p packages ForscapeInstaller_Win64.exe
+        run: cd $Env:GITHUB_WORKSPACE/app/installer && binarycreator.exe --offline-only -c config/config.xml -p packages ForscapeInstaller_Win64.exe
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: ForscapeInstaller_Win64.exe
           path: $Env:GITHUB_WORKSPACE/app/installer/ForscapeInstaller_Win64.exe
+          if-no-files-found: error
