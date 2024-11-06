@@ -14,9 +14,9 @@ jobs:
           version: 5.15.2
           tools: tools_cmake tools_ifw
           add-tools-to-path: true
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.1
+        uses: microsoft/setup-msbuild@v2
       - id: install_conan
         uses: turtlebrowser/get-conan@main
         with:
