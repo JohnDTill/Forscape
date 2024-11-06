@@ -1,0 +1,30 @@
+name: Publish Windows Installer
+on:
+ pull_request:
+ push:
+   branches: main
+jobs:
+  build-and-promote:
+    runs-on: windows-latest
+    steps:
+      - id: Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: 5.15.2
+          tools: tools_cmake tools_ifw
+          add-tools-to-path: true
+      - uses: actions/checkout@v4
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+      - id: install_conan
+        uses: turtlebrowser/get-conan@main
+        with:
+          version: 1.65.0
+      - id: build
+        run: cd $Env:GITHUB_WORKSPACE/app/installer && ./createInstaller.bat 5.15.2
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ForscapeInstaller_Win64.exe
+          path: ${{ github.workspace }}/app/installer/ForscapeInstaller_Win64.exe
+          if-no-files-found: error

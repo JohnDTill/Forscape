@@ -7,7 +7,7 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - id: permissions
         run: chmod +x "${GITHUB_WORKSPACE}/.github/workflows/do_this_check.sh"
       - id: check

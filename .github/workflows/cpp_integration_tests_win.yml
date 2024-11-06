@@ -7,9 +7,9 @@ jobs:
   build-and-test:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.1
+        uses: microsoft/setup-msbuild@v2
       - id: install_conan
         uses: turtlebrowser/get-conan@main
         with:
