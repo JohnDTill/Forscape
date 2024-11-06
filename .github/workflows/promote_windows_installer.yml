@@ -1,4 +1,4 @@
-name: Publish Windows Installer Artifact
+name: Publish Windows Installer
 on: push
 #on:
 #  pull_request:
@@ -23,11 +23,9 @@ jobs:
           version: 1.65.0
       - id: build
         run: cd $Env:GITHUB_WORKSPACE/app/installer && ./createInstaller.bat 5.15.2
-      - id: make_installer
-        run: cd $Env:GITHUB_WORKSPACE/app/installer && binarycreator.exe --verbose --offline-only -c config/config.xml -p packages ForscapeInstaller_Win64.exe
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: ForscapeInstaller_Win64.exe
-          path: ${{ env.GITHUB_WORKSPACE }}/app/installer/ForscapeInstaller_Win64.exe
+          path: ${{ github.workspace }}/app/installer/ForscapeInstaller_Win64.exe
           if-no-files-found: error
