@@ -10,5 +10,3 @@ make
 
 # Run
 # ./Forscape
-
-ls -R
