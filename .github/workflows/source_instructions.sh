@@ -10,9 +10,3 @@ make
 
 # Run
 # ./Forscape
-
-# Test launch with timed close
-timeout 10 ./Forscape -platform offscreen
-if [ $? == 124 ]; then
-    exit 0
-fi

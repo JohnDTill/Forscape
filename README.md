@@ -91,3 +91,5 @@ There is no documentation yet, either user or design docs. [Crafting Interpreter
 [![Forscape App Compiles And Runs (ubuntu-latest gcc)](https://github.com/JohnDTill/Forscape/actions/workflows/app_compiles_and_runs.yml/badge.svg)](https://github.com/JohnDTill/Forscape/actions/workflows/app_compiles_and_runs.yml)
 
 [![Publish Windows Installer](https://github.com/JohnDTill/Forscape/actions/workflows/promote_windows_installer.yml/badge.svg)](https://github.com/JohnDTill/Forscape/actions/workflows/promote_windows_installer.yml)
+
+[![Build from source (ubuntu-latest gcc)](https://github.com/JohnDTill/Forscape/actions/workflows/source_instructions.yml/badge.svg)](https://github.com/JohnDTill/Forscape/actions/workflows/source_instructions.yml)
