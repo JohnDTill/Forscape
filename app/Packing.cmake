@@ -31,8 +31,7 @@ set(CPACK_DEBIAN_PACKAGE_MAINTAINER "John Till")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/../LICENSE")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/../README.md")
 
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "cmake, python3, qt5-default, libqt5svg5-dev")
-#qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools DO THIS
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "cmake, python3, qtbase5-dev, qtchooser, qt5-qmake, qtbase5-dev-tools, libqt5svg5-dev")
 
 # package name for deb
 # if set, then instead of some-application-0.9.2-Linux.deb
