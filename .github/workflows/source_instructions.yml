@@ -1,0 +1,16 @@
+name: Build from source (ubuntu-latest gcc)
+on:
+ pull_request:
+ push:
+   branches: main
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: permissions
+        run: chmod +x "${GITHUB_WORKSPACE}/.github/workflows/source_instructions.sh"
+      - id: build
+        run: sudo ${GITHUB_WORKSPACE}/.github/workflows/source_instructions.sh
+      - id: run  # This verifies there are no missing runtime dependencies
+        run: cd ${GITHUB_WORKSPACE}/Forscape/build && ${GITHUB_WORKSPACE}/.github/workflows/app_run_and_check_exit_code.sh
