@@ -13,4 +13,4 @@ jobs:
       - id: build
         run: sudo ${GITHUB_WORKSPACE}/.github/workflows/source_instructions.sh
       - id: run  # This verifies there are no missing runtime dependencies
-        run: cd ${GITHUB_WORKSPACE}/.github/workflows/build && ${GITHUB_WORKSPACE}/.github/workflows/app_run_and_check_exit_code.sh
+        run: cd ${GITHUB_WORKSPACE}/.github/workflows/Forscape/build && ${GITHUB_WORKSPACE}/.github/workflows/app_run_and_check_exit_code.sh
