@@ -1,11 +1,10 @@
 # Compile
-apt-get install cmake python3 qtbase5-dev libqt5svg5-dev
+apt-get install cmake python3 qtbase5-dev
 pip3 install -v "conan==1.65.0"
-conan profile new default --detect && conan profile update settings.compiler.libcxx=libstdc++11 default
 git clone https://github.com/JohnDTill/Forscape
 cd ./Forscape
 conan install --generator cmake_find_package --install-folder ./build/conan-dependencies ./app
-cmake -DCMAKE_BUILD_TYPE=Release -B build -S app
+cmake -DCMAKE_BUILD_TYPE=Debug -B build -S app
 cd build
 make
 
