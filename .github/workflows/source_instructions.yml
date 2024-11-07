@@ -1,15 +1,14 @@
 name: Build from source (ubuntu-latest gcc)
-on: push
-# on:
-#  pull_request:
-#  push:
-#    branches: main
+on:
+ pull_request:
+ push:
+   branches: main
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - id: permissions
-        run: chmod +x "${GITHUB_WORKSPACE}/.github/workflows/build_from_source.sh"
+        run: chmod +x "${GITHUB_WORKSPACE}/.github/workflows/source_instructions.sh"
       - id: build
-        run: ${GITHUB_WORKSPACE}/.github/workflows/build_from_source.sh
+        run: ${GITHUB_WORKSPACE}/.github/workflows/source_instructions.sh
