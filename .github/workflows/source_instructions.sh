@@ -1,5 +1,5 @@
 # Compile
-apt-get install cmake python3 qtbase5-dev
+apt-get install cmake python3 qtbase5-dev libqt5svg5-dev
 pip3 install -v "conan==1.65.0"
 git clone https://github.com/JohnDTill/Forscape
 cd ./Forscape
