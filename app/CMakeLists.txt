@@ -284,7 +284,7 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         -fomit-frame-pointer -funroll-loops -fvisibility=hidden -fwhole-program -flto>
     )
     target_link_options(Forscape PRIVATE
-        -Wa,-mbig-obj
+        $<$<CONFIG:Debug>:-Wa,-mbig-obj>
     )
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     # using Clang
