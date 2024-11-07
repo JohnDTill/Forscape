@@ -4,7 +4,7 @@ pip3 install -v "conan==1.65.0"
 git clone https://github.com/JohnDTill/Forscape
 cd ./Forscape
 conan install --generator cmake_find_package --install-folder ./build/conan-dependencies ./app
-cmake -DCMAKE_BUILD_TYPE=Release -B build -S app
+cmake -B build -S app --config Release
 cd build
 make
 
