@@ -27,11 +27,9 @@ jobs:
         run: cd ${GITHUB_WORKSPACE}/build && make
       - id: pack
         run: cd ${GITHUB_WORKSPACE}/build && cpack -G DEB
-      - id: debug
-        run: cd ${GITHUB_WORKSPACE}/build && ls -R
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: Forscape.deb
-          path: ${{ github.workspace }}/build/Forscape.deb
+          path: ${{ github.workspace }}/build/_CPack_Packages/Linux/DEB/forscape.deb
           if-no-files-found: error
