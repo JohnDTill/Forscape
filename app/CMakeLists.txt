@@ -283,9 +283,9 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         #$<$<CONFIG:Release>: -Ofast -fmodulo-sched -fmodulo-sched-allow-regmoves -fgcse-sm -fgcse-las -fdelete-null-pointer-checks
         #-fomit-frame-pointer -funroll-loops -fvisibility=hidden> #-fwhole-program -flto
     )
-    target_link_options(Forscape PRIVATE
-        -Wa,-mbig-obj
-    )
+    #target_link_options(Forscape PRIVATE
+    #    -Wa,-mbig-obj
+    #)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     # using Clang
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
