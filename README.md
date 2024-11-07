@@ -27,17 +27,7 @@ Download and run [ForscapeInstaller_Win64.exe](https://github.com/JohnDTill/Fors
 Alternately, install the development prerequisites listed below and compile from source.
 
 #### Linux
-Use the [.deb file](https://github.com/JohnDTill/Forscape/releases/download/pre-alpha-0.0.2/forscape_0.0.1_amd64.deb) or compile from source using:
-```
-apt-get install cmake python3 qt5-default libqt5svg5-dev
-pip3 install conan
-git clone https://github.com/JohnDTill/Forscape
-cd ./Forscape/app
-conan install --generator cmake_find_package .
-cmake CMakeLists.txt
-make
-./Forscape #Run
-```
+Compile from source following the instructions in [source_instructions.sh](./.github/workflows/source_instructions.sh).
 
 ## Development Prerequisites
 
