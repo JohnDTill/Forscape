@@ -8,6 +8,10 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
+      - id: Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: 5.15.2
       - uses: actions/checkout@v4
       - id: install_conan
         uses: turtlebrowser/get-conan@main
