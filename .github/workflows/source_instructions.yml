@@ -11,4 +11,4 @@ jobs:
       - id: permissions
         run: chmod +x "${GITHUB_WORKSPACE}/.github/workflows/source_instructions.sh"
       - id: build
-        run: ${GITHUB_WORKSPACE}/.github/workflows/source_instructions.sh
+        run: sudo ${GITHUB_WORKSPACE}/.github/workflows/source_instructions.sh
