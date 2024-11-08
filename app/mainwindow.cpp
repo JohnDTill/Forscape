@@ -307,6 +307,11 @@ MainWindow::MainWindow(QWidget* parent)
 
     // By default there are options to hide the toolbars, but they don't play nicely with custom show/hide options
     setContextMenuPolicy(Qt::NoContextMenu);
+
+    QAction* escape_action = new QAction(this);
+    escape_action->setShortcut(Qt::Key_Escape);
+    connect(escape_action, SIGNAL(triggered()), this, SLOT(exitFullScreen()));
+    addAction(escape_action);
 }
 
 MainWindow::~MainWindow(){
@@ -942,6 +947,7 @@ void MainWindow::insertSerialSelection(const QString& A, const QString& B){
 
     Typeset::Controller& c = editor->getController();
     editor->insertSerial(toCppString(A) + c.selectedText() + toCppString(B));
+    c.moveToPrevChar();
     editor->update();
 
     onTextChanged();
@@ -1406,7 +1412,38 @@ void MainWindow::updateRecentProjectsFromCurrent() {
     }
 }
 
+static bool wasMaximimised;
+
+void MainWindow::exitFullScreen() {
+    if(wasMaximimised){
+        showMaximized();
+    }else{
+        showNormal();
+    }
+}
+
+void MainWindow::toggleFullScreen() {
+    if(!isFullScreen()){
+        wasMaximimised = isMaximized();
+        showFullScreen();
+    }else{
+        exitFullScreen();
+    }
+}
+
 void MainWindow::on_actionGo_to_main_file_triggered() {
     Forscape::Typeset::Model* entry_point = Forscape::Program::instance()->program_entry_point;
     if(entry_point != editor->getModel()) viewModel(entry_point, 0);
 }
+
+void MainWindow::on_actionFull_Screen_triggered() {
+    toggleFullScreen();
+}
+
+
+void MainWindow::on_actionToggle_line_comment_triggered() {
+    editor->comment();
+    editor->updateModel();
+    onTextChanged();
+}
+

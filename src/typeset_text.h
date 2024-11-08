@@ -49,8 +49,10 @@ class Text {
         void setString(std::string_view str) alloc_except;
         void setStringAndRemoveEscapes(const char* ch, size_t sze) alloc_except;
         void append(std::string_view appended) alloc_except;
+        void prepend(std::string_view prepended) alloc_except;
         void prependSpaces(size_t num_spaces) alloc_except;
         void removeLeadingSpaces(size_t num_spaces) noexcept;
+        void removeComment() noexcept;
         void overwrite(size_t start, const std::string& in) alloc_except;
         void overwrite(size_t start, std::string_view in) alloc_except;
         void insert(size_t start, const std::string& in) alloc_except;

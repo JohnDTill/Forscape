@@ -144,6 +144,10 @@ private slots:
     void on_actionClearRecentProjects_triggered();
     void openRecent(QAction* action);
     void on_actionGo_to_main_file_triggered();
+    void exitFullScreen();
+    void toggleFullScreen();
+    void on_actionFull_Screen_triggered();
+    void on_actionToggle_line_comment_triggered();
 
 protected:
     virtual void closeEvent(QCloseEvent* event) override;

@@ -165,6 +165,8 @@ set(SOURCES
     ${SRC}/typeset_text.h
     ${COMMAND}/typeset_command_change_settings.cpp
     ${COMMAND}/typeset_command_change_settings.h
+    ${COMMAND}/typeset_command_comment.cpp
+    ${COMMAND}/typeset_command_comment.h
     ${COMMAND}/typeset_command_indent.cpp
     ${COMMAND}/typeset_command_indent.h
     ${COMMAND}/typeset_command_line.cpp

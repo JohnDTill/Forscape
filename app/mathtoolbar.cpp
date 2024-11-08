@@ -102,8 +102,12 @@ void MathToolbar::setupSymbolTable(){
 }
 
 void MathToolbar::setupScripts(){
-    addAction(new TypesetAction("A", SYNTAX_CMD "_", CONSTRUCT_STR SUBSCRIPT_STR OPEN_STR CLOSE_STR, this));
-    addAction(new TypesetAction("B", SYNTAX_CMD "^", CONSTRUCT_STR SUPERSCRIPT_STR OPEN_STR CLOSE_STR, this));
+    QAction* subscript = new EnclosedTypesetAction("A", SYNTAX_CMD "_", CONSTRUCT_STR SUBSCRIPT_STR OPEN_STR, CLOSE_STR, this);
+    subscript->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Minus);
+    addAction(subscript);
+    QAction* superscript = new EnclosedTypesetAction("B", SYNTAX_CMD "^", CONSTRUCT_STR SUPERSCRIPT_STR OPEN_STR, CLOSE_STR, this);
+    superscript->setShortcut(Qt::CTRL | Qt::Key_Plus);
+    addAction(superscript);
     addAction(new TypesetAction("C", SYNTAX_CMD "^_", CONSTRUCT_STR DUALSCRIPT_STR OPEN_STR CLOSE_STR CLOSE_STR, this));
 }
 
