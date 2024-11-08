@@ -3,6 +3,7 @@
 #include <typeset_themes.h>
 #include <typeset_view.h>
 #include <forscape_unicode.h>
+#include <qt_compatability.h>
 
 #ifndef NDEBUG
 #include <iostream>
@@ -142,18 +143,58 @@ void Painter::drawText(double x, double y, std::string_view text){
     painter.drawText(QPointF(x, y), q_str);
 }
 
-void Painter::drawHighlightedGrouping(double x, double y, double w, std::string_view text){
-    if(x >= xR || y >= yB || (y + CAPHEIGHT[depth]) <= yT || x + CHARACTER_WIDTHS[depth] < xL) return;
+void Painter::drawHighlightBox(double x, double y, double w, double h) {
+    if(x >= xR || y >= yB || (y + h) <= yT || x + w < xL) return;
 
     x += x_offset;
 
     painter.setPen(getColour(COLOUR_GROUPINGBACKGROUND));
     painter.setBrush(getColour(COLOUR_GROUPINGBACKGROUND));
-    painter.drawRect(x, y, w, ASCENT[depth]);
+    painter.drawRect(x, y, w, h);
+
+    painter.setPen(getColour(COLOUR_CURSOR));
+    painter.setBrush(getColour(COLOUR_CURSOR));
+}
+
+void Painter::drawHighlightLine(double x, double y, double w, double h) {
+    if(x >= xR || y >= yB || (y + h) <= yT || x + w < xL) return;
+
+    painter.setPen(getColour(COLOUR_GROUPINGHIGHLIGHT));
+    drawLine(x, y, w, h);
+    painter.setPen(getColour(COLOUR_CURSOR));
+    painter.setBrush(getColour(COLOUR_CURSOR));
+}
+
+void Painter::drawHighlightedGrouping(double x, double y, double w, std::string_view text){
+    if(x >= xR || y >= yB || (y + CAPHEIGHT[depth]) <= yT || x + CHARACTER_WIDTHS[depth] < xL) return;
+    drawHighlightBox(x, y, w, ASCENT[depth]);
+
+    x += x_offset;
 
     painter.setPen(getColour(COLOUR_GROUPINGHIGHLIGHT));
     y += CAPHEIGHT[depth];
     painter.drawText(QPointF(x, y), QString::fromUtf8(text.data(), static_cast<int>(text.size())));
+
+    painter.setPen(getColour(COLOUR_CURSOR));
+    painter.setBrush(getColour(COLOUR_CURSOR));
+}
+
+void Painter::drawHighlightedGrouping(double x, double y, double w, double h, std::string_view text) {
+    if(x >= xR || y >= yB || (y + h) <= yT || x + w < xL) return;
+    drawHighlightBox(x, y, w, h * (1 + static_cast<double>(DESCENT[depth])/ASCENT[depth]));
+
+    x += x_offset;
+    painter.setPen(getColour(COLOUR_GROUPINGHIGHLIGHT));
+
+    double scale_x = w / CHARACTER_WIDTHS[depth];
+    double scale_y = h / ASCENT[depth];
+    x /= scale_x;
+    y = (y + h - DESCENT[depth]) / scale_y;
+
+    QTransform transform = painter.transform();
+    painter.scale(scale_x, scale_y);
+    painter.drawText(QPointF(x, y), toQString(text));
+    painter.setTransform(transform);
 
     painter.setPen(getColour(COLOUR_CURSOR));
     painter.setBrush(getColour(COLOUR_CURSOR));

@@ -66,6 +66,9 @@ public:
         painter.drawSymbol(x, y, getBigIntegralString(type));
     }
 
+    // EVENTUALLY: it would be nice to highlight groupings for integrals, e.g. in ∫ x ⅆx
+    // treat the '∫' like an opening symbol and ⅆx like a closing one.
+
     static void modifyFirstScript(Construct* con, Controller& c, Subphrase*);
 
     static const std::vector<Construct::ContextAction> actions;

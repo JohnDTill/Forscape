@@ -62,7 +62,11 @@ public:
     void setScriptLevel(uint8_t depth);
     void setOffset(double x, double y);
     void drawText(double x, double y, std::string_view text);
+    void drawHighlightBox(double x, double y, double w, double h);
+    void drawHighlightLine(double x, double y, double w, double h);
+    void drawHighlightText(double x, double y, double w, double h, std::string_view text);
     void drawHighlightedGrouping(double x, double y, double w, std::string_view text);
+    void drawHighlightedGrouping(double x, double y, double w, double h, std::string_view text);
     void drawSymbol(double x, double y, std::string_view text);
     void drawLine(double x, double y, double w, double h);
     void drawDashedLine(double x, double y, double w, double h);

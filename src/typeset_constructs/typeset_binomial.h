@@ -63,6 +63,11 @@ public:
         painter.drawSymbol(')', x + width - paren_width, y, paren_width, height());
     }
 
+    virtual void paintGrouping(Painter& painter) const override {
+        painter.drawHighlightedGrouping(x, y, paren_width, height(), "(");
+        painter.drawHighlightedGrouping(x + width - paren_width, y, paren_width, height(), ")");
+    }
+
     virtual bool increasesScriptDepth(uint8_t) const noexcept override{
         return !parent->isLine();
     }

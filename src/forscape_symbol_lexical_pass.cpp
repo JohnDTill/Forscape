@@ -201,15 +201,15 @@ void SymbolLexicalPass::resolveAssignment(ParseNode pn) alloc_except {
             break;
 
         case OP_IDENTIFIER:
-            resolveExpr(rhs);
             resolveAssignmentId(pn);
+            resolveExpr(rhs);
             break;
 
         case OP_SUBSCRIPT_ACCESS:
             if(lexical_map.find(parse_tree.getSelection(lhs)) != lexical_map.end()){
                 resolvePotentialIdSub(lhs);
-                resolveExpr(rhs);
                 resolveAssignmentId(pn);
+                resolveExpr(rhs);
             }else{
                 parse_tree.setOp(pn, OP_REASSIGN);
                 resolveAssignmentSubscript(pn, lhs, rhs);
