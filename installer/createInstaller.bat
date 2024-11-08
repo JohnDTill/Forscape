@@ -4,7 +4,7 @@ rmdir /s /q build
 mkdir build
 call qtenv2.bat
 cd %~dp0
-conan install --generator cmake_find_package --install-folder ../build/conan-dependencies ..
+conan install --generator cmake_find_package --install-folder ../build/conan-dependencies ../app
 cmake.exe -S ../app -B ../build -D CMAKE_BUILD_TYPE=Release
 cmake.exe --build ../build --target ALL_BUILD --config Release
 windeployqt.exe ../build/Release/Forscape.exe
