@@ -149,6 +149,21 @@ public:
         painter.drawLine(x+width-BRACKET_WIDTH-MATRIX_RPADDING, y+BRACKET_VSHIFT+h, BRACKET_WIDTH, 0);
     }
 
+    virtual void paintGrouping(Painter& painter) const override {
+        double h = height();
+        constexpr double m = 2.0;  // margin
+        painter.drawHighlightBox(x+MATRIX_LPADDING-m, y+BRACKET_VSHIFT-m, BRACKET_WIDTH+m, h+2*m);
+        painter.drawHighlightBox(x+width-BRACKET_WIDTH-MATRIX_RPADDING, y+BRACKET_VSHIFT-m, BRACKET_WIDTH+m, h+2*m);
+
+        painter.drawHighlightLine(x+MATRIX_LPADDING, y+BRACKET_VSHIFT, BRACKET_WIDTH, 0);
+        painter.drawHighlightLine(x+MATRIX_LPADDING, y+BRACKET_VSHIFT, 0, h);
+        painter.drawHighlightLine(x+MATRIX_LPADDING, y+BRACKET_VSHIFT+h, BRACKET_WIDTH, 0);
+
+        painter.drawHighlightLine(x+width-BRACKET_WIDTH-MATRIX_RPADDING, y+BRACKET_VSHIFT, BRACKET_WIDTH, 0);
+        painter.drawHighlightLine(x+width-MATRIX_RPADDING, y+BRACKET_VSHIFT, 0, h);
+        painter.drawHighlightLine(x+width-BRACKET_WIDTH-MATRIX_RPADDING, y+BRACKET_VSHIFT+h, BRACKET_WIDTH, 0);
+    }
+
     static std::vector<ContextAction> actions;
 
     virtual const std::vector<ContextAction>& getContextActions(Subphrase* child) const noexcept override {

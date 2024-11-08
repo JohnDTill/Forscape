@@ -575,6 +575,13 @@ void Model::paintGroupings(Painter& painter, const Marker& loc) const {
         Typeset::Marker left = close_lookup->second;
         left.text->paintGrouping(painter, left.index);
     }
+
+    if(loc.atTextEnd())
+        if(Construct* con = loc.text->nextConstructInPhrase())
+            con->paintGrouping(painter);
+    if(loc.atTextStart())
+        if(Construct* con = loc.text->prevConstructInPhrase())
+            con->paintGrouping(painter);
 }
 
 void Model::paintNumberCommas(Painter& painter, double xL, double yT, double xR, double yB, const Selection& sel) const {

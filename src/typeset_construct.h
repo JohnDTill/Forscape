@@ -79,6 +79,7 @@ public:
     virtual void updateSizeFromChildSizes() noexcept = 0;
     void updateLayout() noexcept;
     void paint(Painter& painter) const;
+    virtual void paintGrouping(Painter& painter) const;
     double height() const noexcept;
     double width  DEBUG_INIT_STALE;
     double above_center  DEBUG_INIT_STALE;

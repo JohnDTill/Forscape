@@ -186,6 +186,10 @@ void Construct::paint(Painter& painter) const {
     for(Subphrase* arg : args) arg->paint(painter);
 }
 
+void Construct::paintGrouping(Painter&) const {
+    // DO NOTHING
+}
+
 double Construct::height() const noexcept {
     return above_center + under_center;
 }
