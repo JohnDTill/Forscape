@@ -4,6 +4,7 @@
 #include "typeset_syntax.h"
 #include <QFontDatabase>
 #include <QHeaderView>
+#include <QKeyCombination>
 #include <QScrollBar>
 #include <QTableWidget>
 #include <QToolButton>
