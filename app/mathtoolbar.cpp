@@ -4,7 +4,6 @@
 #include "typeset_syntax.h"
 #include <QFontDatabase>
 #include <QHeaderView>
-#include <QKeyCombination>
 #include <QScrollBar>
 #include <QTableWidget>
 #include <QToolButton>
@@ -104,10 +103,10 @@ void MathToolbar::setupSymbolTable(){
 
 void MathToolbar::setupScripts(){
     QAction* subscript = new EnclosedTypesetAction("A", SYNTAX_CMD "_", CONSTRUCT_STR SUBSCRIPT_STR OPEN_STR, CLOSE_STR, this);
-    subscript->setShortcut(QKeyCombination(Qt::KeyboardModifiers(Qt::ControlModifier|Qt::ShiftModifier), Qt::Key_Minus));
+    subscript->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Minus);
     addAction(subscript);
     QAction* superscript = new EnclosedTypesetAction("B", SYNTAX_CMD "^", CONSTRUCT_STR SUPERSCRIPT_STR OPEN_STR, CLOSE_STR, this);
-    superscript->setShortcut(QKeyCombination(Qt::KeyboardModifiers(Qt::ControlModifier|Qt::ShiftModifier), Qt::Key_Equal));
+    superscript->setShortcut(Qt::CTRL | Qt::Key_Plus);
     addAction(superscript);
     addAction(new TypesetAction("C", SYNTAX_CMD "^_", CONSTRUCT_STR DUALSCRIPT_STR OPEN_STR CLOSE_STR CLOSE_STR, this));
 }
