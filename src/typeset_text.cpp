@@ -92,6 +92,10 @@ void Text::append(std::string_view appended) alloc_except {
     str += appended;
 }
 
+void Text::prepend(std::string_view prepended) noexcept {
+    str.insert(str.begin(), prepended.cbegin(), prepended.cend());
+}
+
 void Text::prependSpaces(size_t num_spaces) alloc_except {
     #ifndef FORSCAPE_TYPESET_HEADLESS
     assert(scriptDepth() == 0);
@@ -105,6 +109,14 @@ void Text::removeLeadingSpaces(size_t num_spaces) noexcept {
     #endif
     assert(str.substr(0, num_spaces) == std::string(num_spaces, ' '));
     str.erase(0, num_spaces);
+}
+
+void Text::removeComment() noexcept {
+    #ifndef FORSCAPE_TYPESET_HEADLESS
+    assert(scriptDepth() == 0);
+    #endif
+    assert(str.substr(0, 2) == "//");
+    str.erase(0, 2);
 }
 
 void Text::overwrite(size_t start, const std::string& in) alloc_except {

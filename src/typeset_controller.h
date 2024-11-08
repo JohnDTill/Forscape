@@ -77,6 +77,7 @@ public:
     void newline() noexcept;
     void tab();
     void detab() noexcept;
+    void comment();
     std::string_view keystroke(const std::string& str);
     void insertText(const std::string& str);
     void insertSerial(const std::string& src);

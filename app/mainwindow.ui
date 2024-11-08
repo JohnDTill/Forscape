@@ -76,6 +76,7 @@
     <addaction name="actionSelect_all"/>
     <addaction name="actionFind_Replace"/>
     <addaction name="actionGo_to_line"/>
+    <addaction name="actionToggle_line_comment"/>
    </widget>
    <widget class="QMenu" name="menuCode">
     <property name="title">
@@ -88,6 +89,7 @@
     <property name="title">
      <string>Window</string>
     </property>
+    <addaction name="actionFull_Screen"/>
     <addaction name="actionZoom_in"/>
     <addaction name="actionZoom_out"/>
     <addaction name="actionReset_zoom"/>
@@ -369,6 +371,22 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+N</string>
+   </property>
+  </action>
+  <action name="actionFull_Screen">
+   <property name="text">
+    <string>Full Screen</string>
+   </property>
+   <property name="shortcut">
+    <string>F11</string>
+   </property>
+  </action>
+  <action name="actionToggle_line_comment">
+   <property name="text">
+    <string>Toggle line comment</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+/</string>
    </property>
   </action>
  </widget>

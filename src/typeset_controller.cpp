@@ -11,6 +11,7 @@
 #include "typeset_subphrase.h"
 #include "typeset_text.h"
 #include "typeset_themes.h"
+#include <typeset_command_comment.h>
 #include <typeset_command_indent.h>
 #include <typeset_command_line.h>
 #include <typeset_command_list.h>
@@ -444,6 +445,27 @@ void Controller::detab() noexcept {
             anchor.index -= INDENT_SIZE;
             del();
         }
+    }
+}
+
+void Controller::comment() {
+    Marker active_backup = active;
+    Marker anchor_backup = anchor;
+
+    CommandComment* cmd = isForward() ?
+                   CommandComment::comment(anchorLine(), activeLine()) :
+                   CommandComment::comment(activeLine(), anchorLine());
+    getModel()->mutate(cmd, *this);
+
+    active = active_backup;
+    anchor = anchor_backup;
+
+    if(cmd->isCommented()){
+        if(active.atFirstTextInPhrase()) active.index += 2;
+        if(anchor.atFirstTextInPhrase()) anchor.index += 2;
+    }else{
+        if(active.atFirstTextInPhrase()) active.index -= 2;
+        if(anchor.atFirstTextInPhrase()) anchor.index -= 2;
     }
 }
 

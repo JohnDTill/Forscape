@@ -916,6 +916,20 @@ void View::del(){
     emit textChanged();
 }
 
+void View::clearModel() noexcept {
+    model->clear();
+    controller = Controller(model);
+    updateModel();
+}
+
+void View::comment() {
+    if(allow_write){
+        controller.comment();
+        updateXSetpoint();
+        restartCursorBlink();
+    }
+}
+
 void View::setCursorAppearance(double x, double y) {
     Construct* con = model->constructAt(x, y);
     if(con && con->constructCode() == MARKERLINK){
@@ -1144,6 +1158,7 @@ void View::handleKey(int key, int modifiers, const std::string& str){
         case 61|Qt::ControlModifier: zoomIn(); restartCursorBlink(); break;
         case Qt::Key_Minus|Qt::ControlModifier: zoomOut(); restartCursorBlink(); break;
         case Qt::Key_Insert: insert_mode = !insert_mode; break;
+        case Qt::Key_Slash|Ctrl: comment(); break;
         case Qt::Key_Delete:
         case Qt::Key_Delete|Shift:
         if(allow_write){
@@ -2076,12 +2091,6 @@ void Editor::takeRecommendation(const std::string& str){
 void Tooltip::leaveEvent(QEvent* event) {
     if(!editor->rect().contains(editor->mapFromGlobal(QCursor::pos())))
         editor->clearTooltip();
-}
-
-void View::clearModel() noexcept {
-    model->clear();
-    controller = Controller(model);
-    updateModel();
 }
 
 }

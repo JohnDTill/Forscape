@@ -52,6 +52,7 @@ public:
     size_t currentLine() const noexcept;
     void goToLine(size_t line_num);
     void clearModel() noexcept;
+    void comment();
 
     std::vector<Typeset::Selection> highlighted_words;
     void updateBackgroundColour() noexcept;
