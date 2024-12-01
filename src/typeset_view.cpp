@@ -989,7 +989,7 @@ void View::drawModel(double xL, double yT, double xR, double yB) {
     const Typeset::Marker& cursor = getController().active;
 
     model->paint(painter, xL, yT, xR, yB);
-    model->paintGroupings(painter, cursor);
+    if(allow_write) model->paintGroupings(painter, cursor);
     controller.paintSelection(painter, xL, yT, xR, yB);
     if(display_commas_in_numbers) model->paintNumberCommas(painter, xL, yT, xR, yB, controller.selection());
     if(show_cursor){
