@@ -268,6 +268,7 @@ if(QT_VERSION_MAJOR EQUAL 6)
 endif()
 
 add_compile_definitions($<$<CONFIG:Release>:EIGEN_NO_DEBUG>)
+include(CheckCXXCompilerFlag)
 
 if(MSVC)
     target_compile_options(Forscape PRIVATE
@@ -285,9 +286,10 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         $<$<CONFIG:Release>: -Ofast -fmodulo-sched -fmodulo-sched-allow-regmoves -fgcse-sm -fgcse-las -fdelete-null-pointer-checks
         -fomit-frame-pointer -funroll-loops -fvisibility=hidden -fwhole-program -flto>
     )
-    target_link_options(Forscape PRIVATE
-        -Wa,-mbig-obj
-    )
+    check_cxx_compiler_flag("-Wa,-mbig-obj" HAS_MBIG_OBJ)
+    if(HAS_MBIG_OBJ)
+        target_link_options(Forscape PRIVATE "-Wa,-mbig-obj")
+    endif()
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     # using Clang
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
