@@ -6,7 +6,11 @@
 #include <memory>
 #include <variant>
 #include <vector>
-#include <Eigen/Core>
+#ifdef USE_CONAN_EIGEN
+  #include <Eigen/Core>
+#else
+  #include <eigen3/Eigen/Core>
+#endif
 
 namespace Forscape {
 
