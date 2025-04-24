@@ -308,7 +308,7 @@ add_custom_target(
 
 add_dependencies(Forscape codegen)
 
+install(TARGETS Forscape RUNTIME)
 if (${MAKE_DEB})
-    install(TARGETS Forscape RUNTIME)
     include(Packing.cmake)
 endif ()
