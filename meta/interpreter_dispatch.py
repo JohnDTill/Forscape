@@ -38,7 +38,11 @@ def main():
     with open("../src/generated/forscape_interpreter_gen.cpp", "w", encoding="utf-8") as codegen_file:
         codegen_file.write("#include \"forscape_interpreter.h\"\n\n")
         codegen_file.write("#include <math.h>\n")
-        codegen_file.write("#include <unsupported/Eigen/MatrixFunctions>\n\n")
+        codegen_file.write("#ifdef USE_CONAN_EIGEN\n")
+        codegen_file.write("  #include <unsupported/Eigen/MatrixFunctions>\n")
+        codegen_file.write("#else\n")
+        codegen_file.write("  #include <eigen3/unsupported/Eigen/MatrixFunctions>\n")
+        codegen_file.write("#endif\n")
         codegen_file.write("using namespace Eigen;\n")
         codegen_file.write("using namespace std;\n\n")
         codegen_file.write("namespace Forscape {\n\n")

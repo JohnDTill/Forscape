@@ -8,7 +8,7 @@ def main():
 
     header_writer = cpp.HeaderWriter(
         name="code_settings_constants",
-        includes=["array", "string_view"],
+        includes=["array", "string_view", "stdint.h"],
     )
 
     header_writer.write(f"#define NUM_CODE_SETTINGS {len(entries)}\n\n")

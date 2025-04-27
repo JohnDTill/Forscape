@@ -4,13 +4,22 @@ option(TEST_QT OFF)
 
 project(ForscapeTests LANGUAGES CXX)
 
-set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/conan-dependencies ${CMAKE_MODULE_PATH})
-include(${CMAKE_BINARY_DIR}/conan-dependencies/conanbuildinfo.cmake)
-conan_basic_setup(NO_OUTPUT_DIRS KEEP_RPATHS)
-include_directories(${CONAN_INCLUDE_DIRS})
+option(USE_CONAN "Use Conan for dependency management" ON)
+
+if(USE_CONAN)
+    set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/conan-dependencies ${CMAKE_MODULE_PATH})
+    include(${CMAKE_BINARY_DIR}/conan-dependencies/conanbuildinfo.cmake)
+    conan_basic_setup(NO_OUTPUT_DIRS KEEP_RPATHS)
+    include_directories(${CONAN_INCLUDE_DIRS})
+    add_compile_definitions(USE_CONAN_EIGEN)
+endif()
 
 find_package(Eigen3 REQUIRED)
-find_package(phmap REQUIRED)
+# This is a header only library, that should be included in the system's
+# default include directory if conan is not used.
+if(USE_CONAN)
+    find_package(phmap REQUIRED)
+endif()
 find_package(readerwriterqueue REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -234,6 +243,7 @@ endif ()
 add_test(NAME IntegrationTest COMMAND ForscapeTests.exe)
 
 add_compile_definitions($<$<CONFIG:Release>:EIGEN_NO_DEBUG>)
+include(CheckCXXCompilerFlag)
 
 if(MSVC)
     target_compile_options(ForscapeTests PRIVATE
@@ -254,9 +264,10 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         $<$<CONFIG:Release>: -Ofast -fmodulo-sched -fmodulo-sched-allow-regmoves -fgcse-sm -fgcse-las -fdelete-null-pointer-checks
         -fomit-frame-pointer -funroll-loops -fvisibility=hidden -fwhole-program -flto>
     )
-    target_link_options(ForscapeTests PRIVATE
-        -Wa,-mbig-obj
-    )
+    check_cxx_compiler_flag("-Wa,-mbig-obj" HAS_MBIG_OBJ)
+    if(HAS_MBIG_OBJ)
+        target_link_options(Forscape PRIVATE "-Wa,-mbig-obj")
+    endif()
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     # using Clang
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")

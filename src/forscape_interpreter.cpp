@@ -6,7 +6,12 @@
 #include "forscape_symbol_link_pass.h"
 
 #include <thread>
-#include <unsupported/Eigen/MatrixFunctions>
+
+#ifdef USE_CONAN_EIGEN
+  #include <unsupported/Eigen/MatrixFunctions>
+#else
+  #include <eigen3/unsupported/Eigen/MatrixFunctions>
+#endif
 
 #ifndef NDEBUG
 #include <iostream>

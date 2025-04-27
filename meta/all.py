@@ -1,5 +1,4 @@
 import os
-import pip
 import shutil
 
 
